@@ -4,7 +4,7 @@ Derived from [`docs/WEBSITE-SPEC-biga-calculator.md`](docs/WEBSITE-SPEC-biga-cal
 Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
-**Status:** Tasks 0–2 complete. Task 3 next.
+**Status:** Tasks 0–3 complete. Task 4 next.
 
 ---
 
@@ -138,18 +138,58 @@ updates live, so setups are shareable today.
 
 ---
 
-## Task 3 — Ingredients, water/ice, warnings
+## Task 3 — Ingredients, water/ice, warnings ✅
 
-- [ ] **Ingredients card** (§7.1) — two columns, Biga and Final mix, gram
-      weights readable at arm's length. "Copy as text" button.
-- [ ] **Water & ice card** (§7.2) — target water temperature as the headline,
-      ice/tap split below. Show `iceEffF` with a tooltip, since −120 °F looks
-      absurd without one. Link to `thermal-model` and `ice-physics`.
-- [ ] **Warnings** (§7.3) — rendered *above* the step list, never inside a
-      collapsed panel. Sources: capacity splits, ice over 35%, unreachable
-      water temp, dough below mixer minimum, overnight timeline stages.
-- [ ] The warm-water case must be expressible: "warm the water to X °F", not a
-      silently clamped ice figure.
+`src/components/cards.tsx`, `Disclose.tsx`, `CopyButton.tsx`, and
+`src/lib/recipeText.ts` for the plain-text export.
+
+- [x] **Ingredients card** (§7.1) — Biga and Final mix, gram weights at
+      `text-2xl`, with a "copy as text" button
+- [x] **Water & ice card** (§7.2) — water temperature as the headline, ice/tap
+      split below, `iceEffF` with an explanation
+- [x] **Warnings** (§7.3) — above where the step list will go, never inside a
+      collapsed panel, sorted error → warn → info
+- [x] **Mix targets card** — probe target and DDT, with the reminder that the
+      probe is not aiming at DDT
+- [x] Share button copying a link that reproduces the current inputs
+
+**119 tests green** (9 new, on the text export).
+
+### All four water-card states verified in a browser
+
+| State | Renders |
+|---|---|
+| `ok` | 52.5 °F · ice 14.6 g / tap 338.0 g — matches the §5 six-ball vector |
+| `excessive` | "Ice is 37% of the fresh water", inline and as a top warning |
+| `warm-water` | **"Warm the water to 87.6 °F"** — headline, no ice, no split |
+| `none` | "No ice needed — the target is already at tap temperature" |
+
+`unreachable` is covered by unit test; reaching it needs inputs absurd enough
+(a 120 °F kitchen, FF 40, DDT 60) that they can't arise from the bounded UI.
+
+### Two deliberate departures from a literal reading of §7
+
+**§7.2 says "tooltip"; this is tap-to-reveal.** Design priority 2 rules out
+hover-dependent UI — the page is read on a phone. `Disclose` is a button that
+toggles the text inline, which works with a finger, a mouse and a screen reader.
+
+**§7.1 says "two columns"; below 640 px they stack.** Two columns of `text-2xl`
+gram weights on a 375 px screen gives each about 165 px — "Fresh flour  329.1 g"
+does not fit, and shrinking the type contradicts "large enough to read at arm's
+length". Both sections stay clearly headed, and the two-column layout appears at
+`sm` and above. Priority 2 outranks the literal layout here; flagging it in case
+you disagree.
+
+### Clipboard
+
+Two paths: `navigator.clipboard.writeText`, falling back to a hidden textarea
+and `execCommand` for non-secure origins — a phone pointed at a dev server over
+`http://192.168.x.x` is not a secure context, and the modern API is simply
+absent there. A failure reports "Copy failed" rather than claiming success.
+
+Not verified end to end: both clipboard paths require transient user activation,
+which a scripted click cannot supply, so the automated check only exercises the
+failure path. The success path needs a human click.
 
 ---
 
