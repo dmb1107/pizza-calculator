@@ -41,3 +41,27 @@ body {
 .tabular {
   font-variant-numeric: tabular-nums;
 }
+
+/*
+ * Kill the native number spinners. They are a ~10 px target sitting inside a
+ * field this app expects to be tapped, and inputMode already brings up a
+ * numeric keypad on a phone.
+ */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  appearance: textfield;
+}
+
+/* A range thumb big enough to find without looking. */
+input[type='range'] {
+  accent-color: var(--color-amber-700);
+}
+@media (prefers-color-scheme: dark) {
+  input[type='range'] {
+    accent-color: var(--color-amber-500);
+  }
+}

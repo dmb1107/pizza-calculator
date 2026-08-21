@@ -4,7 +4,7 @@ Derived from [`docs/WEBSITE-SPEC-biga-calculator.md`](docs/WEBSITE-SPEC-biga-cal
 Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
-**Status:** Tasks 0 and 1 complete. Task 2 next.
+**Status:** Tasks 0–2 complete. Task 3 next.
 
 ---
 
@@ -84,24 +84,57 @@ becomes live if `MAX_DOUGH`, `DOUGH_YIELD` or `HYDRATION` move — and a test no
 asserts the relationship so the dead branch is documented rather than invisible.
 The biga's flour cap does bind, and is tested on a case that isolates it.
 
-## Task 2 — Input panels + state
+## Task 2 — Input panels + state ✅
 
-- [ ] `src/state/` — a single `Inputs` object, one reducer.
-- [ ] Three panels per §6: **Batch** open by default; **Today's temperatures**
-      and **Calibration** collapsed with a summary line.
-- [ ] URL query-param serialization (shareable) — inputs only, not derived
-      values. Round-trip test.
-- [ ] `localStorage` for calibration and preferences. Freezer temp persists
-      (§6: "rarely changes").
-- [ ] Precedence: URL param > localStorage > default. Test it.
-- [ ] "Flour temp same as room" toggle.
-- [ ] **Friction factor is a map, not a number.** `batchSize → { ff, measuredAt }`
-      in localStorage, selected by current batch size, falling back to 14.
-      Badge the fallback "estimated — not yet calibrated"; when measured, show
-      the date recorded.
+`src/state/` — types, defaults and bounds, URL codec, localStorage, and the
+`useAppState` hook. `src/components/` — `Panel`, the field primitives, and the
+three §6 panels.
 
-**Kitchen usability applies from here on:** ≥48 px touch targets, no
-hover-only affordances, numeric inputs that open a numeric keypad.
+- [x] Single `Inputs` object; all mutation goes through the hook
+- [x] Three panels per §6: **Batch** open by default, the other two collapsed
+      with a live summary line
+- [x] URL query-param serialization, inputs only. Defaults are omitted, so
+      `?balls=9` is the whole link for a nine-ball batch
+- [x] `localStorage` for calibration, panel state and the freezer temperature
+- [x] Precedence URL > localStorage > default, applied per key
+- [x] "Flour temp same as room" toggle, tracking in both directions
+- [x] Friction factor as a `batchSize → { ff, measuredAt }` map, badged
+      "estimated — not yet calibrated" on the fallback and with the recorded
+      date when measured
+- [x] DDT override with a "back to automatic" escape
+
+**110 tests green.** URL round-trips, per-key fallback, and a `rejects hostile
+or truncated links` block: `balls=abc`, `balls=NaN`, `balls=Infinity`,
+`freezer=80` and friends all clamp or fall back, and no decode can produce a
+non-finite number. Storage degrades to defaults on malformed JSON, wrong-typed
+fields or corrupt friction entries, and never throws when the quota is full.
+
+### Kitchen-usability decisions
+
+| Decision | Why |
+|---|---|
+| **Number fields commit on blur, not keystroke** | Clamping mid-type makes a bounded field unusable — typing "7" on the way to "70" would snap to the minimum. |
+| **Stepper emits a delta, not a value** | Two taps inside one render frame would otherwise both resolve against the same captured number and the second would be lost. Found while testing; fixed. |
+| **Native spinners removed** | A ~10 px target inside a field meant to be tapped. `inputMode` already brings up a numeric keypad. |
+| **Whole panel header is the toggle** | Easy to hit with a knuckle. |
+| **`replaceState`, not `pushState`** | Dragging the cold-ferment slider must not fill the back stack. |
+
+### Verified in a browser, not only in tests
+
+Checked at 375 px and desktop, light and dark: values match the §5 vectors live
+(6-ball 940.4 / 611.2 / 352.6 / 52.5 °F / 14.6 g; 18-ball 2821.1 / 1833.7 /
+1057.9), the 12-ball case renders "mix one biga, divide for 2 final mixes", and
+a 42 °F biga produces **"Warm the water to 86.3 °F"** rather than a clamped ice
+figure — the case §5 singles out as the one a wrong UI cannot express.
+
+Calibration persistence was exercised end to end: recording 16.4 °F against a
+9-ball batch stores it keyed by size, badges it with the date, moves the probe
+target to 69.6 °F, survives a reload, and correctly does **not** apply to a
+3-ball batch, which falls back to the estimate.
+
+`shareUrl` is computed and exposed by the hook but not yet surfaced as a button;
+it lands next to the "copy as text" control in Task 3. The address bar already
+updates live, so setups are shareable today.
 
 ---
 
