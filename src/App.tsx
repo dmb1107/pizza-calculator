@@ -15,7 +15,7 @@ export default function App() {
         {(C.SALT * 100).toFixed(1)}% salt
       </p>
       <p className="mt-8 rounded-lg border border-stone-300 bg-stone-100 p-4 text-stone-700 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300">
-        Scaffold only. The calculation engine is plan Task 1 — see{' '}
+        Calculation engine complete and tested. The interface is plan Task 2 — see{' '}
         <code className="font-mono text-sm">IMPLEMENTATION-PLAN.md</code>.
       </p>
     </main>

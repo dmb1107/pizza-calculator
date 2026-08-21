@@ -4,7 +4,7 @@ Derived from [`docs/WEBSITE-SPEC-biga-calculator.md`](docs/WEBSITE-SPEC-biga-cal
 Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
-**Status:** Task 0 complete. Task 1 next.
+**Status:** Tasks 0 and 1 complete. Task 2 next.
 
 ---
 
@@ -42,48 +42,47 @@ a failure in Task 1 is an implementation bug, not a bad vector.
 
 ---
 
-## Task 1 — Calculation engine + tests
+## Task 1 — Calculation engine + tests ✅
 
-**The spec is emphatic: get this green before writing any UI.** Everything else
-is presentation over these numbers.
+`src/lib/engine.ts` — pure functions, no UI imports, nothing rounded.
+`src/lib/format.ts` — the display-rounding boundary, and the only place
+rounding is allowed to happen.
 
-`src/lib/engine.ts`, pure functions, no UI imports.
+- [x] `computeFormula` → §4.1 masses, plus the `freshWater60` / `freshWater40`
+      bassinage split that §8.2 mix-2 and mix-3 bind to
+- [x] `computeThermal` → `cBiga / cFreshFlour / cFreshWater / cSalt / cTotal`
+      and the derived weights, computed from component heat capacities
+- [x] `computeWaterTempF` → §4.3
+- [x] `computeIce` → §4.4 with all five statuses: `ok`, `none`, `warm-water`,
+      `excessive`, `unreachable`
+- [x] `computeCapacity` → §4.5 including `belowMixerMinimum`, `tightFinalMix`
+      and the `divideBigaAcrossMixes` case
+- [x] `computeProbeTargetF` → §4.6 with the ≤3-ball bonus
+- [x] `calculate` composes all of it and assembles the §7.3 warnings, which are
+      derived data and so belong in the engine rather than a component
+- [x] `formatGrams` / `formatAdy` / `formatTempF` in `format.ts`
 
-- [ ] `computeFormula({ balls, ballWeightG })` → §4.1 masses. No rounded
-      intermediates.
-- [ ] `computeThermal(formula)` → `Cb / Cf / Cw / Cs / Ct` from component heat
-      capacities per §4.2. Do not hardcode the weights — they are the assertion
-      target precisely because they're derived.
-- [ ] `computeWaterTemp({ ddtF, ff, tBigaF, tFlourF, tRoomF }, thermal)` → §4.3.
-- [ ] `computeIce({ waterTempF, tapF, freezerF, freshWater })` → §4.4, including
-      all three explicit cases:
-      - `waterTempF >= tapF` → `ice = 0`; above `tapF + 0.5`, "warm the water to X °F"
-      - `ice > 0.35 × freshWater` → warn, won't melt in one mix
-      - `ice > freshWater` → error, unreachable; suggest chilling the biga
-- [ ] `computeCapacity(formula)` → `nMix`, `nBiga` per §4.5, plus the
-      below-minimum and within-5%-of-max warnings, and the `nBiga < nMix`
-      "mix one biga, divide by weight" case.
-- [ ] `computeProbeTarget({ ddtF, ff, balls })` → §4.6, with the small-batch
-      `+1` for ≤3 balls.
-- [ ] `formatGrams` / `formatTempF` in `src/lib/format.ts` — rounding lives
-      here and nowhere else (§4.1: 1 dp for masses, 2 for ADY, 1 for temps).
+**70 tests green** across `tests/vectors.test.ts` and `tests/engine.test.ts`:
+all 7 batch rows, the 5 water-temperature rows, the §9 ice-per-100 g table,
+thermal weights asserted scale-invariant to 1e-12, every ice edge case, and the
+formula invariants across 7 batch sizes x 5 ball weights.
 
-`tests/engine.test.ts`, against `tests/vectors.ts`:
+### Verified by mutation testing, not just by passing
 
-- [ ] All 7 batch rows, ±0.1 g / ±0.1 °F
-- [ ] 5 water-temperature rows — **including `T_biga = 42 → 90.6 °F`**, the
-      fridge-retarded case that requires *warm* water
-- [ ] Thermal weights ≈ `0.5311 / 0.1306 / 0.3331 / 0.0052`, asserted identical
-      at 3, 6, 9, 12 and 18 balls
-- [ ] Ice effective temp at 32 / 16 / 0 °F freezer → −112 / −120 / −128
-- [ ] §9 ice-per-100 g table (8 rows) as an independent cross-check
-- [ ] Invariants at every batch size: hydration 0.700, salt 0.028, biga 0.650,
-      component sum ≈ `doughTotal`
-- [ ] Each ice edge case, asserted on the returned status rather than the number
+A green suite over vectors you already trust proves little. Fifteen deliberate
+breaks were introduced into the engine to check the tests actually catch them —
+rounded intermediates, swapped flour caps, `ceil`→`round`, the salt term reading
+flour temperature instead of room, a dropped overage, a shifted ice threshold.
+All are caught. Two rounds of gaps found this way were closed by adding tests.
 
-**Done when:** `npm test` green with the engine suite included.
-
----
+**One mutation is undetectable, by construction.** §4.5 computes
+`nMix = ceil(max(doughTotal / MAX_DOUGH, F / FLOUR_CAP_66))`, but the first term
+always wins: the 2500 g dough ceiling implies 2500 / 1.728 = 1446.8 g of flour,
+below the 1505 g flour cap. At 70% hydration the flour term is unreachable and
+no input can exercise it. The `max()` is kept — it is correct defensive form and
+becomes live if `MAX_DOUGH`, `DOUGH_YIELD` or `HYDRATION` move — and a test now
+asserts the relationship so the dead branch is documented rather than invisible.
+The biga's flour cap does bind, and is tested on a case that isolates it.
 
 ## Task 2 — Input panels + state
 

@@ -69,6 +69,8 @@ npm run preview    # serve dist/ locally
 
 ```
 src/lib/          pure calculation — no UI imports, this is what gets unit-tested
+                  engine.ts (§4 formulas), format.ts (display rounding),
+                  constants.ts (§3)
 src/content/      step and concept prose (steps.ts, concepts.ts)
 src/components/   React components
 src/state/        URL + localStorage persistence
@@ -78,6 +80,11 @@ docs/             the spec and its source recipe
 
 `src/lib/` must stay importable from a plain Node test with no DOM. Keep React
 out of it.
+
+**All rounding lives in `format.ts`.** The engine returns full precision;
+anything that puts a number in front of a person goes through a formatter. That
+is what makes "don't round intermediates" enforceable rather than aspirational —
+don't inline a `toFixed` somewhere else.
 
 ## Gotchas
 
