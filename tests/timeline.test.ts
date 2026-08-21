@@ -60,6 +60,65 @@ describe('§4.7 stage durations', () => {
     expect(buildTimeline({ startAt: start, schedule: 'classic', adjustments: DEFAULTS }).totalH).toBeCloseTo(45.83, 2);
   });
 
+  /**
+   * §4.7: "Fixed overhead outside the cold ferment totals 25.5–30 h, so total
+   * elapsed is always coldFerment + ~28 h. At the defaults: ~34 h at 6 h cold,
+   * ~52 h at 24 h, ~64 h at 36 h. Assert these."
+   *
+   * This is the check that would have caught the recipe document's §7 summary
+   * table, which collapsed bulk rest, divide-and-ball and the balls' room
+   * temperature rest into one row and left the final mix out entirely.
+   */
+  describe('§4.7 published totals', () => {
+    const start = new Date(2026, 7, 21, 9, 0);
+    const totalAt = (coldFermentH: number) =>
+      buildTimeline({
+        startAt: start,
+        schedule: 'retarded',
+        adjustments: { ...DEFAULTS, coldFermentH },
+      }).totalH;
+
+    it.each([
+      [6, 34],
+      [24, 52],
+      [36, 64],
+    ])('%i h cold ferment gives ~%i h total', (cold, expected) => {
+      // "Those are midpoints; each carries a ±2 h spread."
+      expect(Math.abs(totalAt(cold) - expected)).toBeLessThanOrEqual(2);
+    });
+
+    it('keeps fixed overhead inside the stated 25.5–30 h band', () => {
+      for (const cold of [6, 12, 24, 30, 36]) {
+        const overhead = totalAt(cold) - cold;
+        expect(overhead, `overhead at ${cold} h cold`).toBeGreaterThanOrEqual(25.5);
+        expect(overhead, `overhead at ${cold} h cold`).toBeLessThanOrEqual(30);
+      }
+    });
+
+    it('holds the overhead constant, so total is always coldFerment + ~28 h', () => {
+      // Everything outside the cold ferment is fixed, so the relationship is
+      // linear with slope exactly 1 — a stage accidentally scaling with the
+      // cold ferment would show up here.
+      const overheads = [6, 12, 24, 30, 36].map((c) => totalAt(c) - c);
+      for (const o of overheads) expect(o).toBeCloseTo(overheads[0] as number, 10);
+      expect(overheads[0]).toBeCloseTo(27.83, 2);
+    });
+
+    it('stays inside the band at every allowed adjustment extreme', () => {
+      const extremes: ScheduleAdjustments[] = [
+        { bigaFridgeH: 18, bigaRoomOnlyH: 16, ballRoomTempH: 1, coldFermentH: 24, temperH: 2 },
+        { bigaFridgeH: 20, bigaRoomOnlyH: 16, ballRoomTempH: 2, coldFermentH: 24, temperH: 3 },
+      ];
+      for (const adjustments of extremes) {
+        const overhead =
+          buildTimeline({ startAt: start, schedule: 'retarded', adjustments }).totalH -
+          adjustments.coldFermentH;
+        expect(overhead).toBeGreaterThanOrEqual(25.5);
+        expect(overhead).toBeLessThanOrEqual(30);
+      }
+    });
+  });
+
   it('omits stages that do not apply rather than showing them as zero', () => {
     const start = new Date(2026, 7, 21, 9, 0);
     const retarded = buildTimeline({ startAt: start, schedule: 'retarded', adjustments: DEFAULTS });

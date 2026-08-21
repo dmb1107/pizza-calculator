@@ -168,7 +168,7 @@ probeTargetF = DDT − 0.33 × FF + 1
 
 Two modes. **Forward** (default): user gives biga start time. **Backward**: user gives target bake time, solve for when to start the biga.
 
-Durations in hours, from biga mix at t=0:
+Durations in hours, from biga mix at t=0. **These are authoritative** — they were reconciled against the procedure steps in the recipe document, whose §7 summary table had collapsed three separate stages into one and omitted the mix itself. If the two ever disagree again, these win.
 
 | Key | Retarded (default) | Classic RT | Notes |
 |---|---:|---:|---|
@@ -182,6 +182,8 @@ Durations in hours, from biga mix at t=0:
 | `ballRoomTemp` | 1.5 | 1.5 | user-adjustable 1–2 |
 | `coldFerment` | **user input** | **user input** | 6–36, default 24 |
 | `temper` | 2.5 | 2.5 | user-adjustable 2–3 |
+
+Fixed overhead outside the cold ferment totals **25.5–30 h**, so total elapsed is always `coldFerment + ~28 h`. At the defaults: ~34 h at 6 h cold, ~52 h at 24 h, ~64 h at 36 h. Assert these.
 
 Show cumulative clock times for each stage plus a total elapsed figure. Flag when a stage lands between midnight and 6 AM — that's the main reason a schedule is unusable in practice, and it's the single most useful thing the backward mode solves.
 

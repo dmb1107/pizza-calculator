@@ -241,25 +241,28 @@ action and the bake in daylight — for any biga start between **09:00 and
 fridging, the cold ferment, the temper *and* the bake in the small hours. The
 warning banner names that window rather than just reporting a problem.
 
-### ⚠️ Discrepancy between the two source documents
+### The document discrepancy, resolved
 
-Not resolved, because §12 says to ask before deviating on any number.
+Raised during this task and since settled: the recipe document's §7 summary
+table was **wrong**, not a rounding difference. It collapsed three distinct
+stages (bulk rest, divide-and-ball, balls at room temperature) into a single
+"~1.5 h" row and omitted the final mix entirely, so it was out of sync with the
+§8 procedure it was summarising. §8's own steps total 25.5–30 h of fixed
+overhead, which matches §4.7's 27.83 h default.
 
-`docs/Biga-Neapolitan-HaloCore-GrainCraft.md` §7 gives the retarded schedule as
-**"~50 h (24 h cold)"**. Spec §4.7's durations total **51.83 h** for the same
-settings. Two differences account for it:
+The recipe document has been corrected — §7 now lists all nine stages with
+cross-references to their §8 steps, and its totals read ~34 h / ~52 h / ~64 h.
+Spec §4.7 now carries an explicit precedence note: "These are authoritative …
+If the two ever disagree again, these win."
 
-| | Recipe doc | Spec §4.7 |
-|---|---|---|
-| Rest / divide / ball | one row, ~1.5 h | `bulkRest` 1 + `divideBall` 0.33 + `ballRoomTemp` 1.5 = 2.83 h |
-| Temper | 2 h | 2.5 h default (range 2–3) |
+**No code changed.** The timeline was built from §4.7 and was already right.
 
-§4.7 is the build authority so the app uses its numbers, and the recipe's "~50 h"
-is explicitly approximate. But the recipe table appears to fold the balls'
-room-temperature rest into the "rest, divide, ball" row rather than listing it
-separately, which would make the two documents describe different schedules
-rather than the same one rounded differently. Worth a look, since the spec says
-to keep them in sync.
+§4.7 also gained an assertion requirement, now covered by six new tests:
+totals of ~34 / ~52 / ~64 h at 6 / 24 / 36 h cold ferment (±2 h), fixed
+overhead inside 25.5–30 h, and overhead held constant so total is always
+`coldFerment + ~28 h` — which would catch a stage accidentally scaling with the
+cold ferment. Worth noting the band is exactly what the adjustment ranges
+produce: 25.83 h with every adjustable at its minimum, 29.83 h at its maximum.
 
 ---
 

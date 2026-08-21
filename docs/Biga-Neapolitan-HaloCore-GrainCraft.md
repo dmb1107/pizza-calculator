@@ -321,19 +321,23 @@ Second thing worth absorbing: **in Italian practice you get more time by lengthe
 
 Published professional practice, and the fridge holds the biga at a stable temperature instead of leaving it to whatever the kitchen is doing.
 
-| Stage | Time | Temp |
-|---|---|---|
-| Biga, room temperature | 2 h | ambient |
-| Biga, refrigerated | 18–20 h | ~39 °F |
-| Biga rest before mixing | 1 h | ambient |
-| Final mix | — | DDT 74–75 °F |
-| Rest, divide, ball | ~1.5 h | ambient |
-| Dough, refrigerated | **6–36 h** | 38–40 °F |
-| Temper | 2 h | ambient |
+| Stage | Time | Temp | Step |
+|---|---|---|---|
+| Biga, room temperature | 2 h | ambient | §8.1 |
+| Biga, refrigerated | 18–20 h | ~39 °F | §8.1 |
+| Biga rest before mixing | 1 h | ambient | §8.2 |
+| Final mix | ~30 min | DDT 74–75 °F | §8.2 |
+| Bulk rest | 45–60 min | ambient | §8.3 step 7 |
+| Divide and ball | 15–20 min | ambient | §8.3 step 8 |
+| Balls at room temperature | 60–120 min | ambient | §8.3 step 9 |
+| Dough, refrigerated | **6–36 h** | 38–40 °F | §8.3 step 10 |
+| Temper | 2–3 h | ambient | §8.4 step 11 |
 
-**Total: ~32 h (6 h cold) · ~50 h (24 h cold) · ~62 h (36 h cold)**
+**Total: ~34 h (6 h cold) · ~52 h (24 h cold) · ~64 h (36 h cold)**
 
-The 36 h end lands at ~62 h total with every number still inside published guidance. Start at **24 h cold (~50 h total)** and work up.
+Those are midpoints; each carries a ±2 h spread depending on where you land inside the ranges above. Everything except the cold ferment is fixed overhead, and it adds up to **25.5–30 h** — so the arithmetic is always `cold ferment + ~28 h`.
+
+The 36 h end lands at ~64 h total with every number still inside published guidance. Start at **24 h cold (~52 h total)** and work up.
 
 ### Alternative: classic room-temperature biga
 
@@ -341,9 +345,9 @@ If you can hold **61–65 °F** reliably — wine fridge, cool basement, winter 
 
 Your Home Assistant sensors would tell you quickly whether anywhere in the house actually holds that band.
 
-### Going past 62 h
+### Going past 64 h
 
-Beyond the Ooni schedule you are off documented ground and into your own calibration. Two principled routes, in order of preference:
+Beyond 36 h of cold ferment you are off documented ground and into your own calibration. Two principled routes, in order of preference:
 
 1. **Lengthen the biga toward 24 h** (PizzaBlab's stated ceiling) with correspondingly less yeast per their calculator, keeping the dough's cold ferment moderate.
 2. **Keep the schedule and cut the biga yeast** — but this is no longer the codified method, and it is the change most likely to give you a weak, under-developed biga rather than a longer one.
