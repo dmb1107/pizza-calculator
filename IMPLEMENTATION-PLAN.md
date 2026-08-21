@@ -4,7 +4,7 @@ Derived from [`docs/WEBSITE-SPEC-biga-calculator.md`](docs/WEBSITE-SPEC-biga-cal
 Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
-**Status:** Tasks 0–3 complete. Task 4 next.
+**Status:** Tasks 0–4 complete. Task 5 next.
 
 ---
 
@@ -193,17 +193,73 @@ failure path. The success path needs a human click.
 
 ---
 
-## Task 4 — Timeline, forward mode
+## Task 4 — Timeline, forward mode ✅
 
-- [ ] `src/lib/timeline.ts` — pure, stage durations per §4.7 for both the
-      retarded and classic RT schedules.
-- [ ] Forward mode: user gives biga start time → cumulative clock times per
-      stage, plus total elapsed.
-- [ ] Flag any stage landing between midnight and 06:00. Per the spec this is
-      the main reason a schedule is unusable in practice.
-- [ ] Highlight "now" when a session is in progress.
-- [ ] Tests: DST boundary, midnight wrap, the user-adjustable ranges
-      (`bigaFridge` 18–20, `ballRoomTemp` 1–2, `temper` 2.5–3, `coldFerment` 6–36).
+`src/lib/timeline.ts` (pure) and `src/components/TimelineCard.tsx`.
+
+- [x] §4.7 stage durations for both schedules; inapplicable stages are absent
+      rather than shown as zero
+- [x] Forward mode: biga start time → cumulative clock times, weekday included
+      because the schedule runs over two nights
+- [x] Midnight-to-06:00 flagging, per stage and for the bake itself
+- [x] "Now" marker on the current stage, re-ticking each minute
+- [x] The four §4.7-adjustable durations exposed behind "Adjust the schedule",
+      each clamped to the range the spec allows
+- [x] `solveBigaStart` for backward mode — same arithmetic, UI in Task 8
+
+**160 tests green** (41 new).
+
+### Two interpretation calls
+
+**"Flag when a stage lands between midnight and 6 AM" — flagged on the stage's
+start, not its span.** Read as overlap, the 19-hour fridge rest would flag every
+schedule ever produced and the warning would carry no information. What makes a
+schedule unusable is having to *get up* at 3 a.m., and every stage boundary is
+an action — so the flag marks the moment work is required.
+
+**Start time persists to localStorage, not the URL.** Design priority 4 wants a
+session to survive a refresh, and if you mixed the biga at 2 p.m. and reload at
+3 p.m. the timeline must still say 2 p.m. But a fixed timestamp inside a shared
+link is stale the moment it is sent. The recipe travels in the URL; the session
+stays on the device. The four schedule adjustments *are* in the URL, since those
+are recipe parameters and transfer meaningfully.
+
+### Daylight saving is handled by construction
+
+All arithmetic is in absolute milliseconds, never calendar fields. Fermentation
+follows the thermometer, not the clock, so 19 hours is 19 real hours and the
+wall-clock time shown after a spring-forward is correctly an hour later than
+naive calendar addition gives. Tests pin `TZ=America/New_York` and assert both
+that elapsed real time is exactly preserved across the March and November
+transitions, and that the displayed clock moves as it should.
+
+### A finding worth acting on
+
+Enumerating every start hour showed the schedule is completely clean — every
+action and the bake in daylight — for any biga start between **09:00 and
+20:00**, and that outside it the damage is immediate: a 23:00 start buries the
+fridging, the cold ferment, the temper *and* the bake in the small hours. The
+warning banner names that window rather than just reporting a problem.
+
+### ⚠️ Discrepancy between the two source documents
+
+Not resolved, because §12 says to ask before deviating on any number.
+
+`docs/Biga-Neapolitan-HaloCore-GrainCraft.md` §7 gives the retarded schedule as
+**"~50 h (24 h cold)"**. Spec §4.7's durations total **51.83 h** for the same
+settings. Two differences account for it:
+
+| | Recipe doc | Spec §4.7 |
+|---|---|---|
+| Rest / divide / ball | one row, ~1.5 h | `bulkRest` 1 + `divideBall` 0.33 + `ballRoomTemp` 1.5 = 2.83 h |
+| Temper | 2 h | 2.5 h default (range 2–3) |
+
+§4.7 is the build authority so the app uses its numbers, and the recipe's "~50 h"
+is explicitly approximate. But the recipe table appears to fold the balls'
+room-temperature rest into the "rest, divide, ball" row rather than listing it
+separately, which would make the two documents describe different schedules
+rather than the same one rounded differently. Worth a look, since the spec says
+to keep them in sync.
 
 ---
 

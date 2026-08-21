@@ -9,6 +9,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { calculate, type CalculatorResult } from '../lib/engine';
 import { defaultDdtF } from '../lib/constants';
+import {
+  buildTimeline,
+  roundToNextQuarterHour,
+  type ScheduleAdjustments,
+  type Timeline,
+} from '../lib/timeline';
 import { DEFAULT_INPUTS, clampField, type BoundedField } from './defaults';
 import {
   browserStorage,
@@ -61,6 +67,13 @@ export interface AppState {
   panels: PanelPrefs;
   togglePanel: (panel: keyof PanelPrefs) => void;
 
+  /** When the biga goes in. t = 0 for the timeline. */
+  bigaStartAt: Date;
+  setBigaStartAt: (at: Date) => void;
+  /** Reset the start to now, for when a session actually begins. */
+  startNow: () => void;
+  timeline: Timeline;
+
   result: CalculatorResult;
   /** Absolute link reproducing the current inputs. */
   shareUrl: string;
@@ -80,6 +93,19 @@ export function useAppState(): AppState {
   const [inputs, setInputs] = useState<Inputs>(initial.inputs);
   const [calibration, setCalibration] = useState<Calibration>(initial.persisted.calibration);
   const [panels, setPanels] = useState<PanelPrefs>(initial.persisted.panels);
+  const [bigaStartAt, setBigaStartAt] = useState<Date>(() => {
+    const stored = initial.persisted.bigaStartAtIso;
+    // A resumed session keeps the time the biga actually went in; a fresh one
+    // starts from now, since that is when you are standing at the counter.
+    return stored ? new Date(stored) : roundToNextQuarterHour(new Date());
+  });
+
+  // Re-ticks the "you are here" marker without re-rendering on every frame.
+  const [now, setNow] = useState<Date>(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   // Skip the first persist: it would only write back what we just read.
   const hydrated = useRef(false);
@@ -93,9 +119,14 @@ export function useAppState(): AppState {
       hydrated.current = true;
       return;
     }
-    const value: Persisted = { calibration, panels, freezerTempF: inputs.freezerTempF };
+    const value: Persisted = {
+      calibration,
+      panels,
+      freezerTempF: inputs.freezerTempF,
+      bigaStartAtIso: bigaStartAt.toISOString(),
+    };
     savePersisted(storage, value);
-  }, [storage, calibration, panels, inputs.freezerTempF]);
+  }, [storage, calibration, panels, inputs.freezerTempF, bigaStartAt]);
 
   const setInput = useCallback(<K extends keyof Inputs>(key: K, value: Inputs[K]) => {
     setInputs((prev) => {
@@ -176,6 +207,30 @@ export function useAppState(): AppState {
     [inputs, friction.ff, calibration.ddtOverrideF],
   );
 
+  const adjustments = useMemo<ScheduleAdjustments>(
+    () => ({
+      bigaFridgeH: inputs.bigaFridgeH,
+      bigaRoomOnlyH: inputs.bigaRoomOnlyH,
+      ballRoomTempH: inputs.ballRoomTempH,
+      coldFermentH: inputs.coldFermentH,
+      temperH: inputs.temperH,
+    }),
+    [
+      inputs.bigaFridgeH,
+      inputs.bigaRoomOnlyH,
+      inputs.ballRoomTempH,
+      inputs.coldFermentH,
+      inputs.temperH,
+    ],
+  );
+
+  const timeline = useMemo(
+    () => buildTimeline({ startAt: bigaStartAt, schedule: inputs.schedule, adjustments, now }),
+    [bigaStartAt, inputs.schedule, adjustments, now],
+  );
+
+  const startNow = useCallback(() => setBigaStartAt(roundToNextQuarterHour(new Date())), []);
+
   const shareUrl = useMemo(() => {
     if (typeof window === 'undefined') return '';
     const qs = encodeInputs(inputs);
@@ -198,6 +253,10 @@ export function useAppState(): AppState {
     autoDdtF: defaultDdtF(inputs.balls),
     panels,
     togglePanel,
+    bigaStartAt,
+    setBigaStartAt,
+    startNow,
+    timeline,
     result,
     shareUrl,
   };

@@ -23,6 +23,10 @@ const KEYS = {
   bigaTempF: 'biga',
   tapTempF: 'tap',
   freezerTempF: 'freezer',
+  bigaFridgeH: 'fridge',
+  bigaRoomOnlyH: 'bigart',
+  ballRoomTempH: 'ballrt',
+  temperH: 'temper',
 } as const satisfies Record<keyof Inputs, string>;
 
 const SCHEDULE_CODE: Record<Schedule, string> = { retarded: 'r', classic: 'c' };
@@ -57,6 +61,19 @@ export function encodeInputs(inputs: Inputs): string {
   put(KEYS.bigaTempF, num(inputs.bigaTempF), inputs.bigaTempF === DEFAULT_INPUTS.bigaTempF);
   put(KEYS.tapTempF, num(inputs.tapTempF), inputs.tapTempF === DEFAULT_INPUTS.tapTempF);
   put(KEYS.freezerTempF, num(inputs.freezerTempF), inputs.freezerTempF === DEFAULT_INPUTS.freezerTempF);
+
+  // Both schedules' adjustments are carried even though only one is in use.
+  // Dropping the inactive one would save a few characters at the cost of a
+  // lossless round-trip: set the fridge to 18.5, switch to classic, reload, and
+  // the 18.5 would be gone.
+  put(KEYS.bigaFridgeH, num(inputs.bigaFridgeH), inputs.bigaFridgeH === DEFAULT_INPUTS.bigaFridgeH);
+  put(
+    KEYS.bigaRoomOnlyH,
+    num(inputs.bigaRoomOnlyH),
+    inputs.bigaRoomOnlyH === DEFAULT_INPUTS.bigaRoomOnlyH,
+  );
+  put(KEYS.ballRoomTempH, num(inputs.ballRoomTempH), inputs.ballRoomTempH === DEFAULT_INPUTS.ballRoomTempH);
+  put(KEYS.temperH, num(inputs.temperH), inputs.temperH === DEFAULT_INPUTS.temperH);
 
   return p.toString();
 }
@@ -107,6 +124,10 @@ export function decodeInputs(search: string, base: Inputs = DEFAULT_INPUTS): Inp
     bigaTempF: readNumber(p, KEYS.bigaTempF, 'bigaTempF', base.bigaTempF),
     tapTempF: readNumber(p, KEYS.tapTempF, 'tapTempF', base.tapTempF),
     freezerTempF: readNumber(p, KEYS.freezerTempF, 'freezerTempF', base.freezerTempF),
+    bigaFridgeH: readNumber(p, KEYS.bigaFridgeH, 'bigaFridgeH', base.bigaFridgeH),
+    bigaRoomOnlyH: readNumber(p, KEYS.bigaRoomOnlyH, 'bigaRoomOnlyH', base.bigaRoomOnlyH),
+    ballRoomTempH: readNumber(p, KEYS.ballRoomTempH, 'ballRoomTempH', base.ballRoomTempH),
+    temperH: readNumber(p, KEYS.temperH, 'temperH', base.temperH),
   };
 }
 

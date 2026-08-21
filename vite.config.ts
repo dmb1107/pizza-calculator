@@ -13,5 +13,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
+    // Pin the zone so the timeline's daylight-saving and midnight cases are
+    // deterministic instead of depending on whoever runs the suite.
+    env: { TZ: 'America/New_York' },
   },
 });

@@ -15,6 +15,11 @@ export const DEFAULT_INPUTS: Inputs = {
   bigaTempF: 64,
   tapTempF: C.DEFAULT_TAP_F,
   freezerTempF: C.DEFAULT_FREEZER_F,
+
+  bigaFridgeH: 19,
+  bigaRoomOnlyH: 16,
+  ballRoomTempH: 1.5,
+  temperH: 2.5,
 };
 
 export const DEFAULT_CALIBRATION: Calibration = {
@@ -33,6 +38,7 @@ export const DEFAULT_PERSISTED: Persisted = {
   calibration: DEFAULT_CALIBRATION,
   panels: DEFAULT_PANELS,
   freezerTempF: DEFAULT_INPUTS.freezerTempF,
+  bigaStartAtIso: '',
 };
 
 /**
@@ -57,6 +63,12 @@ export const BOUNDS = {
 
   frictionFactorF: { min: 0, max: 40, step: 0.1 },
   ddtOverrideF: { min: 60, max: 90, step: 0.5 },
+
+  // §4.7 states each of these ranges explicitly.
+  bigaFridgeH: { min: 18, max: 20, step: 0.5 },
+  bigaRoomOnlyH: { min: 12, max: 18, step: 0.5 },
+  ballRoomTempH: { min: 1, max: 2, step: 0.25 },
+  temperH: { min: 2, max: 3, step: 0.25 },
 } as const;
 
 export type BoundedField = keyof typeof BOUNDS;

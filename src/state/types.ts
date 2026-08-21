@@ -28,6 +28,16 @@ export interface Inputs {
   bigaTempF: number;
   tapTempF: number;
   freezerTempF: number;
+
+  // Schedule fine-tuning — §4.7 marks each of these user-adjustable.
+  /** Retarded only. 18–20 h. */
+  bigaFridgeH: number;
+  /** Classic only. 12–18 h at 61–65 °F. */
+  bigaRoomOnlyH: number;
+  /** 1–2 h. */
+  ballRoomTempH: number;
+  /** 2–3 h. */
+  temperH: number;
 }
 
 /** One recorded friction-factor measurement. */
@@ -66,6 +76,12 @@ export interface Persisted {
   panels: PanelPrefs;
   /** §6: freezer temp "rarely changes; persist it". */
   freezerTempF: number;
+  /**
+   * When the biga was mixed, ISO. Persisted rather than serialized to the URL:
+   * design priority 4 wants a session to survive a refresh, but a fixed
+   * timestamp in a shared link goes stale the moment it is sent.
+   */
+  bigaStartAtIso: string;
 }
 
 /** The resolved friction factor and where it came from. */

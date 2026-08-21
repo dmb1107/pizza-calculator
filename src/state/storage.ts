@@ -65,6 +65,13 @@ function parseFrictionFactors(raw: unknown): Calibration['frictionFactors'] {
   return out;
 }
 
+/** An ISO instant we wrote ourselves, or '' if it is anything else. */
+function parseIsoInstant(raw: unknown): string {
+  if (typeof raw !== 'string' || raw === '') return '';
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? '' : raw;
+}
+
 function parsePanels(raw: unknown): PanelPrefs {
   if (!isRecord(raw)) return DEFAULT_PANELS;
   const bool = (v: unknown, fallback: boolean) => (typeof v === 'boolean' ? v : fallback);
@@ -105,6 +112,7 @@ export function loadPersisted(storage: StorageLike | null): Persisted {
       'freezerTempF',
       finiteOr(parsed['freezerTempF'], DEFAULT_PERSISTED.freezerTempF),
     ),
+    bigaStartAtIso: parseIsoInstant(parsed['bigaStartAtIso']),
   };
 }
 

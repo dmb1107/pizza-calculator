@@ -37,6 +37,10 @@ const CUSTOM: Inputs = {
   bigaTempF: 58.5,
   tapTempF: 55,
   freezerTempF: 4,
+  bigaFridgeH: 18.5,
+  bigaRoomOnlyH: 14,
+  ballRoomTempH: 1.25,
+  temperH: 3,
 };
 
 describe('URL serialization', () => {
@@ -149,6 +153,7 @@ describe('localStorage persistence', () => {
       },
       panels: { batch: true, temperatures: true, calibration: false },
       freezerTempF: 4,
+      bigaStartAtIso: '2026-08-21T13:00:00.000Z',
     };
     savePersisted(s, value);
     expect(loadPersisted(s)).toEqual(value);

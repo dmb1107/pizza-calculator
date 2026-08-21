@@ -69,8 +69,8 @@ npm run preview    # serve dist/ locally
 
 ```
 src/lib/          pure calculation — no UI imports, this is what gets unit-tested
-                  engine.ts (§4 formulas), format.ts (display rounding),
-                  constants.ts (§3)
+                  engine.ts (§4 formulas), timeline.ts (§4.7 schedule),
+                  format.ts (display rounding), constants.ts (§3)
 src/content/      step and concept prose (steps.ts, concepts.ts)
 src/components/   React components
 src/state/        URL + localStorage persistence
@@ -100,6 +100,11 @@ don't inline a `toFixed` somewhere else.
   already rounded to 1 decimal, so assertions that sum several of them need a
   wider tolerance. `tests/vectors.ts` exports `TOL`; see the note in
   `tests/vectors.test.ts`.
+- **Timeline arithmetic is in absolute milliseconds, never calendar fields.**
+  Fermentation follows the thermometer, not the clock, so a stage lasts its
+  stated number of real hours across a daylight-saving change. Tests pin
+  `TZ=America/New_York` (set in `vite.config.ts`) so those cases are
+  deterministic.
 - **Markdown must render tables.** Step `detail` and concept `body` contain GFM
   tables and multi-paragraph prose — `react-markdown` + `remark-gfm`, not a
   text renderer.

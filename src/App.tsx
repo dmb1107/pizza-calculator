@@ -1,13 +1,14 @@
 import { CopyButton } from './components/CopyButton';
 import { IngredientsCard, TargetsCard, WarningsList, WaterIceCard } from './components/cards';
 import { BatchPanel, CalibrationPanel, TemperaturesPanel } from './components/panels';
+import { TimelineCard } from './components/TimelineCard';
 import { useAppState } from './state/useAppState';
 
 /**
- * Tasks 2–3: the §6 input panels and the §7 output cards.
+ * Tasks 2–4: the §6 input panels, the §7 output cards, and the §4.7 timeline.
  *
  * Warnings sit above where the step list will go (§7.3) and are never inside a
- * collapsed panel. The timeline and steps land in Tasks 4–5.
+ * collapsed panel. The steps land in Task 5.
  */
 export default function App() {
   const state = useAppState();
@@ -38,10 +39,11 @@ export default function App() {
         <IngredientsCard result={result} />
         <WaterIceCard result={result} />
         <TargetsCard result={result} />
+        <TimelineCard {...state} />
       </div>
 
       <p className="mt-6 rounded-xl border border-dashed border-stone-300 p-4 text-sm text-stone-500 dark:border-stone-700">
-        Timeline and the guided step list land in Tasks 4–5.
+        The guided step list lands in Task 5.
       </p>
     </div>
   );
