@@ -82,6 +82,8 @@ export interface Persisted {
    * timestamp in a shared link goes stale the moment it is sent.
    */
   bigaStartAtIso: string;
+  /** Ids of steps ticked off. §7.5: "a checkbox that persists". */
+  checkedSteps: string[];
 }
 
 /** The resolved friction factor and where it came from. */

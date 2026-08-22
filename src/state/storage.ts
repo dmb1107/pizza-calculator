@@ -65,6 +65,12 @@ function parseFrictionFactors(raw: unknown): Calibration['frictionFactors'] {
   return out;
 }
 
+/** A list of step ids, dropping anything that isn't a string. */
+function parseStringArray(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((v): v is string => typeof v === 'string');
+}
+
 /** An ISO instant we wrote ourselves, or '' if it is anything else. */
 function parseIsoInstant(raw: unknown): string {
   if (typeof raw !== 'string' || raw === '') return '';
@@ -113,6 +119,7 @@ export function loadPersisted(storage: StorageLike | null): Persisted {
       finiteOr(parsed['freezerTempF'], DEFAULT_PERSISTED.freezerTempF),
     ),
     bigaStartAtIso: parseIsoInstant(parsed['bigaStartAtIso']),
+    checkedSteps: parseStringArray(parsed['checkedSteps']),
   };
 }
 

@@ -1,18 +1,23 @@
+import { useState } from 'react';
+import { ConceptDrawer } from './components/ConceptDrawer';
 import { CopyButton } from './components/CopyButton';
+import { StepList } from './components/StepList';
 import { IngredientsCard, TargetsCard, WarningsList, WaterIceCard } from './components/cards';
 import { BatchPanel, CalibrationPanel, TemperaturesPanel } from './components/panels';
 import { TimelineCard } from './components/TimelineCard';
 import { useAppState } from './state/useAppState';
 
 /**
- * Tasks 2–4: the §6 input panels, the §7 output cards, and the §4.7 timeline.
+ * Tasks 2–6: the §6 input panels, the §7 output cards, the §4.7 timeline, the
+ * §8.2 step list and the §8.3 concept drawer.
  *
- * Warnings sit above where the step list will go (§7.3) and are never inside a
- * collapsed panel. The steps land in Task 5.
+ * Warnings sit above the step list (§7.3) and are never inside a collapsed
+ * panel. Timers are Task 7.
  */
 export default function App() {
   const state = useAppState();
   const { result, shareUrl } = state;
+  const [concept, setConcept] = useState<string | null>(null);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
@@ -42,9 +47,15 @@ export default function App() {
         <TimelineCard {...state} />
       </div>
 
+      <div className="mt-6">
+        <StepList state={state} onOpenConcept={setConcept} />
+      </div>
+
       <p className="mt-6 rounded-xl border border-dashed border-stone-300 p-4 text-sm text-stone-500 dark:border-stone-700">
-        The guided step list lands in Task 5.
+        Step timers land in Task 7.
       </p>
+
+      <ConceptDrawer id={concept} onClose={() => setConcept(null)} />
     </div>
   );
 }

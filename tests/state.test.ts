@@ -154,6 +154,7 @@ describe('localStorage persistence', () => {
       panels: { batch: true, temperatures: true, calibration: false },
       freezerTempF: 4,
       bigaStartAtIso: '2026-08-21T13:00:00.000Z',
+      checkedSteps: ['biga-1', 'biga-2'],
     };
     savePersisted(s, value);
     expect(loadPersisted(s)).toEqual(value);

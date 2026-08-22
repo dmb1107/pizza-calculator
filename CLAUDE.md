@@ -31,6 +31,12 @@ than guessing — the numbers are load-bearing and were derived carefully.
 cross-checked. A plausible-looking simplification produces a wrong answer that
 won't be obvious until 50 hours of fermentation later.
 
+**The §8 prose is generated from the spec and guarded by a test.**
+`src/content/steps.ts` and `concepts.ts` were generated from §8.2/§8.3, and
+`tests/steps.test.ts` re-parses the spec on every run and compares character for
+character. To change step or concept prose, edit the spec and regenerate — hand
+editing those files turns the suite red, which is deliberate.
+
 **Do not shorten the prose in spec §8.** The step `detail` blocks are the point
 of the app, not decoration on it. They are the reasoning that makes the recipe
 worth following rather than obeying. Use them verbatim: don't summarize, don't

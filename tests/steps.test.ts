@@ -1,0 +1,205 @@
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+import { CONCEPTS } from '../src/content/concepts';
+import { STEPS } from '../src/content/steps';
+
+/**
+ * Verbatim-fidelity check — WEBSITE-SPEC-biga-calculator.md §8.
+ *
+ * §8 says the detail prose IS the content: "Use it verbatim … Don't summarize
+ * it, don't rewrite it in your own voice, don't trim it for brevity." §12 goes
+ * further: "truncated explanations are the most likely way this build goes
+ * wrong."
+ *
+ * So rather than diffing by eye once, this re-parses §8.2 and §8.3 out of the
+ * spec on every run and compares character for character. Shortening a detail
+ * block, dropping a table row, or letting the spec drift ahead of the content
+ * files all turn the suite red.
+ */
+
+const SPEC = readFileSync('docs/WEBSITE-SPEC-biga-calculator.md', 'utf8');
+
+/** Pull a `**name:** value` field out of a step chunk. */
+function field(chunk: string, name: string): string | undefined {
+  const re = new RegExp(`^\\*\\*${name}:\\*\\*\\s*(.*)$`, 'm');
+  return re.exec(chunk)?.[1]?.trim();
+}
+
+/** Pull the blockquote that follows a `**name:**` marker. */
+function blockquote(chunk: string, marker: string): string | undefined {
+  const lines = chunk.split('\n');
+  const start = lines.findIndex((l) => l.trim() === marker);
+  if (start < 0) return undefined;
+  const out: string[] = [];
+  for (let i = start + 1; i < lines.length; i++) {
+    const l = lines[i] as string;
+    if (l.startsWith('>')) out.push(l.replace(/^> ?/, ''));
+    else if (l.trim() === '' && out.length && lines[i + 1]?.startsWith('>')) out.push('');
+    else if (l.trim() === '' && out.length === 0) continue;
+    else break;
+  }
+  while (out.length && out.at(-1) === '') out.pop();
+  return out.join('\n');
+}
+
+/** Pull the markdown table that follows a `**name:**` marker. */
+function table(chunk: string, marker: string): { headers: string[]; rows: string[][] } | undefined {
+  const lines = chunk.split('\n');
+  const start = lines.findIndex((l) => l.trim() === marker);
+  if (start < 0) return undefined;
+  const raw: string[][] = [];
+  for (let i = start + 1; i < lines.length; i++) {
+    const l = (lines[i] as string).trim();
+    if (!l.startsWith('|')) {
+      if (l === '' && raw.length === 0) continue;
+      break;
+    }
+    raw.push(
+      l
+        .slice(1, -1)
+        .split('|')
+        .map((c) => c.trim()),
+    );
+  }
+  if (raw.length < 3) return undefined;
+  return { headers: raw[0] as string[], rows: raw.slice(2) };
+}
+
+const specSteps = SPEC.slice(SPEC.indexOf('### 8.2 Steps'), SPEC.indexOf('### 8.3 Concepts'))
+  .split(/\n#### /)
+  .slice(1)
+  .map((chunk) => {
+    const head = /^`([a-z0-9-]+)` — (.+)$/m.exec(chunk) as RegExpExecArray;
+    return {
+      id: head[1] as string,
+      title: (head[2] as string).trim(),
+      phase: field(chunk, 'phase'),
+      summary: field(chunk, 'summary'),
+      summaryRetarded: field(chunk, 'summary \\(retarded\\)'),
+      summaryClassic: field(chunk, 'summary \\(classic\\)'),
+      values: field(chunk, 'values'),
+      timer: field(chunk, 'timer'),
+      speed: field(chunk, 'speed'),
+      watchFor: field(chunk, 'watchFor'),
+      concepts: field(chunk, 'concepts'),
+      detail: blockquote(chunk, '**detail:**'),
+      troubleshoot: table(chunk, '**troubleshoot:**'),
+    };
+  });
+
+describe('§8.2 steps are reproduced verbatim', () => {
+  it('has all 18 steps, in spec order', () => {
+    expect(specSteps).toHaveLength(18);
+    expect(STEPS.map((s) => s.id)).toEqual(specSteps.map((s) => s.id));
+  });
+
+  it.each(specSteps.map((s) => [s.id, s] as const))('%s matches the spec', (id, spec) => {
+    const step = STEPS.find((s) => s.id === id);
+    expect(step, `${id} is missing from steps.ts`).toBeDefined();
+    if (!step) return;
+
+    expect(step.title, `${id} title`).toBe(spec.title);
+    expect(step.phase, `${id} phase`).toBe(spec.phase);
+
+    // The prose. This is the assertion the whole file exists for.
+    expect(step.detail, `${id} detail`).toBe(spec.detail);
+
+    if (spec.summary) expect(step.summary, `${id} summary`).toBe(spec.summary);
+    expect(step.summaryRetarded, `${id} retarded summary`).toBe(spec.summaryRetarded);
+    expect(step.summaryClassic, `${id} classic summary`).toBe(spec.summaryClassic);
+    expect(step.watchFor, `${id} watchFor`).toBe(spec.watchFor);
+    expect(step.timerLabel, `${id} timer`).toBe(spec.timer);
+    expect(step.speed?.label, `${id} speed`).toBe(spec.speed);
+
+    expect(step.values?.join(' · '), `${id} values`).toBe(spec.values);
+    expect(step.concepts?.join(' '), `${id} concepts`).toBe(spec.concepts);
+    expect(step.troubleshoot, `${id} troubleshoot`).toEqual(spec.troubleshoot);
+  });
+
+  it('loses no detail prose to truncation', () => {
+    // Belt and braces: compare total character counts, so a silently dropped
+    // block would show up even if an id somehow went missing above.
+    const specChars = specSteps.reduce((n, s) => n + (s.detail?.length ?? 0), 0);
+    const ourChars = STEPS.reduce((n, s) => n + (s.detail?.length ?? 0), 0);
+    expect(ourChars).toBe(specChars);
+    expect(specChars).toBeGreaterThan(10_000);
+  });
+
+  it('keeps mix-4 as a two-column table', () => {
+    // §8.1 types troubleshoot as { symptom, cause, fix }, but this table is
+    // "Probe reads" / "Do". Content wins over the interface sketch.
+    const step = STEPS.find((s) => s.id === 'mix-4');
+    expect(step?.troubleshoot?.headers).toEqual(['Probe reads', 'Do']);
+    expect(step?.troubleshoot?.rows).toHaveLength(4);
+  });
+
+  it('gives biga-4 both schedule summaries and no plain one in the spec', () => {
+    const step = STEPS.find((s) => s.id === 'biga-4');
+    expect(step?.summaryRetarded).toContain('2 hours at room temperature');
+    expect(step?.summaryClassic).toContain('{bigaRoomOnly} hours at 61–65 °F');
+  });
+
+  it('covers every phase', () => {
+    expect(new Set(STEPS.map((s) => s.phase))).toEqual(new Set(['biga', 'mix', 'bulk', 'bake']));
+  });
+});
+
+const specConcepts = (() => {
+  const body = SPEC.slice(SPEC.indexOf('### 8.3 Concepts'), SPEC.indexOf('## 9. Reference tables'));
+  const lines = body.split('\n');
+  const out: { id: string; title: string; body: string[] }[] = [];
+  let cur: { id: string; title: string; body: string[] } | null = null;
+  for (const l of lines) {
+    const m = /^\*\*`([a-z0-9-]+)`\*\* — \*(.+)\*$/.exec(l.trim());
+    if (m) {
+      cur = { id: m[1] as string, title: m[2] as string, body: [] };
+      out.push(cur);
+      continue;
+    }
+    if (!cur) continue;
+    if (l.startsWith('>')) cur.body.push(l.replace(/^> ?/, ''));
+    else if (l.trim() === '' && cur.body.length) cur.body.push('');
+    else if (l.trim() !== '') cur = null;
+  }
+  return out.map((c) => {
+    while (c.body.length && c.body.at(-1) === '') c.body.pop();
+    return { id: c.id, title: c.title, body: c.body.join('\n') };
+  });
+})();
+
+describe('§8.3 concepts are reproduced verbatim', () => {
+  it('has all 12 concepts, in spec order', () => {
+    expect(specConcepts).toHaveLength(12);
+    expect(CONCEPTS.map((c) => c.id)).toEqual(specConcepts.map((c) => c.id));
+  });
+
+  it.each(specConcepts.map((c) => [c.id, c] as const))('%s matches the spec', (id, spec) => {
+    const concept = CONCEPTS.find((c) => c.id === id);
+    expect(concept?.title, `${id} title`).toBe(spec.title);
+    expect(concept?.body, `${id} body`).toBe(spec.body);
+  });
+
+  it('loses no concept prose to truncation', () => {
+    const specChars = specConcepts.reduce((n, c) => n + c.body.length, 0);
+    expect(CONCEPTS.reduce((n, c) => n + c.body.length, 0)).toBe(specChars);
+    expect(specChars).toBeGreaterThan(9_000);
+  });
+});
+
+describe('cross-references resolve', () => {
+  it('every concept a step links to exists', () => {
+    const ids = new Set(CONCEPTS.map((c) => c.id));
+    for (const step of STEPS) {
+      for (const id of step.concepts ?? []) {
+        expect(ids.has(id), `${step.id} links to unknown concept "${id}"`).toBe(true);
+      }
+    }
+  });
+
+  it('names the three concepts §8.3 says the cards must link to', () => {
+    const ids = new Set(CONCEPTS.map((c) => c.id));
+    for (const id of ['thermal-model', 'ice-physics', 'friction-factor']) {
+      expect(ids.has(id), `${id} is required by the calculator cards`).toBe(true);
+    }
+  });
+});

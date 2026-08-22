@@ -4,7 +4,7 @@ Derived from [`docs/WEBSITE-SPEC-biga-calculator.md`](docs/WEBSITE-SPEC-biga-cal
 Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
-**Status:** Tasks 0–4 complete. Task 5 next.
+**Status:** Tasks 0–6 complete. Task 7 (timers) next.
 
 ---
 
@@ -266,40 +266,69 @@ produce: 25.83 h with every adjustable at its minimum, 29.83 h at its maximum.
 
 ---
 
-## Task 5 — Step list
+## Task 5 — Step list ✅  ·  Task 6 — Concepts drawer ✅
 
-**The highest-risk task for content fidelity, not for code.**
+Built together: the step list carries "read more" concept links, and shipping
+those pointing at nothing would have been worse than doing both.
 
-- [ ] `src/content/steps.ts` — the `Step` interface from §8.1, all 18 steps
-      from §8.2 (`biga-1..5`, `mix-1..7`, `bulk-1..4`, `bake-1..2`).
-- [ ] `{brace}` tokens bind to engine output. Needed bindings: `bigaFlour`,
-      `bigaWater`, `bigaADY`, `freshFlour`, `freshWater`, `freshWater60`,
-      `freshWater40`, `salt`, `probeTarget`, `ddt`, `balls`, `ballWeight`,
-      `bigaFridge`, `bigaRoomOnly`, `ballRoomTemp`, `coldFerment`, `temper`.
-      Unknown token → loud failure, never a silent empty string.
-- [ ] `biga-4` has schedule-dependent summaries (retarded vs classic).
-- [ ] Markdown renderer handling **tables** — `biga-5`, `mix-4`, `bulk-3` and
-      `bake-2` all contain them.
-- [ ] Checkbox per step, persisted.
-- [ ] `watchFor` and `troubleshoot` rendered distinctly from `detail`.
-- [ ] `concepts` links open the Task 6 drawer.
+`src/content/steps.ts` (18 steps), `src/content/concepts.ts` (12 concepts),
+`src/lib/bindTokens.ts`, and `StepList` / `Markdown` / `ConceptDrawer`.
 
-> **Before moving on, diff `steps.ts` against spec §8 line by line.** The spec
-> names truncated explanations as the most likely way this build goes wrong.
-> Verbatim means verbatim.
+- [x] All 18 §8.2 steps, all 12 §8.3 concepts, verbatim
+- [x] `{brace}` bindings for all 16 tokens
+- [x] GFM markdown with real tables
+- [x] Per-step checkbox, persisted; progress counter and a reset
+- [x] `watchFor` and `troubleshoot` rendered distinctly from `detail`
+- [x] `biga-4`'s two schedule-dependent summaries
+- [x] Concept drawer, reachable from step links
 
----
+**219 tests green** (53 new).
 
-## Task 6 — Concepts drawer
+### The prose is guarded by a test, not by a one-time read-through
 
-- [ ] `src/content/concepts.ts` — all 12 from §8.3: `why-biga`,
-      `formula-rationale`, `schedule-architecture`, `thermal-model`,
-      `ice-physics`, `friction-factor`, `giorilli-standard`, `mix-dont-knead`,
-      `why-61-65`, `no-creep-speed`, `oil-not-flour`, `burn-ring`.
-- [ ] Drawer opens from step links *and* from the calculator cards
-      (`thermal-model` + `ice-physics` from the water card, `friction-factor`
-      from the calibration panel).
-- [ ] Verbatim prose, GFM tables rendered.
+§12 warns that "truncated explanations are the most likely way this build goes
+wrong", so rather than diffing by eye once, `tests/steps.test.ts` **re-parses
+§8.2 and §8.3 out of the spec on every run** and compares every field character
+for character. The content files were generated from the spec rather than
+transcribed, and the test is what keeps them honest afterwards.
+
+Mutation-tested to confirm it is not vacuous. All three caught:
+
+| Deliberate break | Result |
+|---|---|
+| One paragraph removed from `bulk-3` | 2 tests fail |
+| One `troubleshoot` row dropped | 1 test fails |
+| One sentence reworded "in my own voice" | 2 tests fail |
+
+To change the prose, edit the spec and regenerate. Hand-editing the content
+files turns the suite red, which is the intent.
+
+### Departures worth knowing
+
+**`troubleshoot` is a table, not `{ symptom, cause, fix }[]`.** §8.1 sketches
+three fixed fields, but `mix-4`'s table is two columns ("Probe reads" / "Do")
+while `biga-5` and `bake-2` are three. Headers are carried through as written,
+because forcing the three-field shape would mean distorting content §8 says to
+reproduce verbatim. A test pins `mix-4` at two columns.
+
+**An unbound `{token}` renders `⟨unknown token: name⟩`, never an empty string.**
+A step reading "Weigh  g of flour" looks like the app is working. A test proves
+no token in any step or concept is currently unbindable, and a second test
+proves no binding is unused — which catches a token renamed in the spec.
+
+### A layout bug the tests could not have caught
+
+Expanding a step with a wide table pushed the whole page to 526 px inside a
+375 px viewport and clipped every paragraph. Cause: the `<li>` is a grid item,
+and grid items default to `min-width: auto`, so the table's `min-width`
+propagated up through the ancestor chain instead of scrolling inside its own
+`overflow-x-auto` wrapper. Fixed with `min-w-0` on the item.
+
+Worth recording that the first fix attempt was wrong: a remaining 15 px looked
+like more overflow, and removing the table wrappers' negative margins did not
+shift it. It was the vertical scrollbar — `scrollWidth === innerWidth`, and
+`clientWidth` excludes the scrollbar. The margins were restored once the real
+cause was clear.
 
 ---
 

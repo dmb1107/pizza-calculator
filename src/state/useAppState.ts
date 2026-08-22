@@ -25,6 +25,7 @@ import {
   savePersisted,
 } from './storage';
 import { decodeInputs, encodeInputs } from './url';
+import { tokenValues } from '../lib/bindTokens';
 import type { Calibration, EffectiveFriction, Inputs, PanelPrefs, Persisted } from './types';
 
 function currentSearch(): string {
@@ -67,6 +68,13 @@ export interface AppState {
   panels: PanelPrefs;
   togglePanel: (panel: keyof PanelPrefs) => void;
 
+  /** Step ids ticked off, persisted across reloads. */
+  checkedSteps: ReadonlySet<string>;
+  toggleStep: (id: string) => void;
+  clearCheckedSteps: () => void;
+  /** {token} bindings for step and concept prose. */
+  tokens: Record<string, string>;
+
   /** When the biga goes in. t = 0 for the timeline. */
   bigaStartAt: Date;
   setBigaStartAt: (at: Date) => void;
@@ -100,6 +108,10 @@ export function useAppState(): AppState {
     return stored ? new Date(stored) : roundToNextQuarterHour(new Date());
   });
 
+  const [checkedSteps, setCheckedSteps] = useState<Set<string>>(
+    () => new Set(initial.persisted.checkedSteps),
+  );
+
   // Re-ticks the "you are here" marker without re-rendering on every frame.
   const [now, setNow] = useState<Date>(() => new Date());
   useEffect(() => {
@@ -124,9 +136,10 @@ export function useAppState(): AppState {
       panels,
       freezerTempF: inputs.freezerTempF,
       bigaStartAtIso: bigaStartAt.toISOString(),
+      checkedSteps: [...checkedSteps],
     };
     savePersisted(storage, value);
-  }, [storage, calibration, panels, inputs.freezerTempF, bigaStartAt]);
+  }, [storage, calibration, panels, inputs.freezerTempF, bigaStartAt, checkedSteps]);
 
   const setInput = useCallback(<K extends keyof Inputs>(key: K, value: Inputs[K]) => {
     setInputs((prev) => {
@@ -231,6 +244,36 @@ export function useAppState(): AppState {
 
   const startNow = useCallback(() => setBigaStartAt(roundToNextQuarterHour(new Date())), []);
 
+  const toggleStep = useCallback((id: string) => {
+    setCheckedSteps((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const clearCheckedSteps = useCallback(() => setCheckedSteps(new Set()), []);
+
+  const tokens = useMemo(
+    () =>
+      tokenValues(result, {
+        bigaFridgeH: inputs.bigaFridgeH,
+        bigaRoomOnlyH: inputs.bigaRoomOnlyH,
+        ballRoomTempH: inputs.ballRoomTempH,
+        coldFermentH: inputs.coldFermentH,
+        temperH: inputs.temperH,
+      }),
+    [
+      result,
+      inputs.bigaFridgeH,
+      inputs.bigaRoomOnlyH,
+      inputs.ballRoomTempH,
+      inputs.coldFermentH,
+      inputs.temperH,
+    ],
+  );
+
   const shareUrl = useMemo(() => {
     if (typeof window === 'undefined') return '';
     const qs = encodeInputs(inputs);
@@ -253,6 +296,10 @@ export function useAppState(): AppState {
     autoDdtF: defaultDdtF(inputs.balls),
     panels,
     togglePanel,
+    checkedSteps,
+    toggleStep,
+    clearCheckedSteps,
+    tokens,
     bigaStartAt,
     setBigaStartAt,
     startNow,

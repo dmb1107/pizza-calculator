@@ -39,6 +39,7 @@ export const DEFAULT_PERSISTED: Persisted = {
   panels: DEFAULT_PANELS,
   freezerTempF: DEFAULT_INPUTS.freezerTempF,
   bigaStartAtIso: '',
+  checkedSteps: [],
 };
 
 /**
