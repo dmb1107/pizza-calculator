@@ -89,10 +89,10 @@ describe('§4.7 stage durations', () => {
       expect(Math.abs(totalAt(cold) - expected)).toBeLessThanOrEqual(2);
     });
 
-    it('keeps fixed overhead inside the stated 25.3–30.8 h band', () => {
+    it('keeps fixed overhead inside the stated 25.6–30.8 h band', () => {
       for (const cold of [6, 12, 24, 30, 36]) {
         const overhead = totalAt(cold) - cold;
-        expect(overhead, `overhead at ${cold} h cold`).toBeGreaterThanOrEqual(25.3);
+        expect(overhead, `overhead at ${cold} h cold`).toBeGreaterThanOrEqual(25.6);
         expect(overhead, `overhead at ${cold} h cold`).toBeLessThanOrEqual(30.8);
       }
     });
@@ -107,37 +107,58 @@ describe('§4.7 stage durations', () => {
     });
 
     /**
-     * §4.8 quotes fixed overhead as **25.3–30.8 h** across the full input
-     * ranges, with **27.8 h at the defaults**. The band was recomputed after
-     * the shaped rise time replaced the fixed `ballRoomTemp` stage — the old
-     * 25.5–30 h predated it and the 180-minute clamp reaches past 30.
+     * §4.8 quotes fixed overhead as **25.6–30.8 h** across the full input
+     * ranges, with **27.8 h at the defaults**. The defaults are asserted as an
+     * equality; the band is a range check.
      *
-     * The defaults are asserted as an equality; the band is a range check.
+     * `bulkRest` (1 h) and `divideBall` (0.33 h) are FIXED by §4.7 and are not
+     * inputs. The recipe's "45–60 min" for the bulk rest is guidance to the
+     * baker — rest until the gluten relaxes — not a scheduling variable, and
+     * 60 min is the planning number. Flexing either is what put an earlier
+     * version of this band at 25.3.
      */
     it('is exactly 27.8 h at the defaults', () => {
       expect(overheadOf(DEFAULTS)).toBeCloseTo(27.83, 2);
     });
 
-    it('stays inside the 25.3–30.8 h band across the full input ranges', () => {
+    it('spans exactly 25.6–30.8 h across the full input ranges', () => {
       // The extremes use the shaped-rise CLAMP bounds, not the 71–144 min the
-      // model reaches at realistic dough temperatures.
+      // model reaches at realistic dough temperatures. Both ends are tight.
       const lowest: ScheduleAdjustments = {
         bigaFridgeH: 18, bigaRoomOnlyH: 16, ballRoomTempH: 45 / 60, coldFermentH: 24, temperH: 2,
       };
       const highest: ScheduleAdjustments = {
         bigaFridgeH: 20, bigaRoomOnlyH: 16, ballRoomTempH: 180 / 60, coldFermentH: 24, temperH: 3,
       };
-      // The band is quoted to one decimal, so compare at that precision:
-      // the exact maximum is 30.83 h, which is the 30.8 the spec states.
+      expect(overheadOf(lowest)).toBeCloseTo(25.58, 2);
+      expect(overheadOf(highest)).toBeCloseTo(30.83, 2);
+
+      // The band is quoted to one decimal, so compare at that precision.
       for (const a of [lowest, DEFAULTS, highest]) {
         const rounded = Math.round(overheadOf(a) * 10) / 10;
-        expect(rounded, 'above the band').toBeGreaterThanOrEqual(25.3);
+        expect(rounded, 'above the band').toBeGreaterThanOrEqual(25.6);
         expect(rounded, 'below the band').toBeLessThanOrEqual(30.8);
       }
-      // The top of the band is reached exactly; the bottom carries a little
-      // slack because §4.7 fixes bulkRest at 1 h rather than its 45-min low end.
-      expect(overheadOf(highest)).toBeCloseTo(30.83, 2);
-      expect(overheadOf(lowest)).toBeCloseTo(25.58, 2);
+    });
+
+    /**
+     * A known simplification, recorded so it stays known rather than becoming
+     * an undiscovered bug. §4.7 models `divideBall` as a flat 20 min; the real
+     * time scales at roughly 1 min per ball on top of a fixed 10–15 min rest,
+     * so 3 balls takes ~15 min and 18 takes ~30. The worst case is ~10 min in
+     * a 52-hour schedule — 0.3% — and modelling it would change no decision.
+     *
+     * Deliberately NOT built. This test pins the flat behaviour so a future
+     * scaling rule is a conscious change rather than an accident.
+     */
+    it('models divide-and-ball as a flat 20 min, independent of batch size', () => {
+      // Batch size is not a parameter of the schedule at all — that is the
+      // simplification, stated structurally rather than by sampling sizes.
+      for (const schedule of ['retarded', 'classic'] as const) {
+        expect(stageDurations(schedule, DEFAULTS).divideBall).toBeCloseTo(0.33, 2);
+      }
+      expect(buildTimeline({ startAt: start, schedule: 'retarded', adjustments: DEFAULTS })
+        .stages.find((x) => x.key === 'divideBall')?.durationH).toBeCloseTo(0.33, 2);
     });
   });
 

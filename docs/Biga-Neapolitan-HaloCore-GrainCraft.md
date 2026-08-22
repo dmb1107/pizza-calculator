@@ -377,7 +377,7 @@ Published professional practice, and the fridge holds the biga at a stable tempe
 
 **Total: ~34 h (6 h cold) · ~52 h (24 h cold) · ~64 h (36 h cold)**
 
-Those are the defaults. Everything except the cold ferment is fixed overhead: **27.8 h at the defaults, 25.3–30.8 h across the full input ranges** — so the arithmetic is `cold ferment + ~28 h`.
+Those are the defaults. Everything except the cold ferment is fixed overhead: **27.8 h at the defaults, 25.6–30.8 h across the full input ranges** — so the arithmetic is `cold ferment + ~28 h`.
 
 The 36 h end lands at ~64 h total with every number still inside published guidance. Start at **24 h cold (~52 h total)** and work up.
 

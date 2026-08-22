@@ -212,8 +212,8 @@ Durations in hours, from biga mix at t=0. **These are authoritative** — they w
 | `bigaRoomOnly` | 0 | 16 | user-adjustable 12–18, at 61–65 °F |
 | `bigaTemper` | 1 | 0 | out of fridge before mixing |
 | `mix` | 0.5 | 0.5 | includes the 10-min rest |
-| `bulkRest` | 1 | 1 | |
-| `divideBall` | 0.33 | 0.33 | |
+| `bulkRest` | 1 | 1 | **fixed.** Recipe says 45–60 min; 60 is the planning number |
+| `divideBall` | 0.33 | 0.33 | **fixed.** Flat 20 min; real time scales ~1 min/ball, but the 18-ball case is only ~10 min off |
 | `ballRoomTemp` | **computed** | **computed** | see §4.8 — no longer fixed |
 | `coldFerment` | **user input** | **user input** | 6–36, default 24 |
 | `temper` | 2.5 | 2.5 | user-adjustable 2–3 |
@@ -242,7 +242,7 @@ A cool dough loses ground on the counter *and* on the way down to 40 °F; `COOLD
 
 **Planning mode:** before mixing there is no measurement, so default `T_actual = DDT`, giving exactly 90 min. When the user enters a real final dough temperature, recompute and shift every downstream stage.
 
-Fixed overhead outside the cold ferment spans **25.3–30.8 h** across the full input ranges (the upper bound uses the shaped-rise clamp of 180 min, which the old fixed 1–2 h stage could not reach). **At the defaults it is 27.8 h**, so total elapsed is `coldFerment + 27.8 h`: ~34 h at 6 h cold, ~52 h at 24 h, ~64 h at 36 h. Assert the defaults; treat the band as a range check, not an equality.
+Fixed overhead outside the cold ferment spans **25.6–30.8 h** across the full input ranges (the upper bound uses the shaped-rise clamp of 180 min, which the old fixed 1–2 h stage could not reach). **At the defaults it is 27.8 h**, so total elapsed is `coldFerment + 27.8 h`: ~34 h at 6 h cold, ~52 h at 24 h, ~64 h at 36 h. Assert the defaults; treat the band as a range check, not an equality.
 
 Show cumulative clock times for each stage plus a total elapsed figure. Flag when a stage lands between midnight and 6 AM — that's the main reason a schedule is unusable in practice, and it's the single most useful thing the backward mode solves.
 

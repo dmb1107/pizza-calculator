@@ -303,10 +303,21 @@ bowl-temperature test now asserts the **coefficient** (0.18 / 0.10 / 0.07 °F pe
 under 1 °F — rather than either endpoint. The test that encoded "the spec says
 30 but it's really 30.2" is gone.
 
-Worth noting on the new band: its maximum (30.83 h) and defaults (27.83 h)
-reproduce exactly, but the 25.3 h minimum assumes `bulkRest` at its 45-minute
-low end, which §4.7 fixes at 1 h. The lowest reachable value here is 25.58 h, so
-everything sits inside the band with a little slack at the bottom.
+The band's minimum was then corrected a second time. 25.3 h had come from
+flexing `bulkRest` to 0.75 h and `divideBall` to 0.25 h, both of which §4.7
+fixes. Held fixed, the answer is **25.58 h**, and the documented band is now
+**25.6–30.8 h** — tight at both ends, with the defaults unchanged at 27.83 h.
+
+Both stages stay fixed by design: the recipe's "45–60 min" bulk rest is guidance
+to the baker rather than a scheduling variable, and 60 min is the planning
+number.
+
+**One known simplification, recorded and deliberately not built.** §4.7 models
+`divideBall` as a flat 20 min; real handling scales at roughly 1 min per ball on
+top of a fixed rest, so 3 balls takes ~15 min and 18 takes ~30. The worst case
+is ~10 min inside a 52-hour schedule — 0.3% — and modelling it would change no
+decision. A test pins the flat behaviour so a future scaling rule would be a
+conscious change rather than an accident.
 
 ### The document discrepancy, resolved
 
