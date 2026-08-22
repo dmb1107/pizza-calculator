@@ -13,8 +13,6 @@ export const DEFAULT_INPUTS: Inputs = {
   flourSameAsRoom: true,
   flourTempF: 70,
   bigaTempF: 64,
-  tapTempF: C.DEFAULT_TAP_F,
-  freezerTempF: C.DEFAULT_FREEZER_F,
   bowlMassG: C.DEFAULT_BOWL_MASS_G,
 
   bigaFridgeH: 19,
@@ -42,7 +40,6 @@ export const DEFAULT_PANELS: PanelPrefs = {
 export const DEFAULT_PERSISTED: Persisted = {
   calibration: DEFAULT_CALIBRATION,
   panels: DEFAULT_PANELS,
-  freezerTempF: DEFAULT_INPUTS.freezerTempF,
   bigaStartAtIso: '',
   checkedSteps: [],
   bowlMassG: DEFAULT_INPUTS.bowlMassG,
@@ -55,8 +52,6 @@ export const DEFAULT_PERSISTED: Persisted = {
  * The Panel 1 ranges are given in §6 and are enforced. The temperature ranges
  * are not specified there — they exist only to reject nonsense arriving from a
  * hand-edited URL, so they are deliberately permissive rather than opinionated.
- * The one real ceiling is the freezer: above 32 °F there is no ice, and the
- * §4.4 effective-temperature formula stops meaning anything.
  */
 export const BOUNDS = {
   balls: { min: 1, max: 24, step: 1 },
@@ -66,8 +61,6 @@ export const BOUNDS = {
   roomTempF: { min: 32, max: 120, step: 0.5 },
   flourTempF: { min: 32, max: 120, step: 0.5 },
   bigaTempF: { min: 32, max: 120, step: 0.5 },
-  tapTempF: { min: 32, max: 120, step: 0.5 },
-  freezerTempF: { min: -20, max: 32, step: 1 },
 
   frictionFactorF: { min: 0, max: 40, step: 0.1 },
   ddtOverrideF: { min: 60, max: 90, step: 0.5 },

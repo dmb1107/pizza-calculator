@@ -197,7 +197,7 @@ It isn't just about speed. That range produces the **right ratio of lactic to ac
 - [Stadler Made — Biga](https://www.stadlermade.com/pizza/ingredients/biga/) — the warm-kitchen workaround
 - [Baking With Theory — Biga & Biga Calculator](https://www.bakingwiththeory.com/theory/biga/) — Giorilli formula and a time/temp calculator
 
-## 6. DDT, friction factor, and ice
+## 6. DDT, friction factor, and water temperature
 
 ### Target DDT
 
@@ -273,63 +273,29 @@ Bake 1 gave 14.04 °F, corroborated independently by the Phase C friction rate (
 - **FF still varies with batch size** on top of the bowl dilution — more total work, less surface area per unit mass to shed it. Keep a separate value per size.
 - **Heat of hydration is already included.** Flour releases 1.5–3 °F of exotherm as it absorbs water, during the mix, so it's inside the measured final temperature and inside FF. It is one combined number.
 
-### Ice
+### Hitting the water temperature
 
-**Why ice ≠ cold water, even at the same temperature**
+**Blend fridge-cold water with tap water until the thermometer reads the target.** No arithmetic, no ice, no measuring the split — pour, stir, read, adjust. Water is the one ingredient you can check before you commit it.
 
-Ice at 32 °F and water at 32 °F are the same *temperature* but not the same *energy*. To turn ice into water, you have to break the crystal lattice — and that energy goes entirely into breaking hydrogen bonds, not into raising temperature. A thermometer sitting in melting ice reads 32 °F the whole time, even as heat pours in. It's *hidden* from the thermometer, which is why it's called **latent heat**.
+**Fridge water covers roughly 38–60 °F. Tap and warmer covers the rest.** On the retarded-biga schedule the biga arrives at 45–60 °F, and across every batch size and every plausible kitchen that puts the required water between **52 °F and 90 °F.** Comfortably inside what you can blend by hand.
 
-The amount is not small: **80 cal/g.** That's the same energy it would take to heat that same gram of water from 32 °F all the way to 176 °F. Every gram of ice you add is carrying that much cooling capacity *before* it even starts behaving like cold water.
+Two directions to be ready for:
 
-So ice does two jobs and cold water only does one:
+- **Cold biga (the usual case)** — the biga is the dominant thermal term, so the colder it is, the *warmer* the water needs to be. A biga straight from the fridge can call for water in the 80s.
+- **Warm kitchen, warm biga** — fridge water, possibly most of the charge.
 
-| | Ice at 32 °F | Water at 32 °F |
-|---|---|---|
-| 1. Melt (absorbs 80 cal/g, no temp change) | ✅ | — |
-| 2. Warm from 32 °F up to final dough temp | ✅ | ✅ |
+**Get the water to temperature *before* it goes in.** Don't try to correct a blend once it's in the bowl.
 
-**Where −112 °F comes from.** The weighted-average formula assumes everything behaves like `mass × specific heat × temperature`. Ice doesn't — it has that extra 80 cal/g lump. So instead of adding a special term, we hide it in a fake starting temperature. 80 cal/g ÷ 1.00 cal/g·°C = 80 °C = **144 °F** of equivalent cooling. Subtract that from where the ice actually starts:
+<details>
+<summary>Ice — emergency use only</summary>
 
-> **32 − 144 = −112 °F**
+You should never need it. Sub-38 °F water is only reachable on the classic room-temperature biga track in a hot kitchen; on the retarded schedule the coldest the model ever asks for is about 52 °F.
 
-**−112 °F is fictitious.** Nothing in the bowl is ever remotely that cold. It's a bookkeeping device that makes ice slot into the same linear equation as water and produce the exactly correct answer.
+If you do end up there: melting ice absorbs 80 cal/g with no temperature change, which is the same energy as cooling that gram of water by 144 °F. So ice behaves like water at `−112 − 0.5 × (32 − T_ice)` — your 16 °F freezer gives −120 °F. It's a bookkeeping trick, not a real temperature.
 
-**Worked example.** 100 g added to 900 g of 80 °F water:
+Keep it under ~35% of the water and make sure every gram melts before you take a reading, or the dough reads on target and then drifts cold.
 
-- 100 g of **32 °F water** → (100×32 + 900×80) / 1000 = **75.2 °F**
-- 100 g of **32 °F ice** → (100×−112 + 900×80) / 1000 = **60.8 °F**
-
-Same mass, same starting temperature, **14.4 °F** difference. Verified against a real energy balance: 900 × (26.67 − T) = 100 × 80 + 100 × T gives T = 16.0 °C = 60.8 °F. ✅
-
-**Freezer ice** starts below 32 °F and has to warm up to freezing before it can even begin melting. Ice's specific heat is about half water's, so that leg costs another 0.5 × (32 − T_ice) °F-equivalents:
-
-> ### **Effective temp = −112 − 0.5 × (32 − T_ice)**
-
-**Your freezer measures 16 °F, so your ice is −120 °F effective.** That's the number to use. (Recompute if the freezer setting ever changes: 0 °F ice would be −128, ice sitting out until wet is −112.)
-
-Per **100 g** of final-mix water, from a 60 °F tap, using **your −120 °F ice**:
-
-| Target water temp | Ice (g) | Tap water (g) |
-|---:|---:|---:|
-| 55 °F | 2.8 | 97.2 |
-| 50 °F | 5.6 | 94.4 |
-| 45 °F | 8.3 | 91.7 |
-| 40 °F | 11.1 | 88.9 |
-| 35 °F | 13.9 | 86.1 |
-| 30 °F | 16.7 | 83.3 |
-| 25 °F | 19.4 | 80.6 |
-| 20 °F | 22.2 | 77.8 |
-| 15 °F | 25.0 | 75.0 |
-
-Final-mix water per batch: **3 balls 176.2 g · 6 balls 352.5 g · 9 balls 528.7 g**
-
-**Rules:** keep ice under ~35% of the water, use small/crushed cubes, add it with the **first** water addition, and confirm no ice remains before you finish mixing.
-
-**How much does getting the ice temperature right actually matter?** Less than you'd think at small doses, more than nothing at large ones. Sizing ice with the wet-ice number (−112) when yours is really −120 leaves the dough about **0.15 °F** cold on a light chill, rising to **0.6 °F** on a heavy one (~115 g of ice).
-
-**And it largely self-corrects — as long as you're consistent.** A systematic error in the ice model shifts your *predicted* mix temperature, which means your *measured* FF absorbs it, and the two cancel next time. That cancellation only holds while the ice quantity stays in the same range, so it won't rescue you when you jump from 30 g in winter to 115 g in August. Use the right number and the question disappears.
-
-**That last rule is the failure mode of this whole method.** The −112 °F equivalence assumes every gram of ice completes job 1. Ice still sitting in the bowl hasn't spent its 80 cal/g yet — it will spend it in the next few minutes, after you've taken your reading. So the dough reads on target, then drifts colder, and your friction factor comes out wrong in a way that propagates into every future batch.
+</details>
 
 ### Measuring your friction factor
 
@@ -412,7 +378,7 @@ Do neither until the ~50 h version has worked twice.
 
 ### Stage 2 — Final mix (~15 min run time)
 
-Have everything weighed and tempered before you start. Ice in the first water addition.
+Have everything weighed before you start, and the water already blended to temperature.
 
 | Phase | Speed | Time | What |
 |---|---:|---:|---|
@@ -564,7 +530,7 @@ Run **6 balls on the Ooni/Fuso schedule with 24 h of dough cold ferment (~50 h t
 - [x] ~~Hook revolution count at 5%~~ → **DONE: 20 revs / 20 s = 60 RPM. `RPM = 47.4 + 2.526 × dial%`**
 - [ ] Biga: ADY %, water temp, hours at RT vs fridge, and **volume gain at pull (target ~20%)**
 - [ ] Every input mass and temperature at final mix
-- [ ] Water temp used, ice used
+- [ ] Water temp used
 - [ ] Dough temp after Phase B, and again at the end
 - [ ] **FF = measured − predicted** ← the number this whole bake exists to produce
 - [ ] Whether motor protection engaged, and in which phase
@@ -587,8 +553,8 @@ Run **6 balls on the Ooni/Fuso schedule with 24 h of dough cold ferment (~50 h t
 | Biga did not puff at all | Not ready, ambient colder than measured, or dead ADY | Give it longer. Probe actual ambient. Check the yeast. |
 | Dry flour left in the biga | Under-mixed | Mix the full 3–6 min; dry flour never ferments |
 | Motor auto-slowed in Phase A | Biga pieces too large | Tear smaller; add a bit more of the water up front |
-| Dough over DDT | FF underestimated | Raise your FF; more ice next time |
-| Dough under DDT | FF overestimated, or ice didn't melt | Lower FF; extend Phase C ~1 min per °F, to 5.5 min max |
+| Dough over DDT | FF underestimated | Raise your FF; colder water next time |
+| Dough under DDT | FF overestimated, or water off target | Lower FF; extend Phase C ~1 min per °F, to 5.5 min max |
 | Dough tight, springs back on opening | Over-mixed in Phase C, or under-tempered | Cut Phase C by 1 min; check ball core is 60–65 °F |
 | Dough slack and sticky at open | Over-fermented — likely warm fridge or stacked trays | Check actual fridge temp; spread trays; drop DDT 1–2 °F |
 | Balls blown out and bubbly at 72 h | Too much total yeast | Drop biga ADY 15%, or move to Track B |
@@ -625,8 +591,8 @@ WATER TEMP (bowl-aware; the old 3.00x shortcut is DEAD)
   T_water = [ DDT x (Ct+C_bowl) - FF x Ct - Cb.Tbiga - Cf.Tflour
               - Cs.Troom - C_bowl.Tbowl ] / Cw
   FF = 14.0 F MEASURED (bake 1). FF is the rise in the DOUGH ALONE.
-ICE  =  YOUR freezer ice (16 F) = -120 F effective
-        general: -112 - 0.5 x (32 - T_ice)   [wet ice = -112]
+WATER = blend fridge-cold + tap to the target, measure as you pour.
+        Retarded biga -> usually WARM water (52-90 F range). No ice needed.
 DDT  =  75 F (3-6 balls) / 74 F (9+)
 PROBE = DDT - 0.33 x FF x Ct/(Ct+C_bowl) + 0.2 x (DDT - Troom)
         3bl 72.2 / 6bl 71.8 / 9bl 70.5   (FF 14, room 70)
@@ -655,7 +621,7 @@ BAKE gauge 750 F, FULL FLAME, 60-90 s, turn every 15-20 s. Do not push to 800+.
 
 ## 12. Building the calculator — what actually needs measuring
 
-**Only one thing blocks you: friction factor.** Everything else in this document is either arithmetic you already have (§3 scaling, §6 water temp and ice) or published data you can cite (§5 yeast). FF is the single input that can only come from your own machine.
+**Only one thing blocks you: friction factor.** Everything else in this document is either arithmetic you already have (§3 scaling, §6 water temp) or published data you can cite (§5 yeast). FF is the single input that can only come from your own machine.
 
 ### ✅ Bake 1 — 21 Aug 2026, 6 balls
 
@@ -686,7 +652,6 @@ BAKE gauge 750 F, FULL FLAME, 60-90 s, turn every 15-20 s. Do not push to 800+.
 |---|---|---|
 | **FF at 3, 6, 9 balls** | Log all inputs, run §8 exactly, probe immediately, `FF = measured − predicted` | 2–3 each |
 | **Tap water temp** | Thermometer. Make it a form field, not a constant — it swings seasonally | ongoing |
-| **Freezer temp** | Probe a cube's interior, not the surface | ✅ 16 °F → −120 |
 | **Bowl mass** | Kitchen scale, once | ✅ 965 g → C = 115.8 |
 | **FF at 6 balls** | Bake 1 | ✅ 14.04 °F |
 | **FF at 3 and 9 balls** | The falsifiable test of the bowl model | ⬜ next |
@@ -721,7 +686,7 @@ biga_ady_pct, biga_water_temp_f, biga_start_time, biga_rt_hours, biga_fridge_hou
 biga_pct_rise_at_pull, biga_temp_at_mix_f
 bowl_mass_g, bowl_temp_f            <- defaults to biga_temp_at_mix_f
 phase_a_water_g, phase_c_seconds_actual
-room_temp_f, flour_temp_f, tap_temp_f, ice_g, water_temp_used_f
+room_temp_f, flour_temp_f, water_temp_used_f
 ddt_target_f, probe_temp_f, phase_c_seconds, final_dough_temp_f
 ff_predicted_mix_temp_f, ff_measured        <- the payload
 motor_protection_engaged (y/n, which phase)

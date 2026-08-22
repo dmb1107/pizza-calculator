@@ -17,8 +17,6 @@ export const VECTOR_CONDITIONS = {
   tBowlF: 58,
   tFlourF: 69,
   tRoomF: 70,
-  tapF: 60,
-  freezerF: 16,
   bowlMassG: 965,
 } as const;
 
@@ -102,12 +100,33 @@ export const ROOM_MINUTES: readonly { finalTempF: number; roomMin: number }[] = 
   { finalTempF: 70, roomMin: 144 },
 ];
 
-/** Ice effective temperature by freezer temperature. §5. */
-export const ICE_EFF_VECTORS: readonly { freezerF: number; iceEffF: number }[] = [
-  { freezerF: 32, iceEffF: -112 },
-  { freezerF: 16, iceEffF: -120 },
-  { freezerF: 0, iceEffF: -128 },
-];
+/**
+ * §5 water-temperature reachability. The envelope that makes the ice
+ * calculation unnecessary: sweep the retarded-biga schedule and the required
+ * water never leaves this band, and in particular never goes below 38 °F.
+ */
+export const WATER_REACHABILITY = {
+  bigaF: { min: 45, max: 60 },
+  roomF: { min: 60, max: 84 },
+  /**
+   * §5 quotes the span as 51.7-90.6 °F.
+   *
+   * The minimum reproduces exactly, at 18 balls with a 60 °F biga in an 84 °F
+   * kitchen — and it is the end that matters, because it is what makes the
+   * sub-38 warning unreachable and the ice model unnecessary.
+   *
+   * ⚠️ The maximum does NOT reproduce: the sweep tops out at 106.6 °F, at
+   * 3 balls with a 45 °F biga in a 60 °F kitchen. The maximum rises as the
+   * batch gets smaller, because the bowl is a fixed cold mass and a larger
+   * share of a small batch (18% at 3 balls). 90.6 is close to the 9-ball
+   * maximum of 90.3, so the published sweep looks not to have gone below
+   * about 9 balls. RAISED WITH THE RECIPE AGENT — `max` records what the
+   * model actually does, pending a correction to §5.
+   */
+  spans: { min: 51.7, max: 106.6 },
+  /** §4.4's warning threshold. Should not fire anywhere in the sweep. */
+  floorF: 38,
+} as const;
 
 /**
  * DOUGH-ONLY thermal weights. These stay scale-invariant.
@@ -116,18 +135,6 @@ export const ICE_EFF_VECTORS: readonly { freezerF: number; iceEffF: number }[] =
  * as such — §4.2 says any such test is to be deleted, not loosened.
  */
 export const THERMAL_WEIGHTS = { biga: 0.5311, flour: 0.1306, water: 0.3331, salt: 0.0052 } as const;
-
-/** Ice per 100 g water, 60 degF tap, 16 degF freezer ice. §9. */
-export const ICE_PER_100G: readonly { waterTempF: number; iceG: number }[] = [
-  { waterTempF: 55, iceG: 2.8 },
-  { waterTempF: 50, iceG: 5.6 },
-  { waterTempF: 45, iceG: 8.3 },
-  { waterTempF: 40, iceG: 11.1 },
-  { waterTempF: 35, iceG: 13.9 },
-  { waterTempF: 30, iceG: 16.7 },
-  { waterTempF: 25, iceG: 19.4 },
-  { waterTempF: 20, iceG: 22.2 },
-];
 
 /** Assertion tolerances. §5: +/-0.1 g, +/-0.1 degF. */
 export const TOL = { grams: 0.1, degF: 0.1, ady: 0.005, weight: 0.0001 } as const;

@@ -235,80 +235,19 @@ export function solveFrictionFactorF(
 }
 
 // ---------------------------------------------------------------------------
-// §4.4 Ice
+// §4.4 Reaching the water temperature
 // ---------------------------------------------------------------------------
-
-export type IceStatus =
-  /** Normal case: some ice, comfortably under the 35% ceiling. */
-  | 'ok'
-  /** Target is at or just below tap temperature — plain tap water is fine. */
-  | 'none'
-  /** Target is above tap temperature. Heat the water instead. */
-  | 'warm-water'
-  /** Over 35% of the fresh water — won't reliably melt in one mix. */
-  | 'excessive'
-  /** Over 100% — the target is not reachable with ice at all. */
-  | 'unreachable';
-
-export interface IceResult {
-  /**
-   * Effective temperature of ice, °F. Fictitious and deliberately so: it folds
-   * the 80 cal/g latent heat into a fake starting temperature so ice slots into
-   * the same linear equation as water. A 16 °F freezer gives −120 °F.
-   */
-  iceEffF: number;
-  /** Ice to weigh out, grams. Clamped to [0, freshWater]. */
-  iceG: number;
-  /** Tap water to weigh out, grams. */
-  tapG: number;
-  /** Unclamped requirement, so the UI can say how far out of reach a target is. */
-  iceRequiredG: number;
-  /** iceRequiredG / freshWater. */
-  iceFraction: number;
-  status: IceStatus;
-  /** Set when status is 'warm-water': heat the water to this temperature. */
-  warmToF?: number;
-}
-
-export interface IceInputs {
-  waterTempF: number;
-  freshWater: number;
-  tapTempF: number;
-  freezerTempF: number;
-}
-
-/** §4.4. Sub-freezing ice must first warm to 32 °F at half water's specific heat. */
-export function computeIce({
-  waterTempF,
-  freshWater,
-  tapTempF,
-  freezerTempF,
-}: IceInputs): IceResult {
-  const iceEffF = -112 - C.C_ICE * (32 - freezerTempF);
-  const iceRequiredG = (freshWater * (tapTempF - waterTempF)) / (tapTempF - iceEffF);
-  const iceFraction = freshWater > 0 ? iceRequiredG / freshWater : 0;
-
-  // Target at or above tap temperature: no ice, and past +0.5 °F say so plainly.
-  if (waterTempF >= tapTempF) {
-    const status: IceStatus = waterTempF > tapTempF + 0.5 ? 'warm-water' : 'none';
-    return {
-      iceEffF,
-      iceG: 0,
-      tapG: freshWater,
-      iceRequiredG,
-      iceFraction,
-      status,
-      ...(status === 'warm-water' ? { warmToF: waterTempF } : {}),
-    };
-  }
-
-  const iceG = Math.min(iceRequiredG, freshWater);
-  let status: IceStatus = 'ok';
-  if (iceRequiredG > freshWater) status = 'unreachable';
-  else if (iceRequiredG > 0.35 * freshWater) status = 'excessive';
-
-  return { iceEffF, iceG, tapG: freshWater - iceG, iceRequiredG, iceFraction, status };
-}
+//
+// There is deliberately no ice calculation and no tap/ice split. The user
+// blends fridge-cold water with tap water by hand, measuring as they pour, so
+// the target temperature is the whole output.
+//
+// Ice bought precision that wasn't needed and cost reliability that was: its
+// accuracy depended on the -120 °F equivalence being right AND on every gram
+// melting before the temperature reading. Miss the second and the dough reads
+// on target, then drifts cold, and the error propagates into the measured FF.
+//
+// The only thing left is the sub-38 °F warning in `buildWarnings` below.
 
 // ---------------------------------------------------------------------------
 // §4.5 Capacity splits
@@ -436,7 +375,7 @@ export interface Warning {
  * component — the UI just renders them, above the step list and never inside a
  * collapsed panel.
  */
-function buildWarnings(f: Formula, capacity: Capacity, ice: IceResult): Warning[] {
+function buildWarnings(f: Formula, capacity: Capacity, waterTempF: number): Warning[] {
   const w: Warning[] = [];
 
   if (capacity.nBiga > 1) {
@@ -482,36 +421,17 @@ function buildWarnings(f: Formula, capacity: Capacity, ice: IceResult): Warning[
     });
   }
 
-  switch (ice.status) {
-    case 'warm-water':
-      w.push({
-        id: 'warm-water',
-        severity: 'info',
-        title: `Warm the water to ${formatTempF(ice.warmToF ?? 0)} °F`,
-        detail:
-          'The biga is cold enough that it, not the water, is doing the cooling. No ice — heat the water instead. This is normal with a fridge-retarded biga taken straight out.',
-      });
-      break;
-    case 'excessive':
-      w.push({
-        id: 'ice-excessive',
-        severity: 'warn',
-        title: `Ice is ${Math.round(ice.iceFraction * 100)}% of the fresh water`,
-        detail:
-          'Above about 35% the ice will not reliably melt during one mix. Undissolved ice keeps absorbing heat after you take your temperature reading, so the dough reads on target and then drifts cold — which poisons your friction factor. Chill the biga or the fresh flour instead.',
-      });
-      break;
-    case 'unreachable':
-      w.push({
-        id: 'ice-unreachable',
-        severity: 'error',
-        title: 'Target temperature is not reachable with ice',
-        detail: `Hitting this DDT would need ${formatGrams(ice.iceRequiredG)} g of ice against only ${formatGrams(f.freshWater)} g of fresh water. Chill the biga — its thermal mass is the dominant term and a far more powerful lever than ice.`,
-      });
-      break;
-    case 'ok':
-    case 'none':
-      break;
+  // §4.4. The only water warning, and it should essentially never fire — on the
+  // retarded-biga schedule the required water spans 51.7-90.6 °F. Only the
+  // classic room-temperature track in a hot kitchen can reach below 38 °F.
+  if (waterTempF < C.COLD_WATER_FLOOR_F) {
+    w.push({
+      id: 'water-below-fridge',
+      severity: 'warn',
+      title: `Target water is below ${C.COLD_WATER_FLOOR_F} °F`,
+      detail:
+        `${formatTempF(waterTempF)} °F is colder than fridge water reaches, so you cannot get there by blending. Chill the biga or the fresh flour instead — the biga is the dominant thermal term and a far more powerful lever. Failing that, this is the one case for ice.`,
+    });
   }
 
   return w;
@@ -525,8 +445,6 @@ export interface CalculatorInputs extends BatchInputs {
   roomTempF: number;
   flourTempF: number;
   bigaTempF: number;
-  tapTempF: number;
-  freezerTempF: number;
   frictionFactorF: number;
   /** Weigh once; persisted. Its mass matters far more than its temperature. */
   bowlMassG?: number;
@@ -548,7 +466,6 @@ export interface CalculatorResult {
   /** The DDT actually used, override or default. */
   ddtF: number;
   waterTempF: number;
-  ice: IceResult;
   capacity: Capacity;
   probeTargetF: number;
   /** §4.8 room-temperature minutes before the fridge. */
@@ -577,13 +494,6 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
 
   const waterTempF = computeWaterTempF(temps, thermal);
 
-  const ice = computeIce({
-    waterTempF,
-    freshWater: formula.freshWater,
-    tapTempF: inputs.tapTempF,
-    freezerTempF: inputs.freezerTempF,
-  });
-
   const capacity = computeCapacity(formula);
 
   // Planning mode until a real final dough temperature is entered.
@@ -596,7 +506,6 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
     thermal,
     ddtF,
     waterTempF,
-    ice,
     capacity,
     probeTargetF: computeProbeTargetF({
       ddtF,
@@ -607,6 +516,6 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
     roomMinutes: computeRoomMinutes({ finalDoughTempF: effectiveFinalTempF, ddtF }),
     roomMinutesIsPlanned,
     effectiveFinalTempF,
-    warnings: buildWarnings(formula, capacity, ice),
+    warnings: buildWarnings(formula, capacity, waterTempF),
   };
 }

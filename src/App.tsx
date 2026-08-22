@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ConceptDrawer } from './components/ConceptDrawer';
 import { CopyButton } from './components/CopyButton';
 import { StepList } from './components/StepList';
-import { IngredientsCard, TargetsCard, WarningsList, WaterIceCard } from './components/cards';
+import { IngredientsCard, TargetsCard, WarningsList, WaterCard } from './components/cards';
 import { BatchPanel, CalibrationPanel, TemperaturesPanel } from './components/panels';
 import { TimelineCard } from './components/TimelineCard';
 import { useAppState } from './state/useAppState';
@@ -58,7 +58,7 @@ export default function App() {
       <div className="mt-6 grid gap-3">
         <WarningsList warnings={result.warnings} />
         <IngredientsCard result={result} />
-        <WaterIceCard result={result} />
+        <WaterCard result={result} />
         <TargetsCard result={result} />
         <TimelineCard {...state} />
       </div>

@@ -22,10 +22,6 @@ const BASE = {
   C_WATER: 1.0,
   C_SALT: 0.21,
 
-  // Ice
-  LATENT_F: 144, // 80 cal/g expressed as °F of liquid-water equivalent
-  C_ICE: 0.5, // ice specific heat relative to water
-
   // Mixer bowl — REQUIRED thermal mass, do not omit.
   // Omitting it made the water temperature 5 degF wrong on bake 1.
   C_BOWL_SPECIFIC_HEAT: 0.12, // stainless, cal/g·°C
@@ -52,8 +48,14 @@ const BASE = {
    * This is the rise the mixer produces in the DOUGH ALONE — see §4.3.
    */
   DEFAULT_FF: 14.0,
-  DEFAULT_FREEZER_F: 16,
-  DEFAULT_TAP_F: 60,
+
+  /**
+   * §4.4. Below this the target is colder than fridge water reaches, which is
+   * the one and only case where ice gets mentioned. On the retarded-biga
+   * schedule the model never asks for it: the required water spans 51.7-90.6 °F
+   * across every batch size and kitchen temperature.
+   */
+  COLD_WATER_FLOOR_F: 38,
 
   /** Split of the fresh water between Phase A and Phase B. §5 of the update. */
   PHASE_A_FRACTION: 0.6,
@@ -77,8 +79,8 @@ const C_BIGA =
 export const C = { ...BASE, C_BIGA } as const;
 
 /**
- * Heat capacity of the mixer bowl, cal/°C. 115.8 at the 965 g default — more
- * than the fresh flour contributes.
+ * Heat capacity of the mixer bowl, cal/°C. 115.8 at the 965 g default —
+ * comparable to the fresh flour, and larger than it below about 5 balls.
  *
  * The bowl absorbs friction energy alongside the dough. It is fixed mass while
  * everything else scales with flour, which is why the thermal model is no

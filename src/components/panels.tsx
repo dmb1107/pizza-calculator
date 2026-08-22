@@ -67,7 +67,7 @@ export function TemperaturesPanel(s: AppState) {
   return (
     <Panel
       title="Today's temperatures"
-      summary={`Room ${formatTempF(inputs.roomTempF)} · Biga ${formatTempF(inputs.bigaTempF)} · Tap ${formatTempF(inputs.tapTempF)} °F · Bowl ${Math.round(inputs.bowlMassG)} g`}
+      summary={`Room ${formatTempF(inputs.roomTempF)} · Biga ${formatTempF(inputs.bigaTempF)} °F · Bowl ${Math.round(inputs.bowlMassG)} g`}
       open={panels.temperatures}
       onToggle={() => togglePanel('temperatures')}
     >
@@ -107,25 +107,6 @@ export function TemperaturesPanel(s: AppState) {
           max={BOUNDS.bigaTempF.max}
           step={BOUNDS.bigaTempF.step}
           hint="Measure it. This is the largest single term in the water calculation."
-        />
-        <NumberField
-          label="Tap water"
-          unit="°F"
-          value={inputs.tapTempF}
-          onCommit={(v) => commitNumber('tapTempF', v)}
-          min={BOUNDS.tapTempF.min}
-          max={BOUNDS.tapTempF.max}
-          step={BOUNDS.tapTempF.step}
-        />
-        <NumberField
-          label="Freezer"
-          unit="°F"
-          value={inputs.freezerTempF}
-          onCommit={(v) => commitNumber('freezerTempF', v)}
-          min={BOUNDS.freezerTempF.min}
-          max={BOUNDS.freezerTempF.max}
-          step={BOUNDS.freezerTempF.step}
-          hint="Rarely changes — this one is remembered on this device."
         />
         <NumberField
           label="Mixer bowl mass"

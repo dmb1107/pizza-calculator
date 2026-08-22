@@ -4,7 +4,8 @@ Derived from [`docs/WEBSITE-SPEC-biga-calculator.md`](docs/WEBSITE-SPEC-biga-cal
 Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
-**Status:** Tasks 0–7 complete, on the bowl-aware thermal model. Task 8 (backward timeline) next.
+**Status:** Tasks 0–7 complete, on the bowl-aware thermal model with the ice
+calculation removed. Task 8 (backward timeline) next.
 
 ---
 
@@ -84,6 +85,66 @@ The old suite asserted the water temperature was identical at every batch size.
 That test is gone, replaced by its opposite — `is NOT scale-invariant once the
 bowl is included`, plus a check that the spread across batch sizes exceeds 5 °F.
 Dough-only weights are still asserted invariant, because those genuinely are.
+
+---
+
+## Model revision — ice removed (MESSAGE-3, 22 Aug 2026) ✅
+
+Applied per `docs/MESSAGE-3-remove-ice.md`. The whole of the old §4.4 is gone:
+the app outputs a target water temperature and nothing else, and the user
+blends fridge-cold and tap water by hand, measuring as they pour.
+
+- [x] **Constants** — `LATENT_F`, `C_ICE`, `DEFAULT_FREEZER_F`, `DEFAULT_TAP_F`
+      deleted; `COLD_WATER_FLOOR_F: 38` added for the one surviving warning
+- [x] **Engine** — `computeIce`, `iceEffF` and all five `IceStatus` branches
+      deleted. Not flagged, not behind a toggle: deleted
+- [x] **Inputs** — the tap and freezer fields are gone from Panel 2, from
+      `Inputs`, from the URL codec and from `localStorage`
+- [x] **Water card** — one number and one line, per the rewritten §7.2
+- [x] **Warnings** — the four ice warnings replaced by the single sub-38 °F one
+- [x] `ice-physics` concept deleted; `thermal-model`'s closing line changed with
+      it, so `concepts.ts` was regenerated from the spec rather than hand-edited
+- [x] `Disclose.tsx` deleted — it existed only for the ice-temperature tooltip
+      §7.2 no longer asks for, and had no other caller
+
+**267 tests green**, typecheck clean, production build clean.
+
+### The sweep that justifies the deletion
+
+MESSAGE-3 asks for a test proving the warning is unreachable, and that test is
+the whole argument for dropping ice: if the model never asks for water colder
+than a fridge delivers, blending by hand is strictly better than latent-heat
+arithmetic. Sweeping the retarded-biga envelope — every batch size, biga
+45–60 °F, room 60–84 °F — the coldest requirement is **51.7 °F**, which
+reproduces §5 exactly, at 18 balls with a 60 °F biga in an 84 °F kitchen. A
+second test asserts no water warning fires anywhere in that envelope.
+
+### ⚠️ One §5 number does not reproduce
+
+§5 gives the span as 51.7–90.6 °F. **The minimum is exact; the maximum is not.**
+The sweep tops out at **106.6 °F**, at 3 balls with a 45 °F biga in a 60 °F
+kitchen.
+
+The cause is structural rather than a rounding difference: the requirement rises
+as the batch gets *smaller*, because the bowl is a fixed cold mass and a much
+larger share of a small batch — 18% at 3 balls against 3.5% at 18.
+
+| Balls | Max required water |
+|---:|---:|
+| 3 | **106.6 °F** |
+| 5 | 98.5 |
+| 6 | 96.8 |
+| 9 | 90.3 |
+| 12 | 88.7 |
+| 18 | 87.1 |
+
+90.6 sits just above the 9-ball maximum, so the published sweep looks not to
+have gone below about 9 balls. **Raised with the recipe agent; not resolved.**
+`WATER_REACHABILITY.max` records what the model actually does, with the
+disagreement written down beside it rather than silently adopted — the same
+handling the 30.2 h overhead finding got before §4.7 was corrected.
+
+This does not affect the ice decision, which rests only on the minimum.
 
 ---
 

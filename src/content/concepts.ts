@@ -3,8 +3,8 @@
  *
  * Longer background pieces that don't belong to a single step. Steps link here
  * via their `concepts` field, and the calculator cards link to the relevant
- * ones: `thermal-model` and `ice-physics` from the water card,
- * `friction-factor` from the calibration panel.
+ * ones: `thermal-model` from the water card, `friction-factor` from the
+ * calibration panel.
  *
  * Generated from the spec and checked character for character by
  * `tests/steps.test.ts`. Edit the spec, then regenerate.
@@ -44,7 +44,7 @@ Once this has run cleanly three or four times, pushing to 80% or 100% biga is a 
   },
   {
     id: "schedule-architecture",
-    title: "Why the cold ferment is 6–36 h and not 72",
+    title: "Why the cold ferment is 6\u201336 h and not 72",
     body: `Classic biga **front-loads the entire fermentation.** At 0.38% ADY on 65% biga flour you carry about 0.244% ADY on total flour — a heavy dose by pizza standards, and deliberately so, because the preferment is meant to do essentially all the work.
 
 Every documented biga recipe then gives the final dough a *short* proof: Giorilli and Gozney a few hours, Ooni 2 h at room temperature or 6–36 h in the fridge.
@@ -68,31 +68,7 @@ Specific heats: biga at 50% hydration 0.6133, flour 0.42, water 1.00, salt 0.21,
 
 **This is why the formula is not scale-independent.** The bowl is fixed mass while the dough scales, so the weights shift with batch size. It also explains why the bowl can't just be folded into FF — the same FF of 14 would appear as 11.5 °F at 3 balls and 13.5 °F at 18, drifting for no physical reason.
 
-Note what this implies: with a fridge-retarded biga you need **warm** water. The biga's thermal mass is the dominant term, which makes it a more powerful control lever than ice.`,
-  },
-  {
-    id: "ice-physics",
-    title: "Why ice isn't the same as cold water",
-    body: `Ice at 32 °F and water at 32 °F are the same *temperature* but not the same *energy.* To turn ice into water you have to break the crystal lattice, and that energy goes entirely into breaking hydrogen bonds, not into raising temperature. A thermometer sitting in melting ice reads 32 °F the whole time, even as heat pours in. It's *hidden* from the thermometer, which is why it's called **latent heat.**
-
-The amount is not small: **80 cal/g.** That's the same energy it would take to heat that same gram of water from 32 °F all the way to 176 °F. Every gram of ice carries that much cooling capacity *before* it starts behaving like cold water.
-
-So ice does two jobs and cold water only does one:
-
-| | Ice at 32 °F | Water at 32 °F |
-|---|---|---|
-| Melt (absorbs 80 cal/g, no temp change) | yes | — |
-| Warm from 32 °F to final dough temp | yes | yes |
-
-**Where the negative number comes from.** The weighted-average formula assumes everything behaves like \`mass × specific heat × temperature\`. Ice doesn't — it has that extra 80 cal/g lump. So instead of adding a special term, we hide it in a fake starting temperature: 80 cal/g ÷ 1.00 cal/g·°C = 80 °C = **144 °F** of equivalent cooling.
-
-**Effective temp = −112 − 0.5 × (32 − T_ice)**
-
-A 16 °F freezer gives −120 °F. It is fictitious — nothing in the bowl is ever remotely that cold. It's a bookkeeping device that makes ice slot into the same linear equation as water and produce exactly the right answer.
-
-**Worked example.** 100 g added to 900 g of 80 °F water: 32 °F *water* gives 75.2 °F, 32 °F *ice* gives 60.8 °F. Same mass, same temperature, 14.4 °F apart.
-
-**All the ice must melt.** The equivalence assumes every gram completes the melting job. Ice still floating in the bowl hasn't spent its 80 cal/g yet — it will spend it over the next few minutes, after you've taken your temperature reading. The dough reads on target, then drifts cold, and your friction factor comes out wrong in a way that poisons every batch calculated from it.`,
+Note what this implies: with a fridge-retarded biga you need **warm** water. The biga's thermal mass is the dominant term — which is why the schedule, not the water, is the real temperature lever.`,
   },
   {
     id: "friction-factor",
@@ -133,7 +109,7 @@ An over-mixed biga rises like a dough instead of fermenting like a biga. It then
   },
   {
     id: "why-61-65",
-    title: "Why 61–65 °F specifically",
+    title: "Why 61\u201365 \u00b0F specifically",
     body: `It isn't just about speed. That range produces the **right ratio of lactic to acetic acid**, which is what gives biga its characteristic sharp, vinegary profile. Ferment much warmer and you get a preferment that is biga-shaped but tastes different.
 
 This is why an unstable kitchen is a real problem rather than a timing nuisance, and why the fridge-retarded schedule exists — it trades a little of that acid character for a temperature that actually holds.`,

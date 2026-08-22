@@ -177,8 +177,8 @@ const specConcepts = (() => {
 })();
 
 describe('§8.3 concepts are reproduced verbatim', () => {
-  it('has all 12 concepts, in spec order', () => {
-    expect(specConcepts).toHaveLength(12);
+  it('has all 11 concepts, in spec order', () => {
+    expect(specConcepts).toHaveLength(11);
     expect(CONCEPTS.map((c) => c.id)).toEqual(specConcepts.map((c) => c.id));
   });
 
@@ -205,9 +205,9 @@ describe('cross-references resolve', () => {
     }
   });
 
-  it('names the three concepts §8.3 says the cards must link to', () => {
+  it('names the two concepts §8.3 says the cards must link to', () => {
     const ids = new Set(CONCEPTS.map((c) => c.id));
-    for (const id of ['thermal-model', 'ice-physics', 'friction-factor']) {
+    for (const id of ['thermal-model', 'friction-factor']) {
       expect(ids.has(id), `${id} is required by the calculator cards`).toBe(true);
     }
   });

@@ -7,8 +7,8 @@ Guidance for Claude Code working in this repository.
 A static, client-side dough calculator for one specific setup: **Grain Craft
 Neapolitan 00 flour, an Ooni Halo Core spiral mixer, a Gozney Tread oven, and a
 65% biga.** The user enters batch size, measured temperatures, and a cold-ferment
-length; the app returns gram weights, a target water temperature, an ice/tap
-split, a clock-time timeline, and a guided step list.
+length; the app returns gram weights, a target water temperature, a clock-time
+timeline, and a guided step list.
 
 Deployed to GitHub Pages. No server, no API, no runtime data fetching.
 
@@ -31,6 +31,7 @@ question:
 | `MESSAGE-to-calculator-agent.md` | The bake-1 revision: bowl thermal mass, measured FF, shaped rise time, Phase A/B water in grams |
 | `REPLY-to-calculator-agent.md` | Bowl-vs-flour crossover, the bowl-temperature coefficient, the first overhead-band correction |
 | `REPLY-2-to-calculator-agent.md` | `bulkRest` and `divideBall` stay fixed; final band 25.6–30.8 h |
+| `MESSAGE-3-remove-ice.md` | Why the ice model was deleted outright rather than kept behind a toggle |
 
 ## Rules that matter more than usual here
 
@@ -56,6 +57,15 @@ UI, that's what the disclosure is for — collapse it, don't cut it.
 
 **Don't round intermediates.** Round only for display: flour/water/salt/dough to
 1 decimal, ADY to 2, temperatures to 1.
+
+**There is no ice model, and re-adding one is a regression.** §4.4 was rewritten
+to output a target water temperature and nothing else — no ice/tap split, no
+`iceEffF`, no latent-heat term, and no tap or freezer inputs. The user blends
+fridge-cold and tap water by hand, measuring as they pour. Ice bought precision
+that wasn't needed and cost reliability that was: it depended on every gram
+melting before the temperature reading, and a miss there poisons the measured
+FF. The only surviving mention is the sub-38 °F warning, which on the
+retarded-biga schedule never fires — the required water bottoms out at 51.7 °F.
 
 **`C_BIGA` is derived, never hardcoded**, so it follows if `BIGA_HYDRATION`
 changes. Same principle for the thermal weights — compute them from component

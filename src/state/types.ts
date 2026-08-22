@@ -26,8 +26,6 @@ export interface Inputs {
   flourTempF: number;
   /** Measured at mix time, not assumed. The dominant term in the water calc. */
   bigaTempF: number;
-  tapTempF: number;
-  freezerTempF: number;
   /** Weigh once; persisted. Its MASS is what matters, not its temperature. */
   bowlMassG: number;
 
@@ -89,8 +87,6 @@ export interface PanelPrefs {
 export interface Persisted {
   calibration: Calibration;
   panels: PanelPrefs;
-  /** §6: freezer temp "rarely changes; persist it". */
-  freezerTempF: number;
   /**
    * When the biga was mixed, ISO. Persisted rather than serialized to the URL:
    * design priority 4 wants a session to survive a refresh, but a fixed

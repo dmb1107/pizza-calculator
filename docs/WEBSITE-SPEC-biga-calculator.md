@@ -10,7 +10,7 @@ Every formula, constant, and piece of step content you need is in this document.
 
 A single-page tool that replaces a generic dough app with one tuned to a specific setup: **Grain Craft Neapolitan 00 flour, an Ooni Halo Core spiral mixer, a Gozney Tread oven, and a 65% biga.**
 
-The user enters batch size, their measured temperatures, and how long they want the cold ferment. The app returns exact gram weights, the water temperature to hit, an ice/tap split, a timeline with real clock times, and a guided step list.
+The user enters batch size, their measured temperatures, and how long they want the cold ferment. The app returns exact gram weights, the water temperature to hit, a timeline with real clock times, and a guided step list.
 
 ### Design priorities, in order
 
@@ -51,10 +51,6 @@ export const C = {
   C_SALT: 0.21,
   C_BIGA: 0.6133,             // derived: (1/1.5)*0.42 + (0.5/1.5)*1.00
 
-  // Ice
-  LATENT_F: 144,              // 80 cal/g expressed as °F of liquid-water equivalent
-  C_ICE: 0.5,                 // ice specific heat relative to water
-
   // Mixer bowl - REQUIRED thermal mass, do not omit
   C_BOWL_SPECIFIC_HEAT: 0.12, // stainless, cal/g·°C
   DEFAULT_BOWL_MASS_G: 965,   // measured; user-editable, persist
@@ -76,8 +72,6 @@ export const C = {
   // Defaults
   DEFAULT_BALL_G: 265,
   DEFAULT_FF: 14.0,           // °F, MEASURED at 6 balls (bake 1). Rise in the DOUGH ALONE.
-  DEFAULT_FREEZER_F: 16,
-  DEFAULT_TAP_F: 60,
 
   // Shaped rise time
   BASE_ROOM_MIN: 90,          // at DDT
@@ -158,23 +152,21 @@ Omitting the bowl made this output **5 °F wrong** on the first real bake — it
 
 `DDT` default: **75 °F** for ≤6 balls, **74 °F** for 7+. User-overridable.
 
-### 4.4 Ice
+### 4.4 Reaching the water temperature
 
-Melting absorbs 80 cal/g with no temperature change, which equals 144 °F of liquid-water cooling. Sub-freezing ice must first warm to 32 °F at half water's specific heat.
+**There is no ice calculation and no tap/ice split. Output the target temperature only.**
 
-```
-iceEffF = −112 − C_ICE × (32 − freezerTempF)     // 16 °F freezer → −120 °F
-ice     = freshWater × (tapF − waterTempF) / (tapF − iceEffF)
-tap     = freshWater − ice
-```
+The user blends fridge-cold water with tap water by hand, measuring as they pour. Fridge water covers ~38–60 °F and tap covers upward, so the whole reachable band is available without arithmetic.
 
-Handle these cases explicitly:
+One warning, and only one:
 
 | Condition | Behavior |
 |---|---|
-| `waterTempF >= tapF` | `ice = 0`. If `waterTempF > tapF + 0.5`, show "warm the water to X °F" instead |
-| `ice > 0.35 × freshWater` | Warn: won't reliably melt in one mix; suggest chilling the biga or the fresh flour |
-| `ice > freshWater` | Error: unreachable. Suggest chilling the biga |
+| `waterTempF < 38` | Warn: below what fridge water reaches. Suggest chilling the biga or the fresh flour; mention ice only here. |
+
+**This is nearly unreachable in practice.** On the retarded-biga schedule the coldest the model asks for across every batch size and kitchen temperature is about **52 °F**. Only the classic room-temperature biga track in a hot kitchen can go below 38 °F.
+
+No `tapTempF` or `freezerTempF` inputs. No ice fields in the log.
 
 ### 4.5 Capacity splits
 
@@ -295,8 +287,8 @@ Same FF, different apparent rise by batch size. Useful as a sanity check:
 | 73 | 110 |
 | 70 | 144 |
 
-### Ice effective temperature
-32 °F → −112 · 16 °F → −120 · 0 °F → −128
+### Water temperature reachability
+Retarded-biga schedule, all batch sizes, biga 45–60 °F, room 60–84 °F → required water spans **51.7–90.6 °F**. Never below 38 °F; the sub-38 warning should not fire on this track.
 
 ### Invariants (every batch size and ball weight)
 - `(bigaWater + freshWater) / F` = 0.700
@@ -324,8 +316,6 @@ Group into three panels. **Batch** open by default; the other two collapsed with
 | Room temp (°F) | number | 70 | |
 | Flour temp (°F) | number | = room | "same as room" toggle |
 | Biga temp at mix (°F) | number | 64 | measured, not assumed |
-| Tap water temp (°F) | number | 60 | |
-| Freezer temp (°F) | number | 16 | rarely changes; persist it |
 | Bowl mass (g) | number | 965 | weigh once; persist. **No bowl-temp input** — defaults to biga temp |
 
 ### Panel 3 — Calibration
@@ -347,11 +337,13 @@ Note this is *separate* from bowl dilution — the bowl explains why the same FF
 ### 7.1 Ingredients card
 Two columns, **Biga** and **Final mix**, gram weights large enough to read at arm's length. A "copy as text" button.
 
-### 7.2 Water & ice card
-The headline is the target water temperature. Below it, the ice/tap split in grams. Show `iceEffF` with a tooltip explaining it, since it looks absurd otherwise.
+### 7.2 Water card
+**One number, large: the target water temperature.** Plus a one-line instruction — blend fridge-cold and tap water to hit it, measuring as you pour.
+
+Nothing else. No split, no grams, no ice, and no commentary about whether the number is warm or cold — the user reads the number and blends to it.
 
 ### 7.3 Warnings
-Render above the step list, never hidden in a collapsed panel. Sources: capacity splits, ice over 35%, unreachable water temperature, dough below mixer minimum, overnight timeline stages.
+Render above the step list, never hidden in a collapsed panel. Sources: capacity splits, water below 38 °F, dough below mixer minimum, overnight timeline stages.
 
 ### 7.4 Timeline
 Vertical list of stages with clock times and durations. Highlight "now" if the session is in progress.
@@ -705,7 +697,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 ### 8.3 Concepts
 
-Longer background pieces that don't belong to a single step. Render as a drawer, modal, or `/concepts/:id` route. Steps link to them via the `concepts` field; the calculator cards should also link to the relevant ones — `thermal-model` and `ice-physics` from the water card, `friction-factor` from the calibration panel.
+Longer background pieces that don't belong to a single step. Render as a drawer, modal, or `/concepts/:id` route. Steps link to them via the `concepts` field; the calculator cards should also link to the relevant ones — `thermal-model` from the water card, `friction-factor` from the calibration panel.
 
 ```ts
 interface Concept { id: string; title: string; body: string; /* markdown */ }
@@ -753,29 +745,7 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 >
 > **This is why the formula is not scale-independent.** The bowl is fixed mass while the dough scales, so the weights shift with batch size. It also explains why the bowl can't just be folded into FF — the same FF of 14 would appear as 11.5 °F at 3 balls and 13.5 °F at 18, drifting for no physical reason.
 >
-> Note what this implies: with a fridge-retarded biga you need **warm** water. The biga's thermal mass is the dominant term, which makes it a more powerful control lever than ice.
-
-**`ice-physics`** — *Why ice isn't the same as cold water*
-> Ice at 32 °F and water at 32 °F are the same *temperature* but not the same *energy.* To turn ice into water you have to break the crystal lattice, and that energy goes entirely into breaking hydrogen bonds, not into raising temperature. A thermometer sitting in melting ice reads 32 °F the whole time, even as heat pours in. It's *hidden* from the thermometer, which is why it's called **latent heat.**
->
-> The amount is not small: **80 cal/g.** That's the same energy it would take to heat that same gram of water from 32 °F all the way to 176 °F. Every gram of ice carries that much cooling capacity *before* it starts behaving like cold water.
->
-> So ice does two jobs and cold water only does one:
->
-> | | Ice at 32 °F | Water at 32 °F |
-> |---|---|---|
-> | Melt (absorbs 80 cal/g, no temp change) | yes | — |
-> | Warm from 32 °F to final dough temp | yes | yes |
->
-> **Where the negative number comes from.** The weighted-average formula assumes everything behaves like `mass × specific heat × temperature`. Ice doesn't — it has that extra 80 cal/g lump. So instead of adding a special term, we hide it in a fake starting temperature: 80 cal/g ÷ 1.00 cal/g·°C = 80 °C = **144 °F** of equivalent cooling.
->
-> **Effective temp = −112 − 0.5 × (32 − T_ice)**
->
-> A 16 °F freezer gives −120 °F. It is fictitious — nothing in the bowl is ever remotely that cold. It's a bookkeeping device that makes ice slot into the same linear equation as water and produce exactly the right answer.
->
-> **Worked example.** 100 g added to 900 g of 80 °F water: 32 °F *water* gives 75.2 °F, 32 °F *ice* gives 60.8 °F. Same mass, same temperature, 14.4 °F apart.
->
-> **All the ice must melt.** The equivalence assumes every gram completes the melting job. Ice still floating in the bowl hasn't spent its 80 cal/g yet — it will spend it over the next few minutes, after you've taken your temperature reading. The dough reads on target, then drifts cold, and your friction factor comes out wrong in a way that poisons every batch calculated from it.
+> Note what this implies: with a fridge-retarded biga you need **warm** water. The biga's thermal mass is the dominant term — which is why the schedule, not the water, is the real temperature lever.
 
 **`friction-factor`** — *Measuring your own friction factor*
 > **FF = 14.0 °F, measured** — bake 1, 21 August 2026, 6 balls. Corroborated independently by the Phase C friction rate: 1.00 °F/min observed on the dough-plus-bowl system is 1.11 °F/min dough-only, against 1.08 predicted.
@@ -850,8 +820,8 @@ Put these on a secondary page or in a drawer — needed occasionally, not every 
 ### Friction rate
 0.75 °F/min at 15% · 0.86 at 20% · 1.08 at 30%
 
-### Ice, per 100 g water, 60 °F tap, 16 °F freezer ice
-55 °F → 2.8 g · 50 °F → 5.6 · 45 °F → 8.3 · 40 °F → 11.1 · 35 °F → 13.9 · 30 °F → 16.7 · 25 °F → 19.4 · 20 °F → 22.2
+### Water temperature
+Blend fridge-cold water with tap to the target, measuring as you pour. Fridge water reaches ~38 °F; tap covers upward. On the retarded-biga schedule the required water spans 52–91 °F, so no ice and no split calculation.
 
 ---
 
@@ -863,7 +833,7 @@ Not required for v1, but design the data layer so it can be added. `localStorage
 batch_id, date, balls, ball_g, total_flour_g
 biga_ady_pct, biga_water_temp_f, biga_start_time, biga_rt_hours, biga_fridge_hours
 biga_pct_rise_at_pull, biga_temp_at_mix_f
-room_temp_f, flour_temp_f, tap_temp_f, ice_g, water_temp_used_f
+room_temp_f, flour_temp_f, water_temp_used_f
 bowl_mass_g, bowl_temp_f          // bowl_temp_f defaults to biga_temp_at_mix_f
 phase_a_water_g                   // actual, weighed
 phase_c_seconds_actual

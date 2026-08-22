@@ -13,8 +13,6 @@ const INPUTS: CalculatorInputs = {
   roomTempF: 70,
   flourTempF: 69,
   bigaTempF: 58,
-  tapTempF: 60,
-  freezerTempF: 16,
   frictionFactorF: 14.0,
   bowlMassG: 965,
 };

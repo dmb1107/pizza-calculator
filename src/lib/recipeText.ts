@@ -16,7 +16,7 @@ function row(label: string, value: string): string {
 }
 
 export function buildRecipeText(result: CalculatorResult): string {
-  const { inputs, formula, ice, capacity } = result;
+  const { inputs, formula, capacity } = result;
   const lines: string[] = [];
 
   lines.push(`Biga Neapolitan — ${inputs.balls} × ${formatGrams(inputs.ballWeightG)} g`);
@@ -50,15 +50,8 @@ export function buildRecipeText(result: CalculatorResult): string {
   lines.push('');
 
   lines.push('WATER');
-  if (ice.status === 'warm-water') {
-    lines.push(row('Target', `${formatTempF(result.waterTempF)} °F — warm the water, no ice`));
-  } else if (ice.status === 'unreachable') {
-    lines.push(row('Target', `${formatTempF(result.waterTempF)} °F — NOT REACHABLE, chill the biga`));
-  } else {
-    lines.push(row('Target', `${formatTempF(result.waterTempF)} °F`));
-    lines.push(row('Ice', `${formatGrams(ice.iceG)} g`));
-    lines.push(row('Tap', `${formatGrams(ice.tapG)} g`));
-  }
+  lines.push(row('Target', `${formatTempF(result.waterTempF)} °F`));
+  lines.push(row('', 'blend fridge-cold and tap water to hit it'));
   lines.push('');
 
   lines.push('TARGETS');
@@ -79,8 +72,6 @@ export function buildRecipeText(result: CalculatorResult): string {
   lines.push(row('Room', `${formatTempF(inputs.roomTempF)} °F`));
   lines.push(row('Flour', `${formatTempF(inputs.flourTempF)} °F`));
   lines.push(row('Biga at mix', `${formatTempF(inputs.bigaTempF)} °F`));
-  lines.push(row('Tap', `${formatTempF(inputs.tapTempF)} °F`));
-  lines.push(row('Freezer', `${formatTempF(inputs.freezerTempF)} °F`));
   lines.push(row('Friction', `${formatTempF(inputs.frictionFactorF)} °F`));
   lines.push(row('Bowl', `${formatGramsWhole(inputs.bowlMassG ?? 965)} g`));
 

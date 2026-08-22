@@ -101,12 +101,11 @@ export function useAppState(): AppState {
   const storage = useMemo(() => browserStorage(), []);
 
   // Read storage once, then URL on top of it, so a link wins per key while
-  // unshared preferences (freezer temp) still come from this device.
+  // unshared preferences (the weighed bowl mass) still come from this device.
   const initial = useMemo(() => {
     const persisted = loadPersisted(storage);
     const base: Inputs = {
       ...DEFAULT_INPUTS,
-      freezerTempF: persisted.freezerTempF,
       bowlMassG: persisted.bowlMassG,
     };
     return { persisted, inputs: decodeInputs(currentSearch(), base) };
@@ -158,7 +157,6 @@ export function useAppState(): AppState {
     const value: Persisted = {
       calibration,
       panels,
-      freezerTempF: inputs.freezerTempF,
       bigaStartAtIso: bigaStartAt.toISOString(),
       checkedSteps: [...checkedSteps],
       bowlMassG: inputs.bowlMassG,
@@ -169,7 +167,6 @@ export function useAppState(): AppState {
     storage,
     calibration,
     panels,
-    inputs.freezerTempF,
     inputs.bowlMassG,
     bigaStartAt,
     checkedSteps,
@@ -208,8 +205,8 @@ export function useAppState(): AppState {
   }, []);
 
   const resetInputs = useCallback(() => {
-    setInputs({ ...DEFAULT_INPUTS, freezerTempF: inputs.freezerTempF });
-  }, [inputs.freezerTempF]);
+    setInputs({ ...DEFAULT_INPUTS, bowlMassG: inputs.bowlMassG });
+  }, [inputs.bowlMassG]);
 
   const friction = useMemo(
     () => effectiveFriction(calibration, inputs.balls),
@@ -247,8 +244,6 @@ export function useAppState(): AppState {
         roomTempF: inputs.roomTempF,
         flourTempF: inputs.flourSameAsRoom ? inputs.roomTempF : inputs.flourTempF,
         bigaTempF: inputs.bigaTempF,
-        tapTempF: inputs.tapTempF,
-        freezerTempF: inputs.freezerTempF,
         frictionFactorF: friction.ff,
         bowlMassG: inputs.bowlMassG,
         ddtOverrideF: calibration.ddtOverrideF,

@@ -10,8 +10,6 @@ const BASE: CalculatorInputs = {
   roomTempF: 70,
   flourTempF: 69,
   bigaTempF: 58,
-  tapTempF: 60,
-  freezerTempF: 16,
   frictionFactorF: 14.0,
   bowlMassG: 965,
 };
@@ -29,10 +27,10 @@ describe('recipe text', () => {
   });
 
   it('carries the water target', () => {
-    // §5 six-ball vector: 68.1 °F, which is above tap, so no ice.
+    // §5 six-ball vector.
     const out = text();
     expect(out).toContain('68.1 °F');
-    expect(out).toContain('warm the water, no ice');
+    expect(out).toContain('blend fridge-cold and tap water to hit it');
   });
 
   it('shows both bassinage additions as weighable grams', () => {
@@ -55,9 +53,9 @@ describe('recipe text', () => {
 
   it('records the conditions, so the numbers can be reproduced', () => {
     // A gram figure without the temperatures behind it is not reproducible.
-    const out = text({ roomTempF: 66, bigaTempF: 58, tapTempF: 55, freezerTempF: 4 });
+    const out = text({ roomTempF: 66, bigaTempF: 58 });
     expect(out).toContain('CONDITIONS');
-    for (const value of ['66.0', '58.0', '55.0', '4.0', '14.0']) {
+    for (const value of ['66.0', '58.0', '14.0']) {
       expect(out, `missing condition ${value}`).toContain(value);
     }
   });
@@ -73,31 +71,20 @@ describe('recipe text', () => {
     expect(out).toMatch(/Split\s+2 batches/);
   });
 
-  it('says warm the water rather than printing a zero ice figure', () => {
-    const out = text({ bigaTempF: 42 });
-    expect(out).toContain('warm the water, no ice');
-    expect(out).not.toMatch(/Ice\s+0\.0 g/);
-  });
-
-  it('shows an ice split when the target is genuinely below tap', () => {
-    const out = text({ bigaTempF: 90, roomTempF: 85, flourTempF: 85 });
-    expect(out).toMatch(/Ice\s+[\d.]+ g/);
-    expect(out).toMatch(/Tap\s+[\d.]+ g/);
-  });
-
-  it('flags an unreachable target instead of a plausible number', () => {
-    // Deliberately absurd — a 120 °F kitchen with a 40 °F friction factor and a
-    // 60 °F DDT needs water at -180 °F, past what ice can deliver. The point is
-    // that the guard prints a refusal rather than a number you might act on.
-    const out = text({
-      ddtOverrideF: 60,
-      frictionFactorF: 40,
-      bigaTempF: 120,
-      flourTempF: 120,
-      roomTempF: 120,
-    });
-    expect(out).toContain('NOT REACHABLE');
-    expect(out).toContain('chill the biga');
+  it('gives the water as one target with no split, at any temperature', () => {
+    // Previously three cases — warm-water, an ice split, and unreachable. §7.2
+    // now says one number and one line, so a cold biga and a hot kitchen have
+    // to produce the same shape of output.
+    for (const o of [
+      {},
+      { bigaTempF: 42 },
+      { bigaTempF: 90, roomTempF: 85, flourTempF: 85 },
+    ] satisfies Partial<CalculatorInputs>[]) {
+      const out = text(o);
+      expect(out).toMatch(/Target\s+[\d.]+ °F$/m);
+      expect(out).not.toMatch(/\bIce\b/);
+      expect(out).not.toMatch(/^\s*Tap\s/m);
+    }
   });
 
   it('states both targets', () => {

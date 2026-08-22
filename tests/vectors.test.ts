@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { C } from '../src/lib/constants';
-import { BATCH_VECTORS, ICE_EFF_VECTORS, THERMAL_WEIGHTS, TOL } from './vectors';
+import { BATCH_VECTORS, THERMAL_WEIGHTS, TOL } from './vectors';
 
 /**
  * These tests validate the TRANSCRIPTION of spec §5, not the engine.
@@ -98,18 +98,8 @@ describe('constants', () => {
     within(C.DEFAULT_BOWL_MASS_G * C.C_BOWL_SPECIFIC_HEAT, 115.8, 0.05, 'C_bowl');
   });
 
-  it('expresses the latent heat of fusion as 144 degF of liquid-water equivalent', () => {
-    expect(C.LATENT_F).toBe(80 * 1.8);
-  });
-
   it('maps 5% dial to the measured 60 RPM', () => {
     within(C.RPM_INTERCEPT + C.RPM_SLOPE * 5, 60, 0.05, '5% dial RPM');
-  });
-
-  it('agrees with the §5 ice effective temperatures', () => {
-    for (const { freezerF, iceEffF } of ICE_EFF_VECTORS) {
-      within(-112 - C.C_ICE * (32 - freezerF), iceEffF, 1e-9, `ice eff at ${freezerF} degF`);
-    }
   });
 
   it('has dough-only thermal weights summing to 1', () => {

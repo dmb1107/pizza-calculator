@@ -5,7 +5,6 @@ import {
   computeCapacity,
   computeFinalTempF,
   computeFormula,
-  computeIce,
   computeProbeTargetF,
   computeRoomMinutes,
   computeThermal,
@@ -17,9 +16,8 @@ import {
   BAKE_1,
   BATCH_VECTORS,
   BOWL_DILUTION,
-  ICE_EFF_VECTORS,
-  ICE_PER_100G,
   ROOM_MINUTES,
+  WATER_REACHABILITY,
   THERMAL_WEIGHTS,
   TOL,
   VECTOR_CONDITIONS,
@@ -47,8 +45,6 @@ function vectorInputs(balls: number, ballWeightG: number): CalculatorInputs {
     roomTempF: VECTOR_CONDITIONS.tRoomF,
     flourTempF: VECTOR_CONDITIONS.tFlourF,
     bigaTempF: VECTOR_CONDITIONS.tBigaF,
-    tapTempF: VECTOR_CONDITIONS.tapF,
-    freezerTempF: VECTOR_CONDITIONS.freezerF,
     frictionFactorF: VECTOR_CONDITIONS.ff,
     bowlMassG: VECTOR_CONDITIONS.bowlMassG,
   };
@@ -87,8 +83,6 @@ describe('bake 1 regression — 21 Aug 2026', () => {
     roomTempF: BAKE_1.tRoomF,
     flourTempF: BAKE_1.tFlourF,
     bigaTempF: BAKE_1.tBigaF,
-    tapTempF: 60,
-    freezerTempF: 16,
     frictionFactorF: BAKE_1.ff,
     bowlMassG: BAKE_1.bowlMassG,
   };
@@ -370,52 +364,86 @@ describe('§4.8 shaped rise time', () => {
   });
 });
 
-describe('§4.4 ice', () => {
-  it.each(ICE_EFF_VECTORS)('freezer $freezerF degF -> $iceEffF degF effective', (v) => {
-    const r = computeIce({ waterTempF: 50, freshWater: 100, tapTempF: 60, freezerTempF: v.freezerF });
-    within(r.iceEffF, v.iceEffF, 1e-9, 'ice effective temp');
-  });
+describe('§4.4 reaching the water temperature', () => {
+  /**
+   * The sweep MESSAGE-3 asks for, and the whole justification for deleting the
+   * ice model: across the retarded-biga envelope the required water never gets
+   * near the 38 °F floor, so blending fridge-cold and tap water always reaches
+   * it. If this ever fails, the sub-38 warning has become load-bearing and the
+   * decision to drop ice needs revisiting.
+   */
+  it('never asks for water below 38 degF anywhere on the retarded schedule', () => {
+    const { bigaF, roomF, spans, floorF } = WATER_REACHABILITY;
+    let lo = Infinity;
+    let hi = -Infinity;
 
-  it.each(ICE_PER_100G)('§9 table: 100 g water to $waterTempF degF needs $iceG g ice', ({ waterTempF, iceG }) => {
-    const r = computeIce({ waterTempF, freshWater: 100, tapTempF: 60, freezerTempF: 16 });
-    within(r.iceG, iceG, TOL.grams, 'ice');
-    within(r.tapG, 100 - iceG, TOL.grams, 'tap');
-  });
-
-  it('uses no ice when the target is at tap temperature', () => {
-    const r = computeIce({ waterTempF: 60, freshWater: 500, tapTempF: 60, freezerTempF: 16 });
-    expect(r.status).toBe('none');
-    expect(r.iceG).toBe(0);
-  });
-
-  it('stays on plain tap water within 0.5 degF above tap', () => {
-    expect(computeIce({ waterTempF: 60.4, freshWater: 500, tapTempF: 60, freezerTempF: 16 }).status).toBe('none');
-  });
-
-  it('says warm the water past 0.5 degF above tap', () => {
-    const r = computeIce({ waterTempF: 60.6, freshWater: 500, tapTempF: 60, freezerTempF: 16 });
-    expect(r.status).toBe('warm-water');
-    within(r.warmToF ?? 0, 60.6, 1e-9, 'warm-to target');
-  });
-
-  it('warns above 35% ice', () => {
-    expect(computeIce({ waterTempF: -2, freshWater: 100, tapTempF: 60, freezerTempF: 16 }).status).toBe('ok');
-    const above = computeIce({ waterTempF: -4, freshWater: 100, tapTempF: 60, freezerTempF: 16 });
-    expect(above.status).toBe('excessive');
-    expect(above.iceFraction).toBeGreaterThan(0.35);
-  });
-
-  it('reports unreachable below the effective ice temperature', () => {
-    const r = computeIce({ waterTempF: -130, freshWater: 100, tapTempF: 60, freezerTempF: 16 });
-    expect(r.status).toBe('unreachable');
-    expect(r.iceG).toBe(100);
-  });
-
-  it('always splits the fresh water exactly', () => {
-    for (const v of BATCH_VECTORS) {
-      const r = calculate(vectorInputs(v.balls, v.ballG));
-      within(r.ice.iceG + r.ice.tapG, r.formula.freshWater, 1e-9, 'ice + tap = fresh water');
+    for (const { balls, ballG } of BATCH_VECTORS) {
+      for (let biga = bigaF.min; biga <= bigaF.max; biga += 0.5) {
+        for (let room = roomF.min; room <= roomF.max; room += 0.5) {
+          const { waterTempF } = calculate({
+            ...vectorInputs(balls, ballG),
+            bigaTempF: biga,
+            roomTempF: room,
+            flourTempF: room,
+          });
+          lo = Math.min(lo, waterTempF);
+          hi = Math.max(hi, waterTempF);
+        }
+      }
     }
+
+    // The load-bearing claim: nothing on this track needs sub-fridge water.
+    expect(lo, `coldest water required was ${lo.toFixed(1)} degF`).toBeGreaterThan(floorF);
+    within(lo, spans.min, 0.5, 'coldest required water');
+    // See the note on WATER_REACHABILITY: this pins what the model does, which
+    // is not the 90.6 §5 currently publishes.
+    within(hi, spans.max, 0.5, 'warmest required water');
+  });
+
+  it('raises no water warning across that whole envelope', () => {
+    const { bigaF, roomF } = WATER_REACHABILITY;
+    for (const { balls, ballG } of BATCH_VECTORS) {
+      for (let biga = bigaF.min; biga <= bigaF.max; biga += 1) {
+        for (let room = roomF.min; room <= roomF.max; room += 1) {
+          const { warnings } = calculate({
+            ...vectorInputs(balls, ballG),
+            bigaTempF: biga,
+            roomTempF: room,
+            flourTempF: room,
+          });
+          expect(
+            warnings.some((w) => w.id === 'water-below-fridge'),
+            `sub-38 warning fired at ${balls} balls, biga ${biga}, room ${room}`,
+          ).toBe(false);
+        }
+      }
+    }
+  });
+
+  it('warns once the target does drop below 38 degF', () => {
+    // Reachable only off the retarded track: a hot kitchen and a warm biga.
+    const { warnings, waterTempF } = calculate({
+      ...vectorInputs(6, 265),
+      bigaTempF: 95,
+      roomTempF: 100,
+      flourTempF: 100,
+    });
+    expect(waterTempF).toBeLessThan(C.COLD_WATER_FLOOR_F);
+    const warning = warnings.find((w) => w.id === 'water-below-fridge');
+    expect(warning?.severity).toBe('warn');
+    expect(warning?.detail).toMatch(/[Cc]hill the biga/);
+  });
+
+  it('is the only place ice is mentioned at all', () => {
+    const { warnings } = calculate({
+      ...vectorInputs(6, 265),
+      bigaTempF: 95,
+      roomTempF: 100,
+      flourTempF: 100,
+    });
+    const mentions = warnings.filter((w) => /\bice\b/i.test(`${w.title} ${w.detail}`));
+    expect(mentions).toHaveLength(1);
+    expect(mentions[0]?.id).toBe('water-below-fridge');
   });
 });
 

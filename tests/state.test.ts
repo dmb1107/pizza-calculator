@@ -35,8 +35,6 @@ const CUSTOM: Inputs = {
   flourSameAsRoom: false,
   flourTempF: 62,
   bigaTempF: 58.5,
-  tapTempF: 55,
-  freezerTempF: 4,
   bowlMassG: 1100,
   bigaFridgeH: 18.5,
   bigaRoomOnlyH: 14,
@@ -93,8 +91,8 @@ describe('URL serialization', () => {
   });
 
   it('accepts a supplied base for the fallbacks', () => {
-    const base = { ...DEFAULT_INPUTS, freezerTempF: 4 };
-    expect(decodeInputs('balls=9', base).freezerTempF).toBe(4);
+    const base = { ...DEFAULT_INPUTS, bowlMassG: 1100 };
+    expect(decodeInputs('balls=9', base).bowlMassG).toBe(1100);
   });
 
   describe('rejects hostile or truncated links', () => {
@@ -113,8 +111,7 @@ describe('URL serialization', () => {
       expect(decodeInputs('balls=-5').balls).toBe(BOUNDS.balls.min);
       expect(decodeInputs('ball=10').ballWeightG).toBe(BOUNDS.ballWeightG.min);
       expect(decodeInputs('cold=500').coldFermentH).toBe(BOUNDS.coldFermentH.max);
-      // Above freezing there is no ice, and §4.4 stops meaning anything.
-      expect(decodeInputs('freezer=80').freezerTempF).toBe(BOUNDS.freezerTempF.max);
+      expect(decodeInputs('bowl=99999').bowlMassG).toBe(BOUNDS.bowlMassG.max);
     });
 
     it('rounds a fractional ball count', () => {
@@ -122,7 +119,7 @@ describe('URL serialization', () => {
     });
 
     it('never yields a non-finite number', () => {
-      const decoded = decodeInputs('balls=NaN&ball=Infinity&room=-Infinity&biga=abc&tap=&cold=x');
+      const decoded = decodeInputs('balls=NaN&ball=Infinity&room=-Infinity&biga=abc&bowl=&cold=x');
       for (const [key, value] of Object.entries(decoded)) {
         if (typeof value === 'number') {
           expect(Number.isFinite(value), `${key} is finite`).toBe(true);
@@ -153,7 +150,6 @@ describe('localStorage persistence', () => {
         ddtOverrideF: 73,
       },
       panels: { batch: true, temperatures: true, calibration: false },
-      freezerTempF: 4,
       bigaStartAtIso: '2026-08-21T13:00:00.000Z',
       checkedSteps: ['biga-1', 'biga-2'],
       bowlMassG: 1100,
@@ -180,12 +176,11 @@ describe('localStorage persistence', () => {
       ['a JSON string', '"hello"'],
       ['null', 'null'],
       ['an empty object', '{}'],
-      ['wrong-typed fields', '{"calibration":42,"panels":"open","freezerTempF":"cold"}'],
+      ['wrong-typed fields', '{"calibration":42,"panels":"open","bowlMassG":"heavy"}'],
     ])('%s', (_label, raw) => {
       const loaded = loadPersisted(fakeStorage({ [STORAGE_KEY]: raw }));
 
       // Every field is a usable value rather than a crash or a NaN.
-      expect(Number.isFinite(loaded.freezerTempF)).toBe(true);
       expect(Number.isFinite(loaded.bowlMassG)).toBe(true);
       expect(typeof loaded.panels.batch).toBe('boolean');
       expect(Array.isArray(loaded.checkedSteps)).toBe(true);

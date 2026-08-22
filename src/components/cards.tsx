@@ -1,5 +1,4 @@
 import { CopyButton } from './CopyButton';
-import { Disclose } from './Disclose';
 import { formatAdy, formatGrams, formatTempF } from '../lib/format';
 import { buildRecipeText } from '../lib/recipeText';
 import type { CalculatorResult, Warning } from '../lib/engine';
@@ -90,95 +89,27 @@ export function IngredientsCard({ result }: { result: CalculatorResult }) {
   );
 }
 
-/** §7.2. The headline is the water temperature; the ice split sits under it. */
-export function WaterIceCard({ result }: { result: CalculatorResult }) {
-  const { ice, waterTempF, formula } = result;
-  const warm = ice.status === 'warm-water';
-  const unreachable = ice.status === 'unreachable';
-  // Only the states that actually weigh out ice get the split and the
-  // explanation of the effective temperature; elsewhere it explains a number
-  // nobody is using.
-  const usesIce = ice.status === 'ok' || ice.status === 'excessive';
-
+/**
+ * §7.2. One number, large: the target water temperature. Plus a single line of
+ * instruction, and nothing else.
+ *
+ * There is deliberately no ice/tap split, no grams, and no note about whether
+ * the number is warm or cold — the last of those would need a tap temperature,
+ * which is no longer an input. The user reads the number and blends to it.
+ */
+export function WaterCard({ result }: { result: CalculatorResult }) {
   return (
-    <Card title="Water & ice">
+    <Card title="Water">
       <div>
-        <p className="text-stone-600 dark:text-stone-400">
-          {warm ? 'Warm the water to' : 'Water temperature'}
-        </p>
+        <p className="text-stone-600 dark:text-stone-400">Water temperature</p>
         <p className="text-5xl font-bold tabular">
-          {formatTempF(waterTempF)}
+          {formatTempF(result.waterTempF)}
           <span className="ml-1 text-2xl font-normal text-stone-500">°F</span>
         </p>
       </div>
-
-      {unreachable ? (
-        <p className="mt-4 rounded-lg border border-red-400 bg-red-50 p-3 text-sm text-red-900 dark:border-red-800 dark:bg-red-950/50 dark:text-red-200">
-          Not reachable with ice — it would take {formatGrams(ice.iceRequiredG)} g against{' '}
-          {formatGrams(formula.freshWater)} g of fresh water. Chill the biga instead; its thermal
-          mass is the dominant term and a far more powerful lever.
-        </p>
-      ) : warm ? (
-        <p className="mt-4 text-stone-700 dark:text-stone-300">
-          No ice. The biga is cold enough that it, not the water, is doing the cooling — so all{' '}
-          <span className="font-semibold tabular">{formatGrams(formula.freshWater)} g</span> goes in
-          warmed.
-        </p>
-      ) : !usesIce ? (
-        <p className="mt-4 text-stone-700 dark:text-stone-300">
-          No ice needed — the target is already at tap temperature. Weigh out all{' '}
-          <span className="font-semibold tabular">{formatGrams(formula.freshWater)} g</span> straight
-          from the tap.
-        </p>
-      ) : (
-        <>
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <div className="rounded-lg bg-sky-50 p-3 dark:bg-sky-950/40">
-              <p className="text-sm text-sky-900 dark:text-sky-200">Ice</p>
-              <p className="text-3xl font-bold tabular text-sky-950 dark:text-sky-100">
-                {formatGrams(ice.iceG)}
-                <span className="ml-1 text-lg font-normal">g</span>
-              </p>
-            </div>
-            <div className="rounded-lg bg-stone-100 p-3 dark:bg-stone-800">
-              <p className="text-sm text-stone-600 dark:text-stone-400">Tap</p>
-              <p className="text-3xl font-bold tabular">
-                {formatGrams(ice.tapG)}
-                <span className="ml-1 text-lg font-normal">g</span>
-              </p>
-            </div>
-          </div>
-          {ice.status === 'excessive' && (
-            <p className="mt-3 rounded-lg border border-amber-400 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-200">
-              That's {Math.round(ice.iceFraction * 100)}% of the fresh water. Above about 35% it
-              won't reliably melt during one mix — chill the biga or the fresh flour instead.
-            </p>
-          )}
-          <p className="mt-3 text-sm text-stone-600 dark:text-stone-400">
-            Weigh the ice into the bowl first, then top up with tap water. All of it must melt
-            before you take a temperature reading.
-          </p>
-        </>
-      )}
-
-      {usesIce && (
-      <div className="mt-4 border-t border-stone-200 pt-3 text-sm text-stone-600 dark:border-stone-800 dark:text-stone-400">
-        <Disclose
-          label={
-            <span>
-              Effective ice temperature{' '}
-              <span className="font-semibold tabular">{formatTempF(ice.iceEffF)} °F</span>
-            </span>
-          }
-        >
-          Melting absorbs 80 cal/g without changing temperature — the same energy it would take to
-          heat that gram of water from 32 °F to 176 °F. Rather than adding a special term, that
-          latent heat is folded into a fictitious starting temperature so ice slots into the same
-          equation as water. Nothing in the bowl is ever remotely this cold; it is a bookkeeping
-          device that produces exactly the right answer.
-        </Disclose>
-      </div>
-      )}
+      <p className="mt-4 text-stone-700 dark:text-stone-300">
+        Blend fridge-cold and tap water to hit it, measuring as you pour.
+      </p>
     </Card>
   );
 }

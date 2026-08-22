@@ -21,8 +21,6 @@ const KEYS = {
   flourSameAsRoom: 'flsame',
   flourTempF: 'flour',
   bigaTempF: 'biga',
-  tapTempF: 'tap',
-  freezerTempF: 'freezer',
   bowlMassG: 'bowl',
   bigaFridgeH: 'fridge',
   bigaRoomOnlyH: 'bigart',
@@ -60,8 +58,6 @@ export function encodeInputs(inputs: Inputs): string {
   // A flour temperature that only tracks the room carries no information.
   put(KEYS.flourTempF, num(inputs.flourTempF), inputs.flourSameAsRoom);
   put(KEYS.bigaTempF, num(inputs.bigaTempF), inputs.bigaTempF === DEFAULT_INPUTS.bigaTempF);
-  put(KEYS.tapTempF, num(inputs.tapTempF), inputs.tapTempF === DEFAULT_INPUTS.tapTempF);
-  put(KEYS.freezerTempF, num(inputs.freezerTempF), inputs.freezerTempF === DEFAULT_INPUTS.freezerTempF);
 
   // Both schedules' adjustments are carried even though only one is in use.
   // Dropping the inactive one would save a few characters at the cost of a
@@ -144,8 +140,6 @@ export function decodeInputs(search: string, base: Inputs = DEFAULT_INPUTS): Inp
       ? roomTempF
       : readNumber(p, KEYS.flourTempF, 'flourTempF', base.flourTempF),
     bigaTempF: readNumber(p, KEYS.bigaTempF, 'bigaTempF', base.bigaTempF),
-    tapTempF: readNumber(p, KEYS.tapTempF, 'tapTempF', base.tapTempF),
-    freezerTempF: readNumber(p, KEYS.freezerTempF, 'freezerTempF', base.freezerTempF),
     bigaFridgeH: readNumber(p, KEYS.bigaFridgeH, 'bigaFridgeH', base.bigaFridgeH),
     bigaRoomOnlyH: readNumber(p, KEYS.bigaRoomOnlyH, 'bigaRoomOnlyH', base.bigaRoomOnlyH),
     temperH: readNumber(p, KEYS.temperH, 'temperH', base.temperH),

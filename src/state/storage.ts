@@ -141,10 +141,6 @@ export function loadPersisted(storage: StorageLike | null): Persisted {
           : DEFAULT_CALIBRATION.ddtOverrideF,
     },
     panels: parsePanels(parsed['panels']),
-    freezerTempF: clampField(
-      'freezerTempF',
-      finiteOr(parsed['freezerTempF'], DEFAULT_PERSISTED.freezerTempF),
-    ),
     bigaStartAtIso: parseIsoInstant(parsed['bigaStartAtIso']),
     checkedSteps: parseStringArray(parsed['checkedSteps']),
     bowlMassG: clampField('bowlMassG', finiteOr(parsed['bowlMassG'], DEFAULT_PERSISTED.bowlMassG)),
