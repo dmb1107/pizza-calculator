@@ -235,7 +235,15 @@ Let `Ct` = the four dough components summed, and `C_bowl` = 115.8.
 
 Two separate effects, and only one of them is significant:
 
-**Its temperature — negligible.** A bowl at biga temperature shifts the mix by about −0.3 °F. Even a 20 °F cold bowl only costs 2.0 °F at 6 balls. Not worth a measurement.
+**Its temperature — negligible.** The sensitivity is `C_bowl / (Ct + C_bowl)`:
+
+| Batch | °F of dough per 1 °F of bowl-temp error |
+|---|---:|
+| 3 balls | 0.18 |
+| 6 balls | 0.10 |
+| 9 balls | 0.07 |
+
+At 6 balls, being 3 °F off on the bowl costs 0.3 °F in the dough; a 20 °F cold bowl versus a room-temp one costs 2.0 °F. Both figures come from the same coefficient — quote it rather than either endpoint. Since defaulting `T_bowl` to `T_biga` should land within a few degrees, no measurement is warranted.
 
 **Its mass — this is the real one.** Friction energy heats whatever is in the bowl, and the bowl is part of "whatever." Same work, more mass, less temperature rise:
 
@@ -369,7 +377,7 @@ Published professional practice, and the fridge holds the biga at a stable tempe
 
 **Total: ~34 h (6 h cold) · ~52 h (24 h cold) · ~64 h (36 h cold)**
 
-Those are midpoints; each carries a ±2 h spread depending on where you land inside the ranges above. Everything except the cold ferment is fixed overhead, and it adds up to **25.5–30 h** — so the arithmetic is always `cold ferment + ~28 h`.
+Those are the defaults. Everything except the cold ferment is fixed overhead: **27.8 h at the defaults, 25.3–30.8 h across the full input ranges** — so the arithmetic is `cold ferment + ~28 h`.
 
 The 36 h end lands at ~64 h total with every number still inside published guidance. Start at **24 h cold (~52 h total)** and work up.
 

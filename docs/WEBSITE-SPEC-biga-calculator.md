@@ -131,7 +131,7 @@ C_bowl = bowlMassG × 0.12          // 115.8 at the 965 g default
 TOT    = Ct + C_bowl
 ```
 
-**`T_bowl` defaults to `T_biga`** — the biga ferments in the mixer bowl, so 19 h of contact leaves them at equilibrium. Offer an override (`T_room` for a counter-kept bowl) but **do not require a bowl-temperature measurement**; the effect is about −0.3 °F.
+**`T_bowl` defaults to `T_biga`** — the biga ferments in the mixer bowl, so 19 h of contact leaves them at equilibrium. Offer an override (`T_room` for a counter-kept bowl) but **do not require a bowl-temperature measurement**. Sensitivity is `C_bowl/TOT` = 0.10 °F per °F at 6 balls (0.18 at 3), so even a 10 °F misestimate costs ≤1 °F.
 
 **Assert instead:** `Cb/Ct ≈ 0.5311`, `Cf/Ct ≈ 0.1306`, `Cw/Ct ≈ 0.3331`, `Cs/Ct ≈ 0.0052` — dough-only ratios, which *are* scale-invariant. The bowl-inclusive weights are not.
 
@@ -242,7 +242,7 @@ A cool dough loses ground on the counter *and* on the way down to 40 °F; `COOLD
 
 **Planning mode:** before mixing there is no measurement, so default `T_actual = DDT`, giving exactly 90 min. When the user enters a real final dough temperature, recompute and shift every downstream stage.
 
-Fixed overhead outside the cold ferment totals **25.5–30 h**, so total elapsed is always `coldFerment + ~28 h`. At the defaults: ~34 h at 6 h cold, ~52 h at 24 h, ~64 h at 36 h. Assert these.
+Fixed overhead outside the cold ferment spans **25.3–30.8 h** across the full input ranges (the upper bound uses the shaped-rise clamp of 180 min, which the old fixed 1–2 h stage could not reach). **At the defaults it is 27.8 h**, so total elapsed is `coldFerment + 27.8 h`: ~34 h at 6 h cold, ~52 h at 24 h, ~64 h at 36 h. Assert the defaults; treat the band as a range check, not an equality.
 
 Show cumulative clock times for each stage plus a total elapsed figure. Flag when a stage lands between midnight and 6 AM — that's the main reason a schedule is unusable in practice, and it's the single most useful thing the backward mode solves.
 
@@ -747,9 +747,9 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 >
 > **T_water = [ DDT × (Ct + C_bowl) − FF × Ct − Cb·T_biga − Cf·T_flour − Cs·T_room − C_bowl·T_bowl ] ÷ Cw**
 >
-> Specific heats: biga at 50% hydration 0.6133, flour 0.42, water 1.00, salt 0.21, stainless 0.12. A 965 g bowl contributes 115.8 — more than the fresh flour does.
+> Specific heats: biga at 50% hydration 0.6133, flour 0.42, water 1.00, salt 0.21, stainless 0.12. A 965 g bowl contributes 115.8 — comparable to the fresh flour, and larger than it below about 5 balls.
 >
-> **Two bowl effects, and only one matters.** Its *temperature* shifts the mix by about −0.3 °F, which is why it needs no measurement (default it to the biga temperature; 19 h of contact leaves them at equilibrium). Its *mass* is the real effect: friction energy heats whatever is in the bowl, and the bowl is part of "whatever." At 3 balls it absorbs 18% of the mixer's work; at 18 balls, 3.5%.
+> **Two bowl effects, and only one matters.** Its *temperature* enters with sensitivity `C_bowl/(Ct + C_bowl)` — 0.10 °F of dough per 1 °F of bowl error at 6 balls, 0.18 at 3 balls. So a 3 °F misestimate costs 0.3 °F and a 20 °F cold bowl costs 2.0 °F; same coefficient, different inputs. Defaulting to the biga temperature lands well inside that, which is why it needs no measurement (19 h of contact leaves bowl and biga at equilibrium). Its *mass* is the real effect: friction energy heats whatever is in the bowl, and the bowl is part of "whatever." At 3 balls it absorbs 18% of the mixer's work; at 18 balls, 3.5%.
 >
 > **This is why the formula is not scale-independent.** The bowl is fixed mass while the dough scales, so the weights shift with batch size. It also explains why the bowl can't just be folded into FF — the same FF of 14 would appear as 11.5 °F at 3 balls and 13.5 °F at 18, drifting for no physical reason.
 >

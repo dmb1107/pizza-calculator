@@ -205,15 +205,33 @@ describe('§4.2 the bowl', () => {
     within(calculate(inputs).waterTempF, explicit.waterTempF, 1e-9, 'implicit vs explicit T_bowl');
   });
 
-  it('makes bowl temperature a small effect — 20 degF of bowl costs 2.0 degF of dough', () => {
-    // The recipe's checkable claim: "Even a 20 °F cold bowl only costs 2.0 °F
-    // at 6 balls." The quoted −0.3 °F is the residual of *defaulting* T_bowl to
-    // T_biga, which corresponds to a ~3 °F gap — consistent with 19 h of contact.
-    const inputs = vectorInputs(6, 265);
-    const t = computeThermal(computeFormula(inputs), 965);
+  /**
+   * §4.2 states bowl-temperature sensitivity as the coefficient
+   * `C_bowl / TOT` rather than either endpoint, because the two figures that
+   * previously appeared in the docs (−0.3 °F and 2.0 °F) are the same
+   * coefficient applied to different inputs and looked irreconcilable quoted
+   * on their own.
+   *
+   * Asserting the coefficient is what makes the "no measurement needed"
+   * argument properly: even a 10 °F misestimate costs under 1 °F at 6 balls.
+   */
+  it.each([
+    [3, 0.18],
+    [6, 0.10],
+    [9, 0.07],
+  ])('has a bowl-temperature sensitivity of %s balls -> %s degF per degF', (balls, coefficient) => {
+    const t = computeThermal(computeFormula({ balls, ballWeightG: 265 }), 965);
+    within(t.cBowl / t.cSystem, coefficient, 0.005, `sensitivity at ${balls} balls`);
+  });
+
+  it('makes a bowl-temperature measurement unnecessary', () => {
+    const t = computeThermal(computeFormula({ balls: 6, ballWeightG: 265 }), 965);
     const perDegree = t.cBowl / t.cSystem;
-    within(20 * perDegree, 2.0, 0.05, '20 degF cold bowl');
-    within(3 * perDegree, 0.3, 0.05, 'the ~3 degF residual behind the -0.3 figure');
+    // The claim §4.2 rests on: a 10 degF misestimate of T_bowl costs under 1 degF.
+    expect(10 * perDegree).toBeLessThan(1);
+    // And the two figures the docs previously quoted, from that one coefficient.
+    within(3 * perDegree, 0.3, 0.02, 'a 3 degF assumption error');
+    within(20 * perDegree, 2.0, 0.05, 'a 20 degF cold-vs-room bowl');
   });
 
   it('makes a heavier bowl need warmer water', () => {

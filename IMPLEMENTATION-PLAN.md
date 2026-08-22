@@ -286,6 +286,28 @@ action and the bake in daylight — for any biga start between **09:00 and
 fridging, the cold ferment, the temper *and* the bake in the small hours. The
 warning banner names that window rather than just reporting a problem.
 
+### Three findings raised, all confirmed and corrected upstream
+
+Surfaced during the bowl revision and settled in
+`docs/REPLY-to-calculator-agent.md`:
+
+| Finding | Outcome |
+|---|---|
+| `thermal-model` claimed the bowl contributes "more than the fresh flour does" — true only below ~5 balls | Prose corrected to "comparable to the fresh flour, and larger than it below about 5 balls" |
+| The −0.3 °F and 2.0 °F bowl-temperature figures looked irreconcilable | Same coefficient, different inputs. Both documents now state the coefficient `C_bowl/TOT` instead |
+| The 25.5–30 h overhead band was exceeded at 30.2 h | Band recomputed to **25.3–30.8 h**, defaults **27.8 h** |
+
+The tests follow the corrected numbers rather than recording the old ones. The
+bowl-temperature test now asserts the **coefficient** (0.18 / 0.10 / 0.07 °F per
+°F at 3 / 6 / 9 balls) and the claim resting on it — a 10 °F misestimate costs
+under 1 °F — rather than either endpoint. The test that encoded "the spec says
+30 but it's really 30.2" is gone.
+
+Worth noting on the new band: its maximum (30.83 h) and defaults (27.83 h)
+reproduce exactly, but the 25.3 h minimum assumes `bulkRest` at its 45-minute
+low end, which §4.7 fixes at 1 h. The lowest reachable value here is 25.58 h, so
+everything sits inside the band with a little slack at the bottom.
+
 ### The document discrepancy, resolved
 
 Raised during this task and since settled: the recipe document's §7 summary
