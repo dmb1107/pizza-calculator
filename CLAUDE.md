@@ -12,14 +12,25 @@ split, a clock-time timeline, and a guided step list.
 
 Deployed to GitHub Pages. No server, no API, no runtime data fetching.
 
-## The two source documents
+## The documents
 
 | File | Role |
 |---|---|
 | [`docs/WEBSITE-SPEC-biga-calculator.md`](docs/WEBSITE-SPEC-biga-calculator.md) | **The build spec.** Formulas, constants, test vectors, step prose, build order. |
 | [`docs/Biga-Neapolitan-HaloCore-GrainCraft.md`](docs/Biga-Neapolitan-HaloCore-GrainCraft.md) | The human-readable recipe the spec was derived from. |
 
-Keep the two in sync if either changes.
+Keep those two in sync if either changes. **The spec wins** where they disagree
+— §4.7 says so explicitly, and they have disagreed twice.
+
+The remaining files in `docs/` are correspondence, kept because they record
+*why* several numbers are what they are. Read them before re-opening a settled
+question:
+
+| File | Settles |
+|---|---|
+| `MESSAGE-to-calculator-agent.md` | The bake-1 revision: bowl thermal mass, measured FF, shaped rise time, Phase A/B water in grams |
+| `REPLY-to-calculator-agent.md` | Bowl-vs-flour crossover, the bowl-temperature coefficient, the first overhead-band correction |
+| `REPLY-2-to-calculator-agent.md` | `bulkRest` and `divideBall` stay fixed; final band 25.6–30.8 h |
 
 ## Rules that matter more than usual here
 
@@ -87,13 +98,16 @@ npm run preview    # serve dist/ locally
 
 ```
 src/lib/          pure calculation — no UI imports, this is what gets unit-tested
-                  engine.ts (§4 formulas), timeline.ts (§4.7 schedule),
-                  format.ts (display rounding), constants.ts (§3)
+                  engine.ts (§4 formulas incl. the bowl), timeline.ts (§4.7),
+                  timers.ts (§7.5), bindTokens.ts ({token} substitution),
+                  recipeText.ts (copy-as-text), format.ts (display rounding),
+                  constants.ts (§3)
 src/content/      step and concept prose (steps.ts, concepts.ts)
 src/components/   React components
 src/state/        URL + localStorage persistence
 tests/            vitest suites; vectors.ts holds the spec §5 acceptance data
-docs/             the spec and its source recipe
+docs/             the spec, its source recipe, and the correspondence
+                  that settled the revisions
 ```
 
 `src/lib/` must stay importable from a plain Node test with no DOM. Keep React
@@ -125,11 +139,38 @@ don't inline a `toFixed` somewhere else.
   deterministic.
 - **Markdown must render tables.** Step `detail` and concept `body` contain GFM
   tables and multi-paragraph prose — `react-markdown` + `remark-gfm`, not a
-  text renderer.
+  text renderer. **`watchFor` is markdown too** — `mix-7`'s cue ends
+  `**and at DDT ±1 °F.**`, and rendering it as plain text put literal asterisks
+  around the one number §8 calls a pass/fail gate.
+- **Timers are end times, not counters.** Everything derives from an absolute
+  `startedAt` against a `now` passed in, so a locked phone or a reload returns
+  the right answer. Never introduce a decrementing counter. Ranges are windows
+  (earliest → latest), not deadlines.
+- **`ballRoomTemp` is computed, not an input.** §4.8 derives it from the
+  measured final dough temperature. It used to be a fixed 1.5 h with a 1–2 h
+  slider; both are gone deliberately, because the model reaches 71–144 min.
+- **An unbound `{token}` renders `⟨unknown token: name⟩`, never an empty
+  string.** "Weigh  g of flour" looks like the app working. Tests prove no token
+  is unbindable and no binding unused.
+- **Grid and flex children need `min-w-0` around wide tables.** Items default to
+  `min-width: auto`, so a table's `min-width` propagates up and pushes the whole
+  page sideways instead of scrolling inside its own `overflow-x-auto` wrapper.
+- **Number fields commit on blur, not on keystroke.** Clamping mid-type makes a
+  bounded field unusable — typing "7" on the way to "70" would snap to the
+  minimum. The stepper emits a delta rather than a computed value for the same
+  class of reason.
+- **The friction-factor map ships seeded** with `{6: 14.04, measured 2026-08-21}`
+  from bake 1. Other batch sizes fall back to 14.0 and badge as estimated.
 
 ## Build order
 
-Follow spec §12. Task list and status: [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
+Follow spec §12. Task list and status: [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md),
+which is kept current — check its status line first.
 
-The first item is non-negotiable: **calculation module and unit tests green
-before any UI.**
+Tasks 0–7 are done (engine, state, cards, forward timeline, steps, concepts,
+timers). Remaining: backward timeline, reference drawer and About, Pages
+deploy, bake log.
+
+**Verify §5 before changing any formula**, including the bake-1 regression. §12
+names the two places this goes wrong silently: the `C_bowl` term and the
+`FF × Ct` work term. Both have dedicated tests.
