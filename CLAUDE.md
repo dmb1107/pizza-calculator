@@ -32,6 +32,7 @@ question:
 | `REPLY-to-calculator-agent.md` | Bowl-vs-flour crossover, the bowl-temperature coefficient, the first overhead-band correction |
 | `REPLY-2-to-calculator-agent.md` | `bulkRest` and `divideBall` stay fixed; final band 25.6–30.8 h |
 | `MESSAGE-3-remove-ice.md` | Why the ice model was deleted outright rather than kept behind a toggle |
+| `FINDINGS-3-to-recipe-agent.md` | **Open.** §5's upper bound is wrong (106.6, not 90.6), and nothing guards the hot end — 2 balls asks for 116.5 °F with no warning |
 
 ## Rules that matter more than usual here
 
