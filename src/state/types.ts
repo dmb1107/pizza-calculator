@@ -70,6 +70,14 @@ export interface Calibration {
   ddtOverrideF: number | null;
 }
 
+/** A started timer. Mirrors `RunningTimer` in `src/lib/timers.ts`. */
+export interface RunningTimer {
+  stepId: string;
+  startedAt: number;
+  minMinutes: number;
+  maxMinutes: number;
+}
+
 /** Which panels are open. Batch is open by default; the others are collapsed. */
 export interface PanelPrefs {
   batch: boolean;
@@ -93,6 +101,11 @@ export interface Persisted {
   checkedSteps: string[];
   /** Weighed once, then never again. */
   bowlMassG: number;
+  /**
+   * Timers the user has started, as absolute start timestamps. Persisted so a
+   * reload — or a phone locking its screen mid-mix — doesn't lose one.
+   */
+  timers: RunningTimer[];
 }
 
 /** The resolved friction factor and where it came from. */

@@ -4,7 +4,7 @@ Derived from [`docs/WEBSITE-SPEC-biga-calculator.md`](docs/WEBSITE-SPEC-biga-cal
 Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
-**Status:** Tasks 0–6 complete, rebuilt on the bowl-aware thermal model. Task 7 (timers) next.
+**Status:** Tasks 0–7 complete, on the bowl-aware thermal model. Task 8 (backward timeline) next.
 
 ---
 
@@ -410,13 +410,52 @@ cause was clear.
 
 ---
 
-## Task 7 — Timers
+## Task 7 — Timers ✅
 
-- [ ] Per-step timers where `timerMinutes` applies, including ranges
-      (`3–6 min` → count up, flag the window).
-- [ ] Survives backgrounding — store the target timestamp, don't tick a
-      counter. A phone screen locks mid-mix.
-- [ ] Audible + visible completion. No hover-dependent controls.
+`src/lib/timers.ts` (pure) and `src/components/StepTimer.tsx`.
+
+- [x] A timer on every step whose label states a duration — six of them
+- [x] Ranges held as windows, not deadlines
+- [x] Survives a screen lock, a backgrounded tab and a reload
+- [x] Audible completion, synthesised rather than loaded
+- [x] Tab title flags a finished timer for a backgrounded page
+
+**285 tests green** (34 new).
+
+### Two decisions
+
+**A timer is an end time, not a countdown.** Everything derives from an absolute
+`startedAt` against a `now` passed in. A ticking counter loses time the moment a
+phone locks — which it will, mid-mix, every time. Reading the clock means the
+answer is right whenever you look at it. The timer is persisted, so it also
+survives a reload; verified by rewinding a stored start time and reloading.
+
+**Ranges are windows.** "45–60 min" is not a 45-minute timer. It counts down to
+the earliest useful moment, then holds a window open until the latest —
+"Ready — window closes in 9:55" — and only then reads "Over by". Collapsing that
+to one number would throw away the half of the instruction that says how much
+slack you have.
+
+### Durations are parsed from the bound label
+
+No step ids appear in the timer code. `parseTimerLabel` runs on the label
+*after* token binding, so `{coldFerment} h` and `{temper} h` resolve to real
+durations, and `biga-4`'s "per schedule" resolves to nothing — correctly, since
+the timeline owns that one.
+
+### What it cannot do, stated in the UI
+
+A static page cannot wake a locked phone; that needs a service worker and a push
+server, and §2 rules out a server. The app says so where the timers are rather
+than implying otherwise: *"They can only sound while this page is open, though —
+for a long stage, set a phone alarm as well."*
+
+### A bug the screenshot caught
+
+`mix-7`'s success cue ends `**and at DDT ±1 °F.**` — the temperature gate §8
+calls pass/fail — and `watchFor` was being rendered as plain text, so it showed
+literal asterisks around exactly the number that matters most. Now rendered as
+markdown, inline. A test pins `watchFor` as markdown so it can't regress.
 
 ---
 

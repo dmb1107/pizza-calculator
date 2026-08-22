@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ConceptDrawer } from './components/ConceptDrawer';
 import { CopyButton } from './components/CopyButton';
 import { StepList } from './components/StepList';
@@ -18,6 +18,22 @@ export default function App() {
   const state = useAppState();
   const { result, shareUrl } = state;
   const [concept, setConcept] = useState<string | null>(null);
+
+  /**
+   * Flag a finished timer in the tab title.
+   *
+   * A static page can't wake a locked phone — that needs a service worker and a
+   * push server, and §2 rules out a server. This is the honest middle ground:
+   * a backgrounded tab still shows that something came due.
+   */
+  const dueCount = state.dueTimerStepIds.length;
+  useEffect(() => {
+    const base = 'Biga Calculator';
+    document.title = dueCount > 0 ? `(${dueCount}) Ready — ${base}` : base;
+    return () => {
+      document.title = base;
+    };
+  }, [dueCount]);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">

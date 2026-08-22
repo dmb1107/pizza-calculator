@@ -15,6 +15,7 @@ import {
   type ScheduleAdjustments,
   type Timeline,
 } from '../lib/timeline';
+import { timerDueAt, type RunningTimer, type TimerSpec } from '../lib/timers';
 import { DEFAULT_INPUTS, clampField, type BoundedField } from './defaults';
 import {
   browserStorage,
@@ -68,6 +69,15 @@ export interface AppState {
   panels: PanelPrefs;
   togglePanel: (panel: keyof PanelPrefs) => void;
 
+  /** The shared clock, epoch ms. Ticks each second while a timer runs. */
+  nowMs: number;
+  /** Timers the user has started, keyed by step. */
+  timers: RunningTimer[];
+  startTimer: (stepId: string, spec: TimerSpec) => void;
+  stopTimer: (stepId: string) => void;
+  /** Step ids whose timer has passed its earliest moment since being started. */
+  dueTimerStepIds: string[];
+
   /** Step ids ticked off, persisted across reloads. */
   checkedSteps: ReadonlySet<string>;
   toggleStep: (id: string) => void;
@@ -115,13 +125,23 @@ export function useAppState(): AppState {
   const [checkedSteps, setCheckedSteps] = useState<Set<string>>(
     () => new Set(initial.persisted.checkedSteps),
   );
+  const [timers, setTimers] = useState<RunningTimer[]>(initial.persisted.timers);
 
-  // Re-ticks the "you are here" marker without re-rendering on every frame.
+  /**
+   * The clock everything time-based reads from.
+   *
+   * One second while a timer is running, one minute otherwise. Timers need the
+   * finer resolution; the timeline's "you are here" marker does not, and a
+   * permanent 1 Hz re-render would be pure waste on a page left open for two
+   * days.
+   */
   const [now, setNow] = useState<Date>(() => new Date());
+  const hasTimers = timers.length > 0;
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 60_000);
+    const period = hasTimers ? 1_000 : 60_000;
+    const id = setInterval(() => setNow(new Date()), period);
     return () => clearInterval(id);
-  }, []);
+  }, [hasTimers]);
 
   // Skip the first persist: it would only write back what we just read.
   const hydrated = useRef(false);
@@ -142,6 +162,7 @@ export function useAppState(): AppState {
       bigaStartAtIso: bigaStartAt.toISOString(),
       checkedSteps: [...checkedSteps],
       bowlMassG: inputs.bowlMassG,
+      timers,
     };
     savePersisted(storage, value);
   }, [
@@ -152,6 +173,7 @@ export function useAppState(): AppState {
     inputs.bowlMassG,
     bigaStartAt,
     checkedSteps,
+    timers,
   ]);
 
   const setInput = useCallback(<K extends keyof Inputs>(key: K, value: Inputs[K]) => {
@@ -271,6 +293,27 @@ export function useAppState(): AppState {
 
   const clearCheckedSteps = useCallback(() => setCheckedSteps(new Set()), []);
 
+  const startTimer = useCallback((stepId: string, spec: TimerSpec) => {
+    setTimers((prev) => [
+      ...prev.filter((t) => t.stepId !== stepId),
+      {
+        stepId,
+        startedAt: Date.now(),
+        minMinutes: spec.minMinutes,
+        maxMinutes: spec.maxMinutes,
+      },
+    ]);
+  }, []);
+
+  const stopTimer = useCallback((stepId: string) => {
+    setTimers((prev) => prev.filter((t) => t.stepId !== stepId));
+  }, []);
+
+  const dueTimerStepIds = useMemo(
+    () => timers.filter((t) => now.getTime() >= timerDueAt(t)).map((t) => t.stepId),
+    [timers, now],
+  );
+
   const tokens = useMemo(
     () =>
       tokenValues(result, {
@@ -304,6 +347,11 @@ export function useAppState(): AppState {
     autoDdtF: defaultDdtF(inputs.balls),
     panels,
     togglePanel,
+    nowMs: now.getTime(),
+    timers,
+    startTimer,
+    stopTimer,
+    dueTimerStepIds,
     checkedSteps,
     toggleStep,
     clearCheckedSteps,

@@ -139,6 +139,15 @@ describe('§8.2 steps are reproduced verbatim', () => {
     expect(step?.summaryClassic).toContain('{bigaRoomOnly} hours at 61–65 °F');
   });
 
+  it('has markdown in watchFor that a renderer must handle', () => {
+    // mix-7's cue ends "**and at DDT ±1 °F.**" — the temperature gate §8 calls
+    // pass/fail. Rendered as plain text it shows literal asterisks, so this
+    // pins the fact that watchFor is markdown and not a bare string.
+    const withEmphasis = STEPS.filter((s) => s.watchFor?.includes('**'));
+    expect(withEmphasis.map((s) => s.id)).toEqual(['mix-7']);
+    expect(withEmphasis[0]?.watchFor).toContain('**and at DDT ±1 °F.**');
+  });
+
   it('covers every phase', () => {
     expect(new Set(STEPS.map((s) => s.phase))).toEqual(new Set(['biga', 'mix', 'bulk', 'bake']));
   });

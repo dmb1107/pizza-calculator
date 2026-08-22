@@ -46,6 +46,7 @@ export const DEFAULT_PERSISTED: Persisted = {
   bigaStartAtIso: '',
   checkedSteps: [],
   bowlMassG: DEFAULT_INPUTS.bowlMassG,
+  timers: [],
 };
 
 /**

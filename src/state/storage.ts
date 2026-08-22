@@ -13,7 +13,7 @@
 
 import { C } from '../lib/constants';
 import { DEFAULT_CALIBRATION, DEFAULT_PANELS, DEFAULT_PERSISTED, clampField } from './defaults';
-import type { Calibration, EffectiveFriction, PanelPrefs, Persisted } from './types';
+import type { Calibration, EffectiveFriction, PanelPrefs, Persisted, RunningTimer } from './types';
 
 export const STORAGE_KEY = 'biga-calculator:v1';
 
@@ -61,6 +61,33 @@ function parseFrictionFactors(raw: unknown): Calibration['frictionFactors'] {
       ff: clampField('frictionFactorF', ff),
       measuredAt: typeof measuredAt === 'string' ? measuredAt : '',
     };
+  }
+  return out;
+}
+
+/**
+ * Started timers, dropping anything malformed.
+ *
+ * A stored timer is just a timestamp and two bounds, so a corrupt entry can
+ * only ever produce a nonsense countdown — cheap to validate, and the
+ * alternative is a step showing "NaN:NaN" in the middle of a mix.
+ */
+function parseTimers(raw: unknown): RunningTimer[] {
+  if (!Array.isArray(raw)) return [];
+  const out: RunningTimer[] = [];
+  for (const v of raw) {
+    if (!isRecord(v)) continue;
+    const { stepId, startedAt, minMinutes, maxMinutes } = v;
+    if (typeof stepId !== 'string' || stepId === '') continue;
+    if (![startedAt, minMinutes, maxMinutes].every((n) => typeof n === 'number' && Number.isFinite(n))) {
+      continue;
+    }
+    out.push({
+      stepId,
+      startedAt: startedAt as number,
+      minMinutes: minMinutes as number,
+      maxMinutes: maxMinutes as number,
+    });
   }
   return out;
 }
@@ -121,6 +148,7 @@ export function loadPersisted(storage: StorageLike | null): Persisted {
     bigaStartAtIso: parseIsoInstant(parsed['bigaStartAtIso']),
     checkedSteps: parseStringArray(parsed['checkedSteps']),
     bowlMassG: clampField('bowlMassG', finiteOr(parsed['bowlMassG'], DEFAULT_PERSISTED.bowlMassG)),
+    timers: parseTimers(parsed['timers']),
   };
 }
 

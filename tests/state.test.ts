@@ -157,6 +157,7 @@ describe('localStorage persistence', () => {
       bigaStartAtIso: '2026-08-21T13:00:00.000Z',
       checkedSteps: ['biga-1', 'biga-2'],
       bowlMassG: 1100,
+      timers: [{ stepId: 'mix-6', startedAt: 1_700_000_000_000, minMinutes: 10, maxMinutes: 10 }],
     };
     savePersisted(s, value);
     expect(loadPersisted(s)).toEqual(value);
@@ -188,6 +189,7 @@ describe('localStorage persistence', () => {
       expect(Number.isFinite(loaded.bowlMassG)).toBe(true);
       expect(typeof loaded.panels.batch).toBe('boolean');
       expect(Array.isArray(loaded.checkedSteps)).toBe(true);
+      expect(Array.isArray(loaded.timers)).toBe(true);
 
       // Whatever survives must be well-formed. Note the map is NOT required to
       // be empty: a record too broken to parse falls back to DEFAULT_PERSISTED,

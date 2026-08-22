@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Markdown } from './Markdown';
 import { NumberField } from './fields';
+import { StepTimer } from './StepTimer';
 import { BOUNDS } from '../state/defaults';
 import { formatTempF } from '../lib/format';
+import { parseTimerLabel } from '../lib/timers';
 import { PHASE_LABELS, STEPS, type Phase, type Step, type StepTable } from '../content/steps';
 import { bindTokens } from '../lib/bindTokens';
 import type { AppState } from '../state/useAppState';
@@ -58,6 +60,7 @@ function StepRow({
   onToggleChecked,
   onOpenConcept,
   extra,
+  timer,
 }: {
   step: Step;
   summary: string;
@@ -68,6 +71,8 @@ function StepRow({
   onOpenConcept: (id: string) => void;
   /** Rendered inside the step, below the summary. Used by mix-7. */
   extra?: React.ReactNode;
+  /** The timer control, when this step names a duration. */
+  timer?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const hasDetail = Boolean(step.detail || step.watchFor || step.troubleshoot || step.concepts);
@@ -129,12 +134,18 @@ function StepRow({
             )}
 
             {step.watchFor && (
-              <p className="mt-3 rounded-lg border-l-4 border-emerald-500 bg-emerald-50 px-3 py-2 text-sm dark:bg-emerald-950/40">
+              // Markdown, not plain text: mix-7's cue ends "**and at DDT ±1 °F.**"
+              // and rendering it raw put literal asterisks in front of the one
+              // number §8 calls a pass/fail gate.
+              <div className="mt-3 rounded-lg border-l-4 border-emerald-500 bg-emerald-50 px-3 py-2 text-sm dark:bg-emerald-950/40">
                 <span className="font-semibold">Watch for: </span>
-                {step.watchFor}
-              </p>
+                <span className="[&_div]:inline [&_p]:my-0 [&_p]:inline">
+                  <Markdown>{step.watchFor}</Markdown>
+                </span>
+              </div>
             )}
 
+            {timer}
             {extra}
           </div>
 
@@ -234,11 +245,51 @@ export function StepList({
   state: AppState;
   onOpenConcept: (id: string) => void;
 }) {
-  const { tokens, checkedSteps, toggleStep, clearCheckedSteps, inputs } = state;
+  const {
+    tokens,
+    checkedSteps,
+    toggleStep,
+    clearCheckedSteps,
+    inputs,
+    timers,
+    startTimer,
+    stopTimer,
+    nowMs,
+  } = state;
   const bind = (text: string) => bindTokens(text, tokens);
 
   const phases: Phase[] = ['biga', 'mix', 'bulk', 'bake'];
   const doneCount = STEPS.filter((s) => checkedSteps.has(s.id)).length;
+
+  /**
+   * A timer for any step whose label states a duration. The label is bound
+   * first, so `{coldFerment} h` and `{temper} h` resolve to real numbers and no
+   * step ids need special-casing. `biga-4`'s "per schedule" resolves to nothing,
+   * which is right — the timeline owns that one.
+   */
+  const renderTimer = (step: Step) => {
+    if (!step.timerLabel) return undefined;
+    const spec = parseTimerLabel(bind(step.timerLabel));
+    if (!spec) return undefined;
+    return (
+      <StepTimer
+        stepId={step.id}
+        spec={spec}
+        timer={timers.find((t) => t.stepId === step.id)}
+        now={nowMs}
+        onStart={() => startTimer(step.id, spec)}
+        onStop={() => stopTimer(step.id)}
+      />
+    );
+  };
+
+  const timerNote = timers.length > 0 && (
+    <p className="mb-3 rounded-lg border border-stone-300 bg-stone-50 p-3 text-sm text-stone-600 dark:border-stone-700 dark:bg-stone-800/50 dark:text-stone-400">
+      Timers read the clock, so they stay right if your phone locks or you
+      reload. They can only sound while this page is open, though — for a long
+      stage, set a phone alarm as well.
+    </p>
+  );
 
   return (
     <section>
@@ -261,6 +312,8 @@ export function StepList({
           )}
         </div>
       </div>
+
+      {timerNote}
 
       {phases.map((phase) => (
         <div key={phase} className="mb-5 last:mb-0">
@@ -287,6 +340,7 @@ export function StepList({
                   onToggleChecked={() => toggleStep(step.id)}
                   onOpenConcept={onOpenConcept}
                   extra={step.id === 'mix-7' ? <FinalTempCapture state={state} /> : undefined}
+                  timer={renderTimer(step)}
                 />
               );
             })}
