@@ -58,11 +58,15 @@ There's a second thing worth absorbing: **in Italian practice you get more time 
     title: "How the water temperature is calculated",
     body: `Standard "multiply DDT by 4" arithmetic breaks down here. It weights the preferment as one of four equal factors, but the biga is **56% of the final dough mass.** So this uses a proper mass-and-specific-heat weighted mix, which resolves to:
 
-**T_water = 3.00 × [ (DDT − FF) − 0.531 × T_biga − 0.136 × T_room ]**
+**And it has to include the mixer bowl.** Omitting it made this calculation 5 °F wrong on the first real bake.
 
-All temperatures in °F. \`T_room\` covers the fresh flour and the salt, both sitting at ambient.
+**T_water = [ DDT × (Ct + C_bowl) − FF × Ct − Cb·T_biga − Cf·T_flour − Cs·T_room − C_bowl·T_bowl ] ÷ Cw**
 
-**The formula is scale-independent** — identical for 3, 6, 9, 12 or 18 balls, because every component scales with flour. The weights come from the component specific heats: biga at 50% hydration is about 0.613 cal/g·°C, flour 0.42, water 1.00, salt 0.21.
+Specific heats: biga at 50% hydration 0.6133, flour 0.42, water 1.00, salt 0.21, stainless 0.12. A 965 g bowl contributes 115.8 — more than the fresh flour does.
+
+**Two bowl effects, and only one matters.** Its *temperature* shifts the mix by about −0.3 °F, which is why it needs no measurement (default it to the biga temperature; 19 h of contact leaves them at equilibrium). Its *mass* is the real effect: friction energy heats whatever is in the bowl, and the bowl is part of "whatever." At 3 balls it absorbs 18% of the mixer's work; at 18 balls, 3.5%.
+
+**This is why the formula is not scale-independent.** The bowl is fixed mass while the dough scales, so the weights shift with batch size. It also explains why the bowl can't just be folded into FF — the same FF of 14 would appear as 11.5 °F at 3 balls and 13.5 °F at 18, drifting for no physical reason.
 
 Note what this implies: with a fridge-retarded biga you need **warm** water. The biga's thermal mass is the dominant term, which makes it a more powerful control lever than ice.`,
   },
@@ -93,9 +97,15 @@ A 16 °F freezer gives −120 °F. It is fictitious — nothing in the bowl is e
   {
     id: "friction-factor",
     title: "Measuring your own friction factor",
-    body: `\`FF = T_dough_measured − T_mix_predicted\`, where the prediction is the weighted mix temperature from the thermal model.
+    body: `**FF = 14.0 °F, measured** — bake 1, 21 August 2026, 6 balls. Corroborated independently by the Phase C friction rate: 1.00 °F/min observed on the dough-plus-bowl system is 1.11 °F/min dough-only, against 1.08 predicted.
 
-**Start by assuming 14 °F.** Spiral mixers run far lower friction than planetaries — commercial spirals typically land 20–26 °F on a full bread mix, and this is a shorter profile on a small machine with a 10-minute rest in the middle.
+**FF is defined as the rise the mixer produces in the dough alone.** That's why the work term is \`FF × Ct\` and not \`FF × (Ct + C_bowl)\`.
+
+\`FF = [ T_final × (Ct + C_bowl) − Cb·T_biga − Cf·T_flour − Cw·T_water − Cs·T_room − C_bowl·T_bowl ] ÷ Ct\`
+
+For context on plausibility: commercial spirals land 20–26 °F on a full bread mix, and this is a shorter profile on a smaller machine with a 10-minute rest in the middle, so the low end is where it belongs.
+
+**Still one data point.** The falsifiable test is whether FF holds near 14 at 3 and 9 balls while the raw temperature rise differs (11.5 vs 13.0). If it drifts even after the dilution correction, something else is going on.
 
 Protocol: record every input mass and temperature, run the mix profile exactly, probe the dough **immediately** at the end (three spots, center of the mass, averaged), then subtract.
 

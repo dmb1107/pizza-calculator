@@ -35,7 +35,12 @@ export interface ScheduleAdjustments {
   bigaFridgeH: number;
   /** Classic only. 12–18 h at 61–65 °F. */
   bigaRoomOnlyH: number;
-  /** 1–2 h. */
+  /**
+   * Balls at room temperature, hours. **Computed, not chosen** — §4.8 derives
+   * it from the measured final dough temperature. This replaced a fixed 1.5 h
+   * with a 1–2 h range, which the model now overshoots at both ends: 71 min for
+   * a warm dough, 144 min for a cold one.
+   */
   ballRoomTempH: number;
   /** 6–36 h. */
   coldFermentH: number;
@@ -81,7 +86,7 @@ const STAGE_INFO: Record<StageKey, { title: string; description: string }> = {
   },
   ballRoomTemp: {
     title: 'Balls at room temperature',
-    description: 'On lightly oiled trays, lids on, before the fridge.',
+    description: 'On lightly oiled trays, lids on. Length set by the dough temperature you hit.',
   },
   coldFerment: {
     title: 'Cold ferment',

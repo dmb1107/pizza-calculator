@@ -75,7 +75,7 @@ Where the constants come from: **1.728** is the dough yield factor (1 + 0.70 wat
 - Final dough `F × 1.728` ≤ **2500 g**, and `F` ≤ **1505 g** → otherwise split the final mix
 - Biga flour `F × 0.65` ≤ **1610 g** → otherwise split the biga too
 
-Everything else in this document is scale-independent. The water-temperature formula (§6) and every mixing speed and duration (§4, §8) hold at any batch size — the only thing that changes with scale is your friction factor, which is why §6 tells you to keep one per batch size.
+Every mixing speed and duration (§4, §8) holds at any batch size. **The water-temperature formula does not** — the mixer bowl is a fixed thermal mass while everything else scales with flour, so the weights shift with batch size (§6). Friction factor also changes with scale, which is why §6 keeps one per batch size.
 
 ### Bigger parties — the Halo Core forces a split
 
@@ -207,25 +207,63 @@ A 65% biga delivers a large, already-active yeast population into the final mix,
 
 ### The water temperature formula
 
-Standard "multiply DDT by 4" arithmetic breaks down here — it weights the preferment as one of four equal factors, but your biga is **56% of the final dough mass**. So this uses a proper mass-and-specific-heat weighted mix, which resolves to:
+Standard "multiply DDT by 4" arithmetic breaks down here — it weights the preferment as one of four equal factors, but the biga is **56% of the final dough mass.** So this uses a mass-and-specific-heat weighted mix.
 
-> ### **T_water = 3.00 × [ (DDT − FF) − 0.531 × T_biga − 0.136 × T_room ]**
+**And it must include the mixer bowl.** ⚠️ *Revised after bake 1 — the earlier bowl-free version was wrong by 5 °F on water temperature.*
 
-All temperatures in °F. `T_room` covers the fresh flour and salt (both sitting at ambient).
+Compute each component's heat capacity (`mass × specific heat`):
 
-**This formula is scale-independent** — identical for 3, 6, 9, 12 or 18 balls, because every component scales with flour. The weights come from: biga @ 50% hyd has c ≈ 0.613 cal/g·°C, flour 0.42, water 1.00, salt 0.21.
+| Component | Specific heat |
+|---|---:|
+| Biga @ 50% hydration | 0.6133 |
+| Fresh flour | 0.42 |
+| Water | 1.00 |
+| Salt | 0.21 |
+| **Stainless bowl (965 g → C = 115.8)** | **0.12** |
 
-**Worked examples (any batch size):**
+Let `Ct` = the four dough components summed, and `C_bowl` = 115.8.
 
-| Scenario | DDT | FF | T_biga | T_room | → Water temp |
-|---|---:|---:|---:|---:|---:|
-| Cool-room biga, mild kitchen | 74 | 12 | 64 | 70 | **55.5 °F** |
-| Warmer biga, mild kitchen | 74 | 12 | 68 | 70 | **49.2 °F** |
-| Hot kitchen, warm biga, high FF | 74 | 18 | 72 | 78 | **21.5 °F** |
-| Fridge-retarded biga (Track B) | 74 | 12 | 42 | 70 | **90.6 °F** |
-| Cold winter kitchen | 74 | 12 | 62 | 64 | **61.2 °F** |
+> ### **T_water = [ DDT × (Ct + C_bowl) − FF × Ct − Cb·T_biga − Cf·T_flour − Cs·T_room − C_bowl·T_bowl ] ÷ Cw**
 
-Note the last two: with a retarded biga you need **warm** water. The biga's thermal mass is the dominant term, and that makes it your most powerful control lever — more powerful than ice.
+**`T_bowl` defaults to `T_biga`** when the biga fermented in the mixer bowl — 19 hours of contact puts them at equilibrium, so it needs no separate measurement. Use `T_room` if the bowl sat on the counter instead.
+
+**⚠️ FF is defined as the rise the mixer produces in the dough *alone*.** That's why the work term is `FF × Ct` and not `FF × (Ct + C_bowl)`. Get this wrong and the formula silently returns a water temperature several degrees off.
+
+**This is no longer scale-independent.** The old `3.00 ×` shortcut is dead — the bowl is fixed mass while everything else scales with flour, so the weights shift with batch size. Always compute from component masses.
+
+### Why the bowl matters
+
+Two separate effects, and only one of them is significant:
+
+**Its temperature — negligible.** A bowl at biga temperature shifts the mix by about −0.3 °F. Even a 20 °F cold bowl only costs 2.0 °F at 6 balls. Not worth a measurement.
+
+**Its mass — this is the real one.** Friction energy heats whatever is in the bowl, and the bowl is part of "whatever." Same work, more mass, less temperature rise:
+
+| Batch | Bowl share | Rise diluted to | FF 14 appears as |
+|---|---:|---:|---:|
+| 3 balls | 18.0% | 82% | 11.5 °F |
+| 6 balls | 9.9% | 90% | 12.6 °F |
+| 9 balls | 6.8% | 93% | 13.0 °F |
+| 12 balls | 5.2% | 95% | 13.3 °F |
+| 18 balls | 3.5% | 96% | 13.5 °F |
+
+**This is exactly why folding the bowl into FF fails.** The apparent FF would drift from 11.5 to 13.5 across the batch range for no physical reason — you'd conclude the mixer behaves differently at different scales when really one constant is being read through five different dilutions.
+
+### Friction factor — MEASURED
+
+> ### **FF = 14.0 °F** (bake 1, 6 balls)
+
+`FF = [ T_final × (Ct + C_bowl) − Cb·T_biga − Cf·T_flour − Cw·T_water − Cs·T_room − C_bowl·T_bowl ] ÷ Ct`
+
+Bake 1 gave 14.04 °F, corroborated independently by the Phase C friction rate (1.00 °F/min observed on dough+bowl = 1.11 °F/min dough-only, against 1.08 predicted).
+
+**Still one data point.** The falsifiable test: if the bowl model is right, FF stays near 14 at 3 and 9 balls while the *raw temperature rise* looks quite different (11.5 vs 13.0). If FF drifts even after the dilution correction, something else is going on.
+
+**Three things that still apply:**
+
+- **FF is a property of the profile, not the machine.** Change speeds or times and it moves. Roughly +1 °F per additional minute at 30%.
+- **FF still varies with batch size** on top of the bowl dilution — more total work, less surface area per unit mass to shed it. Keep a separate value per size.
+- **Heat of hydration is already included.** Flour releases 1.5–3 °F of exotherm as it absorbs water, during the mix, so it's inside the measured final temperature and inside FF. It is one combined number.
 
 ### Ice
 
@@ -287,11 +325,7 @@ Final-mix water per batch: **3 balls 176.2 g · 6 balls 352.5 g · 9 balls 528.7
 
 ### Measuring your friction factor
 
-`FF = T_dough_measured − T_mix_predicted`, where `T_mix_predicted = 0.531·T_biga + 0.131·T_flour + 0.333·T_water + 0.005·T_room`
-
-**Start by assuming FF = 14 °F.** *(Revised up from 12 °F once the hook speed was measured — 12 was a hedge across both possible RPM mappings, and the faster one turned out to be real. Phase C runs at 123 RPM, not 90, so more work goes into the dough than the low reading would have implied.)*
-
-Spiral mixers still run far lower friction than planetaries — commercial spirals typically land 20–26 °F on a full bread mix, and this is a shorter profile on a small machine with a 10-minute rest in the middle. **The error is now more likely to be on the warm side than the cold side, so lean on ice rather than under-chilling.**
+**14.0 °F is measured, not assumed** — see above. For context on whether that's plausible: commercial spirals typically land 20–26 °F on a full bread mix, and this is a shorter profile on a smaller machine with a 10-minute rest in the middle, so the low end of that range is where it should sit.
 
 Protocol:
 1. Record every input mass and temperature.
@@ -329,7 +363,7 @@ Published professional practice, and the fridge holds the biga at a stable tempe
 | Final mix | ~30 min | DDT 74–75 °F | §8.2 |
 | Bulk rest | 45–60 min | ambient | §8.3 step 7 |
 | Divide and ball | 15–20 min | ambient | §8.3 step 8 |
-| Balls at room temperature | 60–120 min | ambient | §8.3 step 9 |
+| Balls at room temperature | **set by final dough temp** (71–144 min) | ambient | §8.3 step 9 |
 | Dough, refrigerated | **6–36 h** | 38–40 °F | §8.3 step 10 |
 | Temper | 2–3 h | ambient | §8.4 step 11 |
 
@@ -375,8 +409,8 @@ Have everything weighed and tempered before you start. Ice in the first water ad
 | Phase | Speed | Time | What |
 |---|---:|---:|---|
 | **Prep** | — | — | Break up clumps in the fresh flour dry, same as the biga flour. Crumble the biga small — smaller is better, it is the stiffest thing the mixer will face. Add the flour, toss to coat. |
-| **A — breakdown** | **15%** / 85 RPM | 3–4 min | Add ~60% of final water **with the mixer off**, then bring the dial up. Run until the biga pieces disappear into a rough shaggy mass. Highest-torque phase. *Optional (PizzaBlab): soak the crumbled biga in that water a few minutes first — but only a few. Working biga in water alone strips starch off the chunks and leaves hard, sticky gluten lumps.* |
-| **B — bassinage** | **20%** / 98 RPM | 5–6 min | Add salt. Then remaining water in **3 additions**, waiting for each to fully absorb before the next. Pour **slowly down the splash-guard spout** — at 98 RPM the hook will sling it if you dump it. |
+| **A — breakdown** | **15%** / 85 RPM | 3–4 min | Add **60% of the final water — weigh it** (3 balls 105.7 g · 6 balls 211.5 g · 9 balls 317.2 g) **with the mixer off**, then bring the dial up. Run until the biga pieces disappear into a rough shaggy mass. Highest-torque phase. *Optional (PizzaBlab): soak the crumbled biga in that water a few minutes first — but only a few. Working biga in water alone strips starch off the chunks and leaves hard, sticky gluten lumps.* |
+| **B — bassinage** | **20%** / 98 RPM | 5–6 min | Add salt. Then the remaining 40% (3 balls 70.5 g · 6 balls 141.0 g · 9 balls 211.5 g) in **3 additions**, waiting for each to fully absorb before the next. Pour **slowly down the splash-guard spout** — at 98 RPM the hook will sling it if you dump it. |
 | **— probe —** | 0% | — | **Target: DDT − 4 °F** — so **70 °F** if DDT is 74, **71 °F** if DDT is 75. You are *not* aiming at DDT yet; about a third of the friction is still ahead of you. See below. |
 | **C — development** | **30%** / 123 RPM | 3–4 min | Runs to smooth and glossy. Adjust the duration from the probe: **~1 °F per minute** at this speed. |
 | **Rest** | 0% | 10 min | Bowl covered, mixer off. Relaxes gluten; the dough will smooth out on its own. |
@@ -390,9 +424,13 @@ Have everything weighed and tempered before you start. Ice in the first water ad
 
 **The general form, once you know your own FF:**
 
-> **Probe target = DDT − (0.33 × FF) + 1**
+> **Probe target = DDT − 0.33 × FF × Ct/(Ct + C_bowl) + 0.2 × (DDT − T_room)**
 
-At FF = 14 °F that gives DDT − 3.7. Recompute it the first time you measure a real FF, and note that a 3-ball batch sheds more than 1 °F during the rest — closer to 2 — so its probe target sits about a degree higher.
+Two refinements from bake 1: the friction still to come is diluted by the bowl, and the rest loses heat in proportion to the dough-to-room gap rather than a flat 1 °F.
+
+At FF 14 in a 70 °F room: **3 balls → 72.2 °F · 6 balls → 71.8 °F · 9 balls → 70.5 °F**
+
+The 0.33 assumes nominal phase durations. Run Phase A or B long and more of the friction is already banked, so the probe should read higher.
 
 **Acting on the reading** (nominal Phase C is 3.5 min):
 
@@ -414,9 +452,24 @@ At FF = 14 °F that gives DDT − 3.7. Recompute it the first time you measure a
 7. Turn out into a lightly oiled container. Rest **45–60 min** at room temp.
    **No folds.** The mixer has already built the gluten network, and the biga contributed a developed one before that. Folding now only tightens the dough further and costs extensibility.
 8. Divide to **265 g**. Pre-round, rest 10–15 min, then ball tight.
-9. Onto **very lightly oiled** half-sheet trays with lids — a thin film wiped out with a paper towel, not a pool. Nothing on top of the balls. **Room temp for the time in your track** (60–120 min), then refrigerate.
+9. Onto **very lightly oiled** half-sheet trays with lids — a thin film wiped out with a paper towel, not a pool. Nothing on top of the balls. **Room temp per the table below** — set by the dough temperature you actually hit, not a fixed number — then refrigerate.
 
    *Oil, not flour — see the note below.*
+   **Adjust the room-temperature time to your actual dough temperature** (see below) rather than using a flat 90 min.
+
+| Final dough | Room time |
+|---:|---:|
+| 77 °F | 71 min |
+| 76 °F | 80 min |
+| **75 °F (on target)** | **90 min** |
+| 74 °F | 100 min |
+| 73 °F | 110 min |
+| 72 °F | 121 min |
+| 71 °F | 133 min |
+| 70 °F | 144 min |
+
+`R' = (90 + 150)/f − 150` where `f = 2^((T_actual − DDT)/17)`. The 150 is the cooldown's equivalent fermentation at DDT — a cooler dough loses ground both on the counter *and* on the way down to 40 °F, and this compensates for both. Clamp to 45–180 min.
+
 10. **Spread the trays out in the fridge for the first 4 h — do not stack.** A 265 g ball takes 3–4 h to reach 40 °F, and that whole window is warm fermentation you didn't budget for. Stacked trays can double it.
 
 #### Why oil the trays, not flour
@@ -559,10 +612,16 @@ SCHEDULE (Ooni/Fuso): biga 2h RT + 18-20h fridge -> 1h temper -> mix
        -> 1.5h RT -> ball -> 6-36h fridge -> 2h temper.   ~32-62 h total.
        Classic alt: biga 16-18h @ 61-65F, then short proof (~24-30 h).
 
-WATER TEMP =  3.00 x [ (DDT - FF) - 0.531 x T_biga - 0.136 x T_room ]
+WATER TEMP (bowl-aware; the old 3.00x shortcut is DEAD)
+  Ct = Cb+Cf+Cw+Cs (dough)   C_bowl = 965 x 0.12 = 115.8   T_bowl = T_biga
+  T_water = [ DDT x (Ct+C_bowl) - FF x Ct - Cb.Tbiga - Cf.Tflour
+              - Cs.Troom - C_bowl.Tbowl ] / Cw
+  FF = 14.0 F MEASURED (bake 1). FF is the rise in the DOUGH ALONE.
 ICE  =  YOUR freezer ice (16 F) = -120 F effective
         general: -112 - 0.5 x (32 - T_ice)   [wet ice = -112]
-DDT  =  75 F (3-6 balls) / 74 F (9+)      FF start guess = 14 F
+DDT  =  75 F (3-6 balls) / 74 F (9+)
+PROBE = DDT - 0.33 x FF x Ct/(Ct+C_bowl) + 0.2 x (DDT - Troom)
+        3bl 72.2 / 6bl 71.8 / 9bl 70.5   (FF 14, room 70)
 
 RPM = 47.4 + 2.526 x dial%   [MEASURED: 5% = 60 RPM]
   15% = 85    20% = 98    30% = 123    40% = 148 (ceiling)
@@ -571,14 +630,15 @@ RPM = 47.4 + 2.526 x dial%   [MEASURED: 5% = 60 RPM]
 FINAL  A      15%/85   3-4 min   breakdown, 60% of water
        B      20%/98   5-6 min   salt + water in 3 adds
        PROBE  target DDT - 4 F  (70 F if DDT 74 / 71 F if DDT 75)
-              general: DDT - (0.33 x FF) + 1
+  general: DDT - 0.33 x FF x Ct/(Ct+C_bowl) + 0.2 x (DDT - Troom)
        C      30%/123  3-4 min   develop; ~1 F per min at this speed
               can only shift -1.6 to +2.2 F. Bigger miss -> fix water next time.
        rest    0%      10 min
        D      20%/98   45-60 s   finish
 NEVER above 40%.  20 min continuous max.
 
-BULK 45-60 min (no folds) -> ball -> 60-120 min RT -> fridge (unstacked)
+BULK 45-60 min (no folds) -> ball -> RT per final dough temp -> fridge (unstacked)
+  75F=90min  74F=100  73F=110  72F=121  71F=133  70F=144   (76F=80, 77F=71)
 TEMPER 2-3 h to 60-65 F core.
 BAKE gauge 750 F, FULL FLAME, 60-90 s, turn every 15-20 s. Do not push to 800+.
 ```
@@ -589,6 +649,29 @@ BAKE gauge 750 F, FULL FLAME, 60-90 s, turn every 15-20 s. Do not push to 800+.
 
 **Only one thing blocks you: friction factor.** Everything else in this document is either arithmetic you already have (§3 scaling, §6 water temp and ice) or published data you can cite (§5 yeast). FF is the single input that can only come from your own machine.
 
+### ✅ Bake 1 — 21 Aug 2026, 6 balls
+
+| | |
+|---|---|
+| Biga | 3:30 PM Thu, 2 h RT + ~19 h fridge, in the mixer bowl |
+| Biga at mix | 53 °F at pull, **58 °F after tearing** |
+| Room / flour | 70 / 69 °F |
+| Water used | 63.0 °F, 352 g — **should have been 68.0 °F** (bowl-free model was wrong by 5 °F) |
+| Probe @ 11 min | 67.5 °F |
+| Phase C | 14 → 20.5 min (6.5 min @ 30%) |
+| **Final dough** | **73.5 °F** — 1.5 °F under, exactly the water error |
+| **FF measured** | **14.04 °F** ✅ |
+| Bowl | 965 g stainless |
+
+**What it taught us:**
+- The **bowl term** is required — and for its *mass*, not its temperature
+- Phase C rate climbed 0.82 → 1.00 °F/min as the bowl equilibrated
+- Rest + Phase D gained +0.5 °F, not the −0.14 predicted → rest loss scales with the dough-to-room gap
+- **Phase A water was guessed, so the "too dry" observation is confounded.** Now specified in grams. Needs a clean repeat.
+- Total motor time 18.5 min vs ~15 nominal
+
+**Next:** run 3 balls and 9 balls. If the bowl model is right, FF stays near 14 while the raw rise differs (11.5 vs 13.0).
+
 ### Tier 1 — blocking
 
 | Measure | How | Reps |
@@ -596,6 +679,9 @@ BAKE gauge 750 F, FULL FLAME, 60-90 s, turn every 15-20 s. Do not push to 800+.
 | **FF at 3, 6, 9 balls** | Log all inputs, run §8 exactly, probe immediately, `FF = measured − predicted` | 2–3 each |
 | **Tap water temp** | Thermometer. Make it a form field, not a constant — it swings seasonally | ongoing |
 | **Freezer temp** | Probe a cube's interior, not the surface | ✅ 16 °F → −120 |
+| **Bowl mass** | Kitchen scale, once | ✅ 965 g → C = 115.8 |
+| **FF at 6 balls** | Bake 1 | ✅ 14.04 °F |
+| **FF at 3 and 9 balls** | The falsifiable test of the bowl model | ⬜ next |
 | **Actual fridge temp** | Probe on the shelf you use, not the dial | once, then spot-check |
 
 One rep gets you most of the value. Three gets you a mean and a sense of the spread, which tells you how tight your DDT can realistically be.
@@ -625,6 +711,8 @@ Then log yeast %, the actual temperature profile, and hours to +20%. But be real
 batch_id, date, balls, ball_g, total_flour_g
 biga_ady_pct, biga_water_temp_f, biga_start_time, biga_rt_hours, biga_fridge_hours
 biga_pct_rise_at_pull, biga_temp_at_mix_f
+bowl_mass_g, bowl_temp_f            <- defaults to biga_temp_at_mix_f
+phase_a_water_g, phase_c_seconds_actual
 room_temp_f, flour_temp_f, tap_temp_f, ice_g, water_temp_used_f
 ddt_target_f, probe_temp_f, phase_c_seconds, final_dough_temp_f
 ff_predicted_mix_temp_f, ff_measured        <- the payload
@@ -635,6 +723,6 @@ gauge_temp_f, stone_ir_f, bake_seconds
 notes_crumb, notes_cornicione, notes_base
 ```
 
-`ff_measured = final_dough_temp_f − ff_predicted_mix_temp_f`, where the prediction is `0.531·T_biga + 0.131·T_flour + 0.333·T_water + 0.005·T_room` (§6).
+`ff_measured = [ final_dough_temp_f × (Ct + C_bowl) − Cb·T_biga − Cf·T_flour − Cw·T_water − Cs·T_room − C_bowl·T_bowl ] ÷ Ct` (§6). Log the component heat capacities alongside, or recompute them from the batch size.
 
 Capture `gauge_temp_f` alongside `stone_ir_f` at least a few times — the built-in gauge and the stone surface are different measurements, and the mapping between them is the one bake number that transfers to any other oven.

@@ -8,11 +8,12 @@ const BASE: CalculatorInputs = {
   balls: 6,
   ballWeightG: 265,
   roomTempF: 70,
-  flourTempF: 70,
-  bigaTempF: 64,
+  flourTempF: 69,
+  bigaTempF: 58,
   tapTempF: 60,
   freezerTempF: 16,
-  frictionFactorF: 14,
+  frictionFactorF: 14.0,
+  bowlMassG: 965,
 };
 
 function text(overrides: Partial<CalculatorInputs> = {}): string {
@@ -27,11 +28,29 @@ describe('recipe text', () => {
     }
   });
 
-  it('carries the water target and the ice split', () => {
+  it('carries the water target', () => {
+    // §5 six-ball vector: 68.1 °F, which is above tap, so no ice.
     const out = text();
-    expect(out).toContain('52.5 °F');
-    expect(out).toContain('14.6 g');
-    expect(out).toContain('338.0 g');
+    expect(out).toContain('68.1 °F');
+    expect(out).toContain('warm the water, no ice');
+  });
+
+  it('shows both bassinage additions as weighable grams', () => {
+    // The bake-1 bug: "~60% of the water" caused a guess and cost a data point.
+    const out = text();
+    expect(out).toContain('211.6 g (weigh it)');
+    expect(out).toContain('141.1 g in 3 additions');
+  });
+
+  it('records the bowl mass, since it is now part of the model', () => {
+    expect(text()).toMatch(/Bowl\s+965 g/);
+  });
+
+  it('marks the room time as planned until a dough temperature is measured', () => {
+    expect(text()).toContain('planned at DDT');
+    const measured = text({ finalDoughTempF: 72 });
+    expect(measured).toContain('121 min');
+    expect(measured).toContain('final dough 72.0 °F');
   });
 
   it('records the conditions, so the numbers can be reproduced', () => {
@@ -58,6 +77,12 @@ describe('recipe text', () => {
     const out = text({ bigaTempF: 42 });
     expect(out).toContain('warm the water, no ice');
     expect(out).not.toMatch(/Ice\s+0\.0 g/);
+  });
+
+  it('shows an ice split when the target is genuinely below tap', () => {
+    const out = text({ bigaTempF: 90, roomTempF: 85, flourTempF: 85 });
+    expect(out).toMatch(/Ice\s+[\d.]+ g/);
+    expect(out).toMatch(/Tap\s+[\d.]+ g/);
   });
 
   it('flags an unreachable target instead of a plausible number', () => {

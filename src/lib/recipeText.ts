@@ -7,7 +7,7 @@
  * figure without the temperatures it was computed from can't be reproduced.
  */
 
-import { formatAdy, formatGrams, formatTempF } from './format';
+import { formatAdy, formatGrams, formatGramsWhole, formatTempF } from './format';
 import type { CalculatorResult } from './engine';
 
 /** Pad a label so the numbers line up in a monospaced viewer. */
@@ -36,6 +36,10 @@ export function buildRecipeText(result: CalculatorResult): string {
   lines.push(row('Biga', `${formatGrams(formula.bigaMass)} g (all of it)`));
   lines.push(row('Fresh flour', `${formatGrams(formula.freshFlour)} g`));
   lines.push(row('Fresh water', `${formatGrams(formula.freshWater)} g`));
+  // Weighable grams for each addition — "~60% of the water" caused a guess on
+  // bake 1 and cost a data point.
+  lines.push(row('  Phase A', `${formatGrams(formula.phaseAWater)} g (weigh it)`));
+  lines.push(row('  Phase B', `${formatGrams(formula.phaseBWater)} g in 3 additions`));
   lines.push(row('Salt', `${formatGrams(formula.salt)} g`));
   if (capacity.nMix > 1) {
     const how = capacity.divideBigaAcrossMixes
@@ -60,6 +64,15 @@ export function buildRecipeText(result: CalculatorResult): string {
   lines.push('TARGETS');
   lines.push(row('DDT', `${formatTempF(result.ddtF)} °F`));
   lines.push(row('Probe at B', `${formatTempF(result.probeTargetF)} °F`));
+  lines.push(
+    row(
+      'Room time',
+      `${Math.round(result.roomMinutes)} min` +
+        (result.roomMinutesIsPlanned
+          ? ' (planned at DDT — recompute once you measure)'
+          : ` (final dough ${formatTempF(result.effectiveFinalTempF)} °F)`),
+    ),
+  );
   lines.push('');
 
   lines.push('CONDITIONS');
@@ -69,6 +82,7 @@ export function buildRecipeText(result: CalculatorResult): string {
   lines.push(row('Tap', `${formatTempF(inputs.tapTempF)} °F`));
   lines.push(row('Freezer', `${formatTempF(inputs.freezerTempF)} °F`));
   lines.push(row('Friction', `${formatTempF(inputs.frictionFactorF)} °F`));
+  lines.push(row('Bowl', `${formatGramsWhole(inputs.bowlMassG ?? 965)} g`));
 
   return lines.join('\n');
 }

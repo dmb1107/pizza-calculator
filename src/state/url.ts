@@ -23,10 +23,11 @@ const KEYS = {
   bigaTempF: 'biga',
   tapTempF: 'tap',
   freezerTempF: 'freezer',
+  bowlMassG: 'bowl',
   bigaFridgeH: 'fridge',
   bigaRoomOnlyH: 'bigart',
-  ballRoomTempH: 'ballrt',
   temperH: 'temper',
+  finalDoughTempF: 'dought',
 } as const satisfies Record<keyof Inputs, string>;
 
 const SCHEDULE_CODE: Record<Schedule, string> = { retarded: 'r', classic: 'c' };
@@ -72,8 +73,15 @@ export function encodeInputs(inputs: Inputs): string {
     num(inputs.bigaRoomOnlyH),
     inputs.bigaRoomOnlyH === DEFAULT_INPUTS.bigaRoomOnlyH,
   );
-  put(KEYS.ballRoomTempH, num(inputs.ballRoomTempH), inputs.ballRoomTempH === DEFAULT_INPUTS.ballRoomTempH);
   put(KEYS.temperH, num(inputs.temperH), inputs.temperH === DEFAULT_INPUTS.temperH);
+  put(KEYS.bowlMassG, num(inputs.bowlMassG), inputs.bowlMassG === DEFAULT_INPUTS.bowlMassG);
+  // A measured dough temperature belongs to one session, so it travels in the
+  // link the same way the rest of the inputs do.
+  put(
+    KEYS.finalDoughTempF,
+    inputs.finalDoughTempF === null ? '' : num(inputs.finalDoughTempF),
+    inputs.finalDoughTempF === null,
+  );
 
   return p.toString();
 }
@@ -88,6 +96,20 @@ function readNumber(
   if (raw === null || raw.trim() === '') return fallback;
   const parsed = Number(raw);
   // Reject garbage rather than propagating NaN into the engine.
+  if (!Number.isFinite(parsed)) return fallback;
+  return clampField(field, parsed);
+}
+
+/** Like readNumber, but absence means "not measured yet" rather than a default. */
+function readOptionalNumber(
+  p: URLSearchParams,
+  key: string,
+  field: Parameters<typeof clampField>[0],
+  fallback: number | null,
+): number | null {
+  const raw = p.get(key);
+  if (raw === null || raw.trim() === '') return fallback;
+  const parsed = Number(raw);
   if (!Number.isFinite(parsed)) return fallback;
   return clampField(field, parsed);
 }
@@ -126,8 +148,9 @@ export function decodeInputs(search: string, base: Inputs = DEFAULT_INPUTS): Inp
     freezerTempF: readNumber(p, KEYS.freezerTempF, 'freezerTempF', base.freezerTempF),
     bigaFridgeH: readNumber(p, KEYS.bigaFridgeH, 'bigaFridgeH', base.bigaFridgeH),
     bigaRoomOnlyH: readNumber(p, KEYS.bigaRoomOnlyH, 'bigaRoomOnlyH', base.bigaRoomOnlyH),
-    ballRoomTempH: readNumber(p, KEYS.ballRoomTempH, 'ballRoomTempH', base.ballRoomTempH),
     temperH: readNumber(p, KEYS.temperH, 'temperH', base.temperH),
+    bowlMassG: readNumber(p, KEYS.bowlMassG, 'bowlMassG', base.bowlMassG),
+    finalDoughTempF: readOptionalNumber(p, KEYS.finalDoughTempF, 'finalDoughTempF', base.finalDoughTempF),
   };
 }
 

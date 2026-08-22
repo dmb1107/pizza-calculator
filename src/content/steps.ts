@@ -153,7 +153,8 @@ Break up the fresh flour dry for the same reason as the biga flour — this is y
     id: "mix-2",
     phase: "mix",
     title: "Phase A, breakdown",
-    summary: `Add ~60% of the water ({freshWater60} g) with the mixer **off**, then run at **15% / 85 RPM** for 3–4 min until the biga pieces disappear into a rough shaggy mass.`,
+    summary: `Add **{phaseAWater} g** of water (60%) with the mixer **off**, then run at **15% / 85 RPM** for 3–4 min until the biga pieces disappear into a rough shaggy mass.`,
+    values: [`Phase A water: {phaseAWater} g — weigh it, don't estimate`],
     speed: { dial: 15, rpm: 85, minutes: [3, 4], label: `15% / 85 RPM, 3–4 min` },
     detail: `**Highest-torque phase of the whole session.**
 
@@ -168,8 +169,8 @@ If motor protection engages, stop, rest 5 minutes, and resume one step lower. Lo
     id: "mix-3",
     phase: "mix",
     title: "Phase B, salt and bassinage",
-    summary: `Add {salt} g salt. Then the remaining water in **3 additions**, each fully absorbed before the next. **20% / 98 RPM**, 5–6 min.`,
-    values: [`Salt: {salt} g`, `Remaining water: {freshWater40} g`],
+    summary: `Add {salt} g salt. Then **{phaseBWater} g** (the remaining 40%) in **3 additions**, each fully absorbed before the next. **20% / 98 RPM**, 5–6 min.`,
+    values: [`Salt: {salt} g`, `Phase B water: {phaseBWater} g`],
     speed: { dial: 20, rpm: 98, minutes: [5, 6], label: `20% / 98 RPM, 5–6 min` },
     detail: `**Salt goes in here — never in the biga**, where it would suppress the yeast you just spent 20 hours propagating.
 
@@ -187,11 +188,11 @@ At 2.8% the salt is at the upper end of the Neapolitan range of 2.5–3.0%. That
 
 Still to come: Phase C at about +3.8 °F, Phase D at about +0.9 °F, minus roughly 1 °F given back to the room during the 10-minute rest. Net **+3.7 °F**, so aim about 4 °F low.
 
-The general form, once you know your own friction factor:
+The general form:
 
-**Probe target = DDT − (0.33 × FF) + 1**
+**Probe target = DDT − 0.33 × FF × Ct/(Ct + C_bowl) + 0.2 × (DDT − T_room)**
 
-A 3-ball batch sheds more than 1 °F during the rest — closer to 2 — so its target sits about a degree higher.`,
+Remaining friction is diluted by the mixer bowl's thermal mass, and the rest sheds heat in proportion to the dough-to-room gap. At FF 14 in a 70 °F room: 3 balls 72.2 °F, 6 balls 71.8 °F, 9 balls 70.5 °F.`,
     troubleshoot: {
       headers: [`Probe reads`, `Do`],
       rows: [
@@ -266,7 +267,8 @@ At {ballWeight} g you're opening to roughly 11.5–12 inches — a thickness fac
     id: "bulk-3",
     phase: "bulk",
     title: "Onto trays",
-    summary: `**Very lightly oiled** half-sheet trays with lids — a film wiped with a paper towel, not a pool. Nothing on top of the balls. Room temperature {ballRoomTemp} h.`,
+    summary: `**Very lightly oiled** half-sheet trays with lids — a film wiped with a paper towel, not a pool. Nothing on top of the balls. Room temperature **{roomMin} min**, set by the dough temperature you actually hit.`,
+    values: [`Room time: {roomMin} min (final dough {finalDoughTemp} °F)`],
     detail: `**Oil, not flour.**
 
 Flour is hygroscopic. It pulls water out of the dough surface and hydrates into paste. Over 24–36 hours in a fridge — a drying environment even under a lid — you get the worst of both: patches of gluey paste where the flour hydrated, and a dry skin everywhere else. That skin resists opening and tears at the cornicione instead of stretching.

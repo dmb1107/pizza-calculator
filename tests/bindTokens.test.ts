@@ -6,21 +6,22 @@ import { STEPS } from '../src/content/steps';
 
 /** {token} binding — WEBSITE-SPEC-biga-calculator.md §8.1. */
 
+/** The §5 vector conditions. */
 const INPUTS: CalculatorInputs = {
   balls: 6,
   ballWeightG: 265,
   roomTempF: 70,
-  flourTempF: 70,
-  bigaTempF: 64,
+  flourTempF: 69,
+  bigaTempF: 58,
   tapTempF: 60,
   freezerTempF: 16,
-  frictionFactorF: 14,
+  frictionFactorF: 14.0,
+  bowlMassG: 965,
 };
 
 const SCHEDULE: ScheduleTokens = {
   bigaFridgeH: 19,
   bigaRoomOnlyH: 16,
-  ballRoomTempH: 1.5,
   coldFermentH: 24,
   temperH: 2.5,
 };
@@ -90,8 +91,8 @@ describe('bound values', () => {
   });
 
   it('splits the bassinage water 60/40', () => {
-    const sixty = Number(values['freshWater60']);
-    const forty = Number(values['freshWater40']);
+    const sixty = Number(values['phaseAWater']);
+    const forty = Number(values['phaseBWater']);
     // Each half is rounded to 1 dp independently, so the two can sum to 0.1 g
     // more than the rounded whole (211.6 + 141.1 = 352.7 vs 352.6). That is
     // display rounding, not a formula error, and 0.1 g of water is below what
@@ -108,14 +109,23 @@ describe('bound values', () => {
     expect(values['ballWeight']).toBe('265');
     expect(values['balls']).toBe('6');
     expect(values['temper']).toBe('2.5');
-    expect(values['ballRoomTemp']).toBe('1.5');
     expect(values['coldFerment']).toBe('24');
     expect(values['bigaFlour']).toContain('.');
   });
 
   it('carries the probe target and DDT as temperatures', () => {
     expect(values['ddt']).toBe('75.0');
-    expect(values['probeTarget']).toBe('71.4');
+    // §5: 6 balls at FF 14 in a 70 °F room.
+    expect(values['probeTarget']).toBe('71.8');
+  });
+
+  it('plans the room time at 90 min until a dough temperature is measured', () => {
+    expect(values['roomMin']).toBe('90');
+    expect(values['finalDoughTemp']).toBe('75.0');
+
+    const measured = tokenValues(calculate({ ...INPUTS, finalDoughTempF: 73 }), SCHEDULE);
+    expect(measured['roomMin']).toBe('110');
+    expect(measured['finalDoughTemp']).toBe('73.0');
   });
 
   it('tracks the schedule adjustments', () => {
@@ -156,6 +166,6 @@ describe('step summaries bind to real numbers', () => {
 
   it('fills mix-4 with the probe target', () => {
     const step = STEPS.find((s) => s.id === 'mix-4');
-    expect(bindTokens(step?.summary ?? '', values)).toContain('71.4 °F');
+    expect(bindTokens(step?.summary ?? '', values)).toContain('71.8 °F');
   });
 });

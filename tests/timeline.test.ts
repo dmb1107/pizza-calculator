@@ -104,18 +104,40 @@ describe('§4.7 stage durations', () => {
       expect(overheads[0]).toBeCloseTo(27.83, 2);
     });
 
-    it('stays inside the band at every allowed adjustment extreme', () => {
-      const extremes: ScheduleAdjustments[] = [
-        { bigaFridgeH: 18, bigaRoomOnlyH: 16, ballRoomTempH: 1, coldFermentH: 24, temperH: 2 },
-        { bigaFridgeH: 20, bigaRoomOnlyH: 16, ballRoomTempH: 2, coldFermentH: 24, temperH: 3 },
-      ];
-      for (const adjustments of extremes) {
-        const overhead =
-          buildTimeline({ startAt: start, schedule: 'retarded', adjustments }).totalH -
-          adjustments.coldFermentH;
-        expect(overhead).toBeGreaterThanOrEqual(25.5);
-        expect(overhead).toBeLessThanOrEqual(30);
-      }
+    it('stays inside the band across the realistic range', () => {
+      // ballRoomTempH is no longer chosen — §4.8 computes it from the measured
+      // dough temperature, spanning 71 min (77 °F) to 144 min (70 °F).
+      const overhead = (a: ScheduleAdjustments) =>
+        buildTimeline({ startAt: start, schedule: 'retarded', adjustments: a }).totalH -
+        a.coldFermentH;
+
+      const warmest: ScheduleAdjustments = {
+        bigaFridgeH: 18, bigaRoomOnlyH: 16, ballRoomTempH: 71 / 60, coldFermentH: 24, temperH: 2,
+      };
+      expect(overhead(warmest)).toBeGreaterThanOrEqual(25.5);
+      expect(overhead(warmest)).toBeLessThanOrEqual(30);
+      expect(overhead({ ...DEFAULTS })).toBeCloseTo(27.83, 2);
+    });
+
+    /**
+     * §4.8 quotes fixed overhead as 25.5–30 h, but that band predates the
+     * shaped rise time. With every adjustable at its maximum simultaneously —
+     * a 20 h fridge, a 3 h temper, and a 70 °F dough stretching the room phase
+     * to 144 min — overhead reaches 30.2 h and steps just past it.
+     *
+     * Recorded rather than papered over: the defaults still land exactly on the
+     * ~34 / ~52 / ~64 h totals §4.8 says to assert, and this corner needs all
+     * three maxima at once plus a 5 °F temperature miss. Flagged for the spec.
+     */
+    it('exceeds the quoted band only at the all-maximum corner', () => {
+      const overhead = (a: ScheduleAdjustments) =>
+        buildTimeline({ startAt: start, schedule: 'retarded', adjustments: a }).totalH -
+        a.coldFermentH;
+      const hottest: ScheduleAdjustments = {
+        bigaFridgeH: 20, bigaRoomOnlyH: 16, ballRoomTempH: 144 / 60, coldFermentH: 24, temperH: 3,
+      };
+      expect(overhead(hottest)).toBeCloseTo(30.23, 2);
+      expect(overhead(hottest)).toBeGreaterThan(30);
     });
   });
 

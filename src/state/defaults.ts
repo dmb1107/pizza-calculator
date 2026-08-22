@@ -15,15 +15,20 @@ export const DEFAULT_INPUTS: Inputs = {
   bigaTempF: 64,
   tapTempF: C.DEFAULT_TAP_F,
   freezerTempF: C.DEFAULT_FREEZER_F,
+  bowlMassG: C.DEFAULT_BOWL_MASS_G,
 
   bigaFridgeH: 19,
   bigaRoomOnlyH: 16,
-  ballRoomTempH: 1.5,
   temperH: 2.5,
+  finalDoughTempF: null,
 };
 
+/**
+ * §6: seed the friction map with the one real measurement.
+ * FF 14.04 °F at 6 balls, bake 1, 21 Aug 2026. Other sizes fall back to 14.0.
+ */
 export const DEFAULT_CALIBRATION: Calibration = {
-  frictionFactors: {},
+  frictionFactors: { 6: { ff: 14.04, measuredAt: '2026-08-21' } },
   ddtOverrideF: null,
 };
 
@@ -40,6 +45,7 @@ export const DEFAULT_PERSISTED: Persisted = {
   freezerTempF: DEFAULT_INPUTS.freezerTempF,
   bigaStartAtIso: '',
   checkedSteps: [],
+  bowlMassG: DEFAULT_INPUTS.bowlMassG,
 };
 
 /**
@@ -65,11 +71,15 @@ export const BOUNDS = {
   frictionFactorF: { min: 0, max: 40, step: 0.1 },
   ddtOverrideF: { min: 60, max: 90, step: 0.5 },
 
-  // §4.7 states each of these ranges explicitly.
+  // §4.7 states each of these ranges explicitly. `ballRoomTemp` is absent
+  // deliberately — §4.8 computes it and it is no longer a user choice.
   bigaFridgeH: { min: 18, max: 20, step: 0.5 },
   bigaRoomOnlyH: { min: 12, max: 18, step: 0.5 },
-  ballRoomTempH: { min: 1, max: 2, step: 0.25 },
   temperH: { min: 2, max: 3, step: 0.25 },
+
+  bowlMassG: { min: 200, max: 3000, step: 5 },
+  /** Wide: this is a reading off a probe, and a wild one should be visible. */
+  finalDoughTempF: { min: 55, max: 95, step: 0.1 },
 } as const;
 
 export type BoundedField = keyof typeof BOUNDS;

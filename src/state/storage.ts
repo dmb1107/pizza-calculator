@@ -120,6 +120,7 @@ export function loadPersisted(storage: StorageLike | null): Persisted {
     ),
     bigaStartAtIso: parseIsoInstant(parsed['bigaStartAtIso']),
     checkedSteps: parseStringArray(parsed['checkedSteps']),
+    bowlMassG: clampField('bowlMassG', finiteOr(parsed['bowlMassG'], DEFAULT_PERSISTED.bowlMassG)),
   };
 }
 

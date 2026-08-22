@@ -37,10 +37,11 @@ const CUSTOM: Inputs = {
   bigaTempF: 58.5,
   tapTempF: 55,
   freezerTempF: 4,
+  bowlMassG: 1100,
   bigaFridgeH: 18.5,
   bigaRoomOnlyH: 14,
-  ballRoomTempH: 1.25,
   temperH: 3,
+  finalDoughTempF: 73.5,
 };
 
 describe('URL serialization', () => {
@@ -155,6 +156,7 @@ describe('localStorage persistence', () => {
       freezerTempF: 4,
       bigaStartAtIso: '2026-08-21T13:00:00.000Z',
       checkedSteps: ['biga-1', 'biga-2'],
+      bowlMassG: 1100,
     };
     savePersisted(s, value);
     expect(loadPersisted(s)).toEqual(value);
@@ -180,9 +182,22 @@ describe('localStorage persistence', () => {
       ['wrong-typed fields', '{"calibration":42,"panels":"open","freezerTempF":"cold"}'],
     ])('%s', (_label, raw) => {
       const loaded = loadPersisted(fakeStorage({ [STORAGE_KEY]: raw }));
-      expect(loaded.calibration.frictionFactors).toEqual({});
+
+      // Every field is a usable value rather than a crash or a NaN.
       expect(Number.isFinite(loaded.freezerTempF)).toBe(true);
+      expect(Number.isFinite(loaded.bowlMassG)).toBe(true);
       expect(typeof loaded.panels.batch).toBe('boolean');
+      expect(Array.isArray(loaded.checkedSteps)).toBe(true);
+
+      // Whatever survives must be well-formed. Note the map is NOT required to
+      // be empty: a record too broken to parse falls back to DEFAULT_PERSISTED,
+      // which carries the seeded bake-1 measurement — losing a real calibration
+      // because localStorage got scrambled would be the worse failure.
+      for (const [size, entry] of Object.entries(loaded.calibration.frictionFactors)) {
+        expect(Number.isInteger(Number(size))).toBe(true);
+        expect(Number.isFinite(entry.ff)).toBe(true);
+        expect(typeof entry.measuredAt).toBe('string');
+      }
     });
 
     it('drops corrupt friction entries but keeps the good ones', () => {
@@ -214,11 +229,21 @@ describe('localStorage persistence', () => {
 });
 
 describe('§6 friction factor is per batch size', () => {
-  it('falls back to 14 and badges it as an estimate', () => {
+  it('ships the bake-1 measurement for 6 balls', () => {
+    // §6: seed with {6: {value: 14.04, date: '2026-08-21'}}.
     const f = effectiveFriction(DEFAULT_CALIBRATION, 6);
-    expect(f.ff).toBe(C.DEFAULT_FF);
-    expect(f.isEstimate).toBe(true);
-    expect(f.measuredAt).toBeUndefined();
+    expect(f.ff).toBe(14.04);
+    expect(f.isEstimate).toBe(false);
+    expect(f.measuredAt).toBe('2026-08-21');
+  });
+
+  it('falls back to 14.0 and badges it as an estimate at uncalibrated sizes', () => {
+    for (const balls of [3, 9, 12, 18]) {
+      const f = effectiveFriction(DEFAULT_CALIBRATION, balls);
+      expect(f.ff, `${balls} balls`).toBe(C.DEFAULT_FF);
+      expect(f.isEstimate, `${balls} balls`).toBe(true);
+      expect(f.measuredAt).toBeUndefined();
+    }
   });
 
   it('uses a measurement for that batch size and reports its date', () => {
@@ -232,7 +257,8 @@ describe('§6 friction factor is per batch size', () => {
   it('does not apply one batch size’s measurement to another', () => {
     // A 9-ball batch runs hotter than a 3-ball: more work, less surface area
     // per unit mass to shed it. Sharing one number across sizes is the bug §6
-    // exists to prevent.
+    // exists to prevent. This is separate from bowl dilution — both are real
+    // and they stack.
     const cal = recordFriction(DEFAULT_CALIBRATION, 9, 16.4, '2026-08-21');
     expect(effectiveFriction(cal, 3).ff).toBe(C.DEFAULT_FF);
     expect(effectiveFriction(cal, 3).isEstimate).toBe(true);

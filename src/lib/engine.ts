@@ -13,7 +13,7 @@
  *     what makes them a meaningful assertion target (§4.2).
  */
 
-import { C, defaultDdtF } from './constants';
+import { C, bowlHeatCapacity, defaultDdtF } from './constants';
 import { formatGrams, formatTempF } from './format';
 
 // ---------------------------------------------------------------------------
@@ -37,10 +37,13 @@ export interface Formula {
   bigaADY: number;
   freshFlour: number;
   freshWater: number;
-  /** First bassinage addition: ~60% of the fresh water, added in Phase A. */
-  freshWater60: number;
-  /** Remaining 40%, added across 3 additions in Phase B. */
-  freshWater40: number;
+  /**
+   * Phase A water, 60% of the fresh water. In grams because "~60% of the
+   * water" caused a guess on bake 1 and cost a data point.
+   */
+  phaseAWater: number;
+  /** Phase B water, the remaining 40%, added across 3 additions. */
+  phaseBWater: number;
   salt: number;
   doughTotal: number;
 }
@@ -60,9 +63,9 @@ export function computeFormula({ balls, ballWeightG }: BatchInputs): Formula {
     bigaADY: bigaFlour * C.ADY_OF_BIGA_FLOUR,
     freshFlour: flourTotal - bigaFlour,
     freshWater,
-    // §8.2 mix-2 / mix-3 bind these tokens.
-    freshWater60: freshWater * 0.6,
-    freshWater40: freshWater * 0.4,
+    // Weighable grams, not a percentage to estimate. §8.2 mix-2 / mix-3.
+    phaseAWater: freshWater * C.PHASE_A_FRACTION,
+    phaseBWater: freshWater * (1 - C.PHASE_A_FRACTION),
     salt: flourTotal * C.SALT,
     doughTotal: flourTotal * C.DOUGH_YIELD,
   };
@@ -78,9 +81,23 @@ export interface Thermal {
   cFreshFlour: number;
   cFreshWater: number;
   cSalt: number;
+  /** Dough only: Cb + Cf + Cw + Cs. The friction work term uses THIS. */
   cTotal: number;
-  /** Fractions of total heat capacity. Scale-invariant: ~0.5311 / 0.1306 / 0.3331 / 0.0052. */
+  /** Heat capacity of the mixer bowl. 115.8 at the 965 g default. */
+  cBowl: number;
+  /** cTotal + cBowl. The system the temperature is averaged over. */
+  cSystem: number;
+  /**
+   * Fractions of the DOUGH-ONLY total. These stay scale-invariant at
+   * ~0.5311 / 0.1306 / 0.3331 / 0.0052.
+   *
+   * Bowl-inclusive shares are NOT scale-invariant — the bowl is fixed mass
+   * while the dough scales — so do not assert invariance on anything divided
+   * by cSystem.
+   */
   weights: { biga: number; flour: number; water: number; salt: number };
+  /** cBowl / cSystem. 18.0% at 3 balls, 3.5% at 18. */
+  bowlShare: number;
 }
 
 /**
@@ -88,12 +105,13 @@ export interface Thermal {
  * weights are scale-invariant, which is precisely what makes them a good
  * assertion target.
  */
-export function computeThermal(f: Formula): Thermal {
+export function computeThermal(f: Formula, bowlMassG: number = C.DEFAULT_BOWL_MASS_G): Thermal {
   const cBiga = f.bigaMass * C.C_BIGA;
   const cFreshFlour = f.freshFlour * C.C_FLOUR;
   const cFreshWater = f.freshWater * C.C_WATER;
   const cSalt = f.salt * C.C_SALT;
   const cTotal = cBiga + cFreshFlour + cFreshWater + cSalt;
+  const cBowl = bowlHeatCapacity(bowlMassG);
 
   return {
     cBiga,
@@ -101,12 +119,15 @@ export function computeThermal(f: Formula): Thermal {
     cFreshWater,
     cSalt,
     cTotal,
+    cBowl,
+    cSystem: cTotal + cBowl,
     weights: {
       biga: cBiga / cTotal,
       flour: cFreshFlour / cTotal,
       water: cFreshWater / cTotal,
       salt: cSalt / cTotal,
     },
+    bowlShare: cBowl / (cTotal + cBowl),
   };
 }
 
@@ -117,29 +138,99 @@ export function computeThermal(f: Formula): Thermal {
 export interface TempInputs {
   /** Desired dough temperature, °F. */
   ddtF: number;
-  /** Friction factor, °F. Covers mixer friction AND hydration exotherm together. */
+  /**
+   * Friction factor, °F.
+   *
+   * ⚠️ FF is the temperature rise the mixer produces in the DOUGH ALONE.
+   * Covers mixer friction AND the hydration exotherm together.
+   */
   frictionFactorF: number;
   /** Measured biga temperature at mix time, °F. The dominant term. */
   bigaTempF: number;
   flourTempF: number;
   roomTempF: number;
+  /**
+   * Bowl temperature, °F. Defaults to the biga temperature: the biga ferments
+   * in the mixer bowl, so 19 h of contact leaves them at equilibrium. Pass
+   * roomTempF for a bowl kept on the counter. The effect is about −0.3 °F,
+   * which is why this is never a required measurement.
+   */
+  bowlTempF?: number;
+}
+
+/** T_bowl defaults to T_biga. §4.2. */
+function bowlTemp(t: TempInputs): number {
+  return t.bowlTempF ?? t.bigaTempF;
 }
 
 /**
- * §4.3. A mass-and-specific-heat weighted mix, not the "multiply DDT by 4"
- * shortcut — the biga is 56% of the final dough mass, so treating it as one of
- * four equal factors is badly wrong.
+ * §4.3. Water temperature required to land on DDT.
  *
- * Note what this implies: with a fridge-retarded biga the answer is WARM water.
+ * ⚠️ THE TRAP: the work term is `FF × cTotal`, NOT `FF × cSystem`.
+ *
+ * FF is defined as the rise the mixer produces in the dough alone, so the
+ * friction energy is `FF × cTotal` — that energy then spreads across the whole
+ * system, dough plus bowl, which is why `cSystem` appears on the DDT side.
+ * Using `FF × cSystem` returns a water temperature several degrees off while
+ * looking entirely reasonable.
+ *
+ * The bowl is not a refinement. Omitting it made this output 5 °F wrong on the
+ * first real bake.
  */
 export function computeWaterTempF(t: TempInputs, thermal: Thermal): number {
-  const { cBiga, cFreshFlour, cFreshWater, cSalt, cTotal } = thermal;
+  const { cBiga, cFreshFlour, cFreshWater, cSalt, cTotal, cBowl, cSystem } = thermal;
   return (
-    ((t.ddtF - t.frictionFactorF) * cTotal -
+    (t.ddtF * cSystem -
+      t.frictionFactorF * cTotal - // <- cTotal, never cSystem
       cBiga * t.bigaTempF -
       cFreshFlour * t.flourTempF -
-      cSalt * t.roomTempF) /
+      cSalt * t.roomTempF -
+      cBowl * bowlTemp(t)) /
     cFreshWater
+  );
+}
+
+/**
+ * §4.3. Predicted final dough temperature for a water temperature actually used.
+ *
+ * The exact inverse of `computeWaterTempF`: feed that function's output back in
+ * and this returns DDT.
+ */
+export function computeFinalTempF(
+  t: TempInputs,
+  thermal: Thermal,
+  waterTempF: number,
+): number {
+  const { cBiga, cFreshFlour, cFreshWater, cSalt, cTotal, cBowl, cSystem } = thermal;
+  return (
+    (cBiga * t.bigaTempF +
+      cFreshFlour * t.flourTempF +
+      cFreshWater * waterTempF +
+      cSalt * t.roomTempF +
+      cBowl * bowlTemp(t) +
+      t.frictionFactorF * cTotal) / // <- cTotal, never cSystem
+    cSystem
+  );
+}
+
+/**
+ * §4.3. Solve FF from a bake that has been measured. This is what the bake log
+ * uses — `final − predicted_mix` omits the bowl and understates FF by 1.5–2.5 °F.
+ */
+export function solveFrictionFactorF(
+  t: Omit<TempInputs, 'frictionFactorF' | 'ddtF'>,
+  thermal: Thermal,
+  { waterTempF, finalTempF }: { waterTempF: number; finalTempF: number },
+): number {
+  const { cBiga, cFreshFlour, cFreshWater, cSalt, cTotal, cBowl, cSystem } = thermal;
+  return (
+    (finalTempF * cSystem -
+      cBiga * t.bigaTempF -
+      cFreshFlour * t.flourTempF -
+      cFreshWater * waterTempF -
+      cSalt * t.roomTempF -
+      cBowl * bowlTemp({ ...t, ddtF: 0, frictionFactorF: 0 })) /
+    cTotal
   );
 }
 
@@ -269,22 +360,62 @@ export function computeCapacity(f: Formula): Capacity {
 
 /**
  * §4.6. The temperature to expect partway through the mix, before Phases C and
- * D add their friction. Roughly 4 °F below DDT: Phase C contributes about
- * +3.8 °F and Phase D about +0.9 °F, less ~1 °F given back to the room during
- * the 10-minute rest.
+ * D add their friction.
+ *
+ * Two corrections from bake 1: the friction still to come is diluted by the
+ * bowl's thermal mass, and the 10-minute rest sheds heat in proportion to the
+ * dough-to-room gap rather than a flat 1 °F.
+ *
+ * At FF 14 in a 70 °F room: 3 balls 72.2 · 6 balls 71.8 · 9 balls 70.5.
  */
 export function computeProbeTargetF({
   ddtF,
   frictionFactorF,
-  balls,
+  roomTempF,
+  thermal,
 }: {
   ddtF: number;
   frictionFactorF: number;
-  balls: number;
+  roomTempF: number;
+  thermal: Thermal;
 }): number {
-  // A 3-ball batch sheds closer to 2 °F during the rest, so it sits a degree higher.
-  const smallBatchBonus = balls <= 3 ? 1 : 0;
-  return ddtF - 0.33 * frictionFactorF + 1 + smallBatchBonus;
+  return (
+    ddtF -
+    0.33 * frictionFactorF * (thermal.cTotal / thermal.cSystem) +
+    0.2 * (ddtF - roomTempF)
+  );
+}
+
+// ---------------------------------------------------------------------------
+// §4.8 Shaped rise time
+// ---------------------------------------------------------------------------
+
+/**
+ * §4.8. Minutes the balls spend at room temperature before the fridge,
+ * computed from the final dough temperature actually measured.
+ *
+ * This REPLACES the old fixed 1.5 h `ballRoomTemp` stage — it does not sit
+ * alongside it. The model reaches 71 min for a warm dough and 144 min for a
+ * cold one, so the old 1–2 h range was wrong at both ends.
+ *
+ * `COOLDOWN_EQUIV_MIN` is the cooldown's equivalent fermentation at DDT: a cool
+ * dough loses ground on the counter AND on the way down to 40 °F, and this
+ * compensates for the second. It is a modelling estimate, not a measurement.
+ *
+ * Planning mode: before mixing there is no measurement, so pass `ddtF` as
+ * `finalDoughTempF` and this returns exactly BASE_ROOM_MIN.
+ */
+export function computeRoomMinutes({
+  finalDoughTempF,
+  ddtF,
+}: {
+  finalDoughTempF: number;
+  ddtF: number;
+}): number {
+  const f = 2 ** ((finalDoughTempF - ddtF) / C.Q_DOUBLING_F);
+  const raw = (C.BASE_ROOM_MIN + C.COOLDOWN_EQUIV_MIN) / f - C.COOLDOWN_EQUIV_MIN;
+  const [min, max] = C.ROOM_MIN_CLAMP;
+  return Math.min(max, Math.max(min, raw));
 }
 
 // ---------------------------------------------------------------------------
@@ -397,8 +528,17 @@ export interface CalculatorInputs extends BatchInputs {
   tapTempF: number;
   freezerTempF: number;
   frictionFactorF: number;
+  /** Weigh once; persisted. Its mass matters far more than its temperature. */
+  bowlMassG?: number;
+  /** Defaults to bigaTempF — the biga ferments in the bowl. §4.2. */
+  bowlTempF?: number | null;
   /** null / undefined uses the §4.3 default: 75 °F for <=6 balls, 74 °F for 7+. */
   ddtOverrideF?: number | null;
+  /**
+   * Final dough temperature actually measured after mixing, §4.8. Null before
+   * the mix, which puts the calculator in planning mode at DDT.
+   */
+  finalDoughTempF?: number | null;
 }
 
 export interface CalculatorResult {
@@ -411,25 +551,31 @@ export interface CalculatorResult {
   ice: IceResult;
   capacity: Capacity;
   probeTargetF: number;
+  /** §4.8 room-temperature minutes before the fridge. */
+  roomMinutes: number;
+  /** True when roomMinutes came from DDT rather than a measurement. */
+  roomMinutesIsPlanned: boolean;
+  /** The temperature §4.8 was computed from — measured, or DDT in planning mode. */
+  effectiveFinalTempF: number;
   warnings: Warning[];
 }
 
-/** Composes §4.1–§4.6 into everything the UI needs. Nothing here is rounded. */
+/** Composes §4.1–§4.8 into everything the UI needs. Nothing here is rounded. */
 export function calculate(inputs: CalculatorInputs): CalculatorResult {
   const formula = computeFormula(inputs);
-  const thermal = computeThermal(formula);
+  const thermal = computeThermal(formula, inputs.bowlMassG ?? C.DEFAULT_BOWL_MASS_G);
   const ddtF = inputs.ddtOverrideF ?? defaultDdtF(inputs.balls);
 
-  const waterTempF = computeWaterTempF(
-    {
-      ddtF,
-      frictionFactorF: inputs.frictionFactorF,
-      bigaTempF: inputs.bigaTempF,
-      flourTempF: inputs.flourTempF,
-      roomTempF: inputs.roomTempF,
-    },
-    thermal,
-  );
+  const temps: TempInputs = {
+    ddtF,
+    frictionFactorF: inputs.frictionFactorF,
+    bigaTempF: inputs.bigaTempF,
+    flourTempF: inputs.flourTempF,
+    roomTempF: inputs.roomTempF,
+    ...(inputs.bowlTempF != null ? { bowlTempF: inputs.bowlTempF } : {}),
+  };
+
+  const waterTempF = computeWaterTempF(temps, thermal);
 
   const ice = computeIce({
     waterTempF,
@@ -439,6 +585,10 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
   });
 
   const capacity = computeCapacity(formula);
+
+  // Planning mode until a real final dough temperature is entered.
+  const roomMinutesIsPlanned = inputs.finalDoughTempF == null;
+  const effectiveFinalTempF = inputs.finalDoughTempF ?? ddtF;
 
   return {
     inputs,
@@ -451,8 +601,12 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
     probeTargetF: computeProbeTargetF({
       ddtF,
       frictionFactorF: inputs.frictionFactorF,
-      balls: inputs.balls,
+      roomTempF: inputs.roomTempF,
+      thermal,
     }),
+    roomMinutes: computeRoomMinutes({ finalDoughTempF: effectiveFinalTempF, ddtF }),
+    roomMinutesIsPlanned,
+    effectiveFinalTempF,
     warnings: buildWarnings(formula, capacity, ice),
   };
 }

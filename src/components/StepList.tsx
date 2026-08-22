@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { Markdown } from './Markdown';
+import { NumberField } from './fields';
+import { BOUNDS } from '../state/defaults';
+import { formatTempF } from '../lib/format';
 import { PHASE_LABELS, STEPS, type Phase, type Step, type StepTable } from '../content/steps';
 import { bindTokens } from '../lib/bindTokens';
 import type { AppState } from '../state/useAppState';
@@ -54,6 +57,7 @@ function StepRow({
   checked,
   onToggleChecked,
   onOpenConcept,
+  extra,
 }: {
   step: Step;
   summary: string;
@@ -62,6 +66,8 @@ function StepRow({
   checked: boolean;
   onToggleChecked: () => void;
   onOpenConcept: (id: string) => void;
+  /** Rendered inside the step, below the summary. Used by mix-7. */
+  extra?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const hasDetail = Boolean(step.detail || step.watchFor || step.troubleshoot || step.concepts);
@@ -128,6 +134,8 @@ function StepRow({
                 {step.watchFor}
               </p>
             )}
+
+            {extra}
           </div>
 
           {hasDetail && (
@@ -175,6 +183,47 @@ function StepRow({
         </div>
       </div>
     </li>
+  );
+}
+
+/**
+ * Records the final dough temperature at the end of the mix.
+ *
+ * One number, two uses: it shapes the balls' room-temperature phase (§4.8) and
+ * it is the input the bake log needs to solve for a real friction factor.
+ * Placed here rather than in an input panel because this is the moment the
+ * probe comes out of the dough.
+ */
+function FinalTempCapture({ state }: { state: AppState }) {
+  const { inputs, setInput, result } = state;
+  const measured = inputs.finalDoughTempF;
+
+  return (
+    <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/40">
+      <NumberField
+        label="Final dough temperature"
+        unit="°F"
+        value={measured ?? result.ddtF}
+        onCommit={(v) => setInput('finalDoughTempF', v)}
+        min={BOUNDS.finalDoughTempF.min}
+        max={BOUNDS.finalDoughTempF.max}
+        step={BOUNDS.finalDoughTempF.step}
+        hint={
+          measured === null
+            ? `Not measured yet — planning at DDT ${formatTempF(result.ddtF)} °F, which gives ${Math.round(result.roomMinutes)} min at room temperature.`
+            : `Room temperature shortened or extended to ${Math.round(result.roomMinutes)} min to compensate. Every later stage moves with it.`
+        }
+      />
+      {measured !== null && (
+        <button
+          type="button"
+          onClick={() => setInput('finalDoughTempF', null)}
+          className="mt-2 min-h-touch text-sm font-medium text-amber-800 underline underline-offset-2 dark:text-amber-400"
+        >
+          Clear — back to planning
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -237,6 +286,7 @@ export function StepList({
                   checked={checkedSteps.has(step.id)}
                   onToggleChecked={() => toggleStep(step.id)}
                   onOpenConcept={onOpenConcept}
+                  extra={step.id === 'mix-7' ? <FinalTempCapture state={state} /> : undefined}
                 />
               );
             })}

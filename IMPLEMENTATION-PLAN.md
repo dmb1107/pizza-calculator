@@ -4,7 +4,7 @@ Derived from [`docs/WEBSITE-SPEC-biga-calculator.md`](docs/WEBSITE-SPEC-biga-cal
 Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
-**Status:** Tasks 0–6 complete. Task 7 (timers) next.
+**Status:** Tasks 0–6 complete, rebuilt on the bowl-aware thermal model. Task 7 (timers) next.
 
 ---
 
@@ -39,6 +39,51 @@ script. **Every vector reproduces**: 7 batch rows, 5 water-temperature rows,
 3 ice effective temperatures, the thermal weights (confirmed scale-invariant to
 machine precision), and the §5 invariants. The spec is internally consistent —
 a failure in Task 1 is an implementation bug, not a bad vector.
+
+---
+
+## Model revision — bowl thermal mass (bake 1, 21 Aug 2026) ✅
+
+The first real bake invalidated the old thermal model. Applied per
+`docs/MESSAGE-to-calculator-agent.md`; every new vector was reproduced from the
+formulas before any code changed.
+
+- [x] **Mixer bowl as a thermal mass.** `C_bowl = bowlMassG × 0.12`, 115.8 at
+      the 965 g default. `T_bowl` defaults to `T_biga` with an override, and
+      there is deliberately **no required bowl-temperature input**
+- [x] `computeWaterTempF` / `computeFinalTempF` / `solveFrictionFactorF`, all
+      three round-tripping exactly
+- [x] **The `3.00 ×` shortcut is gone**, not kept as a fallback
+- [x] FF is now measured: 14.04 °F at 6 balls, seeded into the calibration map
+- [x] §4.8 shaped rise time replacing the fixed `ballRoomTemp` stage
+- [x] §4.6 probe target with bowl dilution and the room-gap term
+- [x] Phase A/B water as weighable grams behind a named constant
+- [x] Bowl mass input (persisted) and a final-dough-temperature capture
+
+**250 tests green.**
+
+### The two traps, both given dedicated tests
+
+§12 names them: "The bowl term and the `FF × Ct` work term are the two places
+this goes wrong silently."
+
+`§4.3 the FF x Ct trap` computes the correct and the reversed forms side by side
+and asserts the engine matches the first — then asserts the difference exceeds
+4 °F, so the test fails loudly rather than drifting if someone swaps them.
+
+The bake-1 regression pins the whole model to reality: predicted 73.51 °F
+against 73.5 measured, required water 67.97 °F against the 63.0 actually used,
+and the 5 °F gap times water's share of the system reproducing the 1.5 °F the
+dough finished low. Zeroing the bowl mass reconstructs the superseded model and
+shows the gap it caused.
+
+### The deleted assertion
+
+§4.2: "Any test asserting scale-invariance must be **deleted, not loosened**."
+The old suite asserted the water temperature was identical at every batch size.
+That test is gone, replaced by its opposite — `is NOT scale-invariant once the
+bowl is included`, plus a check that the spread across batch sizes exceeds 5 °F.
+Dough-only weights are still asserted invariant, because those genuinely are.
 
 ---
 

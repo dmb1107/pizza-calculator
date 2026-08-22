@@ -67,7 +67,7 @@ export function TemperaturesPanel(s: AppState) {
   return (
     <Panel
       title="Today's temperatures"
-      summary={`Room ${formatTempF(inputs.roomTempF)} · Biga ${formatTempF(inputs.bigaTempF)} · Tap ${formatTempF(inputs.tapTempF)} °F`}
+      summary={`Room ${formatTempF(inputs.roomTempF)} · Biga ${formatTempF(inputs.bigaTempF)} · Tap ${formatTempF(inputs.tapTempF)} °F · Bowl ${Math.round(inputs.bowlMassG)} g`}
       open={panels.temperatures}
       onToggle={() => togglePanel('temperatures')}
     >
@@ -126,6 +126,16 @@ export function TemperaturesPanel(s: AppState) {
           max={BOUNDS.freezerTempF.max}
           step={BOUNDS.freezerTempF.step}
           hint="Rarely changes — this one is remembered on this device."
+        />
+        <NumberField
+          label="Mixer bowl mass"
+          unit="g"
+          value={inputs.bowlMassG}
+          onCommit={(v) => commitNumber('bowlMassG', v)}
+          min={BOUNDS.bowlMassG.min}
+          max={BOUNDS.bowlMassG.max}
+          step={BOUNDS.bowlMassG.step}
+          hint="Weigh it once. The bowl absorbs friction energy alongside the dough — leaving it out of the model put the water 5 °F wrong on the first bake. There is no bowl-temperature field: it sits at the biga's temperature after fermenting in it, and the difference is worth about 0.3 °F."
         />
       </div>
     </Panel>

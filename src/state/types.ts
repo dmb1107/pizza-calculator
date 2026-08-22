@@ -28,16 +28,23 @@ export interface Inputs {
   bigaTempF: number;
   tapTempF: number;
   freezerTempF: number;
+  /** Weigh once; persisted. Its MASS is what matters, not its temperature. */
+  bowlMassG: number;
 
   // Schedule fine-tuning — §4.7 marks each of these user-adjustable.
   /** Retarded only. 18–20 h. */
   bigaFridgeH: number;
   /** Classic only. 12–18 h at 61–65 °F. */
   bigaRoomOnlyH: number;
-  /** 1–2 h. */
-  ballRoomTempH: number;
   /** 2–3 h. */
   temperH: number;
+
+  /**
+   * Final dough temperature measured after mixing, §4.8. null before the mix,
+   * which puts the calculator in planning mode at DDT. One number, two uses:
+   * it also drives the room-temperature phase and the bake log.
+   */
+  finalDoughTempF: number | null;
 }
 
 /** One recorded friction-factor measurement. */
@@ -84,6 +91,8 @@ export interface Persisted {
   bigaStartAtIso: string;
   /** Ids of steps ticked off. §7.5: "a checkbox that persists". */
   checkedSteps: string[];
+  /** Weighed once, then never again. */
+  bowlMassG: number;
 }
 
 /** The resolved friction factor and where it came from. */

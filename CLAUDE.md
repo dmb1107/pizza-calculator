@@ -50,6 +50,18 @@ UI, that's what the disclosure is for — collapse it, don't cut it.
 changes. Same principle for the thermal weights — compute them from component
 heat capacities.
 
+**The mixer bowl is part of the thermal model and is not optional.** Any
+formula without a `C_bowl` term is the superseded version; omitting it put the
+water temperature 5 °F wrong on bake 1. Two traps:
+
+- **`FF × cTotal`, never `FF × cSystem`.** FF is defined as the rise the mixer
+  produces in the *dough alone*. Reversing this returns a plausible-looking
+  water temperature several degrees off.
+- **Nothing bowl-inclusive is scale-invariant.** The bowl is fixed mass while
+  the dough scales. Dough-only ratios (`Cb/Ct` etc.) still are; anything divided
+  by `cSystem` is not, and the old `3.00 ×` shortcut is dead — don't reintroduce
+  it as a fast path.
+
 ## Design priorities, in order
 
 1. **Correctness.** Verify against the spec §5 test vectors.

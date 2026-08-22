@@ -26,7 +26,6 @@ function trim(value: number): string {
 export interface ScheduleTokens {
   bigaFridgeH: number;
   bigaRoomOnlyH: number;
-  ballRoomTempH: number;
   coldFermentH: number;
   temperH: number;
 }
@@ -42,11 +41,15 @@ export function tokenValues(
     bigaWater: formatGrams(formula.bigaWater),
     bigaADY: formatAdy(formula.bigaADY),
     freshFlour: formatGrams(formula.freshFlour),
-    freshWater60: formatGrams(formula.freshWater60),
-    freshWater40: formatGrams(formula.freshWater40),
+    phaseAWater: formatGrams(formula.phaseAWater),
+    phaseBWater: formatGrams(formula.phaseBWater),
     salt: formatGrams(formula.salt),
     probeTarget: formatTempF(result.probeTargetF),
     ddt: formatTempF(result.ddtF),
+    // §4.8 — computed from the measured final dough temperature, or from DDT
+    // while the calculator is still in planning mode.
+    roomMin: String(Math.round(result.roomMinutes)),
+    finalDoughTemp: formatTempF(result.effectiveFinalTempF),
 
     // Inputs — trimmed, since the prose supplies the unit.
     balls: String(inputs.balls),
@@ -54,7 +57,6 @@ export function tokenValues(
     coldFerment: trim(schedule.coldFermentH),
     bigaFridge: trim(schedule.bigaFridgeH),
     bigaRoomOnly: trim(schedule.bigaRoomOnlyH),
-    ballRoomTemp: trim(schedule.ballRoomTempH),
     temper: trim(schedule.temperH),
   };
 }

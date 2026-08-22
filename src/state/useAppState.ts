@@ -94,7 +94,11 @@ export function useAppState(): AppState {
   // unshared preferences (freezer temp) still come from this device.
   const initial = useMemo(() => {
     const persisted = loadPersisted(storage);
-    const base: Inputs = { ...DEFAULT_INPUTS, freezerTempF: persisted.freezerTempF };
+    const base: Inputs = {
+      ...DEFAULT_INPUTS,
+      freezerTempF: persisted.freezerTempF,
+      bowlMassG: persisted.bowlMassG,
+    };
     return { persisted, inputs: decodeInputs(currentSearch(), base) };
   }, [storage]);
 
@@ -137,9 +141,18 @@ export function useAppState(): AppState {
       freezerTempF: inputs.freezerTempF,
       bigaStartAtIso: bigaStartAt.toISOString(),
       checkedSteps: [...checkedSteps],
+      bowlMassG: inputs.bowlMassG,
     };
     savePersisted(storage, value);
-  }, [storage, calibration, panels, inputs.freezerTempF, bigaStartAt, checkedSteps]);
+  }, [
+    storage,
+    calibration,
+    panels,
+    inputs.freezerTempF,
+    inputs.bowlMassG,
+    bigaStartAt,
+    checkedSteps,
+  ]);
 
   const setInput = useCallback(<K extends keyof Inputs>(key: K, value: Inputs[K]) => {
     setInputs((prev) => {
@@ -215,7 +228,9 @@ export function useAppState(): AppState {
         tapTempF: inputs.tapTempF,
         freezerTempF: inputs.freezerTempF,
         frictionFactorF: friction.ff,
+        bowlMassG: inputs.bowlMassG,
         ddtOverrideF: calibration.ddtOverrideF,
+        finalDoughTempF: inputs.finalDoughTempF,
       }),
     [inputs, friction.ff, calibration.ddtOverrideF],
   );
@@ -224,14 +239,15 @@ export function useAppState(): AppState {
     () => ({
       bigaFridgeH: inputs.bigaFridgeH,
       bigaRoomOnlyH: inputs.bigaRoomOnlyH,
-      ballRoomTempH: inputs.ballRoomTempH,
+      // §4.8: computed from the measured dough temperature, not chosen.
+      ballRoomTempH: result.roomMinutes / 60,
       coldFermentH: inputs.coldFermentH,
       temperH: inputs.temperH,
     }),
     [
       inputs.bigaFridgeH,
       inputs.bigaRoomOnlyH,
-      inputs.ballRoomTempH,
+      result.roomMinutes,
       inputs.coldFermentH,
       inputs.temperH,
     ],
@@ -260,18 +276,10 @@ export function useAppState(): AppState {
       tokenValues(result, {
         bigaFridgeH: inputs.bigaFridgeH,
         bigaRoomOnlyH: inputs.bigaRoomOnlyH,
-        ballRoomTempH: inputs.ballRoomTempH,
         coldFermentH: inputs.coldFermentH,
         temperH: inputs.temperH,
       }),
-    [
-      result,
-      inputs.bigaFridgeH,
-      inputs.bigaRoomOnlyH,
-      inputs.ballRoomTempH,
-      inputs.coldFermentH,
-      inputs.temperH,
-    ],
+    [result, inputs.bigaFridgeH, inputs.bigaRoomOnlyH, inputs.coldFermentH, inputs.temperH],
   );
 
   const shareUrl = useMemo(() => {

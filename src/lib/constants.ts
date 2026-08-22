@@ -26,6 +26,11 @@ const BASE = {
   LATENT_F: 144, // 80 cal/g expressed as °F of liquid-water equivalent
   C_ICE: 0.5, // ice specific heat relative to water
 
+  // Mixer bowl — REQUIRED thermal mass, do not omit.
+  // Omitting it made the water temperature 5 degF wrong on bake 1.
+  C_BOWL_SPECIFIC_HEAT: 0.12, // stainless, cal/g·°C
+  DEFAULT_BOWL_MASS_G: 965, // measured; user-editable, persisted
+
   // Ooni Halo Core limits
   MAX_DOUGH: 2500, // g
   MIN_DOUGH: 500, // g
@@ -42,9 +47,22 @@ const BASE = {
 
   // Defaults
   DEFAULT_BALL_G: 265,
-  DEFAULT_FF: 14, // °F, until the user measures their own
+  /**
+   * °F, MEASURED at 6 balls on bake 1 (21 Aug 2026).
+   * This is the rise the mixer produces in the DOUGH ALONE — see §4.3.
+   */
+  DEFAULT_FF: 14.0,
   DEFAULT_FREEZER_F: 16,
   DEFAULT_TAP_F: 60,
+
+  /** Split of the fresh water between Phase A and Phase B. §5 of the update. */
+  PHASE_A_FRACTION: 0.6,
+
+  // Shaped rise time — §4.8
+  BASE_ROOM_MIN: 90, // at DDT
+  COOLDOWN_EQUIV_MIN: 150, // cooldown's equivalent fermentation at DDT (a modelling estimate)
+  Q_DOUBLING_F: 17,
+  ROOM_MIN_CLAMP: [45, 180],
 } as const;
 
 /**
@@ -57,6 +75,19 @@ const C_BIGA =
   (BASE.BIGA_HYDRATION / (1 + BASE.BIGA_HYDRATION)) * BASE.C_WATER;
 
 export const C = { ...BASE, C_BIGA } as const;
+
+/**
+ * Heat capacity of the mixer bowl, cal/°C. 115.8 at the 965 g default — more
+ * than the fresh flour contributes.
+ *
+ * The bowl absorbs friction energy alongside the dough. It is fixed mass while
+ * everything else scales with flour, which is why the thermal model is no
+ * longer scale-independent and why the bowl cannot simply be folded into the
+ * friction factor.
+ */
+export function bowlHeatCapacity(bowlMassG: number): number {
+  return bowlMassG * C.C_BOWL_SPECIFIC_HEAT;
+}
 
 /** DDT default: 75 °F for <=6 balls, 74 °F for 7+. Spec §4.3. User-overridable. */
 export function defaultDdtF(balls: number): number {

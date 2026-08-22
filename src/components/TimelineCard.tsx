@@ -153,15 +153,6 @@ export function TimelineCard(s: AppState) {
               />
             )}
             <SliderField
-              label="Balls at room temperature"
-              unit=" h"
-              value={inputs.ballRoomTempH}
-              onChange={(v) => setInput('ballRoomTempH', v)}
-              min={BOUNDS.ballRoomTempH.min}
-              max={BOUNDS.ballRoomTempH.max}
-              step={BOUNDS.ballRoomTempH.step}
-            />
-            <SliderField
               label="Temper"
               unit=" h"
               value={inputs.temperH}
@@ -171,7 +162,8 @@ export function TimelineCard(s: AppState) {
               step={BOUNDS.temperH.step}
             />
             <p className="text-sm text-stone-500 dark:text-stone-400">
-              Cold ferment is set in the Batch panel. These ranges are the ones the recipe allows.
+              Cold ferment is set in the Batch panel. The balls' room-temperature phase is not
+              adjustable — it is computed from the dough temperature you actually hit.
             </p>
           </div>
         )}

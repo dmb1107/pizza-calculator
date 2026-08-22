@@ -55,6 +55,10 @@ export const C = {
   LATENT_F: 144,              // 80 cal/g expressed as °F of liquid-water equivalent
   C_ICE: 0.5,                 // ice specific heat relative to water
 
+  // Mixer bowl - REQUIRED thermal mass, do not omit
+  C_BOWL_SPECIFIC_HEAT: 0.12, // stainless, cal/g·°C
+  DEFAULT_BOWL_MASS_G: 965,   // measured; user-editable, persist
+
   // Ooni Halo Core limits
   MAX_DOUGH: 2500,            // g
   MIN_DOUGH: 500,             // g
@@ -71,9 +75,15 @@ export const C = {
 
   // Defaults
   DEFAULT_BALL_G: 265,
-  DEFAULT_FF: 14,             // °F, until the user measures their own
+  DEFAULT_FF: 14.0,           // °F, MEASURED at 6 balls (bake 1). Rise in the DOUGH ALONE.
   DEFAULT_FREEZER_F: 16,
   DEFAULT_TAP_F: 60,
+
+  // Shaped rise time
+  BASE_ROOM_MIN: 90,          // at DDT
+  COOLDOWN_EQUIV_MIN: 150,    // cooldown's equivalent fermentation at DDT (modelling estimate)
+  Q_DOUBLING_F: 17,
+  ROOM_MIN_CLAMP: [45, 180],
 } as const;
 ```
 
@@ -106,7 +116,7 @@ doughTotal  = F × DOUGH_YIELD
 
 ### 4.2 Thermal weights
 
-Compute from component heat capacities rather than hardcoding — the weights are scale-invariant, which makes them a good assertion target.
+Compute from component heat capacities. **These are NOT scale-invariant** — the bowl is fixed mass while the dough scales, so the weights shift with batch size. Any test asserting scale-invariance must be **deleted, not loosened.**
 
 ```
 Cb = bigaMass   × C_BIGA
@@ -116,13 +126,35 @@ Cs = salt       × C_SALT
 Ct = Cb + Cf + Cw + Cs
 ```
 
-**Assert in tests:** `Cb/Ct ≈ 0.5311`, `Cf/Ct ≈ 0.1306`, `Cw/Ct ≈ 0.3331`, `Cs/Ct ≈ 0.0052`, identical at every batch size.
+```
+C_bowl = bowlMassG × 0.12          // 115.8 at the 965 g default
+TOT    = Ct + C_bowl
+```
+
+**`T_bowl` defaults to `T_biga`** — the biga ferments in the mixer bowl, so 19 h of contact leaves them at equilibrium. Offer an override (`T_room` for a counter-kept bowl) but **do not require a bowl-temperature measurement**; the effect is about −0.3 °F.
+
+**Assert instead:** `Cb/Ct ≈ 0.5311`, `Cf/Ct ≈ 0.1306`, `Cw/Ct ≈ 0.3331`, `Cs/Ct ≈ 0.0052` — dough-only ratios, which *are* scale-invariant. The bowl-inclusive weights are not.
 
 ### 4.3 Required water temperature
 
+⚠️ **FF is the temperature rise the mixer produces in the DOUGH ALONE.** The work term is `FF × Ct`, **not** `FF × TOT`. Reversing this returns a plausible-looking water temperature several degrees wrong. Comment this line.
+
 ```
-waterTempF = ((DDT − FF) × Ct − Cb×T_biga − Cf×T_flour − Cs×T_room) / Cw
+waterTempF = (DDT × TOT − FF × Ct
+              − Cb×T_biga − Cf×T_flour − Cs×T_room − C_bowl×T_bowl) / Cw
+
+// prediction
+finalTempF = (Cb×T_biga + Cf×T_flour + Cw×T_water + Cs×T_room
+              + C_bowl×T_bowl + FF × Ct) / TOT
+
+// solve FF from a measured bake
+FF = (finalTempF × TOT
+      − Cb×T_biga − Cf×T_flour − Cw×T_water − Cs×T_room − C_bowl×T_bowl) / Ct
 ```
+
+**These must round-trip.** Feed `waterTempF` into `finalTempF` and you must land on `DDT` exactly. Assert it.
+
+Omitting the bowl made this output **5 °F wrong** on the first real bake — it is not a refinement.
 
 `DDT` default: **75 °F** for ≤6 balls, **74 °F** for 7+. User-overridable.
 
@@ -160,9 +192,12 @@ When `nBiga < nMix`, the UI should say so plainly: *"Mix one biga, then divide i
 The temperature to expect partway through the mix, before Phases C and D add their friction.
 
 ```
-probeTargetF = DDT − 0.33 × FF + 1
-// + 1 more if balls <= 3 (small batches shed more heat during the 10-min rest)
+probeTargetF = DDT − 0.33 × FF × (Ct / TOT) + 0.2 × (DDT − T_room)
 ```
+
+Remaining friction is diluted by the bowl, and the 10-minute rest sheds heat in proportion to the dough-to-room gap rather than a flat 1 °F.
+
+At FF 14 in a 70 °F room: **3 balls 72.2 · 6 balls 71.8 · 9 balls 70.5**
 
 ### 4.7 Timeline
 
@@ -179,9 +214,33 @@ Durations in hours, from biga mix at t=0. **These are authoritative** — they w
 | `mix` | 0.5 | 0.5 | includes the 10-min rest |
 | `bulkRest` | 1 | 1 | |
 | `divideBall` | 0.33 | 0.33 | |
-| `ballRoomTemp` | 1.5 | 1.5 | user-adjustable 1–2 |
+| `ballRoomTemp` | **computed** | **computed** | see §4.8 — no longer fixed |
 | `coldFerment` | **user input** | **user input** | 6–36, default 24 |
 | `temper` | 2.5 | 2.5 | user-adjustable 2–3 |
+
+### 4.8 Shaped rise time
+
+The balls' room-temperature phase is computed from the **measured final dough temperature**, not fixed.
+
+```
+f       = 2 ** ((T_actual − DDT) / Q_DOUBLING_F)
+roomMin = clamp((BASE_ROOM_MIN + COOLDOWN_EQUIV_MIN) / f − COOLDOWN_EQUIV_MIN, 45, 180)
+```
+
+A cool dough loses ground on the counter *and* on the way down to 40 °F; `COOLDOWN_EQUIV_MIN` compensates for the second.
+
+| Final dough | Room time |
+|---:|---:|
+| 77 °F | 71 min |
+| 76 °F | 80 min |
+| **75 °F** | **90 min** |
+| 74 °F | 100 min |
+| 73 °F | 110 min |
+| 72 °F | 121 min |
+| 71 °F | 133 min |
+| 70 °F | 144 min |
+
+**Planning mode:** before mixing there is no measurement, so default `T_actual = DDT`, giving exactly 90 min. When the user enters a real final dough temperature, recompute and shift every downstream stage.
 
 Fixed overhead outside the cold ferment totals **25.5–30 h**, so total elapsed is always `coldFerment + ~28 h`. At the defaults: ~34 h at 6 h cold, ~52 h at 24 h, ~64 h at 36 h. Assert these.
 
@@ -193,41 +252,59 @@ Show cumulative clock times for each stage plus a total elapsed figure. Flag whe
 
 Assert against these exactly (tolerance ±0.1 g, ±0.1 °F). Generated from a verified reference implementation.
 
-All rows use `FF = 14`, `T_biga = 64`, `T_flour = 70`, `T_room = 70`, `tap = 60`, `freezer = 16`, and default DDT.
+All rows: `FF = 14.0`, `T_biga = T_bowl = 58`, `T_flour = 69`, `T_room = 70`, bowl 965 g, DDT auto (75 for ≤6 balls, 74 for 7+).
 
-| balls | ball g | F | bigaFlour | bigaWater | bigaADY | freshFlour | freshWater | salt | dough | nBiga | nMix | waterTemp | ice | tap |
+| balls | ball g | F | bigaFlour | bigaWater | bigaADY | freshFlour | freshWater | phaseA | phaseB | salt | Ct | DDT | waterTemp | probe |
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 3 | 265 | 470.2 | 305.6 | 152.8 | 1.16 | 164.6 | 176.3 | 13.2 | 812.5 | 1 | 1 | 52.5 | 7.3 | 169.0 |
-| 6 | 265 | 940.4 | 611.2 | 305.6 | 2.32 | 329.1 | 352.6 | 26.3 | 1625.0 | 1 | 1 | 52.5 | 14.6 | 338.0 |
-| 9 | 265 | 1410.6 | 916.9 | 458.4 | 3.48 | 493.7 | 529.0 | 39.5 | 2437.5 | 1 | 1 | 49.5 | 30.7 | 498.2 |
-| 12 | 265 | 1880.8 | 1222.5 | 611.2 | 4.65 | 658.3 | 705.3 | 52.7 | 3250.0 | 1 | 2 | 49.5 | 41.0 | 664.3 |
-| 18 | 265 | 2821.1 | 1833.7 | 916.9 | 6.97 | 987.4 | 1057.9 | 79.0 | 4874.9 | 2 | 2 | 49.5 | 61.5 | 996.5 |
-| 5 | 270 | 798.4 | 519.0 | 259.5 | 1.97 | 279.5 | 299.4 | 22.4 | 1379.7 | 1 | 1 | 52.5 | 12.4 | 287.0 |
-| 7 | 260 | 1076.4 | 699.7 | 349.8 | 2.66 | 376.7 | 403.7 | 30.1 | 1860.0 | 1 | 1 | 49.5 | 23.4 | 380.2 |
+| 3 | 265 | 470.2 | 305.6 | 152.8 | 1.16 | 164.6 | 176.3 | 105.8 | 70.5 | 13.2 | 529.4 | 75 | 73.7 | 72.2 |
+| 6 | 265 | 940.4 | 611.2 | 305.6 | 2.32 | 329.1 | 352.6 | 211.6 | 141.1 | 26.3 | 1058.7 | 75 | 68.1 | 71.8 |
+| 9 | 265 | 1410.6 | 916.9 | 458.4 | 3.48 | 493.7 | 529.0 | 317.4 | 211.6 | 39.5 | 1588.1 | 74 | 63.0 | 70.5 |
+| 12 | 265 | 1880.8 | 1222.5 | 611.2 | 4.65 | 658.3 | 705.3 | 423.2 | 282.1 | 52.7 | 2117.5 | 74 | 62.1 | 70.4 |
+| 18 | 265 | 2821.1 | 1833.7 | 916.9 | 6.97 | 987.4 | 1057.9 | 634.8 | 423.2 | 79.0 | 3176.2 | 74 | 61.3 | 70.3 |
+| 5 | 270 | 798.4 | 519.0 | 259.5 | 1.97 | 279.5 | 299.4 | 179.6 | 119.8 | 22.4 | 898.9 | 75 | 69.1 | 71.9 |
+| 7 | 260 | 1076.4 | 699.7 | 349.8 | 2.66 | 376.7 | 403.7 | 242.2 | 161.5 | 30.1 | 1211.9 | 74 | 64.1 | 70.6 |
 
-### Additional assertions
+Splits are unchanged: `nBiga` = 1 except 18 balls (2); `nMix` = 1 except 12 and 18 (2).
 
-**Water temperature** (9 balls, various conditions):
+### Regression test — bake 1, 21 Aug 2026
 
-| DDT | FF | T_biga | T_room | → water |
-|---:|---:|---:|---:|---:|
-| 74 | 12 | 64 | 70 | 55.5 |
-| 74 | 12 | 68 | 70 | 49.2 |
-| 74 | 18 | 72 | 78 | 21.5 |
-| 74 | 12 | 42 | 70 | 90.6 |
-| 74 | 12 | 62 | 64 | 61.2 |
+The real bake this model was corrected against. 6 balls, `FF = 14.04`, biga 58 °F, flour 69 °F, room 70 °F, bowl 965 g at 58 °F, **water actually used 63.0 °F**:
 
-The fourth row is important: a fridge-retarded biga requires **warm** water. If the UI can't express that, it's wrong.
+- `finalTempF` must predict **73.50 °F** — measured on the day: **73.5 °F**
+- `waterTempF` for DDT 75 must return **67.97 °F**
 
-**Ice effective temperature:** 32 °F → −112 · 16 °F → −120 · 0 °F → −128
+The 5 °F gap between what was used and what was needed, times water's 30% share of the system, is exactly the 1.5 °F the dough finished low. **If this test fails, the bowl term is wired wrong.**
 
-**Invariants that must hold at every batch size and ball weight:**
+### Bowl dilution
+
+Same FF, different apparent rise by batch size. Useful as a sanity check:
+
+| Batch | Bowl share of TOT | FF 14 appears as |
+|---|---:|---:|
+| 3 balls | 18.0% | 11.5 °F |
+| 6 balls | 9.9% | 12.6 °F |
+| 9 balls | 6.8% | 13.0 °F |
+| 12 balls | 5.2% | 13.3 °F |
+
+### Shaped rise time
+
+| T_actual | roomMin |
+|---:|---:|
+| 77 | 71 |
+| 75 | 90 |
+| 73 | 110 |
+| 70 | 144 |
+
+### Ice effective temperature
+32 °F → −112 · 16 °F → −120 · 0 °F → −128
+
+### Invariants (every batch size and ball weight)
 - `(bigaWater + freshWater) / F` = 0.700
 - `salt / F` = 0.028
 - `bigaFlour / F` = 0.650
-- Sum of all components ≈ `doughTotal` (+ ADY, ~0.1%)
-
----
+- `phaseA + phaseB` = `freshWater`
+- Round-trip: `waterTempF` → `finalTempF` = `DDT`
+- ❌ **Do NOT assert bowl-inclusive thermal weights are scale-invariant.** They aren't.
 
 ## 6. Inputs
 
@@ -249,14 +326,19 @@ Group into three panels. **Batch** open by default; the other two collapsed with
 | Biga temp at mix (°F) | number | 64 | measured, not assumed |
 | Tap water temp (°F) | number | 60 | |
 | Freezer temp (°F) | number | 16 | rarely changes; persist it |
+| Bowl mass (g) | number | 965 | weigh once; persist. **No bowl-temp input** — defaults to biga temp |
 
 ### Panel 3 — Calibration
 | Field | Type | Default | Note |
 |---|---|---|---|
-| Friction factor (°F) | number | 14 | **per batch size** — see below |
+| Friction factor (°F) | number | 14.0 | **per batch size**. 6 balls is MEASURED (bake 1); others fall back |
 | DDT override (°F) | number | auto | auto = 75 (≤6 balls) / 74 (7+) |
 
-**Friction factor is not one number.** Store a map of `batchSize → measuredFF` in `localStorage` and select by the current batch size, falling back to 14. When the value in use is the fallback, badge it "estimated — not yet calibrated." When it's measured, show the date it was recorded.
+**Friction factor is not one number.** Store a map of `batchSize → measuredFF` in `localStorage`, select by current batch size, fall back to 14.0. Badge the fallback "estimated"; show the recorded date when measured.
+
+Seed it with `{6: {value: 14.04, date: '2026-08-21'}}`.
+
+Note this is *separate* from bowl dilution — the bowl explains why the same FF produces different temperature rises at different scales, but FF itself also grows with batch size (more work, less surface area per unit mass). Both effects are real and stack.
 
 ---
 
@@ -416,7 +498,8 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 #### `mix-2` — Phase A, breakdown
 **phase:** mix
-**summary:** Add ~60% of the water ({freshWater60} g) with the mixer **off**, then run at **15% / 85 RPM** for 3–4 min until the biga pieces disappear into a rough shaggy mass.
+**summary:** Add **{phaseAWater} g** of water (60%) with the mixer **off**, then run at **15% / 85 RPM** for 3–4 min until the biga pieces disappear into a rough shaggy mass.
+**values:** Phase A water: {phaseAWater} g — weigh it, don't estimate
 **speed:** 15% / 85 RPM, 3–4 min
 
 **detail:**
@@ -433,9 +516,9 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 #### `mix-3` — Phase B, salt and bassinage
 **phase:** mix
-**summary:** Add {salt} g salt. Then the remaining water in **3 additions**, each fully absorbed before the next. **20% / 98 RPM**, 5–6 min.
+**summary:** Add {salt} g salt. Then **{phaseBWater} g** (the remaining 40%) in **3 additions**, each fully absorbed before the next. **20% / 98 RPM**, 5–6 min.
 **speed:** 20% / 98 RPM, 5–6 min
-**values:** Salt: {salt} g · Remaining water: {freshWater40} g
+**values:** Salt: {salt} g · Phase B water: {phaseBWater} g
 
 **detail:**
 > **Salt goes in here — never in the biga**, where it would suppress the yeast you just spent 20 hours propagating.
@@ -456,11 +539,11 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 >
 > Still to come: Phase C at about +3.8 °F, Phase D at about +0.9 °F, minus roughly 1 °F given back to the room during the 10-minute rest. Net **+3.7 °F**, so aim about 4 °F low.
 >
-> The general form, once you know your own friction factor:
+> The general form:
 >
-> **Probe target = DDT − (0.33 × FF) + 1**
+> **Probe target = DDT − 0.33 × FF × Ct/(Ct + C_bowl) + 0.2 × (DDT − T_room)**
 >
-> A 3-ball batch sheds more than 1 °F during the rest — closer to 2 — so its target sits about a degree higher.
+> Remaining friction is diluted by the mixer bowl's thermal mass, and the rest sheds heat in proportion to the dough-to-room gap. At FF 14 in a 70 °F room: 3 balls 72.2 °F, 6 balls 71.8 °F, 9 balls 70.5 °F.
 
 **troubleshoot:**
 | Probe reads | Do |
@@ -541,7 +624,8 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 #### `bulk-3` — Onto trays
 **phase:** bulk
-**summary:** **Very lightly oiled** half-sheet trays with lids — a film wiped with a paper towel, not a pool. Nothing on top of the balls. Room temperature {ballRoomTemp} h.
+**summary:** **Very lightly oiled** half-sheet trays with lids — a film wiped with a paper towel, not a pool. Nothing on top of the balls. Room temperature **{roomMin} min**, set by the dough temperature you actually hit.
+**values:** Room time: {roomMin} min (final dough {finalDoughTemp} °F)
 
 **detail:**
 > **Oil, not flour.**
@@ -659,11 +743,15 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 **`thermal-model`** — *How the water temperature is calculated*
 > Standard "multiply DDT by 4" arithmetic breaks down here. It weights the preferment as one of four equal factors, but the biga is **56% of the final dough mass.** So this uses a proper mass-and-specific-heat weighted mix, which resolves to:
 >
-> **T_water = 3.00 × [ (DDT − FF) − 0.531 × T_biga − 0.136 × T_room ]**
+> **And it has to include the mixer bowl.** Omitting it made this calculation 5 °F wrong on the first real bake.
 >
-> All temperatures in °F. `T_room` covers the fresh flour and the salt, both sitting at ambient.
+> **T_water = [ DDT × (Ct + C_bowl) − FF × Ct − Cb·T_biga − Cf·T_flour − Cs·T_room − C_bowl·T_bowl ] ÷ Cw**
 >
-> **The formula is scale-independent** — identical for 3, 6, 9, 12 or 18 balls, because every component scales with flour. The weights come from the component specific heats: biga at 50% hydration is about 0.613 cal/g·°C, flour 0.42, water 1.00, salt 0.21.
+> Specific heats: biga at 50% hydration 0.6133, flour 0.42, water 1.00, salt 0.21, stainless 0.12. A 965 g bowl contributes 115.8 — more than the fresh flour does.
+>
+> **Two bowl effects, and only one matters.** Its *temperature* shifts the mix by about −0.3 °F, which is why it needs no measurement (default it to the biga temperature; 19 h of contact leaves them at equilibrium). Its *mass* is the real effect: friction energy heats whatever is in the bowl, and the bowl is part of "whatever." At 3 balls it absorbs 18% of the mixer's work; at 18 balls, 3.5%.
+>
+> **This is why the formula is not scale-independent.** The bowl is fixed mass while the dough scales, so the weights shift with batch size. It also explains why the bowl can't just be folded into FF — the same FF of 14 would appear as 11.5 °F at 3 balls and 13.5 °F at 18, drifting for no physical reason.
 >
 > Note what this implies: with a fridge-retarded biga you need **warm** water. The biga's thermal mass is the dominant term, which makes it a more powerful control lever than ice.
 
@@ -690,9 +778,15 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 > **All the ice must melt.** The equivalence assumes every gram completes the melting job. Ice still floating in the bowl hasn't spent its 80 cal/g yet — it will spend it over the next few minutes, after you've taken your temperature reading. The dough reads on target, then drifts cold, and your friction factor comes out wrong in a way that poisons every batch calculated from it.
 
 **`friction-factor`** — *Measuring your own friction factor*
-> `FF = T_dough_measured − T_mix_predicted`, where the prediction is the weighted mix temperature from the thermal model.
+> **FF = 14.0 °F, measured** — bake 1, 21 August 2026, 6 balls. Corroborated independently by the Phase C friction rate: 1.00 °F/min observed on the dough-plus-bowl system is 1.11 °F/min dough-only, against 1.08 predicted.
 >
-> **Start by assuming 14 °F.** Spiral mixers run far lower friction than planetaries — commercial spirals typically land 20–26 °F on a full bread mix, and this is a shorter profile on a small machine with a 10-minute rest in the middle.
+> **FF is defined as the rise the mixer produces in the dough alone.** That's why the work term is `FF × Ct` and not `FF × (Ct + C_bowl)`.
+>
+> `FF = [ T_final × (Ct + C_bowl) − Cb·T_biga − Cf·T_flour − Cw·T_water − Cs·T_room − C_bowl·T_bowl ] ÷ Ct`
+>
+> For context on plausibility: commercial spirals land 20–26 °F on a full bread mix, and this is a shorter profile on a smaller machine with a 10-minute rest in the middle, so the low end is where it belongs.
+>
+> **Still one data point.** The falsifiable test is whether FF holds near 14 at 3 and 9 balls while the raw temperature rise differs (11.5 vs 13.0). If it drifts even after the dilution correction, something else is going on.
 >
 > Protocol: record every input mass and temperature, run the mix profile exactly, probe the dough **immediately** at the end (three spots, center of the mass, averaged), then subtract.
 >
@@ -770,6 +864,9 @@ batch_id, date, balls, ball_g, total_flour_g
 biga_ady_pct, biga_water_temp_f, biga_start_time, biga_rt_hours, biga_fridge_hours
 biga_pct_rise_at_pull, biga_temp_at_mix_f
 room_temp_f, flour_temp_f, tap_temp_f, ice_g, water_temp_used_f
+bowl_mass_g, bowl_temp_f          // bowl_temp_f defaults to biga_temp_at_mix_f
+phase_a_water_g                   // actual, weighed
+phase_c_seconds_actual
 ddt_target_f, probe_temp_f, phase_c_seconds, final_dough_temp_f
 predicted_mix_temp_f, ff_measured
 motor_protection_engaged
@@ -779,7 +876,7 @@ gauge_temp_f, stone_ir_f, bake_seconds
 notes_crumb, notes_cornicione, notes_base
 ```
 
-`ff_measured = final_dough_temp_f − predicted_mix_temp_f`, where the prediction is the §4.2 weighted mix temperature.
+`ff_measured` uses the §4.3 solve-for-FF form, which includes the bowl. Do not use `final − predicted_mix`; that omits the bowl and understates FF by 1.5–2.5 °F depending on batch size.
 
 **The payoff, and the reason this is worth building:** with 8–10 logged bakes you can regress `FF = a + b × (room_temp_f − 70)` per batch size. Friction factor isn't a constant — it rises with batch size (more work, less surface area per unit mass to shed it) and drifts with room temperature (heat lost during a 15-minute mix scales with the dough-to-air gap). Generic calculators use a single fixed FF. Modeling it is the thing this app can do that they can't.
 
@@ -802,7 +899,7 @@ Link these from an About page. The recipe is built on published practice, not in
 
 ## 12. Build order
 
-1. Calculation module + unit tests against §5. **Get this green before writing any UI.**
+1. Calculation module + unit tests against §5, **including the bake-1 regression test.** Get this green before writing any UI. The bowl term and the `FF × Ct` work term are the two places this goes wrong silently.
 2. Input panels with URL + localStorage state.
 3. Ingredients, water/ice, and warnings cards.
 4. Timeline, forward mode.
@@ -814,6 +911,8 @@ Link these from an About page. The recipe is built on published practice, not in
 10. Bake log.
 
 **Ask before deviating on any number.** The formulas were derived and cross-checked; a plausible-looking simplification will produce a wrong answer that won't be obvious until 50 hours later.
+
+**The mixer bowl is not optional.** Any formula without a `C_bowl` term is the superseded version and produces water temperatures several degrees wrong.
 
 **Do not shorten the prose in §8.** If a step's detail feels long for a UI, that's what the disclosure is for — collapse it, don't cut it.
 
