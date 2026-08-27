@@ -4,8 +4,10 @@ Derived from [`docs/WEBSITE-SPEC-biga-calculator.md`](docs/WEBSITE-SPEC-biga-cal
 Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
-**Status:** Tasks 0–7 complete, on the bowl-aware thermal model with the ice
-calculation removed. Task 8 (backward timeline) next.
+**Status:** Tasks 0–7 complete, on the bowl-aware thermal model with **per-mix
+weights**, the ice calculation removed, and MESSAGE-4 applied. Task 8 (backward
+timeline) next — §4.7's durations have stopped moving, so it is now safe to
+solve against them.
 
 ---
 
@@ -145,6 +147,64 @@ disagreement written down beside it rather than silently adopted — the same
 handling the 30.2 h overhead finding got before §4.7 was corrected.
 
 This does not affect the ice decision, which rests only on the minimum.
+
+---
+
+## Model revision — MESSAGE-4 (22 Aug 2026) ✅
+
+Thirteen sections, applied per `docs/MESSAGE-4-corrections.md`. §12 first, since
+it changes Task 8's inputs. Every figure was reproduced before it was adopted.
+
+- [x] **§4.2 per-mix thermal weights** — the load-bearing change. `Cb/Cf/Cw/Cs`
+      came from batch totals while `C_bowl` was one bowl, so a 12-ball batch was
+      modelled as the whole batch against a single bowl. `computeThermal` takes
+      `nMix`; `calculate` computes capacity *before* thermal
+- [x] **§2 `MIN_BALLS = 3`** as an input constraint, not a warning
+- [x] **§2 second water warning** above 120 °F, pointing upstream at the temper
+- [x] **§3 ADY derived to 0.00375** from the published fresh-yeast dose
+- [x] **§5 `observedRate()`** as the single dough-only → observed conversion
+- [x] **§6 `DEFAULT_BIGA_TEMP_F` 64 → 58**, with the sensitivity shown inline
+- [x] **§8/§10 bowl state** — three-way selector, measured override, per-mix
+      water cards
+- [x] **§12 timeline** — `mix` scales with `nMix` plus changeover; `bulkRest`
+      clocked from the last mix; `stagger/2` off the ball rise
+- [x] §8 prose regenerated from the spec, not hand-edited
+
+**304 tests green**, typecheck clean, production build clean.
+
+### Everything reproduced exactly
+
+All 7 §5 rows including the per-mix 12/18 values; both reachability corners
+(53.2 at 9 × 270, 108.7 at 3 × 240) and both 265 g corners; all eight per-batch
+maxima including the non-monotonic 12 (93.4) above 9 (90.3); all fifteen
+bowl-mode cells; the `Ct/TOT` factors with 12/18 collapsing onto 6/9; the
+split-batch pair 64.8 → 59.5; and 126.7 °F for the FF-8 case §2 predicts.
+
+### Three tests that were right before and are wrong now
+
+Worth recording, because each looked like a regression and was not:
+
+- **Water falling with batch size** → now falls with **mix** size, at a fixed
+  DDT. 12 balls sits above 9. DDT has to be held constant because §11 keys it to
+  *total* balls, which is worth 3.3 °F between the 6- and 12-ball rows.
+- **`probeTargetF` monotonic in batch size** → monotonic in **per-mix** size.
+- **`Ct` from batch masses** → from batch masses ÷ `nMix`.
+
+### Four findings raised — `docs/FINDINGS-4-to-recipe-agent.md`
+
+All four are batch-total figures that survived into text §4.2 was correcting,
+which is the class §12 says to delete on sight:
+
+| Finding | Status |
+|---|---|
+| `thermal-model` ¶4 says the bowl "needs no measurement", ¶7 says it is "worth a five-second measurement" — **verbatim prose, both render** | open |
+| §4.6's probe figures for 12/18 (70.4/70.3) contradict §5's (70.6/70.5); §4.6 reproduces from batch totals | open, §5 assumed |
+| §4.7 asserts 28.4 h overhead at `nMix` 2, which its own stagger rule reduces to 28.12 | open, 28.12 implemented |
+| §5's bowl-dilution 12-ball row describes a system per-mix weights made unreachable | open |
+
+Plus one push-back on §13.4: the `stagger` correction is applied after §4.8's
+[45, 180] clamp, so on a warm dough at `nMix` 2–3 the clamp wins and the
+centring silently stops — worst exactly where the dough ferments fastest.
 
 ---
 

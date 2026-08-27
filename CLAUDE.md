@@ -35,6 +35,7 @@ question:
 | `FINDINGS-3-to-recipe-agent.md` | Settled by MESSAGE-4: both findings confirmed |
 | `MESSAGE-4-corrections.md` | Per-mix thermal weights, `MIN_BALLS = 3`, the hot-end warning, ADY 0.00375, `observedRate`, biga default 58, bowl state, the nMix timeline |
 | `HANDOFF-new-context.md` | Background for a fresh session on either side. Not instructions |
+| `FINDINGS-4-to-recipe-agent.md` | **Open.** Four stale batch-total figures, one of them a self-contradiction in `thermal-model`'s verbatim prose |
 
 ## Rules that matter more than usual here
 
