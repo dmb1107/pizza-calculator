@@ -76,6 +76,10 @@ export function computeFormula({ balls, ballWeightG }: BatchInputs): Formula {
 // ---------------------------------------------------------------------------
 
 export interface Thermal {
+  /** Mixes this batch runs as. The weights below are for ONE of them. */
+  nMix: number;
+  /** The component masses of a single mix — batch totals divided by nMix. */
+  perMix: { bigaMass: number; freshFlour: number; freshWater: number; salt: number };
   /** Heat capacity of the biga, cal/°C. */
   cBiga: number;
   cFreshFlour: number;
@@ -101,19 +105,38 @@ export interface Thermal {
 }
 
 /**
- * §4.2. Derived from component heat capacities rather than hardcoded — the
- * weights are scale-invariant, which is precisely what makes them a good
- * assertion target.
+ * §4.2. Derived from component heat capacities rather than hardcoded.
+ *
+ * ⚠️ THE MASSES ARE PER-MIX, NOT BATCH TOTALS. `C_bowl` is one bowl, and the
+ * bowl only ever faces one mix at a time — so feeding a 12-ball batch total
+ * into the heat balance models the whole batch sitting against a single bowl,
+ * which never happens. That error landed the water target 2.6 °F low at 12
+ * balls and 1.8 °F low at 18. Every `nMix = 1` batch is unaffected.
+ *
+ * FF is per-mix by the same argument: it is the rise the mixer produces in the
+ * dough actually in the bowl, and 14.04 was measured on a single 6-ball mix.
  */
-export function computeThermal(f: Formula, bowlMassG: number = C.DEFAULT_BOWL_MASS_G): Thermal {
-  const cBiga = f.bigaMass * C.C_BIGA;
-  const cFreshFlour = f.freshFlour * C.C_FLOUR;
-  const cFreshWater = f.freshWater * C.C_WATER;
-  const cSalt = f.salt * C.C_SALT;
+export function computeThermal(
+  f: Formula,
+  bowlMassG: number = C.DEFAULT_BOWL_MASS_G,
+  nMix: number = 1,
+): Thermal {
+  const perMix = {
+    bigaMass: f.bigaMass / nMix,
+    freshFlour: f.freshFlour / nMix,
+    freshWater: f.freshWater / nMix,
+    salt: f.salt / nMix,
+  };
+  const cBiga = perMix.bigaMass * C.C_BIGA;
+  const cFreshFlour = perMix.freshFlour * C.C_FLOUR;
+  const cFreshWater = perMix.freshWater * C.C_WATER;
+  const cSalt = perMix.salt * C.C_SALT;
   const cTotal = cBiga + cFreshFlour + cFreshWater + cSalt;
   const cBowl = bowlHeatCapacity(bowlMassG);
 
   return {
+    nMix,
+    perMix,
     cBiga,
     cFreshFlour,
     cFreshWater,
@@ -250,6 +273,46 @@ export function solveFrictionFactorF(
 // The only thing left is the sub-38 °F warning in `buildWarnings` below.
 
 // ---------------------------------------------------------------------------
+// §4.2 Bowl state
+// ---------------------------------------------------------------------------
+
+/**
+ * How the bowl arrives at a given mix. Each option prefills the bowl
+ * temperature from a value already in the model — deliberately no new
+ * constants.
+ */
+export type BowlState =
+  /** Held the biga. Default for mix 1 and for every single-mix batch. */
+  | 'cold'
+  /** Washed and left on the counter, or a second biga that fermented elsewhere. */
+  | 'room'
+  /** Straight off the previous mix. Default for mix 2 and later. */
+  | 'warm';
+
+/**
+ * §4.2. The prefill only — the field stays editable and a measurement always
+ * wins.
+ *
+ * `warm` uses DDT as a good estimate rather than merely a ceiling: the bowl is
+ * not cleaned between mixes and the changeover is about 5 minutes, so it comes
+ * off mix 1 near dough temperature with little time to shed. It runs a degree
+ * or two high.
+ */
+export function bowlTempForState(
+  state: BowlState,
+  { bigaTempF, roomTempF, ddtF }: { bigaTempF: number; roomTempF: number; ddtF: number },
+): number {
+  switch (state) {
+    case 'cold':
+      return bigaTempF;
+    case 'room':
+      return roomTempF;
+    case 'warm':
+      return ddtF;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // §4.5 Capacity splits
 // ---------------------------------------------------------------------------
 
@@ -323,6 +386,27 @@ export function computeProbeTargetF({
     0.33 * frictionFactorF * (thermal.cTotal / thermal.cSystem) +
     0.2 * (ddtF - roomTempF)
   );
+}
+
+/**
+ * §4.6. Dough-only °F/min at a dial setting converted to what a THERMOMETER
+ * will show.
+ *
+ * ⚠️ This is a unit convention, and conflating the two is the live failure mode
+ * in this codebase. `FF` and `FRICTION_RATE` are dough-only quantities, to
+ * match the `FF × Ct` work term. A probe reads the dough after it has
+ * equilibrated with the bowl, so an observed rate is the dough-only rate times
+ * `Ct / TOT` — 0.821 at 3 balls, 0.901 at 6, 0.932 at 9.
+ *
+ * Getting this backwards produced the old "probe at DDT − 4" rule, which was
+ * 1.2 °F wrong at 3 balls. Every duration-to-temperature conversion in the app
+ * routes through here so the two cannot drift apart again.
+ */
+export function observedRate(
+  dialPercent: keyof typeof C.FRICTION_RATE,
+  thermal: Thermal,
+): number {
+  return C.FRICTION_RATE[dialPercent] * (thermal.cTotal / thermal.cSystem);
 }
 
 // ---------------------------------------------------------------------------
@@ -421,16 +505,28 @@ function buildWarnings(f: Formula, capacity: Capacity, waterTempF: number): Warn
     });
   }
 
-  // §4.4. The only water warning, and it should essentially never fire — on the
-  // retarded-biga schedule the required water spans 51.7-90.6 °F. Only the
-  // classic room-temperature track in a hot kitchen can reach below 38 °F.
-  if (waterTempF < C.COLD_WATER_FLOOR_F) {
+  // §4.4. Two warnings, one at each end. They mirror each other: same failure
+  // ("you cannot get there by blending"), opposite end, and both point the user
+  // upstream rather than at the water card, which stays bare per §7.2.
+  //
+  // MESSAGE-3's "one warning, and only one" is withdrawn by MESSAGE-4 §2 — it
+  // was written before anyone had swept the small-batch corner, so it guarded
+  // the unreachable failure and left the reachable one bare.
+  if (waterTempF < C.WATER_MIN_F) {
     w.push({
       id: 'water-below-fridge',
       severity: 'warn',
-      title: `Target water is below ${C.COLD_WATER_FLOOR_F} °F`,
-      detail:
-        `${formatTempF(waterTempF)} °F is colder than fridge water reaches, so you cannot get there by blending. Chill the biga or the fresh flour instead — the biga is the dominant thermal term and a far more powerful lever. Failing that, this is the one case for ice.`,
+      title: `Target water is below ${C.WATER_MIN_F} °F`,
+      detail: `${formatTempF(waterTempF)} °F is colder than fridge water reaches, so you cannot get there by blending. Chill the biga or the fresh flour instead — the biga is the dominant thermal term and a far more powerful lever. Failing that, this is the one case for ice.`,
+    });
+  }
+
+  if (waterTempF > C.WATER_MAX_F) {
+    w.push({
+      id: 'water-above-tap',
+      severity: 'warn',
+      title: `Target water is above ${C.WATER_MAX_F} °F`,
+      detail: `${formatTempF(waterTempF)} °F is hotter than a domestic tap delivers. Don't heat water to get there — fix it upstream. The cause is almost always a biga that skipped its 1-hour temper: each °F of biga temperature is worth about 2 °F of water, so an hour on the counter closes this faster than anything you can do at the sink.`,
     });
   }
 
@@ -446,9 +542,22 @@ export interface CalculatorInputs extends BatchInputs {
   flourTempF: number;
   bigaTempF: number;
   frictionFactorF: number;
-  /** Weigh once; persisted. Its mass matters far more than its temperature. */
+  /** Weigh once; persisted. */
   bowlMassG?: number;
-  /** Defaults to bigaTempF — the biga ferments in the bowl. §4.2. */
+  /**
+   * §4.2. How the bowl arrives at MIX 1. Later mixes are always 'warm' — they
+   * start in the bowl that just finished the previous mix.
+   */
+  bowlState?: BowlState;
+  /**
+   * §4.2. Measured bowl temperature at mix 1, overriding the selector's
+   * prefill. A measurement always wins.
+   *
+   * Worth 0.66 °F of water per °F at 3 balls — three times the dough
+   * sensitivity, because water is only 30% of the system. The biga gains ~5 °F
+   * from tearing and the bowl does not, so this is a real reading, not a
+   * formality.
+   */
   bowlTempF?: number | null;
   /** null / undefined uses the §4.3 default: 75 °F for <=6 balls, 74 °F for 7+. */
   ddtOverrideF?: number | null;
@@ -459,13 +568,25 @@ export interface CalculatorInputs extends BatchInputs {
   finalDoughTempF?: number | null;
 }
 
+/** One mix's water target. A split batch has genuinely different numbers per mix. */
+export interface MixTarget {
+  /** 1-based. */
+  index: number;
+  bowlState: BowlState;
+  bowlTempF: number;
+  waterTempF: number;
+}
+
 export interface CalculatorResult {
   inputs: CalculatorInputs;
   formula: Formula;
   thermal: Thermal;
   /** The DDT actually used, override or default. */
   ddtF: number;
+  /** Mix 1's water target — the headline figure, and the only one when nMix is 1. */
   waterTempF: number;
+  /** One entry per mix. §7.2 renders a card each when there is more than one. */
+  mixes: MixTarget[];
   capacity: Capacity;
   probeTargetF: number;
   /** §4.8 room-temperature minutes before the fridge. */
@@ -480,21 +601,45 @@ export interface CalculatorResult {
 /** Composes §4.1–§4.8 into everything the UI needs. Nothing here is rounded. */
 export function calculate(inputs: CalculatorInputs): CalculatorResult {
   const formula = computeFormula(inputs);
-  const thermal = computeThermal(formula, inputs.bowlMassG ?? C.DEFAULT_BOWL_MASS_G);
+
+  // Capacity first: nMix feeds the thermal weights. §4.2 — the bowl faces one
+  // mix at a time, so a 12-ball batch is a 6-ball thermal system twice over.
+  const capacity = computeCapacity(formula);
+  const thermal = computeThermal(
+    formula,
+    inputs.bowlMassG ?? C.DEFAULT_BOWL_MASS_G,
+    capacity.nMix,
+  );
   const ddtF = inputs.ddtOverrideF ?? defaultDdtF(inputs.balls);
 
-  const temps: TempInputs = {
+  const baseTemps = {
     ddtF,
     frictionFactorF: inputs.frictionFactorF,
     bigaTempF: inputs.bigaTempF,
     flourTempF: inputs.flourTempF,
     roomTempF: inputs.roomTempF,
-    ...(inputs.bowlTempF != null ? { bowlTempF: inputs.bowlTempF } : {}),
   };
 
-  const waterTempF = computeWaterTempF(temps, thermal);
+  // §4.2 / §10. Mix 1 takes the user's bowl state; every later mix starts in
+  // the bowl that just finished the one before it.
+  const mixes: MixTarget[] = Array.from({ length: capacity.nMix }, (_, i) => {
+    const bowlState: BowlState = i === 0 ? (inputs.bowlState ?? 'cold') : 'warm';
+    const prefill = bowlTempForState(bowlState, {
+      bigaTempF: inputs.bigaTempF,
+      roomTempF: inputs.roomTempF,
+      ddtF,
+    });
+    // A measurement always wins, but only mix 1 has a field for one.
+    const bowlTempF = i === 0 && inputs.bowlTempF != null ? inputs.bowlTempF : prefill;
+    return {
+      index: i + 1,
+      bowlState,
+      bowlTempF,
+      waterTempF: computeWaterTempF({ ...baseTemps, bowlTempF }, thermal),
+    };
+  });
 
-  const capacity = computeCapacity(formula);
+  const waterTempF = mixes[0]!.waterTempF;
 
   // Planning mode until a real final dough temperature is entered.
   const roomMinutesIsPlanned = inputs.finalDoughTempF == null;
@@ -506,6 +651,7 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
     thermal,
     ddtF,
     waterTempF,
+    mixes,
     capacity,
     probeTargetF: computeProbeTargetF({
       ddtF,
@@ -516,6 +662,9 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
     roomMinutes: computeRoomMinutes({ finalDoughTempF: effectiveFinalTempF, ddtF }),
     roomMinutesIsPlanned,
     effectiveFinalTempF,
+    // Warnings key off mix 1; a later mix is always warmer-bowled and so
+    // never colder, and the hot end is what mix 1 already worst-cases.
     warnings: buildWarnings(formula, capacity, waterTempF),
   };
 }
+

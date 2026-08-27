@@ -73,7 +73,7 @@ Weigh before you break up, not after, so anything lost to the sieve doesn't chan
     title: "Dissolve the yeast",
     summary: `{bigaWater} g of **room-temperature** water, {bigaADY} g ADY. Stir to dissolve.`,
     values: [`Biga water: {bigaWater} g`, `ADY: {bigaADY} g`],
-    detail: `**The dose is the Giorilli standard: 1% fresh yeast = 0.30% IDY = 0.38% ADY on biga flour**, the baseline for 12–18 h at 61–65 °F.
+    detail: `**The dose is the Giorilli standard: 1% fresh yeast = 0.30% IDY = 0.375% ADY on biga flour**, the baseline for 12–18 h at 61–65 °F.
 
 This is the number Piergiorgio Giorilli codified and that essentially every serious source repeats — PizzaBlab, Gozney's own 100% biga recipe, Stadler Made, the Italian baking literature. Go longer and you cut it; run warmer and you cut it. For a time or temperature off that baseline, use PizzaBlab's dough calculator rather than guessing.
 
@@ -91,7 +91,7 @@ This is the number Piergiorgio Giorilli codified and that essentially every seri
 
 The goal is **small-to-medium chunks, like gnocchi** — not a dough. A spiral mixer's entire purpose is building a gluten network, which is precisely what you don't want here. An over-mixed biga rises like a dough instead of fermenting like a biga, and then it doubles and misleads you about ripeness.
 
-Method: water and yeast into a wide, deep container, mix to dissolve. Add flour. Make a claw with your hand and circulate your fingertips through it. **3–6 minutes, until no dry flour remains** — any dry flour never ferments. Break up large chunks by hand.
+Method: water and yeast **into the mixer bowl** — the biga ferments in the same bowl the final mix runs in, always. Mix to dissolve. Add flour. Make a claw with your hand and circulate your fingertips through it. **3–6 minutes, until no dry flour remains** — any dry flour never ferments. Break up large chunks by hand.
 
 Cover to prevent drying. Sources differ on venting: Gozney and Ooni say leave a gap, PizzaBlab says it serves no purpose. Either is fine; the thing that matters is that it doesn't dry out.
 
@@ -186,7 +186,13 @@ At 2.8% the salt is at the upper end of the Neapolitan range of 2.5–3.0%. That
     values: [`Probe target: {probeTarget} °F`, `DDT: {ddt} °F`],
     detail: `**Why below DDT and not at it.** By the end of Phase B you have absorbed roughly two thirds of the total friction — Phases A and B are long, and the hydration exotherm has already fired.
 
-Still to come: Phase C at about +3.8 °F, Phase D at about +0.9 °F, minus roughly 1 °F given back to the room during the 10-minute rest. Net **+3.7 °F**, so aim about 4 °F low.
+Still to come, **stated the way the probe will read it** — dough and bowl equilibrated, at 6 balls: Phase C **+3.4 °F**, Phase D **+0.8 °F**, minus **1.0 °F** given back to the room during the 10-minute rest. Net **+3.2 °F.**
+
+**There is no flat "four degrees low" rule.** The gap shrinks as the batch gets smaller, because a small batch has proportionally more bowl to heat:
+
+| Balls | 3 | 6 | 9 | 12 | 18 |
+|---|---:|---:|---:|---:|---:|
+| Probe target | DDT − 2.8 | DDT − 3.2 | DDT − 3.5 | DDT − 3.6 | DDT − 3.7 |
 
 The general form:
 
@@ -208,15 +214,15 @@ Remaining friction is diluted by the mixer bowl's thermal mass, and the rest she
     id: "mix-5",
     phase: "mix",
     title: "Phase C, development",
-    summary: `**30% / 123 RPM**, 3–4 min, to smooth and glossy. Adjust duration from the probe: about **1 °F per minute** at this speed.`,
+    summary: `**30% / 123 RPM**, 3–4 min, to smooth and glossy. Adjust duration from the probe: about **{observedRate30} °F per minute** at this speed.`,
     speed: { dial: 30, rpm: 123, minutes: [3, 4], label: `30% / 123 RPM, 3–4 min` },
     detail: `**Phase C has limited authority over temperature, and this is the important part.**
 
-Cutting it to 2 minutes saves only 1.6 °F. Stretching it to 5.5 minutes adds only 2.2 °F. That's the entire usable range.
+At 6 balls, cutting it to 2 minutes saves only **1.5 °F** and stretching it to 5.5 minutes adds only **2.0 °F**. That's the entire usable range, and it is narrower at 3 balls (−1.3 / +1.8) and slightly wider at 9 (−1.5 / +2.0).
 
 Outside that window you are trading gluten development for temperature and losing both. **An under-mixed dough at exactly the right temperature is worse than a properly developed one running 2 °F warm.** Temperature misses get fixed upstream in the water calculation, not downstream by mangling the mix.
 
-Friction per minute at each speed, if you need to correct elsewhere: 15% ≈ 0.75 °F/min · 20% ≈ 0.86 °F/min · 30% ≈ 1.08 °F/min.`,
+Friction per minute at each speed, if you need to correct elsewhere: 15% ≈ 0.75 °F/min · 20% ≈ 0.86 °F/min · 30% ≈ 1.08 °F/min. **Those are dough-only figures.** What a thermometer shows is each of them multiplied by \`Ct/(Ct + C_bowl)\` — 0.82 at 3 balls, 0.90 at 6, 0.93 at 9 — which at 30% gives an observed 0.89, 0.97 and 1.01 °F per minute. That is where "about a degree a minute" comes from, and it only holds at 6 balls and up.`,
   },
   {
     id: "mix-6",

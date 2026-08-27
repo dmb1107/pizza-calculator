@@ -13,7 +13,16 @@ const BASE = {
   SALT: 0.028, // of total flour
   BIGA_FRACTION: 0.65, // of total flour
   BIGA_HYDRATION: 0.5, // water / flour within the biga
-  ADY_OF_BIGA_FLOUR: 0.0038, // Giorilli standard: 1% fresh = 0.30% IDY = 0.38% ADY
+  /**
+   * Giorilli standard. The PUBLISHED anchor is the fresh-yeast dose; everything
+   * after it is unit conversion, so `ADY_OF_BIGA_FLOUR` is derived below rather
+   * than hardcoded as a rounded 0.0038. Earlier drafts printed 0.38% in prose
+   * while computing at 0.375%, so the two documents disagreed by 1.3% of the
+   * yeast. 0.00375 is exact.
+   */
+  FRESH_YEAST_OF_BIGA_FLOUR: 0.01,
+  FRESH_TO_IDY: 0.3, // 1% fresh -> 0.30% IDY
+  IDY_TO_ADY: 1.25,
   OVERAGE: 1.022, // 2.2% for scrap and bowl residue
   DOUGH_YIELD: 1.728, // 1 + HYDRATION + SALT
 
@@ -28,6 +37,14 @@ const BASE = {
   DEFAULT_BOWL_MASS_G: 965, // measured; user-editable, persisted
 
   // Ooni Halo Core limits
+  /**
+   * §4.4. Smallest supported MACHINE batch. Two independent reasons point here:
+   * 2 balls is 542 g, which clears the 500 g floor on paper but won't let a
+   * spiral hook grip, AND it asks for 116 °F water because the fixed-mass bowl
+   * is such a large share of a small system. The arithmetic still scales below
+   * 3 for hand mixing — it is the machine batch that has a floor.
+   */
+  MIN_BALLS: 3,
   MAX_DOUGH: 2500, // g
   MIN_DOUGH: 500, // g
   FLOUR_CAP_66: 1505, // g, at 66%+ hydration (final mix)
@@ -55,7 +72,31 @@ const BASE = {
    * schedule the model never asks for it: the required water spans 51.7-90.6 °F
    * across every batch size and kitchen temperature.
    */
-  COLD_WATER_FLOOR_F: 38,
+  WATER_MIN_F: 38,
+
+  /**
+   * §4.4. Above what a domestic tap delivers — 120 °F is where scald limits
+   * start. With MIN_BALLS = 3 this fires nowhere in the temperature grid at the
+   * default FF; it guards a user-entered calibration FF or an out-of-band
+   * reading. Reachable, just not from the temperatures alone.
+   */
+  WATER_MAX_F: 120,
+
+  /**
+   * §6. The one biga temperature ever measured (bake 1, after tearing). Was 64,
+   * which was unsourced. This is the highest-leverage input in the model:
+   * d(T_water)/d(T_biga) is -1.92 at 6 balls and -2.25 at 3, so a 6 °F miss
+   * moves the required water 11.5 °F.
+   */
+  DEFAULT_BIGA_TEMP_F: 58,
+
+  /**
+   * §4.7. Hours between the end of one mix and the start of the next on a split
+   * batch. Dave's estimate of his own workflow, NOT a measurement, and it
+   * assumes mix 2 is weighed out before mix 1 starts (§8 mix-1). Time it on the
+   * first split bake: every 5 min here moves the rise correction by 2.5 min.
+   */
+  CHANGEOVER_H: 0.0833,
 
   /** Split of the fresh water between Phase A and Phase B. §5 of the update. */
   PHASE_A_FRACTION: 0.6,
@@ -76,7 +117,18 @@ const C_BIGA =
   (1 / (1 + BASE.BIGA_HYDRATION)) * BASE.C_FLOUR +
   (BASE.BIGA_HYDRATION / (1 + BASE.BIGA_HYDRATION)) * BASE.C_WATER;
 
-export const C = { ...BASE, C_BIGA } as const;
+/**
+ * ADY as a fraction of biga flour: 0.00375 exactly. Derived, not hardcoded, for
+ * the same reason as C_BIGA — the sourced figure is the 1% fresh-yeast dose and
+ * the rest is unit conversion.
+ */
+const ADY_OF_BIGA_FLOUR =
+  BASE.FRESH_YEAST_OF_BIGA_FLOUR * BASE.FRESH_TO_IDY * BASE.IDY_TO_ADY;
+
+/** IDY as a fraction of biga flour: 0.00300. Reference only; the recipe uses ADY. */
+const IDY_OF_BIGA_FLOUR = BASE.FRESH_YEAST_OF_BIGA_FLOUR * BASE.FRESH_TO_IDY;
+
+export const C = { ...BASE, C_BIGA, ADY_OF_BIGA_FLOUR, IDY_OF_BIGA_FLOUR } as const;
 
 /**
  * Heat capacity of the mixer bowl, cal/°C. 115.8 at the 965 g default —

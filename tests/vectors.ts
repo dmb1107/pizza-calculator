@@ -32,7 +32,11 @@ export interface BatchVector {
   phaseA: number;
   phaseB: number;
   salt: number;
-  /** Dough-only heat capacity. The friction work term uses this, not Ct + C_bowl. */
+  /**
+   * Dough-only heat capacity of ONE MIX — the friction work term uses this,
+   * not Ct + C_bowl, and not the batch total. §4.2: a 12-ball batch is a
+   * 6-ball thermal system twice over, so its Ct equals the 6-ball row's.
+   */
   Ct: number;
   ddtF: number;
   waterTempF: number;
@@ -42,13 +46,13 @@ export interface BatchVector {
 }
 
 export const BATCH_VECTORS: readonly BatchVector[] = [
-  { balls: 3,  ballG: 265, F: 470.2,  bigaFlour: 305.6,  bigaWater: 152.8, bigaADY: 1.16, freshFlour: 164.6, freshWater: 176.3,  phaseA: 105.8, phaseB: 70.5,  salt: 13.2, Ct: 529.4,  ddtF: 75, waterTempF: 73.7, probeTargetF: 72.2, nBiga: 1, nMix: 1 },
-  { balls: 6,  ballG: 265, F: 940.4,  bigaFlour: 611.2,  bigaWater: 305.6, bigaADY: 2.32, freshFlour: 329.1, freshWater: 352.6,  phaseA: 211.6, phaseB: 141.1, salt: 26.3, Ct: 1058.7, ddtF: 75, waterTempF: 68.1, probeTargetF: 71.8, nBiga: 1, nMix: 1 },
-  { balls: 9,  ballG: 265, F: 1410.6, bigaFlour: 916.9,  bigaWater: 458.4, bigaADY: 3.48, freshFlour: 493.7, freshWater: 529.0,  phaseA: 317.4, phaseB: 211.6, salt: 39.5, Ct: 1588.1, ddtF: 74, waterTempF: 63.0, probeTargetF: 70.5, nBiga: 1, nMix: 1 },
-  { balls: 12, ballG: 265, F: 1880.8, bigaFlour: 1222.5, bigaWater: 611.2, bigaADY: 4.65, freshFlour: 658.3, freshWater: 705.3,  phaseA: 423.2, phaseB: 282.1, salt: 52.7, Ct: 2117.5, ddtF: 74, waterTempF: 62.1, probeTargetF: 70.4, nBiga: 1, nMix: 2 },
-  { balls: 18, ballG: 265, F: 2821.1, bigaFlour: 1833.7, bigaWater: 916.9, bigaADY: 6.97, freshFlour: 987.4, freshWater: 1057.9, phaseA: 634.8, phaseB: 423.2, salt: 79.0, Ct: 3176.2, ddtF: 74, waterTempF: 61.3, probeTargetF: 70.3, nBiga: 2, nMix: 2 },
-  { balls: 5,  ballG: 270, F: 798.4,  bigaFlour: 519.0,  bigaWater: 259.5, bigaADY: 1.97, freshFlour: 279.5, freshWater: 299.4,  phaseA: 179.6, phaseB: 119.8, salt: 22.4, Ct: 898.9,  ddtF: 75, waterTempF: 69.1, probeTargetF: 71.9, nBiga: 1, nMix: 1 },
-  { balls: 7,  ballG: 260, F: 1076.4, bigaFlour: 699.7,  bigaWater: 349.8, bigaADY: 2.66, freshFlour: 376.7, freshWater: 403.7,  phaseA: 242.2, phaseB: 161.5, salt: 30.1, Ct: 1211.9, ddtF: 74, waterTempF: 64.1, probeTargetF: 70.6, nBiga: 1, nMix: 1 },
+  { balls: 3,  ballG: 265, F: 470.2,  bigaFlour: 305.6,  bigaWater: 152.8, bigaADY: 1.15, freshFlour: 164.6, freshWater: 176.3,  phaseA: 105.8, phaseB: 70.5,  salt: 13.2, Ct: 529.4,  ddtF: 75, waterTempF: 73.7, probeTargetF: 72.2, nBiga: 1, nMix: 1 },
+  { balls: 6,  ballG: 265, F: 940.4,  bigaFlour: 611.2,  bigaWater: 305.6, bigaADY: 2.29, freshFlour: 329.1, freshWater: 352.6,  phaseA: 211.6, phaseB: 141.1, salt: 26.3, Ct: 1058.7, ddtF: 75, waterTempF: 68.1, probeTargetF: 71.8, nBiga: 1, nMix: 1 },
+  { balls: 9,  ballG: 265, F: 1410.6, bigaFlour: 916.9,  bigaWater: 458.4, bigaADY: 3.44, freshFlour: 493.7, freshWater: 529.0,  phaseA: 317.4, phaseB: 211.6, salt: 39.5, Ct: 1588.1, ddtF: 74, waterTempF: 63.0, probeTargetF: 70.5, nBiga: 1, nMix: 1 },
+  { balls: 12, ballG: 265, F: 1880.8, bigaFlour: 1222.5, bigaWater: 611.2, bigaADY: 4.58, freshFlour: 658.3, freshWater: 705.3,  phaseA: 423.2, phaseB: 282.1, salt: 52.7, Ct: 1058.8, ddtF: 74, waterTempF: 64.8, probeTargetF: 70.6, nBiga: 1, nMix: 2 },
+  { balls: 18, ballG: 265, F: 2821.1, bigaFlour: 1833.7, bigaWater: 916.9, bigaADY: 6.88, freshFlour: 987.4, freshWater: 1057.9, phaseA: 634.8, phaseB: 423.2, salt: 79.0, Ct: 1588.1, ddtF: 74, waterTempF: 63.0, probeTargetF: 70.5, nBiga: 2, nMix: 2 },
+  { balls: 5,  ballG: 270, F: 798.4,  bigaFlour: 519.0,  bigaWater: 259.5, bigaADY: 1.95, freshFlour: 279.5, freshWater: 299.4,  phaseA: 179.6, phaseB: 119.8, salt: 22.4, Ct: 898.9,  ddtF: 75, waterTempF: 69.1, probeTargetF: 71.9, nBiga: 1, nMix: 1 },
+  { balls: 7,  ballG: 260, F: 1076.4, bigaFlour: 699.7,  bigaWater: 349.8, bigaADY: 2.62, freshFlour: 376.7, freshWater: 403.7,  phaseA: 242.2, phaseB: 161.5, salt: 30.1, Ct: 1211.9, ddtF: 74, waterTempF: 64.1, probeTargetF: 70.6, nBiga: 1, nMix: 1 },
 ];
 
 /**
@@ -85,7 +89,67 @@ export const BOWL_DILUTION: readonly { balls: number; bowlShare: number; apparen
   { balls: 3, bowlShare: 0.18, apparentFF: 11.5 },
   { balls: 6, bowlShare: 0.099, apparentFF: 12.6 },
   { balls: 9, bowlShare: 0.068, apparentFF: 13.0 },
-  { balls: 12, bowlShare: 0.052, apparentFF: 13.3 },
+];
+
+/**
+ * ⚠️ §5's bowl-dilution table still carries a 12-ball row at 5.2% / 13.3 °F,
+ * and the `thermal-model` concept still says 3.5% / 13.5 °F at 18 balls. Both
+ * are batch-total figures that per-mix weights (§4.2) made unreachable: 12
+ * balls runs as two 6-ball mixes and 18 as two 9-ball mixes, so they share the
+ * 6- and 9-ball shares exactly.
+ *
+ * RAISED WITH THE RECIPE AGENT. These record what the model does.
+ */
+export const BOWL_DILUTION_SPLIT: readonly { balls: number; sameAsBalls: number }[] = [
+  { balls: 12, sameAsBalls: 6 },
+  { balls: 18, sameAsBalls: 9 },
+];
+
+/**
+ * §5. `Ct / TOT` per mix — the factor converting a dough-only rate into what a
+ * thermometer reads. 12 and 18 share values with 6 and 9 because they ARE 6-
+ * and 9-ball mixes.
+ */
+export const OBSERVED_RATE_VECTORS: readonly { balls: number; ctOverTot: number; at30: number }[] = [
+  { balls: 3, ctOverTot: 0.821, at30: 0.89 },
+  { balls: 6, ctOverTot: 0.901, at30: 0.97 },
+  { balls: 9, ctOverTot: 0.932, at30: 1.01 },
+  { balls: 12, ctOverTot: 0.901, at30: 0.97 },
+  { balls: 18, ctOverTot: 0.932, at30: 1.01 },
+];
+
+/** §5 bowl-mode vectors — 265 g, FF 14, biga 58, room 70, flour 69. */
+export const BOWL_MODE_VECTORS: readonly {
+  balls: number;
+  cold: number;
+  room: number;
+  warm: number;
+}[] = [
+  { balls: 3, cold: 73.7, room: 65.8, warm: 62.5 },
+  { balls: 6, cold: 68.1, room: 64.1, warm: 62.5 },
+  { balls: 9, cold: 63.0, room: 60.4, warm: 59.5 },
+  { balls: 12, cold: 64.8, room: 60.8, warm: 59.5 },
+  { balls: 18, cold: 63.0, room: 60.4, warm: 59.5 },
+];
+
+/**
+ * §4.6. The probe gap is mix-size dependent; there is no flat `DDT − 4`.
+ *
+ * ⚠️ 12 and 18 do NOT match §4.6's quoted 3.6 / 3.7. Those two reproduce
+ * exactly from batch-total `Ct/TOT` (0.948 and 0.965) — the weights §4.2
+ * replaced — and §4.6's headline list carries the same stale pair as
+ * "12 balls 70.4 · 18 balls 70.3". §5's vector table says 70.6 and 70.5, which
+ * is what per-mix weights give and what the engine produces.
+ *
+ * The 3 / 6 / 9 values are unaffected, being nMix = 1. RAISED WITH THE RECIPE
+ * AGENT; these record what the model does.
+ */
+export const PROBE_GAP_VECTORS: readonly { balls: number; belowDdt: number }[] = [
+  { balls: 3, belowDdt: 2.79 },
+  { balls: 6, belowDdt: 3.16 },
+  { balls: 9, belowDdt: 3.51 },
+  { balls: 12, belowDdt: 3.36 },
+  { balls: 18, belowDdt: 3.51 },
 ];
 
 /** §4.8 shaped rise time, at DDT 75. */
@@ -101,40 +165,68 @@ export const ROOM_MINUTES: readonly { finalTempF: number; roomMin: number }[] = 
 ];
 
 /**
- * §5 water-temperature reachability. The envelope that makes the ice
- * calculation unnecessary: sweep the retarded-biga schedule and the required
- * water never leaves this band, and in particular never goes below 38 °F.
- */
-export const WATER_REACHABILITY = {
-  bigaF: { min: 45, max: 60 },
-  roomF: { min: 60, max: 84 },
-  /**
-   * §5 quotes the span as 51.7-90.6 °F.
-   *
-   * The minimum reproduces exactly, at 18 balls with a 60 °F biga in an 84 °F
-   * kitchen — and it is the end that matters, because it is what makes the
-   * sub-38 warning unreachable and the ice model unnecessary.
-   *
-   * ⚠️ The maximum does NOT reproduce: the sweep tops out at 106.6 °F, at
-   * 3 balls with a 45 °F biga in a 60 °F kitchen. The maximum rises as the
-   * batch gets smaller, because the bowl is a fixed cold mass and a larger
-   * share of a small batch (18% at 3 balls). 90.6 is close to the 9-ball
-   * maximum of 90.3, so the published sweep looks not to have gone below
-   * about 9 balls. RAISED WITH THE RECIPE AGENT — `max` records what the
-   * model actually does, pending a correction to §5.
-   */
-  spans: { min: 51.7, max: 106.6 },
-  /** §4.4's warning threshold. Should not fire anywhere in the sweep. */
-  floorF: 38,
-} as const;
-
-/**
  * DOUGH-ONLY thermal weights. These stay scale-invariant.
  *
  * ⚠️ Bowl-inclusive shares are NOT scale-invariant and must never be asserted
  * as such — §4.2 says any such test is to be deleted, not loosened.
  */
 export const THERMAL_WEIGHTS = { biga: 0.5311, flour: 0.1306, water: 0.3331, salt: 0.0052 } as const;
+
+/**
+ * §5 water-temperature reachability, re-swept under per-mix weights (§4.2).
+ *
+ * Both ends are pinned. The cold end is what makes the ice deletion safe; the
+ * hot end is what `MIN_BALLS = 3` exists to keep tractable.
+ *
+ * ⚠️ The minimum moved from 51.2 to 53.2 when the weights went per-mix, and the
+ * reason is worth holding onto: the coldest requirement comes from the LARGEST
+ * thermal system, and per-mix weights cap that at mixer capacity. The biggest
+ * single mix in the permitted range is 9 × 270 g — a 24-ball batch is three
+ * 8-ball mixes, not one 6500 g monster.
+ */
+export const WATER_REACHABILITY = {
+  balls: { min: 3, max: 24 },
+  ballG: [240, 265, 270, 300],
+  bigaF: { min: 45, max: 60 },
+  roomF: { min: 60, max: 84 },
+  /** Across the whole permitted envelope. */
+  spans: { min: 53.2, max: 108.7 },
+  /** At the 265 g default ball weight. */
+  spans265: { min: 53.3, max: 106.6 },
+  /** §4.4 guard thresholds. Neither fires anywhere in the envelope at FF 14. */
+  floorF: 38,
+  ceilingF: 120,
+} as const;
+
+/**
+ * §5 per-batch maxima at 265 g.
+ *
+ * ⚠️ NOT monotonic in total balls — 12 (93.4) sits above 9 (90.3), because 12
+ * runs as two 6-ball mixes and a 6-ball mix wants hotter water than a 9-ball
+ * one. The requirement tracks the MIX, and mix size does not fall smoothly with
+ * batch size. Do not assert monotonicity on batch size.
+ */
+export const PER_BATCH_MAX_WATER: readonly { balls: number; maxWaterF: number }[] = [
+  { balls: 3, maxWaterF: 106.6 },
+  { balls: 5, maxWaterF: 98.7 },
+  { balls: 6, maxWaterF: 96.8 },
+  { balls: 7, maxWaterF: 92.1 },
+  { balls: 9, maxWaterF: 90.3 },
+  { balls: 12, maxWaterF: 93.4 },
+  { balls: 18, maxWaterF: 90.3 },
+  { balls: 24, maxWaterF: 91.1 },
+];
+
+/**
+ * §5. Had `MIN_BALLS` stayed at 1 the maximum would be 152.2 °F at 1 × 240 g.
+ * Kept because it is the reason the minimum exists — MESSAGE-4 §13 asked that
+ * these not simply vanish when the sweeps were re-bounded.
+ */
+export const BELOW_MIN_BALLS_WATER: readonly { balls: number; ballG: number; maxWaterF: number }[] = [
+  { balls: 1, ballG: 240, maxWaterF: 152.2 },
+  { balls: 1, ballG: 265, maxWaterF: 146.0 },
+  { balls: 2, ballG: 265, maxWaterF: 116.5 },
+];
 
 /** Assertion tolerances. §5: +/-0.1 g, +/-0.1 degF. */
 export const TOL = { grams: 0.1, degF: 0.1, ady: 0.005, weight: 0.0001 } as const;

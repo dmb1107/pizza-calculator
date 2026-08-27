@@ -3,9 +3,20 @@ import { Badge, NumberField, SegmentedField, SliderField, Stepper, ToggleField }
 import { BOUNDS } from '../state/defaults';
 import { formatTempF } from '../lib/format';
 import type { AppState } from '../state/useAppState';
-import type { Schedule } from '../state/types';
+import type { BowlState, Schedule } from '../state/types';
 
 /** The three input panels of §6. */
+
+/**
+ * §4.2. Each option prefills the bowl temperature from a value already in the
+ * model — deliberately no new constants. This selects MIX 1; a split batch
+ * always runs later mixes in the bowl that just finished the previous one.
+ */
+const BOWL_STATE_OPTIONS: { value: BowlState; label: string; description: string }[] = [
+  { value: 'cold', label: 'Held the biga', description: 'Cold — the usual case' },
+  { value: 'room', label: 'Room temperature', description: 'Washed and left out' },
+  { value: 'warm', label: 'Warm from a previous mix', description: 'Straight off the last mix' },
+];
 
 const SCHEDULE_OPTIONS: { value: Schedule; label: string; description: string }[] = [
   { value: 'retarded', label: 'Retarded biga', description: '2 h room, then 18–20 h fridge' },
@@ -62,7 +73,17 @@ export function BatchPanel(s: AppState) {
 }
 
 export function TemperaturesPanel(s: AppState) {
-  const { inputs, setInput, commitNumber, panels, togglePanel } = s;
+  const { inputs, setInput, commitNumber, panels, togglePanel, result } = s;
+
+  // §4.2 / §6: show the coefficient that makes each field worth measuring.
+  // d(T_water)/d(T_biga) and C_bowl/Cw both scale with batch size, so they are
+  // computed rather than quoted — a fixed number would be wrong at most sizes.
+  const { thermal } = result;
+  // Quoted as magnitudes: both move the water the OTHER way, and the prose
+  // says so, so a signed number here would read as a double negative.
+  const bigaSensitivity = ((thermal.cBiga + thermal.cBowl) / thermal.cFreshWater).toFixed(1);
+  const bowlSensitivity = (thermal.cBowl / thermal.cFreshWater).toFixed(2);
+  const bowlPrefill = result.mixes[0]!.bowlTempF;
 
   return (
     <Panel
@@ -106,7 +127,24 @@ export function TemperaturesPanel(s: AppState) {
           min={BOUNDS.bigaTempF.min}
           max={BOUNDS.bigaTempF.max}
           step={BOUNDS.bigaTempF.step}
-          hint="Measure it. This is the largest single term in the water calculation."
+          hint={`Measure it — this is the highest-leverage input in the model. Every °F warmer here means about ${bigaSensitivity} °F cooler water, so a 6 °F guess is 11 °F of water and 3.5 °F of finished dough. Take the reading after tearing the biga, not at the pull: handling gains about 5 °F that the bowl does not share.`}
+        />
+        <SegmentedField
+          legend="Bowl state at mix"
+          value={inputs.bowlState}
+          options={BOWL_STATE_OPTIONS}
+          onChange={(v) => setInput('bowlState', v)}
+          hint="The biga always ferments in the mixer bowl, so it is normally cold. Rinsing resets it to about the rinse temperature in under a minute if a later mix lands awkwardly."
+        />
+        <NumberField
+          label="Bowl temperature at mix"
+          unit="°F"
+          value={inputs.bowlTempF ?? bowlPrefill}
+          onCommit={(v) => commitNumber('bowlTempF', v)}
+          min={BOUNDS.bowlTempF.min}
+          max={BOUNDS.bowlTempF.max}
+          step={BOUNDS.bowlTempF.step}
+          hint={`${inputs.bowlTempF == null ? 'Prefilled from the bowl state above. ' : 'Measured — a reading always beats the prefill. '}Worth ${bowlSensitivity} °F of water per °F at this batch size, which is three times what it costs the dough. That gap is why it earns a measurement even though the dough barely notices.`}
         />
         <NumberField
           label="Mixer bowl mass"
@@ -116,7 +154,7 @@ export function TemperaturesPanel(s: AppState) {
           min={BOUNDS.bowlMassG.min}
           max={BOUNDS.bowlMassG.max}
           step={BOUNDS.bowlMassG.step}
-          hint="Weigh it once. The bowl absorbs friction energy alongside the dough — leaving it out of the model put the water 5 °F wrong on the first bake. There is no bowl-temperature field: it sits at the biga's temperature after fermenting in it, and the difference is worth about 0.3 °F."
+          hint="Weigh it once. The bowl absorbs friction energy alongside the dough — leaving it out of the model put the water 5 °F wrong on the first bake. Its mass matters far more than its temperature, which is why this one is weighed once and the temperature above is read every time."
         />
       </div>
     </Panel>

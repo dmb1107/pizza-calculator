@@ -45,7 +45,7 @@ Once this has run cleanly three or four times, pushing to 80% or 100% biga is a 
   {
     id: "schedule-architecture",
     title: "Why the cold ferment is 6\u201336 h and not 72",
-    body: `Classic biga **front-loads the entire fermentation.** At 0.38% ADY on 65% biga flour you carry about 0.244% ADY on total flour — a heavy dose by pizza standards, and deliberately so, because the preferment is meant to do essentially all the work.
+    body: `Classic biga **front-loads the entire fermentation.** At 0.375% ADY on 65% biga flour you carry about 0.244% ADY on total flour — a heavy dose by pizza standards, and deliberately so, because the preferment is meant to do essentially all the work.
 
 Every documented biga recipe then gives the final dough a *short* proof: Giorilli and Gozney a few hours, Ooni 2 h at room temperature or 6–36 h in the fridge.
 
@@ -68,6 +68,14 @@ Specific heats: biga at 50% hydration 0.6133, flour 0.42, water 1.00, salt 0.21,
 
 **This is why the formula is not scale-independent.** The bowl is fixed mass while the dough scales, so the weights shift with batch size. It also explains why the bowl can't just be folded into FF — the same FF of 14 would appear as 11.5 °F at 3 balls and 13.5 °F at 18, drifting for no physical reason.
 
+**The scale that matters is the mix, not the batch.** A 12-ball batch runs as two 6-ball mixes, and the bowl faces one of them at a time — so it is a 6-ball thermal system twice over, not a 12-ball one. Computing it as a 12-ball system halves the bowl's apparent share and lands the water target 2.6 °F low.
+
+**The same fixed mass is why small batches ask for hot water.** At 3 balls the bowl is 18% of the system and only the water can lift it, so the requirement runs to about 107 °F where a 9-ball batch asks for 90 °F. Below 3 balls it leaves the range a tap can reach entirely, which is why 3 is the smallest supported batch.
+
+**How much a bowl error costs is a different number from how much the bowl moves the answer.** Misjudging the bowl costs \`C_bowl/(Ct + C_bowl)\` of dough temperature — small, 0.10 °F per °F at 6 balls. But it shifts the water target by \`C_bowl/Cw\`, three times larger because water is only 30% of the system: 0.66 °F per °F at 3 balls, 0.33 at 6, 0.11 at 18. The water target is the number you act on, which is why the bowl is worth a five-second measurement even though the dough barely notices.
+
+**The biga always ferments in the bowl, so there is one lever on it: the temper.** An hour on the counter warms bowl and biga together and lifts the whole cold end of the system. Skipping it is the most expensive shortcut in the schedule — each °F of biga temperature is worth about 2 °F of water, and at 3 balls a skipped temper is what pushes the requirement toward 100 °F.
+
 Note what this implies: with a fridge-retarded biga you need **warm** water. The biga's thermal mass is the dominant term — which is why the schedule, not the water, is the real temperature lever.`,
   },
   {
@@ -76,6 +84,8 @@ Note what this implies: with a fridge-retarded biga you need **warm** water. The
     body: `**FF = 14.0 °F, measured** — bake 1, 21 August 2026, 6 balls. Corroborated independently by the Phase C friction rate: 1.00 °F/min observed on the dough-plus-bowl system is 1.11 °F/min dough-only, against 1.08 predicted.
 
 **FF is defined as the rise the mixer produces in the dough alone.** That's why the work term is \`FF × Ct\` and not \`FF × (Ct + C_bowl)\`.
+
+**This is a unit convention, and mixing it up is the single easiest mistake to make here.** A thermometer reads the dough after it has come to equilibrium with the bowl, so any dough-only figure — FF itself, or the per-minute friction rates — has to be multiplied by \`Ct/(Ct + C_bowl)\` before you compare it to something you measured. That factor is 0.82 at 3 balls, 0.90 at 6, 0.93 at 9. Getting this backwards is what produced the old "probe at DDT − 4" rule, which was over a degree wrong at small batches.
 
 \`FF = [ T_final × (Ct + C_bowl) − Cb·T_biga − Cf·T_flour − Cw·T_water − Cs·T_room − C_bowl·T_bowl ] ÷ Ct\`
 
@@ -94,9 +104,11 @@ Protocol: record every input mass and temperature, run the mix profile exactly, 
   {
     id: "giorilli-standard",
     title: "Where the yeast number comes from",
-    body: `**1% fresh yeast = 0.30% IDY = 0.38% ADY, on biga flour**, for 12–18 h at 61–65 °F with the biga at 45–50% hydration.
+    body: `**1% fresh yeast = 0.30% IDY = 0.375% ADY, on biga flour**, for 12–18 h at 61–65 °F with the biga at 45–50% hydration.
 
 This is the figure Piergiorgio Giorilli codified, and essentially every serious source repeats it — PizzaBlab, Gozney's own 100% biga recipe, Stadler Made, the Italian baking literature. It is a *baseline* for 12–16 h at around 68 °F, or 16–18 h at 61–65 °F. Go longer and you cut it; run warmer and you cut it.
+
+**The sourced number is the fresh-yeast dose.** Everything after it is unit conversion — fresh to instant at 0.30, instant to active-dry at ×1.25 — which lands on 0.375% exactly. Earlier drafts rounded that to 0.38% in the prose while computing at 0.375%, a 1.3% disagreement the dough would never have noticed but which made the arithmetic uncheckable.
 
 For a time or temperature outside that baseline, use PizzaBlab's dough calculator. It's built for exactly this, and it's the same source the rest of this recipe's biga guidance comes from.`,
   },

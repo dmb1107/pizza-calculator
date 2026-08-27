@@ -13,6 +13,7 @@
  * the clock.
  */
 
+import { C } from './constants';
 import type { Schedule } from '../state/types';
 
 export type StageKey =
@@ -42,6 +43,11 @@ export interface ScheduleAdjustments {
    * a warm dough, 144 min for a cold one.
    */
   ballRoomTempH: number;
+  /**
+   * §4.7. Mixes this batch runs as. `mix` scales with it, and it staggers the
+   * bulk clock — see `stageDurations`.
+   */
+  nMix: number;
   /** 6–36 h. */
   coldFermentH: number;
   /** 2–3 h. */
@@ -98,18 +104,57 @@ const STAGE_INFO: Record<StageKey, { title: string; description: string }> = {
   },
 };
 
-/** §4.7. Durations in hours from the biga mix at t = 0. */
+/** §4.7. One mix, excluding changeover. Includes the 10-minute rest. */
+const MIX_H = 0.5;
+
+/**
+ * §4.7. How much later the LAST mix finishes than the first, in hours.
+ *
+ * 35 min at nMix 2: 30 min of mixing plus a 5-minute changeover. Zero for a
+ * single mix.
+ */
+export function mixStaggerH(nMix: number): number {
+  return (MIX_H + C.CHANGEOVER_H) * Math.max(0, nMix - 1);
+}
+
+/**
+ * §4.7. Durations in hours from the biga mix at t = 0.
+ *
+ * ⚠️ Two things here are `nMix`-dependent, and both were flat before:
+ *
+ * `mix` scales with the number of mixes plus a changeover between them. A
+ * 12-ball batch runs two mixes back to back and the timeline used to count one.
+ *
+ * `ballRoomTemp` loses half the stagger. Dave bulks both doughs in ONE
+ * container, so the batch runs on a single clock while mix 1's dough is
+ * genuinely 35 minutes further along. Clocking `bulkRest` from the last mix
+ * (which `buildTimeline` does by including the full `mix` span) is the only
+ * anchor that gives mix 2 any bulk at all; subtracting half the stagger from
+ * the ball rise then centres the remaining error at ±17.5 min instead of
+ * leaving all 35 on one dough.
+ *
+ * ⚠️ This CENTRES the spread, it does not remove it. One clock cannot do
+ * better, and a user who reads it as making the batch uniform will draw the
+ * wrong conclusion from a bad result — §8 `bulk-3` says so in the prose.
+ */
 export function stageDurations(schedule: Schedule, a: ScheduleAdjustments): StageDurations {
   const retarded = schedule === 'retarded';
+  const nMix = Math.max(1, a.nMix);
+  const stagger = mixStaggerH(nMix);
+  const [minRise, maxRise] = C.ROOM_MIN_CLAMP;
+
   return {
     bigaRoomTemp: retarded ? 2 : 0,
     bigaFridge: retarded ? a.bigaFridgeH : 0,
     bigaRoomOnly: retarded ? 0 : a.bigaRoomOnlyH,
     bigaTemper: retarded ? 1 : 0,
-    mix: 0.5,
+    mix: MIX_H * nMix + C.CHANGEOVER_H * (nMix - 1),
     bulkRest: 1,
     divideBall: 0.33,
-    ballRoomTemp: a.ballRoomTempH,
+    ballRoomTemp: Math.min(
+      maxRise / 60,
+      Math.max(minRise / 60, a.ballRoomTempH - stagger / 2),
+    ),
     coldFerment: a.coldFermentH,
     temper: a.temperH,
   };

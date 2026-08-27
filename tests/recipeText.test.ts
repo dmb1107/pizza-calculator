@@ -21,7 +21,7 @@ function text(overrides: Partial<CalculatorInputs> = {}): string {
 describe('recipe text', () => {
   it('carries every weight from the §5 six-ball vector', () => {
     const out = text();
-    for (const value of ['611.2', '305.6', '2.32', '916.9', '329.1', '352.6', '26.3', '1625.0']) {
+    for (const value of ['611.2', '305.6', '2.29', '916.9', '329.1', '352.6', '26.3', '1625.0']) {
       expect(out, `missing ${value}`).toContain(value);
     }
   });

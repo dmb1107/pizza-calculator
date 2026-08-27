@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { C } from '../src/lib/constants';
 import {
   buildTimeline,
   formatDuration,
@@ -6,6 +7,7 @@ import {
   isUnsocialHour,
   roundToNextQuarterHour,
   solveBigaStart,
+  mixStaggerH,
   stageDurations,
   toDatetimeLocal,
   type ScheduleAdjustments,
@@ -17,6 +19,7 @@ const DEFAULTS: ScheduleAdjustments = {
   bigaFridgeH: 19,
   bigaRoomOnlyH: 16,
   ballRoomTempH: 1.5,
+  nMix: 1,
   coldFermentH: 24,
   temperH: 2.5,
 };
@@ -125,10 +128,10 @@ describe('§4.7 stage durations', () => {
       // The extremes use the shaped-rise CLAMP bounds, not the 71–144 min the
       // model reaches at realistic dough temperatures. Both ends are tight.
       const lowest: ScheduleAdjustments = {
-        bigaFridgeH: 18, bigaRoomOnlyH: 16, ballRoomTempH: 45 / 60, coldFermentH: 24, temperH: 2,
+        bigaFridgeH: 18, bigaRoomOnlyH: 16, ballRoomTempH: 45 / 60, nMix: 1, coldFermentH: 24, temperH: 2,
       };
       const highest: ScheduleAdjustments = {
-        bigaFridgeH: 20, bigaRoomOnlyH: 16, ballRoomTempH: 180 / 60, coldFermentH: 24, temperH: 3,
+        bigaFridgeH: 20, bigaRoomOnlyH: 16, ballRoomTempH: 180 / 60, nMix: 1, coldFermentH: 24, temperH: 3,
       };
       expect(overheadOf(lowest)).toBeCloseTo(25.58, 2);
       expect(overheadOf(highest)).toBeCloseTo(30.83, 2);
@@ -180,6 +183,74 @@ describe('§4.7 stage durations', () => {
     it('ballRoomTemp 1–2', () => {
       expect(total({ ballRoomTempH: 1 })).toBeCloseTo(51.33, 2);
       expect(total({ ballRoomTempH: 2 })).toBeCloseTo(52.33, 2);
+    });
+
+    it('adds a second mix and a changeover at nMix 2', () => {
+      // §4.7: `mix` was a flat 0.5 h and counted one mix for a 12-ball batch
+      // that runs two back to back. 0.5 × 2 + 0.0833 = 1.083 h.
+      const one = stageDurations('retarded', DEFAULTS);
+      const two = stageDurations('retarded', { ...DEFAULTS, nMix: 2 });
+      expect(one.mix).toBeCloseTo(0.5, 4);
+      expect(two.mix).toBeCloseTo(0.5 * 2 + C.CHANGEOVER_H, 4);
+      expect(mixStaggerH(1)).toBe(0);
+      expect(mixStaggerH(2) * 60).toBeCloseTo(35, 1);
+    });
+
+    it('subtracts half the stagger from the ball rise, centring the error', () => {
+      // ⚠️ This CENTRES the spread rather than removing it: mix 1's half goes
+      // from +35 to +17.5 min and mix 2's from 0 to −17.5. One clock cannot do
+      // better, and halving the worst case is the whole gain.
+      const one = stageDurations('retarded', { ...DEFAULTS, ballRoomTempH: 1.5 });
+      const two = stageDurations('retarded', { ...DEFAULTS, ballRoomTempH: 1.5, nMix: 2 });
+      expect(one.ballRoomTemp * 60).toBeCloseTo(90, 1);
+      // §4.7 says "90 min becomes 72"; the exact arithmetic is 72.5.
+      expect(two.ballRoomTemp * 60).toBeCloseTo(72.5, 1);
+      expect((one.ballRoomTemp - two.ballRoomTemp) * 60).toBeCloseTo(
+        (mixStaggerH(2) / 2) * 60,
+        1,
+      );
+    });
+
+    it('still clamps the ball rise after the stagger correction', () => {
+      // The correction must not push a short rise under the 45-minute floor.
+      const short = stageDurations('retarded', {
+        ...DEFAULTS,
+        ballRoomTempH: 45 / 60,
+        nMix: 2,
+      });
+      expect(short.ballRoomTemp * 60).toBeCloseTo(45, 1);
+    });
+
+    it('puts fixed overhead at 28.1 h when nMix is 2', () => {
+      const overhead = (a: ScheduleAdjustments) =>
+        buildTimeline({ startAt: start, schedule: 'retarded', adjustments: a }).totalH -
+        a.coldFermentH;
+
+      // The 25.6–30.8 band in §4.7 is explicitly nMix = 1 only.
+      expect(overhead(DEFAULTS)).toBeCloseTo(27.83, 2);
+
+      // ⚠️ §4.7 asserts 28.4 h here, which is 27.83 + 0.58 — the second mix and
+      // the changeover, and nothing else. But the SAME section then subtracts
+      // half the stagger (0.29 h) from `ballRoomTemp`, which necessarily takes
+      // it back out of the overhead. Both cannot hold at once; 28.12 is the
+      // figure consistent with the rules as written.
+      //
+      // RAISED WITH THE RECIPE AGENT. The two numbers look like they were
+      // computed in separate passes — "90 min becomes 72" has the same
+      // fingerprint, being 72.5 exactly.
+      expect(overhead({ ...DEFAULTS, nMix: 2 })).toBeCloseTo(28.12, 2);
+
+      // What §4.7's 28.4 would require: the mix change without the stagger.
+      const withoutStagger = overhead({ ...DEFAULTS, nMix: 2 }) + mixStaggerH(2) / 2;
+      expect(withoutStagger).toBeCloseTo(28.41, 2);
+    });
+
+    it('leaves every other stage untouched by nMix', () => {
+      const one = stageDurations('retarded', DEFAULTS);
+      const two = stageDurations('retarded', { ...DEFAULTS, nMix: 2 });
+      for (const key of ['bigaRoomTemp', 'bigaFridge', 'bigaTemper', 'bulkRest', 'divideBall', 'coldFerment', 'temper'] as const) {
+        expect(two[key], `${key} must not depend on nMix`).toBe(one[key]);
+      }
     });
 
     it('coldFerment 6–36', () => {

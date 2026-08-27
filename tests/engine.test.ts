@@ -6,6 +6,7 @@ import {
   computeFinalTempF,
   computeFormula,
   computeProbeTargetF,
+  observedRate,
   computeRoomMinutes,
   computeThermal,
   computeWaterTempF,
@@ -16,6 +17,12 @@ import {
   BAKE_1,
   BATCH_VECTORS,
   BOWL_DILUTION,
+  BELOW_MIN_BALLS_WATER,
+  BOWL_DILUTION_SPLIT,
+  BOWL_MODE_VECTORS,
+  OBSERVED_RATE_VECTORS,
+  PER_BATCH_MAX_WATER,
+  PROBE_GAP_VECTORS,
   ROOM_MINUTES,
   WATER_REACHABILITY,
   THERMAL_WEIGHTS,
@@ -366,84 +373,343 @@ describe('§4.8 shaped rise time', () => {
 
 describe('§4.4 reaching the water temperature', () => {
   /**
-   * The sweep MESSAGE-3 asks for, and the whole justification for deleting the
-   * ice model: across the retarded-biga envelope the required water never gets
-   * near the 38 °F floor, so blending fridge-cold and tap water always reaches
-   * it. If this ever fails, the sub-38 warning has become load-bearing and the
-   * decision to drop ice needs revisiting.
+   * The sweep that justifies deleting the ice model AND setting `MIN_BALLS`.
+   * Both guards are asserted the way §5 asks: the cold one never fires, and the
+   * hot one never fires *in this envelope* — not "is unreachable", because a
+   * user-entered calibration FF can still reach it.
    */
-  it('never asks for water below 38 degF anywhere on the retarded schedule', () => {
-    const { bigaF, roomF, spans, floorF } = WATER_REACHABILITY;
+  function sweep(fn: (waterTempF: number, at: { balls: number; ballG: number }) => void) {
+    const { balls, ballG, bigaF, roomF } = WATER_REACHABILITY;
+    for (let b = balls.min; b <= balls.max; b++) {
+      for (const g of ballG) {
+        for (let biga = bigaF.min; biga <= bigaF.max; biga += 1) {
+          for (let room = roomF.min; room <= roomF.max; room += 1) {
+            const { waterTempF } = calculate({
+              ...vectorInputs(b, g),
+              bigaTempF: biga,
+              roomTempF: room,
+              flourTempF: room,
+            });
+            fn(waterTempF, { balls: b, ballG: g });
+          }
+        }
+      }
+    }
+  }
+
+  it('pins both corners of the reachable span', () => {
+    const { spans, spans265, floorF } = WATER_REACHABILITY;
     let lo = Infinity;
     let hi = -Infinity;
+    let lo265 = Infinity;
+    let hi265 = -Infinity;
 
-    for (const { balls, ballG } of BATCH_VECTORS) {
+    sweep((w, at) => {
+      lo = Math.min(lo, w);
+      hi = Math.max(hi, w);
+      if (at.ballG === 265) {
+        lo265 = Math.min(lo265, w);
+        hi265 = Math.max(hi265, w);
+      }
+    });
+
+    expect(lo, `coldest water required was ${lo.toFixed(1)} degF`).toBeGreaterThan(floorF);
+    within(lo, spans.min, 0.2, 'coldest required water');
+    within(hi, spans.max, 0.2, 'warmest required water');
+    within(lo265, spans265.min, 0.2, 'coldest at the 265 g default');
+    within(hi265, spans265.max, 0.2, 'warmest at the 265 g default');
+  });
+
+  it('raises neither water warning anywhere in the envelope', () => {
+    const { balls, ballG, bigaF, roomF } = WATER_REACHABILITY;
+    for (let b = balls.min; b <= balls.max; b += 3) {
+      for (const g of ballG) {
+        for (let biga = bigaF.min; biga <= bigaF.max; biga += 2) {
+          for (let room = roomF.min; room <= roomF.max; room += 3) {
+            const { warnings } = calculate({
+              ...vectorInputs(b, g),
+              bigaTempF: biga,
+              roomTempF: room,
+              flourTempF: room,
+            });
+            const water = warnings.filter(
+              (w) => w.id === 'water-below-fridge' || w.id === 'water-above-tap',
+            );
+            expect(
+              water.map((w) => w.id),
+              `at ${b} x ${g} g, biga ${biga}, room ${room}`,
+            ).toEqual([]);
+          }
+        }
+      }
+    }
+  });
+
+  it('matches the per-batch maxima, which are NOT monotonic in batch size', () => {
+    const { bigaF, roomF } = WATER_REACHABILITY;
+    for (const { balls, maxWaterF } of PER_BATCH_MAX_WATER) {
+      let hi = -Infinity;
       for (let biga = bigaF.min; biga <= bigaF.max; biga += 0.5) {
         for (let room = roomF.min; room <= roomF.max; room += 0.5) {
-          const { waterTempF } = calculate({
-            ...vectorInputs(balls, ballG),
-            bigaTempF: biga,
-            roomTempF: room,
-            flourTempF: room,
-          });
-          lo = Math.min(lo, waterTempF);
-          hi = Math.max(hi, waterTempF);
+          hi = Math.max(
+            hi,
+            calculate({
+              ...vectorInputs(balls, 265),
+              bigaTempF: biga,
+              roomTempF: room,
+              flourTempF: room,
+            }).waterTempF,
+          );
         }
       }
+      within(hi, maxWaterF, 0.2, `max water at ${balls} balls`);
     }
 
-    // The load-bearing claim: nothing on this track needs sub-fridge water.
-    expect(lo, `coldest water required was ${lo.toFixed(1)} degF`).toBeGreaterThan(floorF);
-    within(lo, spans.min, 0.5, 'coldest required water');
-    // See the note on WATER_REACHABILITY: this pins what the model does, which
-    // is not the 90.6 §5 currently publishes.
-    within(hi, spans.max, 0.5, 'warmest required water');
+    // The shape §5 warns about: 12 balls runs as two 6-ball mixes, and a
+    // 6-ball mix wants hotter water than the 9-ball mix that 9 balls runs as.
+    const at = (b: number) => PER_BATCH_MAX_WATER.find((r) => r.balls === b)!.maxWaterF;
+    expect(at(12), '12 balls sits above 9 — do not assert monotonicity').toBeGreaterThan(at(9));
   });
 
-  it('raises no water warning across that whole envelope', () => {
-    const { bigaF, roomF } = WATER_REACHABILITY;
-    for (const { balls, ballG } of BATCH_VECTORS) {
-      for (let biga = bigaF.min; biga <= bigaF.max; biga += 1) {
-        for (let room = roomF.min; room <= roomF.max; room += 1) {
-          const { warnings } = calculate({
-            ...vectorInputs(balls, ballG),
-            bigaTempF: biga,
-            roomTempF: room,
-            flourTempF: room,
-          });
-          expect(
-            warnings.some((w) => w.id === 'water-below-fridge'),
-            `sub-38 warning fired at ${balls} balls, biga ${biga}, room ${room}`,
-          ).toBe(false);
-        }
-      }
-    }
+  it('warns above 120 degF, which a calibration FF can still reach', () => {
+    // §2: MIN_BALLS closes the door that is open today; the warning guards the
+    // one the calibration panel can reopen. 3 x 240 g at FF 8 is the case.
+    const { warnings, waterTempF } = calculate({
+      ...vectorInputs(3, 240),
+      frictionFactorF: 8,
+      bigaTempF: 45,
+      roomTempF: 60,
+      flourTempF: 60,
+    });
+    expect(waterTempF).toBeGreaterThan(C.WATER_MAX_F);
+    const warning = warnings.find((w) => w.id === 'water-above-tap');
+    expect(warning?.severity).toBe('warn');
+    // §2 predicted this exact figure for this exact case.
+    within(waterTempF, 126.7, 0.1, 'water at 3 x 240 g with FF 8');
+    // "Do not tell the user to heat water" — it must point upstream instead.
+    expect(warning?.detail).toMatch(/temper/i);
+    expect(warning?.detail).toMatch(/don't heat water/i);
   });
 
-  it('warns once the target does drop below 38 degF', () => {
-    // Reachable only off the retarded track: a hot kitchen and a warm biga.
+  it('still warns below 38 degF at the cold extreme', () => {
     const { warnings, waterTempF } = calculate({
       ...vectorInputs(6, 265),
       bigaTempF: 95,
       roomTempF: 100,
       flourTempF: 100,
     });
-    expect(waterTempF).toBeLessThan(C.COLD_WATER_FLOOR_F);
-    const warning = warnings.find((w) => w.id === 'water-below-fridge');
-    expect(warning?.severity).toBe('warn');
-    expect(warning?.detail).toMatch(/[Cc]hill the biga/);
+    expect(waterTempF).toBeLessThan(C.WATER_MIN_F);
+    expect(warnings.find((w) => w.id === 'water-below-fridge')?.severity).toBe('warn');
   });
 
-  it('is the only place ice is mentioned at all', () => {
-    const { warnings } = calculate({
-      ...vectorInputs(6, 265),
-      bigaTempF: 95,
-      roomTempF: 100,
-      flourTempF: 100,
-    });
-    const mentions = warnings.filter((w) => /\bice\b/i.test(`${w.title} ${w.detail}`));
-    expect(mentions).toHaveLength(1);
-    expect(mentions[0]?.id).toBe('water-below-fridge');
+  it('records why MIN_BALLS exists rather than letting the figures vanish', () => {
+    // MESSAGE-4 §13.3 asked that the 1- and 2-ball numbers stay recorded when
+    // the sweeps were re-bounded. They are the whole reason for the floor.
+    for (const { balls, ballG, maxWaterF } of BELOW_MIN_BALLS_WATER) {
+      expect(balls, 'below the supported floor').toBeLessThan(C.MIN_BALLS);
+      let hi = -Infinity;
+      for (let biga = 45; biga <= 60; biga += 0.5) {
+        for (let room = 60; room <= 84; room += 0.5) {
+          hi = Math.max(
+            hi,
+            calculate({
+              ...vectorInputs(balls, ballG),
+              bigaTempF: biga,
+              roomTempF: room,
+              flourTempF: room,
+            }).waterTempF,
+          );
+        }
+      }
+      within(hi, maxWaterF, 0.2, `max water at ${balls} x ${ballG} g`);
+    }
+  });
+});
+
+describe('§4.1 the yeast constant', () => {
+  it('derives ADY from the published fresh-yeast dose rather than hardcoding it', () => {
+    // The SOURCED number is 1% fresh; everything after is unit conversion, so
+    // 0.00375 is exact and the old 0.0038 was a display rounding that leaked
+    // into a constant. Same treatment as C_BIGA.
+    expect(C.ADY_OF_BIGA_FLOUR).toBe(
+      C.FRESH_YEAST_OF_BIGA_FLOUR * C.FRESH_TO_IDY * C.IDY_TO_ADY,
+    );
+    expect(C.ADY_OF_BIGA_FLOUR).toBeCloseTo(0.00375, 10);
+    expect(C.IDY_OF_BIGA_FLOUR).toBeCloseTo(0.003, 10);
+  });
+
+  it('holds bigaADY / bigaFlour at exactly 0.00375 at every batch size', () => {
+    for (const v of BATCH_VECTORS) {
+      const f = computeFormula({ balls: v.balls, ballWeightG: v.ballG });
+      within(f.bigaADY / f.bigaFlour, 0.00375, 1e-12, `ADY ratio at ${v.balls} balls`);
+    }
+  });
+
+  it('moves no thermal figure — yeast carries no term in the heat balance', () => {
+    // MESSAGE-4 §13.1 asks for this confirmation explicitly. The ADY column is
+    // the only thing that may shift; if a thermal number moved, the constant
+    // is not properly isolated.
+    for (const v of BATCH_VECTORS) {
+      const r = calculate(vectorInputs(v.balls, v.ballG));
+      within(r.thermal.cTotal, v.Ct, 0.5, `Ct at ${v.balls} balls`);
+      within(r.waterTempF, v.waterTempF, TOL.degF, `water at ${v.balls} balls`);
+      within(r.probeTargetF, v.probeTargetF, TOL.degF, `probe at ${v.balls} balls`);
+    }
+  });
+});
+
+describe('§4.2 per-mix thermal weights', () => {
+  it('leaves every nMix = 1 vector untouched', () => {
+    // MESSAGE-4 §13.2: only the 12 and 18 rows should move. A single-mix row
+    // shifting means something other than the per-mix change broke.
+    for (const v of BATCH_VECTORS.filter((x) => x.nMix === 1)) {
+      const r = calculate(vectorInputs(v.balls, v.ballG));
+      within(r.thermal.cTotal, v.Ct, 0.5, `Ct at ${v.balls} balls`);
+      within(r.waterTempF, v.waterTempF, TOL.degF, `water at ${v.balls} balls`);
+    }
+  });
+
+  it('makes a split batch thermally identical to its own mix size', () => {
+    // 12 balls IS a 6-ball mix twice over; 18 IS a 9-ball mix twice over.
+    for (const { balls, sameAsBalls } of BOWL_DILUTION_SPLIT) {
+      const split = calculate(vectorInputs(balls, 265));
+      const single = calculate(vectorInputs(sameAsBalls, 265));
+      within(split.thermal.cTotal, single.thermal.cTotal, 1e-9, `Ct ${balls} vs ${sameAsBalls}`);
+      within(split.thermal.bowlShare, single.thermal.bowlShare, 1e-9, `bowl share ${balls}`);
+    }
+  });
+
+  it('divides the component masses but not the ingredient totals', () => {
+    const r = calculate(vectorInputs(12, 265));
+    expect(r.capacity.nMix).toBe(2);
+    // Ingredient cards still show the whole batch.
+    within(r.formula.bigaMass, 1222.5 + 611.2, 0.5, 'batch biga mass');
+    // The heat balance sees one mix.
+    within(r.thermal.perMix.bigaMass, (1222.5 + 611.2) / 2, 0.5, 'per-mix biga mass');
+  });
+
+  it('lands 12 and 18 balls above the batch-total figures they replace', () => {
+    // The bug this fixed: batch totals put the water 2.6 °F low at 12 balls
+    // and 1.8 °F low at 18.
+    within(calculate(vectorInputs(12, 265)).waterTempF - 62.1, 2.6, 0.15, '12-ball correction');
+    within(calculate(vectorInputs(18, 265)).waterTempF - 61.3, 1.8, 0.15, '18-ball correction');
+  });
+});
+
+describe('§4.6 observed vs dough-only rates', () => {
+  it.each(OBSERVED_RATE_VECTORS)('$balls balls: Ct/TOT $ctOverTot, 30% reads $at30', (v) => {
+    const { thermal } = calculate(vectorInputs(v.balls, 265));
+    within(thermal.cTotal / thermal.cSystem, v.ctOverTot, 0.001, `Ct/TOT at ${v.balls}`);
+    within(observedRate(30, thermal), v.at30, 0.01, `observed 30% at ${v.balls}`);
+  });
+
+  it('stays inside [0.88, 1.05] across the whole supported range', () => {
+    for (let b = C.MIN_BALLS; b <= 24; b++) {
+      const rate = observedRate(30, calculate(vectorInputs(b, 265)).thermal);
+      expect(rate, `observed 30% rate at ${b} balls`).toBeGreaterThanOrEqual(0.88);
+      expect(rate, `observed 30% rate at ${b} balls`).toBeLessThanOrEqual(1.05);
+    }
+  });
+
+  it('always reads lower than the dough-only figure it comes from', () => {
+    // The conflation that produced the DDT − 4 rule. A thermometer sees the
+    // dough after it has equilibrated with the bowl, so observed < dough-only.
+    for (const dial of [15, 20, 30] as const) {
+      for (const b of [3, 6, 9, 12, 18]) {
+        const { thermal } = calculate(vectorInputs(b, 265));
+        expect(observedRate(dial, thermal)).toBeLessThan(C.FRICTION_RATE[dial]);
+      }
+    }
+  });
+});
+
+describe('§4.6 the probe target has no flat shorthand', () => {
+  it.each(PROBE_GAP_VECTORS)('$balls balls sits DDT − $belowDdt', (v) => {
+    const r = calculate(vectorInputs(v.balls, 265));
+    within(r.ddtF - r.probeTargetF, v.belowDdt, 0.02, `probe gap at ${v.balls} balls`);
+  });
+
+  it('gives 18 balls the same probe target as 9 — it is the same mix', () => {
+    // ⚠️ §4.6 quotes 18 balls at DDT − 3.7 against 9 balls at DDT − 3.5, which
+    // can only be true under batch-total weights. Under §4.2's per-mix weights
+    // an 18-ball batch IS two 9-ball mixes, so the two must agree exactly —
+    // and §5's vector table (70.5 for both) says they do.
+    within(
+      calculate(vectorInputs(18, 265)).probeTargetF,
+      calculate(vectorInputs(9, 265)).probeTargetF,
+      1e-9,
+      '18-ball probe vs 9-ball',
+    );
+  });
+
+  it('disagrees with a flat DDT − 4 by more than a degree at 3 balls', () => {
+    // Why the shorthand was deleted rather than adjusted: Phase C's entire
+    // authority is about −1.5 to +2.0 °F, so a 1.2 °F error in the target
+    // spends most of the budget before the user starts, in the wrong direction.
+    const r = calculate(vectorInputs(3, 265));
+    expect(Math.abs(r.probeTargetF - (r.ddtF - 4))).toBeGreaterThan(1.1);
+  });
+
+  it('is strictly decreasing in PER-MIX ball count, not batch size', () => {
+    // ⚠️ Asserting this on batch size was right before per-mix weights and is
+    // wrong now: 12 balls is a 6-ball mix and sits above 9 balls.
+    const gaps = [3, 6, 9].map((b) => calculate(vectorInputs(b, 265)).probeTargetF);
+    for (let i = 1; i < gaps.length; i++) {
+      expect(gaps[i]!, 'probe target falls as the mix grows').toBeLessThan(gaps[i - 1]!);
+    }
+    const twelve = calculate(vectorInputs(12, 265)).probeTargetF;
+    const nine = calculate(vectorInputs(9, 265)).probeTargetF;
+    expect(twelve, '12 balls is a 6-ball mix, so it sits above 9').toBeGreaterThan(nine);
+  });
+});
+
+describe('§4.2 bowl state', () => {
+  it.each(BOWL_MODE_VECTORS)(
+    '$balls balls: cold $cold, room $room, warm $warm',
+    (v) => {
+      for (const [state, expected] of [
+        ['cold', v.cold],
+        ['room', v.room],
+        ['warm', v.warm],
+      ] as const) {
+        const r = calculate({ ...vectorInputs(v.balls, 265), bowlState: state });
+        within(r.waterTempF, expected, TOL.degF, `${state} bowl at ${v.balls} balls`);
+      }
+    },
+  );
+
+  it('prefills each mode from a value already in the model', () => {
+    const at = (state: 'cold' | 'room' | 'warm') =>
+      calculate({ ...vectorInputs(6, 265), bowlState: state }).mixes[0]!.bowlTempF;
+    expect(at('cold')).toBe(VECTOR_CONDITIONS.tBigaF);
+    expect(at('room')).toBe(VECTOR_CONDITIONS.tRoomF);
+    expect(at('warm')).toBe(75); // DDT at 6 balls
+  });
+
+  it('lets a measurement beat the selector', () => {
+    const r = calculate({ ...vectorInputs(6, 265), bowlState: 'cold', bowlTempF: 63 });
+    expect(r.mixes[0]!.bowlTempF).toBe(63);
+    // And it moves the answer by C_bowl/Cw — three times the dough sensitivity.
+    const base = calculate({ ...vectorInputs(6, 265), bowlState: 'cold' });
+    const perDegree = (r.waterTempF - base.waterTempF) / (63 - VECTOR_CONDITIONS.tBigaF);
+    within(perDegree, -0.328, 0.005, 'C_bowl/Cw at 6 balls');
+  });
+
+  it('runs a split batch as separate mixes with a warm bowl for the second', () => {
+    const r = calculate(vectorInputs(12, 265));
+    expect(r.mixes).toHaveLength(2);
+    expect(r.mixes[0]!.bowlState).toBe('cold');
+    expect(r.mixes[1]!.bowlState).toBe('warm');
+    within(r.mixes[0]!.waterTempF, 64.8, TOL.degF, 'mix 1 water');
+    within(r.mixes[1]!.waterTempF, 59.5, TOL.degF, 'mix 2 water');
+    // The headline figure is mix 1.
+    within(r.waterTempF, r.mixes[0]!.waterTempF, 1e-9, 'headline is mix 1');
+  });
+
+  it('gives a single-mix batch exactly one target', () => {
+    const r = calculate(vectorInputs(6, 265));
+    expect(r.mixes).toHaveLength(1);
+    expect(r.mixes[0]!.bowlState).toBe('cold');
   });
 });
 

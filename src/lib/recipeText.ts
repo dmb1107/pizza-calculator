@@ -50,7 +50,14 @@ export function buildRecipeText(result: CalculatorResult): string {
   lines.push('');
 
   lines.push('WATER');
-  lines.push(row('Target', `${formatTempF(result.waterTempF)} °F`));
+  if (result.mixes.length > 1) {
+    // Genuinely different numbers: mix 2 starts in the bowl that ran mix 1.
+    for (const mix of result.mixes) {
+      lines.push(row(`Mix ${mix.index}`, `${formatTempF(mix.waterTempF)} °F`));
+    }
+  } else {
+    lines.push(row('Target', `${formatTempF(result.waterTempF)} °F`));
+  }
   lines.push(row('', 'blend fridge-cold and tap water to hit it'));
   lines.push('');
 
@@ -72,6 +79,9 @@ export function buildRecipeText(result: CalculatorResult): string {
   lines.push(row('Room', `${formatTempF(inputs.roomTempF)} °F`));
   lines.push(row('Flour', `${formatTempF(inputs.flourTempF)} °F`));
   lines.push(row('Biga at mix', `${formatTempF(inputs.bigaTempF)} °F`));
+  lines.push(
+    row('Bowl at mix', `${formatTempF(result.mixes[0]!.bowlTempF)} °F (${result.mixes[0]!.bowlState})`),
+  );
   lines.push(row('Friction', `${formatTempF(inputs.frictionFactorF)} °F`));
   lines.push(row('Bowl', `${formatGramsWhole(inputs.bowlMassG ?? 965)} g`));
 

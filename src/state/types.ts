@@ -1,5 +1,9 @@
 /** Application state shapes — WEBSITE-SPEC-biga-calculator.md §6. */
 
+import type { BowlState } from '../lib/engine';
+
+export type { BowlState };
+
 /**
  * §4.7. `retarded` is 2 h at room temperature then ~19 h in the fridge — the
  * Ooni/Marco Fuso schedule, and the answer for a kitchen that won't hold a
@@ -24,10 +28,25 @@ export interface Inputs {
   /** When true, flour temperature tracks the room and the field is disabled. */
   flourSameAsRoom: boolean;
   flourTempF: number;
-  /** Measured at mix time, not assumed. The dominant term in the water calc. */
+  /**
+   * Measured at mix time, not assumed. The highest-leverage input in the model:
+   * d(T_water)/d(T_biga) is −1.92 at 6 balls and −2.25 at 3, so a 6 °F miss
+   * moves the required water 11.5 °F and the finished dough 3.5 °F.
+   */
   bigaTempF: number;
-  /** Weigh once; persisted. Its MASS is what matters, not its temperature. */
+  /** Weigh once; persisted. */
   bowlMassG: number;
+  /**
+   * §4.2. How the bowl arrives at MIX 1. Later mixes are always 'warm'.
+   * Prefills `bowlTempF` from a value already in the model.
+   */
+  bowlState: BowlState;
+  /**
+   * §4.2. Measured bowl temperature, overriding the selector's prefill. null
+   * uses the prefill. A measurement always wins — the biga gains ~5 °F from
+   * tearing and the bowl does not.
+   */
+  bowlTempF: number | null;
 
   // Schedule fine-tuning — §4.7 marks each of these user-adjustable.
   /** Retarded only. 18–20 h. */

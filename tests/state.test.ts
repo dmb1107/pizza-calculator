@@ -36,6 +36,8 @@ const CUSTOM: Inputs = {
   flourTempF: 62,
   bigaTempF: 58.5,
   bowlMassG: 1100,
+  bowlState: 'room',
+  bowlTempF: 71.5,
   bigaFridgeH: 18.5,
   bigaRoomOnlyH: 14,
   temperH: 3,
@@ -294,7 +296,12 @@ describe('§6 friction factor is per batch size', () => {
 
 describe('field clamping', () => {
   it('holds the §6 ranges', () => {
-    expect(clampField('balls', 0)).toBe(1);
+    // §4.4: the floor is 3, not 1. A 2-ball batch clears the mixer's 500 g
+    // minimum on paper but won't let a spiral hook grip, and asks for 116 °F
+    // water. Two independent reasons, so this is an input constraint rather
+    // than a warning.
+    expect(clampField('balls', 0)).toBe(C.MIN_BALLS);
+    expect(clampField('balls', 2)).toBe(C.MIN_BALLS);
     expect(clampField('balls', 99)).toBe(24);
     expect(clampField('ballWeightG', 200)).toBe(240);
     expect(clampField('ballWeightG', 400)).toBe(300);

@@ -1,7 +1,7 @@
 import { CopyButton } from './CopyButton';
 import { formatAdy, formatGrams, formatTempF } from '../lib/format';
 import { buildRecipeText } from '../lib/recipeText';
-import type { CalculatorResult, Warning } from '../lib/engine';
+import type { BowlState, CalculatorResult, Warning } from '../lib/engine';
 
 /** Output cards — WEBSITE-SPEC-biga-calculator.md §7. */
 
@@ -89,6 +89,12 @@ export function IngredientsCard({ result }: { result: CalculatorResult }) {
   );
 }
 
+const BOWL_STATE_LABEL: Record<BowlState, string> = {
+  cold: 'cold bowl, held the biga',
+  room: 'bowl at room temperature',
+  warm: 'bowl warm from the previous mix',
+};
+
 /**
  * §7.2. One number, large: the target water temperature. Plus a single line of
  * instruction, and nothing else.
@@ -96,16 +102,34 @@ export function IngredientsCard({ result }: { result: CalculatorResult }) {
  * There is deliberately no ice/tap split, no grams, and no note about whether
  * the number is warm or cold — the last of those would need a tap temperature,
  * which is no longer an input. The user reads the number and blends to it.
+ *
+ * When a batch runs as several mixes there is one card per mix, because they
+ * are genuinely different numbers: mix 2 starts in the bowl that just finished
+ * mix 1. Each card stays as bare as a single one — the reasoning lives in the
+ * step content, not here.
  */
 export function WaterCard({ result }: { result: CalculatorResult }) {
+  const split = result.mixes.length > 1;
+
   return (
-    <Card title="Water">
-      <div>
-        <p className="text-stone-600 dark:text-stone-400">Water temperature</p>
-        <p className="text-5xl font-bold tabular">
-          {formatTempF(result.waterTempF)}
-          <span className="ml-1 text-2xl font-normal text-stone-500">°F</span>
-        </p>
+    <Card title={split ? `Water — ${result.mixes.length} mixes` : 'Water'}>
+      <div className={split ? 'grid gap-4 sm:grid-cols-2' : undefined}>
+        {result.mixes.map((mix) => (
+          <div key={mix.index} className={split ? 'min-w-0' : undefined}>
+            <p className="text-stone-600 dark:text-stone-400">
+              {split ? `Mix ${mix.index}` : 'Water temperature'}
+            </p>
+            <p className="text-5xl font-bold tabular">
+              {formatTempF(mix.waterTempF)}
+              <span className="ml-1 text-2xl font-normal text-stone-500">°F</span>
+            </p>
+            {split && (
+              <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+                {BOWL_STATE_LABEL[mix.bowlState]}, {formatTempF(mix.bowlTempF)} °F
+              </p>
+            )}
+          </div>
+        ))}
       </div>
       <p className="mt-4 text-stone-700 dark:text-stone-300">
         Blend fridge-cold and tap water to hit it, measuring as you pour.

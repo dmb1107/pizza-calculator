@@ -10,7 +10,7 @@
  */
 
 import { BOUNDS, DEFAULT_INPUTS, clampField } from './defaults';
-import type { Inputs, Schedule } from './types';
+import type { BowlState, Inputs, Schedule } from './types';
 
 const KEYS = {
   balls: 'balls',
@@ -22,6 +22,8 @@ const KEYS = {
   flourTempF: 'flour',
   bigaTempF: 'biga',
   bowlMassG: 'bowl',
+  bowlState: 'bowlst',
+  bowlTempF: 'bowlt',
   bigaFridgeH: 'fridge',
   bigaRoomOnlyH: 'bigart',
   temperH: 'temper',
@@ -29,6 +31,10 @@ const KEYS = {
 } as const satisfies Record<keyof Inputs, string>;
 
 const SCHEDULE_CODE: Record<Schedule, string> = { retarded: 'r', classic: 'c' };
+
+/** §4.2 bowl states, abbreviated for the query string. */
+const BOWL_STATE_CODE: Record<BowlState, string> = { cold: 'c', room: 'r', warm: 'w' };
+const BOWL_STATE_BY_CODE: Record<string, BowlState> = { c: 'cold', r: 'room', w: 'warm' };
 
 /** Trim trailing zeros so 70 serializes as "70" rather than "70.0". */
 function num(value: number): string {
@@ -71,6 +77,17 @@ export function encodeInputs(inputs: Inputs): string {
   );
   put(KEYS.temperH, num(inputs.temperH), inputs.temperH === DEFAULT_INPUTS.temperH);
   put(KEYS.bowlMassG, num(inputs.bowlMassG), inputs.bowlMassG === DEFAULT_INPUTS.bowlMassG);
+  put(
+    KEYS.bowlState,
+    BOWL_STATE_CODE[inputs.bowlState],
+    inputs.bowlState === DEFAULT_INPUTS.bowlState,
+  );
+  // A measured bowl temperature is worth carrying: it overrides the selector.
+  put(
+    KEYS.bowlTempF,
+    inputs.bowlTempF === null ? '' : num(inputs.bowlTempF),
+    inputs.bowlTempF === null,
+  );
   // A measured dough temperature belongs to one session, so it travels in the
   // link the same way the rest of the inputs do.
   put(
@@ -144,6 +161,8 @@ export function decodeInputs(search: string, base: Inputs = DEFAULT_INPUTS): Inp
     bigaRoomOnlyH: readNumber(p, KEYS.bigaRoomOnlyH, 'bigaRoomOnlyH', base.bigaRoomOnlyH),
     temperH: readNumber(p, KEYS.temperH, 'temperH', base.temperH),
     bowlMassG: readNumber(p, KEYS.bowlMassG, 'bowlMassG', base.bowlMassG),
+    bowlState: BOWL_STATE_BY_CODE[p.get(KEYS.bowlState) ?? ''] ?? base.bowlState,
+    bowlTempF: readOptionalNumber(p, KEYS.bowlTempF, 'bowlTempF', base.bowlTempF),
     finalDoughTempF: readOptionalNumber(p, KEYS.finalDoughTempF, 'finalDoughTempF', base.finalDoughTempF),
   };
 }

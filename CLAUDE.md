@@ -32,7 +32,9 @@ question:
 | `REPLY-to-calculator-agent.md` | Bowl-vs-flour crossover, the bowl-temperature coefficient, the first overhead-band correction |
 | `REPLY-2-to-calculator-agent.md` | `bulkRest` and `divideBall` stay fixed; final band 25.6–30.8 h |
 | `MESSAGE-3-remove-ice.md` | Why the ice model was deleted outright rather than kept behind a toggle |
-| `FINDINGS-3-to-recipe-agent.md` | **Open.** §5's upper bound is wrong (106.6, not 90.6), and nothing guards the hot end — 2 balls asks for 116.5 °F with no warning |
+| `FINDINGS-3-to-recipe-agent.md` | Settled by MESSAGE-4: both findings confirmed |
+| `MESSAGE-4-corrections.md` | Per-mix thermal weights, `MIN_BALLS = 3`, the hot-end warning, ADY 0.00375, `observedRate`, biga default 58, bowl state, the nMix timeline |
+| `HANDOFF-new-context.md` | Background for a fresh session on either side. Not instructions |
 
 ## Rules that matter more than usual here
 
@@ -58,6 +60,26 @@ UI, that's what the disclosure is for — collapse it, don't cut it.
 
 **Don't round intermediates.** Round only for display: flour/water/salt/dough to
 1 decimal, ADY to 2, temperatures to 1.
+
+**Thermal weights are per-mix, never batch totals.** §4.2 — `C_bowl` is one
+bowl and the bowl faces one mix at a time, so a 12-ball batch is a 6-ball
+thermal system twice over. Feeding batch totals in put the water 2.6 °F low at
+12 balls. `computeThermal` takes `nMix`, which is why `calculate` computes
+capacity *before* thermal. Two consequences that catch tests out: nothing is
+monotonic in total balls any more (12 wants hotter water than 9), and
+`probeTargetF` must be asserted on per-mix ball count.
+
+**Dough-only and observed are different quantities.** `FF` and `FRICTION_RATE`
+are dough-only, to match the `FF × Ct` work term; a thermometer reads the dough
+after it equilibrates with the bowl. Anything compared against a measurement
+needs `× Ct/TOT`. Everything routes through `observedRate()` so the two cannot
+drift apart — conflating them is what produced the old `DDT − 4` rule, wrong by
+1.2 °F at 3 balls, in two documents across several review rounds.
+
+**`MIN_BALLS` is 3, and it is an input constraint rather than a warning.** Two
+balls clears the mixer's 500 g floor on paper but won't let a spiral hook grip,
+*and* asks for 116 °F water. The arithmetic still scales below 3 for hand
+mixing; don't build a hand-mix mode.
 
 **There is no ice model, and re-adding one is a regression.** §4.4 was rewritten
 to output a target water temperature and nothing else — no ice/tap split, no

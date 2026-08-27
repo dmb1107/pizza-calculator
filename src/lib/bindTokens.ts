@@ -10,7 +10,7 @@
  */
 
 import { formatAdy, formatGrams, formatTempF } from './format';
-import type { CalculatorResult } from './engine';
+import { observedRate, type CalculatorResult } from './engine';
 
 /** Trim trailing zeros: 1.5 stays 1.5, 2.0 becomes 2, 265 stays 265. */
 function trim(value: number): string {
@@ -46,6 +46,13 @@ export function tokenValues(
     salt: formatGrams(formula.salt),
     probeTarget: formatTempF(result.probeTargetF),
     ddt: formatTempF(result.ddtF),
+    /**
+     * §4.6. Phase C's rate AS A THERMOMETER READS IT — the dough-only 1.08
+     * °F/min times `Ct/TOT`. "About 1 °F per minute" is only true at 6 balls
+     * and up; at 3 it is 0.89. Routed through `observedRate` so this and the
+     * Phase C authority figures cannot drift apart.
+     */
+    observedRate30: formatTempF(observedRate(30, result.thermal)),
     // §4.8 — computed from the measured final dough temperature, or from DDT
     // while the calculator is still in planning mode.
     roomMin: String(Math.round(result.roomMinutes)),

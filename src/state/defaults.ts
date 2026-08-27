@@ -12,8 +12,10 @@ export const DEFAULT_INPUTS: Inputs = {
   roomTempF: 70,
   flourSameAsRoom: true,
   flourTempF: 70,
-  bigaTempF: 64,
+  bigaTempF: C.DEFAULT_BIGA_TEMP_F,
   bowlMassG: C.DEFAULT_BOWL_MASS_G,
+  bowlState: 'cold',
+  bowlTempF: null,
 
   bigaFridgeH: 19,
   bigaRoomOnlyH: 16,
@@ -54,13 +56,16 @@ export const DEFAULT_PERSISTED: Persisted = {
  * hand-edited URL, so they are deliberately permissive rather than opinionated.
  */
 export const BOUNDS = {
-  balls: { min: 1, max: 24, step: 1 },
+  // §4.4. 3 is a hard floor, not a warning: 2 balls won't let a spiral hook
+  // grip AND asks for 116 °F water. Two independent reasons, same answer.
+  balls: { min: C.MIN_BALLS, max: 24, step: 1 },
   ballWeightG: { min: 240, max: 300, step: 1 },
   coldFermentH: { min: 6, max: 36, step: 1 },
 
   roomTempF: { min: 32, max: 120, step: 0.5 },
   flourTempF: { min: 32, max: 120, step: 0.5 },
   bigaTempF: { min: 32, max: 120, step: 0.5 },
+  bowlTempF: { min: 32, max: 120, step: 0.5 },
 
   frictionFactorF: { min: 0, max: 40, step: 0.1 },
   ddtOverrideF: { min: 60, max: 90, step: 0.5 },

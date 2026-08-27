@@ -244,6 +244,8 @@ export function useAppState(): AppState {
         roomTempF: inputs.roomTempF,
         flourTempF: inputs.flourSameAsRoom ? inputs.roomTempF : inputs.flourTempF,
         bigaTempF: inputs.bigaTempF,
+        bowlState: inputs.bowlState,
+        bowlTempF: inputs.bowlTempF,
         frictionFactorF: friction.ff,
         bowlMassG: inputs.bowlMassG,
         ddtOverrideF: calibration.ddtOverrideF,
@@ -258,6 +260,7 @@ export function useAppState(): AppState {
       bigaRoomOnlyH: inputs.bigaRoomOnlyH,
       // §4.8: computed from the measured dough temperature, not chosen.
       ballRoomTempH: result.roomMinutes / 60,
+      nMix: result.capacity.nMix,
       coldFermentH: inputs.coldFermentH,
       temperH: inputs.temperH,
     }),

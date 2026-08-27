@@ -83,7 +83,7 @@ describe('bound values', () => {
   it('matches the §5 six-ball vector', () => {
     expect(values['bigaFlour']).toBe('611.2');
     expect(values['bigaWater']).toBe('305.6');
-    expect(values['bigaADY']).toBe('2.32');
+    expect(values['bigaADY']).toBe('2.29');
     expect(values['freshFlour']).toBe('329.1');
     expect(values['salt']).toBe('26.3');
   });
