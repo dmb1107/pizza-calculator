@@ -165,6 +165,37 @@ size — the 3/6/9 rows are fine.
 
 ---
 
+## ⚠️ §12 twice says the step content covers something it doesn't
+
+Both of these are load-bearing for numbers you asked me to implement, and
+neither exists in §8. I can't write them — §8 is yours and the verbatim test
+guards it — so they're gaps rather than something I've worked around.
+
+**§12 on `CHANGEOVER`:** *"it assumes mix 2's ingredients are weighed out before
+mix 1 starts — which §8 `mix-1` already instructs."* `mix-1` does not. Its whole
+detail is two paragraphs on crumbling the biga and breaking up the fresh flour;
+it never mentions a second mix. So the assumption the 5-minute changeover rests
+on is stated only in a message the user never sees. A baker following the step
+list would weigh mix 2 *during* the changeover, which is the case where 5
+minutes is most obviously wrong.
+
+**§12 on the stagger:** *"Say that in the step content — a user who thinks the
+correction makes the batch uniform will draw the wrong conclusion from a bad
+result."* `bulk-3` has no mention of the stagger, of centring, or of split
+batches. Its detail is entirely oil-versus-flour.
+
+More broadly: **no step in §8.2 mentions a split batch at all.** No "mix 2", no
+changeover, no re-measure prompt. §10 asks for a re-measure between mixes "in
+the step list rather than on the card", and there is no step for it to live in.
+The app therefore renders two water cards with two different targets and no
+step-level instruction explaining why, or telling anyone to re-read the biga and
+the bowl between them.
+
+That last one is the one I'd prioritise after the `thermal-model` contradiction,
+because the per-mix work is otherwise complete and unexplained to the user.
+
+---
+
 ## Two smaller notes
 
 **§6's input table is what I built to for the bowl**, since §4.2 and §10 describe
@@ -174,6 +205,10 @@ to mix 1. That covers "ask for two readings" for the bowl but not for the waitin
 biga — the re-measure prompt lives in the step prose, which is where §10 asked
 for it. Say if you want per-mix override fields; it is a small change but it
 touches the URL codec, so I'd rather not guess.
+
+**§5's `Ct` column rounds 1058.75 inconsistently** — 1058.7 on the 6-ball row
+and 1058.8 on the 12-ball row, which are now the same number. Display only, no
+action needed; noting it so it isn't mistaken for a per-mix discrepancy later.
 
 **`Disclose.tsx` is gone** as of the ice removal, so if a future §7 wants a
 tap-to-reveal for the new sensitivity coefficients, that primitive needs
@@ -187,12 +222,16 @@ Nothing blocking. In priority order:
 
 1. **`thermal-model` ¶4** — it renders to users and contradicts ¶7 in the same
    panel. Worth a fix even ahead of the numbers.
-2. **§4.6 vs §5 on the probe** — tell me which is authoritative and I'll pin it.
+2. **Step content for split batches** — nothing in §8.2 mentions a second mix,
+   so §10's re-measure prompt has nowhere to live and §12's two "the step
+   content says so" claims are unsupported.
+3. **§4.6 vs §5 on the probe** — tell me which is authoritative and I'll pin it.
    I've assumed §5.
-3. **§4.7's 28.4** — confirm 28.12 or tell me the stagger shouldn't reduce
+4. **§4.7's 28.4** — confirm 28.12 or tell me the stagger shouldn't reduce
    overhead.
-4. **§5's bowl-dilution 12-ball row.**
-5. **The stagger clamp edge** — option 1 unless you'd rather.
+5. **§5's bowl-dilution 12-ball row.**
+6. **The stagger clamp edge** — option 1 unless you'd rather, though option 1
+   *is* step prose, so it depends on item 2.
 
 `tests/vectors.ts` records the measured values with each disagreement written
 beside it, the same handling as the 30.2 h overhead and the 90.6 ceiling. Nothing
