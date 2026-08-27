@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { C } from '../src/lib/constants';
+import { mixStaggerH } from '../src/lib/engine';
 import {
   buildTimeline,
   formatDuration,
@@ -7,7 +8,6 @@ import {
   isUnsocialHour,
   roundToNextQuarterHour,
   solveBigaStart,
-  mixStaggerH,
   stageDurations,
   toDatetimeLocal,
   type ScheduleAdjustments,
@@ -219,6 +219,27 @@ describe('§4.7 stage durations', () => {
         nMix: 2,
       });
       expect(short.ballRoomTemp * 60).toBeCloseTo(45, 1);
+    });
+
+    it.each([
+      [1, 0.5, 1.5, 27.83],
+      [2, 1.083, 1.208, 28.12],
+      // ⚠️ §4.7's table says 28.42 here, but its OWN mix and rise values for
+      // this row give 27.83 + (1.667 − 0.5) + (0.917 − 1.5) = 28.414. Rows 1
+      // and 2 are internally consistent; only this overhead is off by 0.01.
+      // Raised with the recipe agent; this records what the table produces.
+      [3, 1.667, 0.917, 28.41],
+    ])('nMix %i: mix %f h, rise %f h, overhead %f h', (nMix, mix, rise, overheadH) => {
+      // §4.7's table, all three asserted. 28.42 was the figure an earlier draft
+      // attached to nMix 2 — right arithmetic, wrong batch size, which is why
+      // it reproduced whenever anyone checked it in isolation.
+      const d = stageDurations('retarded', { ...DEFAULTS, nMix });
+      expect(d.mix).toBeCloseTo(mix, 2);
+      expect(d.ballRoomTemp).toBeCloseTo(rise, 2);
+      const total =
+        buildTimeline({ startAt: start, schedule: 'retarded', adjustments: { ...DEFAULTS, nMix } })
+          .totalH - DEFAULTS.coldFermentH;
+      expect(total).toBeCloseTo(overheadH, 2);
     });
 
     it('puts fixed overhead at 28.1 h when nMix is 2', () => {

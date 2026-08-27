@@ -14,6 +14,7 @@
  */
 
 import { C } from './constants';
+import { MIX_H, clampRise, mixStaggerH } from './engine';
 import type { Schedule } from '../state/types';
 
 export type StageKey =
@@ -104,19 +105,6 @@ const STAGE_INFO: Record<StageKey, { title: string; description: string }> = {
   },
 };
 
-/** §4.7. One mix, excluding changeover. Includes the 10-minute rest. */
-const MIX_H = 0.5;
-
-/**
- * §4.7. How much later the LAST mix finishes than the first, in hours.
- *
- * 35 min at nMix 2: 30 min of mixing plus a 5-minute changeover. Zero for a
- * single mix.
- */
-export function mixStaggerH(nMix: number): number {
-  return (MIX_H + C.CHANGEOVER_H) * Math.max(0, nMix - 1);
-}
-
 /**
  * §4.7. Durations in hours from the biga mix at t = 0.
  *
@@ -141,7 +129,6 @@ export function stageDurations(schedule: Schedule, a: ScheduleAdjustments): Stag
   const retarded = schedule === 'retarded';
   const nMix = Math.max(1, a.nMix);
   const stagger = mixStaggerH(nMix);
-  const [minRise, maxRise] = C.ROOM_MIN_CLAMP;
 
   return {
     bigaRoomTemp: retarded ? 2 : 0,
@@ -151,10 +138,7 @@ export function stageDurations(schedule: Schedule, a: ScheduleAdjustments): Stag
     mix: MIX_H * nMix + C.CHANGEOVER_H * (nMix - 1),
     bulkRest: 1,
     divideBall: 0.33,
-    ballRoomTemp: Math.min(
-      maxRise / 60,
-      Math.max(minRise / 60, a.ballRoomTempH - stagger / 2),
-    ),
+    ballRoomTemp: clampRise(a.ballRoomTempH - stagger / 2),
     coldFerment: a.coldFermentH,
     temper: a.temperH,
   };

@@ -8,7 +8,7 @@
  */
 
 import { formatAdy, formatGrams, formatGramsWhole, formatTempF } from './format';
-import type { CalculatorResult } from './engine';
+import { atMix, type CalculatorResult } from './engine';
 
 /** Pad a label so the numbers line up in a monospaced viewer. */
 function row(label: string, value: string): string {
@@ -78,10 +78,12 @@ export function buildRecipeText(result: CalculatorResult): string {
   lines.push('CONDITIONS');
   lines.push(row('Room', `${formatTempF(inputs.roomTempF)} °F`));
   lines.push(row('Flour', `${formatTempF(inputs.flourTempF)} °F`));
-  lines.push(row('Biga at mix', `${formatTempF(inputs.bigaTempF)} °F`));
-  lines.push(
-    row('Bowl at mix', `${formatTempF(result.mixes[0]!.bowlTempF)} °F (${result.mixes[0]!.bowlState})`),
-  );
+  // Per mix when they differ — mix-7 asks for a fresh reading of both.
+  for (const mix of result.mixes) {
+    const label = result.mixes.length > 1 ? ` (mix ${mix.index})` : '';
+    lines.push(row(`Biga at mix${label}`, `${formatTempF(atMix(inputs.bigaTempF, mix.index - 1))} °F`));
+    lines.push(row(`Bowl at mix${label}`, `${formatTempF(mix.bowlTempF)} °F (${mix.bowlState})`));
+  }
   lines.push(row('Friction', `${formatTempF(inputs.frictionFactorF)} °F`));
   lines.push(row('Bowl', `${formatGramsWhole(inputs.bowlMassG ?? 965)} g`));
 

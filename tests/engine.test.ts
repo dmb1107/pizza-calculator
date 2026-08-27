@@ -6,6 +6,7 @@ import {
   computeFinalTempF,
   computeFormula,
   computeProbeTargetF,
+  mixStaggerH,
   observedRate,
   computeRoomMinutes,
   computeThermal,
@@ -17,6 +18,7 @@ import {
   BAKE_1,
   BATCH_VECTORS,
   BOWL_DILUTION,
+  BOWL_SHARE_FLOOR,
   BELOW_MIN_BALLS_WATER,
   BOWL_DILUTION_SPLIT,
   BOWL_MODE_VECTORS,
@@ -194,10 +196,24 @@ describe('§4.2 the bowl', () => {
     expect(cf(6)).toBeGreaterThan(115.8);
   });
 
-  it.each(BOWL_DILUTION)('dilutes FF 14 to $apparentFF degF at $balls balls', (d) => {
-    const t = computeThermal(computeFormula({ balls: d.balls, ballWeightG: 265 }), 965);
-    within(t.bowlShare, d.bowlShare, 0.002, `bowl share at ${d.balls} balls`);
-    within(14 * (t.cTotal / t.cSystem), d.apparentFF, 0.05, `apparent FF at ${d.balls} balls`);
+  it.each(BOWL_DILUTION)('dilutes FF 14 to $apparentFF degF at a $ballsPerMix-ball mix', (d) => {
+    // Keyed on MIX size, so this is a single mix of that many balls.
+    const t = computeThermal(computeFormula({ balls: d.ballsPerMix, ballWeightG: 265 }), 965);
+    within(t.bowlShare, d.bowlShare, 0.002, `bowl share at a ${d.ballsPerMix}-ball mix`);
+    within(14 * (t.cTotal / t.cSystem), d.apparentFF, 0.05, `apparent FF`);
+  });
+
+  it('never lets the bowl share fall below its 6.68% floor', () => {
+    // §5: the largest mix the machine allows is 9 x 270 g, so the share cannot
+    // keep shrinking with batch size the way a batch-keyed table implied.
+    for (let b = C.MIN_BALLS; b <= 24; b++) {
+      for (const g of [240, 265, 270, 300]) {
+        const share = calculate(vectorInputs(b, g)).thermal.bowlShare;
+        expect(share, `bowl share at ${b} x ${g} g`).toBeGreaterThanOrEqual(
+          BOWL_SHARE_FLOOR - 0.0005,
+        );
+      }
+    }
   });
 
   it('defaults T_bowl to T_biga', () => {
@@ -710,6 +726,68 @@ describe('§4.2 bowl state', () => {
     const r = calculate(vectorInputs(6, 265));
     expect(r.mixes).toHaveLength(1);
     expect(r.mixes[0]!.bowlState).toBe('cold');
+  });
+});
+
+describe('§4.7 staggerUncentred', () => {
+  const at = (balls: number, finalDoughTempF: number) =>
+    calculate({ ...vectorInputs(balls, 265), finalDoughTempF }).staggerUncentredMin;
+
+  it('is zero across every nMix = 1 case', () => {
+    // MESSAGE-5 §9.1 asks for this explicitly. A single mix has no stagger, so
+    // there is nothing for the clamp to fail to absorb — at any dough
+    // temperature, including ones that peg the rise at either bound.
+    for (let b = C.MIN_BALLS; b <= 24; b++) {
+      for (let t = 60; t <= 90; t += 0.5) {
+        const r = calculate({ ...vectorInputs(b, 265), finalDoughTempF: t });
+        if (r.capacity.nMix !== 1) continue;
+        expect(r.staggerUncentredMin, `${b} balls at ${t} degF`).toBe(0);
+      }
+    }
+  });
+
+  it('is zero at nMix = 2 for doughs at or below 75 degF', () => {
+    // Also §9.1. 12 and 18 balls are the nMix = 2 cases in range.
+    for (const b of [12, 18]) {
+      for (let t = 60; t <= 75; t += 0.5) {
+        expect(at(b, t), `${b} balls at ${t} degF`).toBe(0);
+      }
+    }
+  });
+
+  it('fires only once the rise is pinned to its floor', () => {
+    // `roomMinutes` is the UNSTAGGERED rise — the input to the correction, not
+    // its output. At 12 balls / 77 degF (DDT 74) it is 62.4 min; subtracting
+    // 17.5 wants 44.9, which the floor lifts to 45, so a fraction of a minute
+    // is left uncorrected.
+    const warm = calculate({ ...vectorInputs(12, 265), finalDoughTempF: 77 });
+    const target = warm.roomMinutes - (mixStaggerH(2) / 2) * 60;
+    expect(target, 'the correction wants to go under the floor').toBeLessThan(45);
+    within(warm.staggerUncentredMin, 45 - target, 1e-9, 'uncentred is exactly the shortfall');
+    // Under 2 minutes it stays out of the warnings, per §7.3.
+    expect(warm.staggerUncentredMin).toBeLessThan(2);
+    expect(warm.warnings.some((w) => w.id === 'stagger-uncentred')).toBe(false);
+  });
+
+  it('warns, with the count, once more than 2 minutes go uncorrected', () => {
+    // 24 balls is the only nMix = 3 case in range: stagger/2 is 35 min.
+    const r = calculate({ ...vectorInputs(24, 265), finalDoughTempF: 77 });
+    expect(r.capacity.nMix).toBe(3);
+    expect(r.staggerUncentredMin).toBeGreaterThan(2);
+    const warning = r.warnings.find((w) => w.id === 'stagger-uncentred');
+    expect(warning?.severity).toBe('warn');
+    expect(warning?.title).toMatch(/minutes of the spread could not be absorbed/);
+    // Points upstream rather than at the floor.
+    expect(warning?.detail).toMatch(/fewer, larger mixes/);
+    expect(warning?.detail).not.toMatch(/lower the floor|below 45/i);
+  });
+
+  it('never reports a negative residual', () => {
+    for (const b of [3, 6, 9, 12, 18, 24]) {
+      for (let t = 60; t <= 90; t += 1) {
+        expect(at(b, t), `${b} balls at ${t} degF`).toBeGreaterThanOrEqual(0);
+      }
+    }
   });
 });
 

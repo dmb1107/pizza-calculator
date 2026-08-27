@@ -32,8 +32,13 @@ export interface Inputs {
    * Measured at mix time, not assumed. The highest-leverage input in the model:
    * d(T_water)/d(T_biga) is −1.92 at 6 balls and −2.25 at 3, so a 6 °F miss
    * moves the required water 11.5 °F and the finished dough 3.5 °F.
+   *
+   * ⚠️ One entry per mix. The waiting biga warms toward the room while an
+   * earlier mix runs and that drift is not modelled, so `mix-7` asks for a
+   * fresh reading instead. Index 0 is mix 1; a length-1 array applies to every
+   * mix, which is what an older shared link decodes to.
    */
-  bigaTempF: number;
+  bigaTempF: number[];
   /** Weigh once; persisted. */
   bowlMassG: number;
   /**
@@ -45,8 +50,11 @@ export interface Inputs {
    * §4.2. Measured bowl temperature, overriding the selector's prefill. null
    * uses the prefill. A measurement always wins — the biga gains ~5 °F from
    * tearing and the bowl does not.
+   *
+   * ⚠️ One entry per mix, like `bigaTempF`. null at any index uses that mix's
+   * prefill from the bowl state.
    */
-  bowlTempF: number | null;
+  bowlTempF: (number | null)[];
 
   // Schedule fine-tuning — §4.7 marks each of these user-adjustable.
   /** Retarded only. 18–20 h. */

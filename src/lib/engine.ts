@@ -442,6 +442,43 @@ export function computeRoomMinutes({
 }
 
 // ---------------------------------------------------------------------------
+// §4.7 Mix stagger
+// ---------------------------------------------------------------------------
+
+/** §4.7. One mix, excluding changeover. Includes the 10-minute rest. */
+export const MIX_H = 0.5;
+
+/** §4.8's [45, 180] minute floor and ceiling, applied in hours. */
+export function clampRise(hours: number): number {
+  const [minRise, maxRise] = C.ROOM_MIN_CLAMP;
+  return Math.min(maxRise / 60, Math.max(minRise / 60, hours));
+}
+
+/**
+ * §4.7. How much later the LAST mix finishes than the first, in hours.
+ * 35 min at nMix 2 — 30 min of mixing plus a 5-minute changeover.
+ */
+export function mixStaggerH(nMix: number): number {
+  return (MIX_H + C.CHANGEOVER_H) * Math.max(0, nMix - 1);
+}
+
+/**
+ * §4.7. Minutes of the stagger the ball rise could NOT absorb, because
+ * subtracting half of it hit §4.8's 45-minute floor. Zero in every unclamped
+ * case, so it surfaces only when it is true.
+ *
+ * ⚠️ The clamp eats the correction exactly where the correction matters most.
+ * The floor is reached by WARM doughs, and a warm dough ferments fastest — so a
+ * given number of uncentred minutes costs more here than anywhere else in the
+ * table. The floor is not worth overruling for it; the lever is upstream, which
+ * is what the §7.3 warning says.
+ */
+export function staggerUncentredMin(roomMinutes: number, nMix: number): number {
+  const target = roomMinutes / 60 - mixStaggerH(Math.max(1, nMix)) / 2;
+  return (clampRise(target) - target) * 60;
+}
+
+// ---------------------------------------------------------------------------
 // Warnings — §7.3
 // ---------------------------------------------------------------------------
 
@@ -459,7 +496,12 @@ export interface Warning {
  * component — the UI just renders them, above the step list and never inside a
  * collapsed panel.
  */
-function buildWarnings(f: Formula, capacity: Capacity, waterTempF: number): Warning[] {
+function buildWarnings(
+  f: Formula,
+  capacity: Capacity,
+  waterTempF: number,
+  staggerUncentred: number,
+): Warning[] {
   const w: Warning[] = [];
 
   if (capacity.nBiga > 1) {
@@ -476,7 +518,7 @@ function buildWarnings(f: Formula, capacity: Capacity, waterTempF: number): Warn
       id: 'divide-biga',
       severity: 'info',
       title: `Mix one biga, then divide it for ${capacity.nMix} final mixes`,
-      detail: `Mix one biga, then divide it by weight into ${capacity.nMix} portions for ${capacity.nMix} separate final mixes. That's a genuine convenience, not a compromise — the biga is stiff enough that one batch covers both mixes.`,
+      detail: `Mix one biga, then divide it by weight into ${capacity.nMix} portions for ${capacity.nMix} separate final mixes. That's a genuine convenience, not a compromise — the biga is stiff enough that one batch covers ${capacity.nMix === 2 ? 'both' : `all ${capacity.nMix}`} of them.`,
     });
   } else if (capacity.nMix > 1) {
     w.push({
@@ -530,6 +572,19 @@ function buildWarnings(f: Formula, capacity: Capacity, waterTempF: number): Warn
     });
   }
 
+  // §4.7 / §7.3. Only when the ball rise hit its floor with stagger left over.
+  // Quantitative and conditional by design: a blanket caveat about a failure
+  // that only happens on warm split batches trains the reader to skip it.
+  if (staggerUncentred > 2) {
+    w.push({
+      id: 'stagger-uncentred',
+      severity: 'warn',
+      title: `${Math.round(staggerUncentred)} minutes of the spread could not be absorbed`,
+      detail:
+        'Your dough is warm enough that the ball rise is already at its 45-minute floor, so there is no room left to shorten it. The first dough will run that much long regardless. This bites hardest exactly where it matters most — a warm dough ferments fastest, so a given number of extra minutes costs more here than anywhere else. The floor is not worth overruling for it. If you want the spread back, the lever is upstream: fewer, larger mixes, or a cooler dough temperature.',
+    });
+  }
+
   return w;
 }
 
@@ -537,10 +592,29 @@ function buildWarnings(f: Formula, capacity: Capacity, waterTempF: number): Warn
 // Top level
 // ---------------------------------------------------------------------------
 
+/**
+ * A value that may differ per mix. A plain number applies to every mix, which
+ * is both what a single-mix batch wants and what an older shared link decodes
+ * to — see §7 of MESSAGE-5 on keeping length-1 parsing.
+ */
+export type PerMix<T> = T | readonly T[];
+
+/** Read a per-mix value, falling back to the last supplied entry. */
+export function atMix<T>(value: PerMix<T>, index: number): T {
+  if (!Array.isArray(value)) return value as T;
+  const arr = value as readonly T[];
+  return (arr[index] ?? arr[arr.length - 1]) as T;
+}
+
 export interface CalculatorInputs extends BatchInputs {
   roomTempF: number;
   flourTempF: number;
-  bigaTempF: number;
+  /**
+   * §6. Biga temperature at mix, per mix. The waiting biga warms toward the
+   * room while an earlier mix runs, and that drift is not modelled — `mix-7`
+   * asks for a fresh reading instead. A scalar applies to every mix.
+   */
+  bigaTempF: PerMix<number>;
   frictionFactorF: number;
   /** Weigh once; persisted. */
   bowlMassG?: number;
@@ -558,7 +632,7 @@ export interface CalculatorInputs extends BatchInputs {
    * from tearing and the bowl does not, so this is a real reading, not a
    * formality.
    */
-  bowlTempF?: number | null;
+  bowlTempF?: PerMix<number | null>;
   /** null / undefined uses the §4.3 default: 75 °F for <=6 balls, 74 °F for 7+. */
   ddtOverrideF?: number | null;
   /**
@@ -593,6 +667,11 @@ export interface CalculatorResult {
   roomMinutes: number;
   /** True when roomMinutes came from DDT rather than a measurement. */
   roomMinutesIsPlanned: boolean;
+  /**
+   * §4.7. Minutes of the mix stagger the ball rise could not absorb. Zero
+   * except on a warm split batch, where §4.8's floor blocks the correction.
+   */
+  staggerUncentredMin: number;
   /** The temperature §4.8 was computed from — measured, or DDT in planning mode. */
   effectiveFinalTempF: number;
   warnings: Warning[];
@@ -615,7 +694,7 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
   const baseTemps = {
     ddtF,
     frictionFactorF: inputs.frictionFactorF,
-    bigaTempF: inputs.bigaTempF,
+    bigaTempF: atMix(inputs.bigaTempF, 0),
     flourTempF: inputs.flourTempF,
     roomTempF: inputs.roomTempF,
   };
@@ -624,18 +703,20 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
   // the bowl that just finished the one before it.
   const mixes: MixTarget[] = Array.from({ length: capacity.nMix }, (_, i) => {
     const bowlState: BowlState = i === 0 ? (inputs.bowlState ?? 'cold') : 'warm';
+    const bigaTempF = atMix(inputs.bigaTempF, i);
     const prefill = bowlTempForState(bowlState, {
-      bigaTempF: inputs.bigaTempF,
+      bigaTempF,
       roomTempF: inputs.roomTempF,
       ddtF,
     });
-    // A measurement always wins, but only mix 1 has a field for one.
-    const bowlTempF = i === 0 && inputs.bowlTempF != null ? inputs.bowlTempF : prefill;
+    // A measurement always wins, at every mix.
+    const measured = inputs.bowlTempF == null ? null : atMix(inputs.bowlTempF, i);
+    const bowlTempF = measured ?? prefill;
     return {
       index: i + 1,
       bowlState,
       bowlTempF,
-      waterTempF: computeWaterTempF({ ...baseTemps, bowlTempF }, thermal),
+      waterTempF: computeWaterTempF({ ...baseTemps, bigaTempF, bowlTempF }, thermal),
     };
   });
 
@@ -644,6 +725,8 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
   // Planning mode until a real final dough temperature is entered.
   const roomMinutesIsPlanned = inputs.finalDoughTempF == null;
   const effectiveFinalTempF = inputs.finalDoughTempF ?? ddtF;
+  const roomMinutes = computeRoomMinutes({ finalDoughTempF: effectiveFinalTempF, ddtF });
+  const uncentred = staggerUncentredMin(roomMinutes, capacity.nMix);
 
   return {
     inputs,
@@ -659,12 +742,13 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
       roomTempF: inputs.roomTempF,
       thermal,
     }),
-    roomMinutes: computeRoomMinutes({ finalDoughTempF: effectiveFinalTempF, ddtF }),
+    roomMinutes,
     roomMinutesIsPlanned,
+    staggerUncentredMin: uncentred,
     effectiveFinalTempF,
     // Warnings key off mix 1; a later mix is always warmer-bowled and so
     // never colder, and the hot end is what mix 1 already worst-cases.
-    warnings: buildWarnings(formula, capacity, waterTempF),
+    warnings: buildWarnings(formula, capacity, waterTempF, uncentred),
   };
 }
 

@@ -295,15 +295,15 @@ At 12 balls that is a 5.3 °F spread in the water target between mix 1 and mix 2
 
 **Its mass — this is the real one.** Friction energy heats whatever is in the bowl, and the bowl is part of "whatever." Same work, more mass, less temperature rise:
 
-| Batch | Bowl share | Rise diluted to | FF 14 appears as |
+| Balls **per mix** | Bowl share | Rise diluted to | FF 14 appears as |
 |---|---:|---:|---:|
-| 3 balls | 18.0% | 82% | 11.5 °F |
-| 6 balls | 9.9% | 90% | 12.6 °F |
-| 9 balls | 6.8% | 93% | 13.0 °F |
-| 12 balls | 5.2% | 95% | 13.3 °F |
-| 18 balls | 3.5% | 96% | 13.5 °F |
+| 3 | 17.9% | 82% | 11.5 °F |
+| 6 | 9.9% | 90% | 12.6 °F |
+| 9 | 6.8% | 93% | 13.0 °F |
 
-**This is exactly why folding the bowl into FF fails.** The apparent FF would drift from 11.5 to 13.5 across the batch range for no physical reason — you'd conclude the mixer behaves differently at different scales when really one constant is being read through five different dilutions.
+⚠️ **Keyed on mix size, not batch size.** Earlier drafts carried 12- and 18-ball rows at 5.2% and 3.5%, computed against batch totals. Those describe thermal systems this recipe never builds: 12 balls runs as two 6-ball mixes and reads off the 6 row, 18 balls as two 9-ball mixes and reads off the 9. Since the largest mix the machine takes is 9 × 270 g, **6.8% is the floor** — the bowl's share never gets smaller than that however big the batch.
+
+**This is exactly why folding the bowl into FF fails.** The apparent FF would drift from 11.5 to 13.0 across the range for no physical reason — you'd conclude the mixer behaves differently at different scales when really one constant is being read through three different dilutions.
 
 ### Friction factor — MEASURED
 
@@ -408,7 +408,7 @@ Published professional practice, and the fridge holds the biga at a stable tempe
 
 Those are the defaults. Everything except the cold ferment is fixed overhead: **27.8 h at the defaults, 25.6–30.8 h across the full input ranges** — so the arithmetic is `cold ferment + ~28 h`.
 
-**A split batch adds 0.58 h** — a second 30-minute mix plus a 5-minute changeover. 12 and 18 balls run **28.4 h** of overhead, not 27.8. The 5 minutes assumes the bowl is *not* cleaned and mix 2 is already weighed out before mix 1 starts, which §8 tells you to do anyway.
+**A split batch runs 28.1 h of overhead**, not 27.8. The second mix and changeover add 0.58 h, and the stagger correction below takes 0.29 h back off the ball rise — so the net is +0.29 h, not +0.58. (Three mixes, which only happens at 24 balls, comes to 28.4 h.) The 5-minute changeover assumes the bowl is *not* cleaned and every mix is weighed out before the first one starts.
 
 ### Split batches run on one clock, and one dough is ahead of it
 
@@ -417,9 +417,11 @@ Both doughs go into **one bulk container**, so the batch cools as a single mass 
 **Mix 1's dough finishes 35 minutes before mix 2's.** Once they are in the same tub they are indistinguishable, so you cannot give the halves separate clocks.
 
 - **Clock the bulk rest from the second mix.** It is the only anchor that gives mix 2 any bulk at all. Mix 1's half runs long by design.
-- **Then take 17½ minutes off the ball room-temperature rise** — half the stagger. At 12 or 18 balls that turns a 90-minute rise into **72**.
+- **Then take 17½ minutes off the ball room-temperature rise** — half the stagger. At 12 or 18 balls that turns a 90-minute rise into **72½**.
 
 ⚠️ **This centres the error rather than removing it.** Before the correction mix 1's half is 35 minutes over and mix 2's is exactly on time; after it, they are +17½ and −17½. One clock cannot do better than that, but halving the worst case is worth twenty seconds of arithmetic.
+
+⚠️ **And on a warm dough it may not centre at all.** The ball rise has a 45-minute floor, so when the dough is warm enough that the computed rise is already near it, there is nothing left to subtract. At a 74 °F DDT a 77 °F dough computes a 62-minute rise, which clamps at 45 after a two-mix correction and stays at 45 after a three-mix one — leaving 18 minutes uncorrected. This bites hardest where it matters most, since a warm dough ferments fastest. The floor is not worth overruling for it; the levers are upstream, in mix count and dough temperature.
 
 **Don't clean the bowl between mixes.** It costs changeover time and buys nothing:
 
@@ -487,7 +489,10 @@ Still to come, **stated as the probe will read it** (dough and bowl equilibrated
 
 | Balls | 3 | 6 | 9 | 12 | 18 |
 |---|---:|---:|---:|---:|---:|
-| Probe target | **DDT − 2.8** | **DDT − 3.2** | **DDT − 3.5** | DDT − 3.6 | DDT − 3.7 |
+| Balls per mix | 3 | 6 | 9 | **6** | **9** |
+| Probe target | **DDT − 2.8** | **DDT − 3.2** | **DDT − 3.5** | **DDT − 3.4** | **DDT − 3.5** |
+
+18 balls is two 9-ball mixes, so its target is identical to the 9-ball one — that equality is a useful check on any calculation claiming to be per-mix. 12 and 6 share a mix size but differ slightly because DDT is 74 at 12 balls and 75 at 6.
 
 The old rule was 1.2 °F off at 3 balls — a third of Phase C's entire correction budget, spent in the wrong direction before you started. It came from taking the dough-only friction rates and reading them as if they were what a thermometer shows.
 
@@ -683,9 +688,11 @@ SCHEDULE (Ooni/Fuso): biga 2h RT + 18-20h fridge -> 1h temper -> mix
        -> bulk 1h -> ball -> RT per dough temp -> 6-36h fridge -> 2-3h temper.
        Fixed overhead outside the cold ferment = 27.8 h at defaults, so
        TOTAL = coldFerment + ~28 h:  ~34 h @6  ~52 h @24  ~64 h @36.
-       SPLIT BATCH (12, 18) = 28.4 h overhead. Bulk clocks from the SECOND
-       mix; then cut 17.5 min off the ball rise (90 -> 72). Mix 1 is 35 min
-       ahead and one container can't hold two clocks - this centres it.
+       SPLIT BATCH (12, 18) = 28.1 h overhead (3 mixes = 28.4). Bulk clocks
+       from the LAST mix; then cut 17.5 min off the ball rise (90 -> 72.5).
+       Mix 1 is 35 min ahead, one container can't hold two clocks - this
+       CENTRES the error, doesn't remove it. On a warm dough the 45-min
+       rise floor eats the correction - accept it, fix upstream.
        DON'T clean the bowl between mixes: residue is at DDT so it's
        thermally neutral, and the yield cancels since both doughs bulk
        together. Pre-weigh mix 2 before starting mix 1.

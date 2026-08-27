@@ -12,10 +12,10 @@ export const DEFAULT_INPUTS: Inputs = {
   roomTempF: 70,
   flourSameAsRoom: true,
   flourTempF: 70,
-  bigaTempF: C.DEFAULT_BIGA_TEMP_F,
+  bigaTempF: [C.DEFAULT_BIGA_TEMP_F],
   bowlMassG: C.DEFAULT_BOWL_MASS_G,
   bowlState: 'cold',
-  bowlTempF: null,
+  bowlTempF: [null],
 
   bigaFridgeH: 19,
   bigaRoomOnlyH: 16,

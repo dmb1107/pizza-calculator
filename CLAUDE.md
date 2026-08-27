@@ -35,7 +35,9 @@ question:
 | `FINDINGS-3-to-recipe-agent.md` | Settled by MESSAGE-4: both findings confirmed |
 | `MESSAGE-4-corrections.md` | Per-mix thermal weights, `MIN_BALLS = 3`, the hot-end warning, ADY 0.00375, `observedRate`, biga default 58, bowl state, the nMix timeline |
 | `HANDOFF-new-context.md` | Background for a fresh session on either side. Not instructions |
-| `FINDINGS-4-to-recipe-agent.md` | **Open.** Four stale batch-total figures, one of them a self-contradiction in `thermal-model`'s verbatim prose |
+| `FINDINGS-4-to-recipe-agent.md` | Settled by MESSAGE-5: all six confirmed |
+| `MESSAGE-5-replies.md` | `thermal-model` rewritten, split-batch step content, `staggerUncentred`, per-mix temperature arrays, overhead 28.12 |
+| `FINDINGS-5-to-recipe-agent.md` | **Open.** §8.2 defines `mix-7` twice, and the changeover step repeats — both need a content-model decision before `steps.ts` can be regenerated |
 
 ## Rules that matter more than usual here
 
@@ -46,6 +48,15 @@ than guessing — the numbers are load-bearing and were derived carefully.
 **Ask before deviating on any number.** The formulas were derived and
 cross-checked. A plausible-looking simplification produces a wrong answer that
 won't be obvious until 50 hours of fermentation later.
+
+**`steps.ts` is deliberately stale, and one test is red because of it.** The
+spec defines `mix-7` twice — "Phase D, finish" and the new "Changeover to the
+next mix". Step ids are the primary key for `find`, persisted checkboxes,
+timers and concept links, so a duplicate silently breaks all four. `steps.ts`
+stays at the 18 pre-MESSAGE-5 steps and `§8.2 › gives every step in the spec a
+unique id` carries the blockage; the per-step comparisons skip while it fails,
+so the suite names the cause instead of 19 symptoms. Do not rename the id to
+clear it — that decision is the recipe agent's and is pending.
 
 **The §8 prose is generated from the spec and guarded by a test.**
 `src/content/steps.ts` and `concepts.ts` were generated from §8.2/§8.3, and

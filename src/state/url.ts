@@ -36,6 +36,18 @@ const SCHEDULE_CODE: Record<Schedule, string> = { retarded: 'r', classic: 'c' };
 const BOWL_STATE_CODE: Record<BowlState, string> = { cold: 'c', room: 'r', warm: 'w' };
 const BOWL_STATE_BY_CODE: Record<string, BowlState> = { c: 'cold', r: 'room', w: 'warm' };
 
+/**
+ * §7. Per-mix values ride as a delimited list. A single value still decodes to
+ * a length-1 array, so links shared before per-mix fields existed keep working
+ * — and a shared split-batch link that silently dropped the mix-2 readings
+ * would be worse than not having the field.
+ */
+const PER_MIX_SEP = '~';
+
+function encodeList(values: readonly (number | null)[]): string {
+  return values.map((v) => (v == null ? '' : num(v))).join(PER_MIX_SEP);
+}
+
 /** Trim trailing zeros so 70 serializes as "70" rather than "70.0". */
 function num(value: number): string {
   return String(Math.round(value * 100) / 100);
@@ -63,7 +75,11 @@ export function encodeInputs(inputs: Inputs): string {
   );
   // A flour temperature that only tracks the room carries no information.
   put(KEYS.flourTempF, num(inputs.flourTempF), inputs.flourSameAsRoom);
-  put(KEYS.bigaTempF, num(inputs.bigaTempF), inputs.bigaTempF === DEFAULT_INPUTS.bigaTempF);
+  put(
+    KEYS.bigaTempF,
+    encodeList(inputs.bigaTempF),
+    sameList(inputs.bigaTempF, DEFAULT_INPUTS.bigaTempF),
+  );
 
   // Both schedules' adjustments are carried even though only one is in use.
   // Dropping the inactive one would save a few characters at the cost of a
@@ -82,11 +98,11 @@ export function encodeInputs(inputs: Inputs): string {
     BOWL_STATE_CODE[inputs.bowlState],
     inputs.bowlState === DEFAULT_INPUTS.bowlState,
   );
-  // A measured bowl temperature is worth carrying: it overrides the selector.
+  // Measured bowl temperatures override the selector, so they travel too.
   put(
     KEYS.bowlTempF,
-    inputs.bowlTempF === null ? '' : num(inputs.bowlTempF),
-    inputs.bowlTempF === null,
+    encodeList(inputs.bowlTempF),
+    inputs.bowlTempF.every((v) => v == null),
   );
   // A measured dough temperature belongs to one session, so it travels in the
   // link the same way the rest of the inputs do.
@@ -97,6 +113,50 @@ export function encodeInputs(inputs: Inputs): string {
   );
 
   return p.toString();
+}
+
+/** True when two per-mix lists carry the same values. */
+function sameList(a: readonly (number | null)[], b: readonly (number | null)[]): boolean {
+  return a.length === b.length && a.every((v, i) => v === b[i]);
+}
+
+/**
+ * §7. Decode a delimited per-mix list, clamping each entry. A bare value with
+ * no delimiter yields a length-1 array, which is how pre-per-mix links open.
+ * Garbage entries fall back rather than propagating NaN into the engine.
+ */
+function readNumberList(
+  p: URLSearchParams,
+  key: string,
+  field: Parameters<typeof clampField>[0],
+  fallback: number[],
+): number[] {
+  const raw = p.get(key);
+  if (raw === null || raw.trim() === '') return fallback;
+  const parts = raw.split(PER_MIX_SEP).map((piece, i) => {
+    const parsed = Number(piece);
+    if (piece.trim() === '' || !Number.isFinite(parsed)) return fallback[i] ?? fallback[0]!;
+    return clampField(field, parsed);
+  });
+  return parts.length ? parts : fallback;
+}
+
+/** As `readNumberList`, but an empty entry means "no measurement" rather than a fallback. */
+function readOptionalNumberList(
+  p: URLSearchParams,
+  key: string,
+  field: Parameters<typeof clampField>[0],
+  fallback: (number | null)[],
+): (number | null)[] {
+  const raw = p.get(key);
+  if (raw === null || raw.trim() === '') return fallback;
+  const parts = raw.split(PER_MIX_SEP).map((piece) => {
+    if (piece.trim() === '') return null;
+    const parsed = Number(piece);
+    if (!Number.isFinite(parsed)) return null;
+    return clampField(field, parsed);
+  });
+  return parts.length ? parts : fallback;
 }
 
 function readNumber(
@@ -156,13 +216,13 @@ export function decodeInputs(search: string, base: Inputs = DEFAULT_INPUTS): Inp
     flourTempF: flourSameAsRoom
       ? roomTempF
       : readNumber(p, KEYS.flourTempF, 'flourTempF', base.flourTempF),
-    bigaTempF: readNumber(p, KEYS.bigaTempF, 'bigaTempF', base.bigaTempF),
+    bigaTempF: readNumberList(p, KEYS.bigaTempF, 'bigaTempF', base.bigaTempF),
     bigaFridgeH: readNumber(p, KEYS.bigaFridgeH, 'bigaFridgeH', base.bigaFridgeH),
     bigaRoomOnlyH: readNumber(p, KEYS.bigaRoomOnlyH, 'bigaRoomOnlyH', base.bigaRoomOnlyH),
     temperH: readNumber(p, KEYS.temperH, 'temperH', base.temperH),
     bowlMassG: readNumber(p, KEYS.bowlMassG, 'bowlMassG', base.bowlMassG),
     bowlState: BOWL_STATE_BY_CODE[p.get(KEYS.bowlState) ?? ''] ?? base.bowlState,
-    bowlTempF: readOptionalNumber(p, KEYS.bowlTempF, 'bowlTempF', base.bowlTempF),
+    bowlTempF: readOptionalNumberList(p, KEYS.bowlTempF, 'bowlTempF', base.bowlTempF),
     finalDoughTempF: readOptionalNumber(p, KEYS.finalDoughTempF, 'finalDoughTempF', base.finalDoughTempF),
   };
 }

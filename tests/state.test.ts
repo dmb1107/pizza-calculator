@@ -34,10 +34,10 @@ const CUSTOM: Inputs = {
   roomTempF: 66.5,
   flourSameAsRoom: false,
   flourTempF: 62,
-  bigaTempF: 58.5,
+  bigaTempF: [58.5, 61],
   bowlMassG: 1100,
   bowlState: 'room',
-  bowlTempF: 71.5,
+  bowlTempF: [71.5, null],
   bigaFridgeH: 18.5,
   bigaRoomOnlyH: 14,
   temperH: 3,
@@ -45,6 +45,30 @@ const CUSTOM: Inputs = {
 };
 
 describe('URL serialization', () => {
+  it('round-trips per-mix temperature lists', () => {
+    // §7: a shared split-batch link that silently dropped the mix-2 readings
+    // would be worse than the field not existing.
+    const decoded = decodeInputs(encodeInputs(CUSTOM));
+    expect(decoded.bigaTempF).toEqual([58.5, 61]);
+    expect(decoded.bowlTempF).toEqual([71.5, null]);
+  });
+
+  it('reads a pre-per-mix link as a length-1 list', () => {
+    // Links shared before the per-mix fields existed carry a bare value.
+    expect(decodeInputs('biga=57').bigaTempF).toEqual([57]);
+    expect(decodeInputs('bowlt=66').bowlTempF).toEqual([66]);
+  });
+
+  it('clamps and rejects garbage inside a list without dropping the rest', () => {
+    expect(decodeInputs('biga=57~999~abc').bigaTempF).toEqual([
+      57,
+      BOUNDS.bigaTempF.max,
+      DEFAULT_INPUTS.bigaTempF[0],
+    ]);
+    // An empty bowl entry means "no measurement", not a fallback.
+    expect(decodeInputs('bowlt=~64').bowlTempF).toEqual([null, 64]);
+  });
+
   it('round-trips a fully customised setup', () => {
     expect(decodeInputs(encodeInputs(CUSTOM))).toEqual(CUSTOM);
   });

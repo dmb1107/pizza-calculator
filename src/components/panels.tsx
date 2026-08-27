@@ -83,12 +83,29 @@ export function TemperaturesPanel(s: AppState) {
   // says so, so a signed number here would read as a double negative.
   const bigaSensitivity = ((thermal.cBiga + thermal.cBowl) / thermal.cFreshWater).toFixed(1);
   const bowlSensitivity = (thermal.cBowl / thermal.cFreshWater).toFixed(2);
-  const bowlPrefill = result.mixes[0]!.bowlTempF;
+  const bigaAt = (i: number) => inputs.bigaTempF[i] ?? inputs.bigaTempF[0]!;
+
+  /**
+   * §7. Per-mix arrays grow to `nMix` on first edit rather than being resized
+   * eagerly, so a single-mix setup keeps serializing as one bare value and old
+   * links stay short.
+   */
+  function withAt<T extends number | null>(
+    list: T[],
+    index: number,
+    value: number,
+    bounds: { min: number; max: number },
+  ): T[] {
+    const next = [...list];
+    while (next.length <= index) next.push((next[next.length - 1] ?? null) as T);
+    next[index] = Math.min(bounds.max, Math.max(bounds.min, value)) as T;
+    return next;
+  }
 
   return (
     <Panel
       title="Today's temperatures"
-      summary={`Room ${formatTempF(inputs.roomTempF)} · Biga ${formatTempF(inputs.bigaTempF)} °F · Bowl ${Math.round(inputs.bowlMassG)} g`}
+      summary={`Room ${formatTempF(inputs.roomTempF)} · Biga ${formatTempF(inputs.bigaTempF[0]!)} °F · Bowl ${Math.round(inputs.bowlMassG)} g`}
       open={panels.temperatures}
       onToggle={() => togglePanel('temperatures')}
     >
@@ -119,33 +136,51 @@ export function TemperaturesPanel(s: AppState) {
             onChange={(v) => setInput('flourSameAsRoom', v)}
           />
         </div>
-        <NumberField
-          label="Biga temperature at mix"
-          unit="°F"
-          value={inputs.bigaTempF}
-          onCommit={(v) => commitNumber('bigaTempF', v)}
-          min={BOUNDS.bigaTempF.min}
-          max={BOUNDS.bigaTempF.max}
-          step={BOUNDS.bigaTempF.step}
-          hint={`Measure it — this is the highest-leverage input in the model. Every °F warmer here means about ${bigaSensitivity} °F cooler water, so a 6 °F guess is 11 °F of water and 3.5 °F of finished dough. Take the reading after tearing the biga, not at the pull: handling gains about 5 °F that the bowl does not share.`}
-        />
-        <SegmentedField
-          legend="Bowl state at mix"
-          value={inputs.bowlState}
-          options={BOWL_STATE_OPTIONS}
-          onChange={(v) => setInput('bowlState', v)}
-          hint="The biga always ferments in the mixer bowl, so it is normally cold. Rinsing resets it to about the rinse temperature in under a minute if a later mix lands awkwardly."
-        />
-        <NumberField
-          label="Bowl temperature at mix"
-          unit="°F"
-          value={inputs.bowlTempF ?? bowlPrefill}
-          onCommit={(v) => commitNumber('bowlTempF', v)}
-          min={BOUNDS.bowlTempF.min}
-          max={BOUNDS.bowlTempF.max}
-          step={BOUNDS.bowlTempF.step}
-          hint={`${inputs.bowlTempF == null ? 'Prefilled from the bowl state above. ' : 'Measured — a reading always beats the prefill. '}Worth ${bowlSensitivity} °F of water per °F at this batch size, which is three times what it costs the dough. That gap is why it earns a measurement even though the dough barely notices.`}
-        />
+        {result.mixes.map((mix) => {
+          const many = result.mixes.length > 1;
+          // "at mix" reads as the mix event on a single-mix batch, and as a
+          // label collision once each mix has its own pair.
+          const bigaLabel = many ? `Biga temperature — mix ${mix.index}` : 'Biga temperature at mix';
+          const bowlLabel = many ? `Bowl temperature — mix ${mix.index}` : 'Bowl temperature at mix';
+          const measuredBowl = inputs.bowlTempF[mix.index - 1] ?? null;
+          return (
+            <div key={mix.index} className="grid gap-6">
+              <NumberField
+                label={bigaLabel}
+                unit="°F"
+                value={bigaAt(mix.index - 1)}
+                onCommit={(v) => setInput('bigaTempF', withAt(inputs.bigaTempF, mix.index - 1, v, BOUNDS.bigaTempF))}
+                min={BOUNDS.bigaTempF.min}
+                max={BOUNDS.bigaTempF.max}
+                step={BOUNDS.bigaTempF.step}
+                hint={
+                  mix.index === 1
+                    ? `Measure it — this is the highest-leverage input in the model. Every °F warmer here means about ${bigaSensitivity} °F cooler water, so a 6 °F guess is 11 °F of water and 3.5 °F of finished dough. Take the reading after tearing the biga, not at the pull: handling gains about 5 °F that the bowl does not share.`
+                    : `Re-read it before this mix. The waiting biga has been warming toward the room the whole time the previous mix ran, and that drift is not modelled — there is no data for it.`
+                }
+              />
+              {mix.index === 1 && (
+                <SegmentedField
+                  legend={many ? 'Bowl state at mix 1' : 'Bowl state at mix'}
+                  value={inputs.bowlState}
+                  options={BOWL_STATE_OPTIONS}
+                  onChange={(v) => setInput('bowlState', v)}
+                  hint="The biga always ferments in the mixer bowl, so it is normally cold. Later mixes start in the bowl that just finished the one before. Rinsing resets it to about the rinse temperature in under a minute if a target lands awkwardly."
+                />
+              )}
+              <NumberField
+                label={bowlLabel}
+                unit="°F"
+                value={measuredBowl ?? mix.bowlTempF}
+                onCommit={(v) => setInput('bowlTempF', withAt(inputs.bowlTempF, mix.index - 1, v, BOUNDS.bowlTempF))}
+                min={BOUNDS.bowlTempF.min}
+                max={BOUNDS.bowlTempF.max}
+                step={BOUNDS.bowlTempF.step}
+                hint={`${measuredBowl == null ? `Prefilled from ${mix.index === 1 ? 'the bowl state above' : 'the previous mix'}. ` : 'Measured — a reading always beats the prefill. '}Worth ${bowlSensitivity} °F of water per °F at this mix size, which is three times what it costs the dough. That gap is why it earns a measurement even though the dough barely notices.`}
+              />
+            </div>
+          );
+        })}
         <NumberField
           label="Mixer bowl mass"
           unit="g"

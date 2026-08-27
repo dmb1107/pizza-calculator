@@ -87,13 +87,36 @@ const specSteps = SPEC.slice(SPEC.indexOf('### 8.2 Steps'), SPEC.indexOf('### 8.
     };
   });
 
+/**
+ * ⚠️ BLOCKED — the spec currently defines `mix-7` twice: "Phase D, finish" and
+ * the new "Changeover to the next mix" from MESSAGE-5 §2.
+ *
+ * Step ids are the primary key everywhere: `STEPS.find(s => s.id === …)`,
+ * the persisted `checkedSteps` set, `RunningTimer.stepId`, and concept
+ * cross-references all key off them. Two steps sharing one id means one
+ * checkbox for two steps, and a timer started on one attaching to the other.
+ *
+ * MESSAGE-5 §9.2 asked to be told rather than worked around, so `steps.ts` is
+ * deliberately left at the 18 pre-MESSAGE-5 steps and this one test carries the
+ * blockage. Without the guard below, the duplicate id makes every per-step
+ * comparison fail against whichever step `find` happened to return, which
+ * reports the symptom instead of the cause.
+ */
+const SPEC_IDS_UNIQUE = new Set(specSteps.map((s) => s.id)).size === specSteps.length;
+
 describe('§8.2 steps are reproduced verbatim', () => {
-  it('has all 18 steps, in spec order', () => {
-    expect(specSteps).toHaveLength(18);
+  it('gives every step in the spec a unique id', () => {
+    const seen = new Map<string, number>();
+    for (const s of specSteps) seen.set(s.id, (seen.get(s.id) ?? 0) + 1);
+    const duplicates = [...seen].filter(([, n]) => n > 1).map(([id, n]) => `${id} x${n}`);
+    expect(duplicates, 'step ids are the primary key for checkboxes and timers').toEqual([]);
+  });
+
+  it.runIf(SPEC_IDS_UNIQUE)('has every step, in spec order', () => {
     expect(STEPS.map((s) => s.id)).toEqual(specSteps.map((s) => s.id));
   });
 
-  it.each(specSteps.map((s) => [s.id, s] as const))('%s matches the spec', (id, spec) => {
+  it.runIf(SPEC_IDS_UNIQUE).each(specSteps.map((s) => [s.id, s] as const))('%s matches the spec', (id, spec) => {
     const step = STEPS.find((s) => s.id === id);
     expect(step, `${id} is missing from steps.ts`).toBeDefined();
     if (!step) return;
@@ -116,7 +139,7 @@ describe('§8.2 steps are reproduced verbatim', () => {
     expect(step.troubleshoot, `${id} troubleshoot`).toEqual(spec.troubleshoot);
   });
 
-  it('loses no detail prose to truncation', () => {
+  it.runIf(SPEC_IDS_UNIQUE)('loses no detail prose to truncation', () => {
     // Belt and braces: compare total character counts, so a silently dropped
     // block would show up even if an id somehow went missing above.
     const specChars = specSteps.reduce((n, s) => n + (s.detail?.length ?? 0), 0);

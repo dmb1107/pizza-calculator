@@ -47,7 +47,7 @@ export interface BatchVector {
 
 export const BATCH_VECTORS: readonly BatchVector[] = [
   { balls: 3,  ballG: 265, F: 470.2,  bigaFlour: 305.6,  bigaWater: 152.8, bigaADY: 1.15, freshFlour: 164.6, freshWater: 176.3,  phaseA: 105.8, phaseB: 70.5,  salt: 13.2, Ct: 529.4,  ddtF: 75, waterTempF: 73.7, probeTargetF: 72.2, nBiga: 1, nMix: 1 },
-  { balls: 6,  ballG: 265, F: 940.4,  bigaFlour: 611.2,  bigaWater: 305.6, bigaADY: 2.29, freshFlour: 329.1, freshWater: 352.6,  phaseA: 211.6, phaseB: 141.1, salt: 26.3, Ct: 1058.7, ddtF: 75, waterTempF: 68.1, probeTargetF: 71.8, nBiga: 1, nMix: 1 },
+  { balls: 6,  ballG: 265, F: 940.4,  bigaFlour: 611.2,  bigaWater: 305.6, bigaADY: 2.29, freshFlour: 329.1, freshWater: 352.6,  phaseA: 211.6, phaseB: 141.1, salt: 26.3, Ct: 1058.8, ddtF: 75, waterTempF: 68.1, probeTargetF: 71.8, nBiga: 1, nMix: 1 },
   { balls: 9,  ballG: 265, F: 1410.6, bigaFlour: 916.9,  bigaWater: 458.4, bigaADY: 3.44, freshFlour: 493.7, freshWater: 529.0,  phaseA: 317.4, phaseB: 211.6, salt: 39.5, Ct: 1588.1, ddtF: 74, waterTempF: 63.0, probeTargetF: 70.5, nBiga: 1, nMix: 1 },
   { balls: 12, ballG: 265, F: 1880.8, bigaFlour: 1222.5, bigaWater: 611.2, bigaADY: 4.58, freshFlour: 658.3, freshWater: 705.3,  phaseA: 423.2, phaseB: 282.1, salt: 52.7, Ct: 1058.8, ddtF: 74, waterTempF: 64.8, probeTargetF: 70.6, nBiga: 1, nMix: 2 },
   { balls: 18, ballG: 265, F: 2821.1, bigaFlour: 1833.7, bigaWater: 916.9, bigaADY: 6.88, freshFlour: 987.4, freshWater: 1057.9, phaseA: 634.8, phaseB: 423.2, salt: 79.0, Ct: 1588.1, ddtF: 74, waterTempF: 63.0, probeTargetF: 70.5, nBiga: 2, nMix: 2 },
@@ -85,20 +85,34 @@ export const BAKE_1 = {
  * the dough scales, which is why the bowl cannot be folded into FF: the
  * per-batch-size table would drift for no physical reason.
  */
-export const BOWL_DILUTION: readonly { balls: number; bowlShare: number; apparentFF: number }[] = [
-  { balls: 3, bowlShare: 0.18, apparentFF: 11.5 },
-  { balls: 6, bowlShare: 0.099, apparentFF: 12.6 },
-  { balls: 9, bowlShare: 0.068, apparentFF: 13.0 },
+export const BOWL_DILUTION: readonly {
+  ballsPerMix: number;
+  bowlShare: number;
+  apparentFF: number;
+}[] = [
+  { ballsPerMix: 3, bowlShare: 0.179, apparentFF: 11.5 },
+  { ballsPerMix: 6, bowlShare: 0.099, apparentFF: 12.6 },
+  { ballsPerMix: 9, bowlShare: 0.068, apparentFF: 13.0 },
 ];
 
 /**
- * ⚠️ §5's bowl-dilution table still carries a 12-ball row at 5.2% / 13.3 °F,
- * and the `thermal-model` concept still says 3.5% / 13.5 °F at 18 balls. Both
- * are batch-total figures that per-mix weights (§4.2) made unreachable: 12
- * balls runs as two 6-ball mixes and 18 as two 9-ball mixes, so they share the
- * 6- and 9-ball shares exactly.
+ * §5. The largest mix the machine allows is 9 × 270 g, so the bowl's share has
+ * a FLOOR — it never shrinks further however large the batch, because a bigger
+ * batch splits into more mixes rather than one larger one. The old batch-keyed
+ * table implied it kept falling.
  *
- * RAISED WITH THE RECIPE AGENT. These record what the model does.
+ * ⚠️ §5 says 6.8%, which is the 9 × **265** g figure. At the 9 × 270 g mix the
+ * same sentence names as the largest, it is **6.68%**. The reasoning is right
+ * and the identification of the limiting mix is right — 9 × 300 g splits in two
+ * and jumps back to 11.4% — but the number is quoted against a different ball
+ * weight than its own premise. Minor; raised with the recipe agent.
+ */
+export const BOWL_SHARE_FLOOR = 0.0668;
+
+/**
+ * §5. A split batch reads off its own mix size: 12 balls off the 6 row, 18 off
+ * the 9. Settled by MESSAGE-5 §5 — the batch-keyed 12-ball row is gone from the
+ * spec and the concept prose is corrected to 6.8% / 13.0 °F.
  */
 export const BOWL_DILUTION_SPLIT: readonly { balls: number; sameAsBalls: number }[] = [
   { balls: 12, sameAsBalls: 6 },
@@ -135,14 +149,10 @@ export const BOWL_MODE_VECTORS: readonly {
 /**
  * §4.6. The probe gap is mix-size dependent; there is no flat `DDT − 4`.
  *
- * ⚠️ 12 and 18 do NOT match §4.6's quoted 3.6 / 3.7. Those two reproduce
- * exactly from batch-total `Ct/TOT` (0.948 and 0.965) — the weights §4.2
- * replaced — and §4.6's headline list carries the same stale pair as
- * "12 balls 70.4 · 18 balls 70.3". §5's vector table says 70.6 and 70.5, which
- * is what per-mix weights give and what the engine produces.
- *
- * The 3 / 6 / 9 values are unaffected, being nMix = 1. RAISED WITH THE RECIPE
- * AGENT; these record what the model does.
+ * Settled by MESSAGE-5 §3: §4.6 now agrees with §5 at 70.6 / 70.5. 12 and 6
+ * differ despite sharing a mix size because mix size sets the friction term
+ * while TOTAL balls sets DDT (74 vs 75), and the gap also carries
+ * `0.2 × (DDT − T_room)`.
  */
 export const PROBE_GAP_VECTORS: readonly { balls: number; belowDdt: number }[] = [
   { balls: 3, belowDdt: 2.79 },

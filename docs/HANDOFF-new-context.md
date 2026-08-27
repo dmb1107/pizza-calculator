@@ -15,7 +15,7 @@ Read this, then the two attached documents. Everything below is context that isn
 
 **Keep them in sync.** Every change to one usually needs the other.
 
-Earlier delta messages (`MESSAGE-to-calculator-agent`, `REPLY-*`, `MESSAGE-3-remove-ice`) are **historical**. Their content is folded into the spec, and the ice removal is applied and verified. `MESSAGE-4-corrections.md` is the current outstanding delta — it is also folded into both documents, and exists so the agent knows what moved.
+Delta messages through `MESSAGE-4-corrections` are **historical and applied** (agent confirmed: 304 tests green). `MESSAGE-5-replies.md` is the current outstanding one. Earlier messages (`MESSAGE-to-calculator-agent`, `REPLY-*`, `MESSAGE-3-remove-ice`) are **historical**. Their content is folded into the spec, and the ice removal is applied and verified. `MESSAGE-4-corrections.md` is the current outstanding delta — it is also folded into both documents, and exists so the agent knows what moved.
 
 ⚠️ **MESSAGE-3's rule "one warning, and only one" is withdrawn** by MESSAGE-4 §2. If you meet it in old text, it is superseded — there are now two water warnings, one at each end.
 
@@ -108,6 +108,9 @@ Earlier delta messages (`MESSAGE-to-calculator-agent`, `REPLY-*`, `MESSAGE-3-rem
 | `T_bowl = T_biga` treated as settled | Holds through fermentation, **breaks at tearing** — biga gained 5 °F, bowl didn't. Bake 1's Phase C rate climb is the evidence |
 | Thermal weights from batch totals | **Per-mix.** A 12-ball batch is a 6-ball system twice; the bowl faces one mix at a time. Batch totals land the water 2.6 °F low at 12 balls |
 | One water temperature per batch | **One per mix** when `nMix > 1` — mix 2's bowl is warm from mix 1 |
+| Bowl-share / dilution tables keyed on batch size | **Keyed on balls per mix.** 12 balls reads the 6 row, 18 reads the 9. 6.8% is the floor of the bowl's share |
+| Split-batch overhead 28.4 h | **28.12 h.** The stagger correction shortens a real stage, so it comes back out. 28.42 is `nMix = 3` |
+| Claiming step content says something | **Check §8.** Two MESSAGE-4 claims about `mix-1` and `bulk-3` were false; the agent couldn't build to them |
 | `mix` a flat 0.5 h | **Scales with nMix**, +5 min changeover. Bowl is not cleaned between mixes; residue is thermally neutral and the yield cancels in the shared bulk tub |
 
 ---

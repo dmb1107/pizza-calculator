@@ -272,15 +272,20 @@ probeTargetF = DDT − 0.33 × FF × (Ct / TOT) + 0.2 × (DDT − T_room)
 
 Remaining friction is diluted by the bowl, and the 10-minute rest sheds heat in proportion to the dough-to-room gap rather than a flat 1 °F.
 
-At FF 14 in a 70 °F room: **3 balls 72.2 · 6 balls 71.8 · 9 balls 70.5 · 12 balls 70.4 · 18 balls 70.3**
+At FF 14 in a 70 °F room: **3 balls 72.2 · 6 balls 71.8 · 9 balls 70.5 · 12 balls 70.6 · 18 balls 70.5**
+
+⚠️ **The 12 and 18 figures are per-mix (§4.2) and were wrong in an earlier draft** (70.4 / 70.3, computed on batch totals). There is a structural check here worth keeping as a test: **an 18-ball batch is two 9-ball mixes, so its probe target must equal the 9-ball figure exactly.** Any pair that differs cannot have come from per-mix weights.
 
 ⚠️ **There is no flat "DDT − 4" shorthand — do not implement one, and reject it if you find it in any older text.** The gap is batch-size dependent, and the old rule was **1.2 °F wrong at 3 balls**:
 
 | Balls | 3 | 6 | 9 | 12 | 18 |
 |---|---:|---:|---:|---:|---:|
-| Probe target | DDT − 2.8 | DDT − 3.2 | DDT − 3.5 | DDT − 3.6 | DDT − 3.7 |
+| Balls per mix | 3 | 6 | 9 | **6** | **9** |
+| Probe target | DDT − 2.79 | DDT − 3.16 | DDT − 3.51 | DDT − 3.36 | DDT − 3.51 |
 
 Phase C's entire correction authority is about −1.5 to +2.0 °F, so a 1.2 °F error in the target consumes most of the budget before the user starts, and in the wrong direction.
+
+**12 and 6 have the same mix size but different gaps** — 3.36 against 3.16 — because the gap also carries `0.2 × (DDT − T_room)` and `DDT` is 74 at 12 balls against 75 at 6. Mix size sets the friction term; total balls sets `DDT`. Both are needed.
 
 **Where the old rule came from — this is the trap to avoid everywhere in this codebase.** `FRICTION_RATE` (0.75 / 0.86 / 1.08) and `FF` are **dough-only** quantities, matching the `FF × Ct` work term. A thermometer reads the dough *after* it has equilibrated with the bowl, so an observed rate is the dough-only rate times `Ct / TOT`:
 
@@ -303,7 +308,7 @@ Durations in hours, from biga mix at t=0. **These are authoritative** — they w
 | `bigaFridge` | 19 | 0 | user-adjustable 18–20 |
 | `bigaRoomOnly` | 0 | 16 | user-adjustable 12–18, at 61–65 °F |
 | `bigaTemper` | 1 | 0 | out of fridge before mixing |
-| `mix` | **0.5 × nMix + 0.0833 × (nMix − 1)** | same | ⚠️ **was a flat 0.5.** Includes the 10-min rest; the 0.0833 h is a **5-minute changeover** — Dave does not clean the bowl between mixes, and mix 2 is pre-weighed before mix 1 starts (§8, `mix-1`) |
+| `mix` | **0.5 × nMix + 0.0833 × (nMix − 1)** | same | ⚠️ **was a flat 0.5.** Includes the 10-min rest; the 0.0833 h is a **5-minute changeover** — Dave does not clean the bowl between mixes, and every mix is pre-weighed before the first starts (§8, `mix-1`, `nMix > 1` block) |
 | `bulkRest` | 1 | 1 | **fixed.** Recipe says 45–60 min; 60 is the planning number. **Clocked from the LAST mix**, not the first — see below |
 | `divideBall` | 0.33 | 0.33 | **fixed.** Flat 20 min; real time scales ~1 min/ball, but the 18-ball case is only ~10 min off |
 | `ballRoomTemp` | **computed** | **computed** | see §4.8 — no longer fixed |
@@ -336,7 +341,15 @@ A cool dough loses ground on the counter *and* on the way down to 40 °F; `COOLD
 
 Fixed overhead outside the cold ferment spans **25.6–30.8 h** across the full input ranges at `nMix = 1` (the upper bound uses the shaped-rise clamp of 180 min, which the old fixed 1–2 h stage could not reach). **At the defaults it is 27.8 h**, so total elapsed is `coldFerment + 27.8 h`: ~34 h at 6 h cold, ~52 h at 24 h, ~64 h at 36 h.
 
-⚠️ **At `nMix = 2` the overhead is 28.4 h**, +0.58 from the second mix and the changeover. Assert both. Treat the bands as range checks, not equalities.
+⚠️ **At `nMix = 2` the overhead is 28.12 h.** The second mix and changeover add 0.583 h, and the stagger correction below removes 0.292 h from `ballRoomTemp` — which is a real stage, so it comes straight back out. An earlier draft asserted 28.4, which is what you get by counting the mix and forgetting the rise. (28.42 is in fact the correct figure for `nMix = 3`; it was the right arithmetic against the wrong batch.)
+
+| `nMix` | `mix` | `ballRoomTemp` | Overhead |
+|---:|---:|---:|---:|
+| 1 | 0.500 | 1.500 | **27.83 h** |
+| 2 | 1.083 | 1.208 | **28.12 h** |
+| 3 | 1.667 | 0.917 | **28.42 h** |
+
+Assert all three. Treat the bands as range checks, not equalities.
 
 #### Split batches: one clock for two doughs
 
@@ -351,14 +364,31 @@ Mix 1's dough finishes **35 minutes** before mix 2's — 30 min of mix plus a 5 
 ```
 CHANGEOVER   = 0.0833                                  // 5 min, bowl not cleaned
 stagger      = (MIX + CHANGEOVER) × (nMix − 1)         // 0.583 h = 35 min at nMix 2
-ballRoomTemp = clamp(computed − stagger/2, 45, 180)    // −17.5 min at nMix 2
+target       = computed − stagger/2                    // −17.5 min at nMix 2
+ballRoomTemp = clamp(target, 45, 180)
+staggerUncentred = ballRoomTemp − target               // ≥ 0; minutes that could NOT be absorbed
 ```
+
+⚠️ **The clamp can eat the correction, and it does so exactly where the correction matters most.** The 45-minute floor is reached by *warm* doughs, and a warm dough is the one fermenting fastest — so the stagger is worth more there than anywhere else in the table, and that is where there is no room to absorb it. At `DDT` 74:
+
+| Measured dough | Computed rise | `nMix` 1 | `nMix` 2 | `nMix` 3 |
+|---:|---:|---:|---:|---:|
+| 77 °F | 62 min | 62 | **45** ← clamped | **45** ← clamped |
+| 75 °F | 80 min | 80 | 63 | **45** ← clamped |
+| 73 °F | 100 min | 100 | 82 | 65 |
+| 70 °F | 133 min | 133 | 115 | 98 |
+
+**Do not let the rise go below 45 to make room.** That floor exists for its own reasons and silently overruling it trades a known problem for an unknown one. Instead **surface the residual**: `staggerUncentred` is the number of minutes that could not be absorbed, and it drives a warning (§7.3) plus the conditional block in `bulk-1`. Zero in every unclamped case, so it appears only when it is true.
+
+This is better than a blanket sentence in the prose because it is quantitative and conditional — the user is told how many minutes are uncorrected, not merely that correction is imperfect.
 
 ⚠️ **This does not remove the spread — it centres it.** Mix 1's half is 35 min over and mix 2's is 0; after the correction they are +17.5 and −17.5. That is the best a single clock can do, and it halves the worst-case error rather than leaving it all on one dough.
 
-At 12 and 18 balls this takes a 90 min rise to **72 min**. `nMix = 1` is untouched.
+At 12 and 18 balls this takes a 90 min rise to **72.5 min**. `nMix = 1` is untouched.
 
-⚠️ **`CHANGEOVER` is an estimate from Dave, not a measurement**, and it assumes mix 2's ingredients are weighed out before mix 1 starts — which §8 `mix-1` already instructs. Time it on the first split bake and correct it. Every 5 minutes of changeover moves the rise correction by 2.5 min.
+⚠️ **`CHANGEOVER` is an estimate from Dave, not a measurement**, and it assumes every mix is weighed out before the first one starts — which `mix-1` now instructs in a block shown only when `nMix > 1`. Time it on the first split bake and correct it.
+
+**The sensitivity runs both ways.** `CHANGEOVER` appears in `mix` *and* in `stagger`, so a 5-minute error is 5 minutes on the schedule and 2½ on the rise, in the same direction. One timing fixes both.
 
 ⚠️ **This is the one thing in this round that is derived rather than measured.** It rests on a single assumption: that fermentation during bulk and during the ball rise are equivalent at the same temperature. That should hold — same dough, same temperature, and dividing displaces gas without resetting fermentation — but it has not been tested. It is one named term; if the assumption is wrong, set `stagger` to 0 and everything else stands.
 
@@ -375,9 +405,10 @@ All rows: `FF = 14.0`, `T_biga = T_bowl = 58`, `T_flour = 69`, `T_room = 70`, bo
 | balls | ball g | F | bigaFlour | bigaWater | bigaADY | freshFlour | freshWater | phaseA | phaseB | salt | Ct | DDT | waterTemp | probe |
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | 3 | 265 | 470.2 | 305.6 | 152.8 | 1.15 | 164.6 | 176.3 | 105.8 | 70.5 | 13.2 | 529.4 | 75 | 73.7 | 72.2 |
-| 6 | 265 | 940.4 | 611.2 | 305.6 | 2.29 | 329.1 | 352.6 | 211.6 | 141.1 | 26.3 | 1058.7 | 75 | 68.1 | 71.8 |
+| 6 | 265 | 940.4 | 611.2 | 305.6 | 2.29 | 329.1 | 352.6 | 211.6 | 141.1 | 26.3 | 1058.8 | 75 | 68.1 | 71.8 |
 | 9 | 265 | 1410.6 | 916.9 | 458.4 | 3.44 | 493.7 | 529.0 | 317.4 | 211.6 | 39.5 | 1588.1 | 74 | 63.0 | 70.5 |
 | 12 | 265 | 1880.8 | 1222.5 | 611.2 | 4.58 | 658.3 | 705.3 | 423.2 | 282.1 | 52.7 | **1058.8** | 74 | **64.8** | **70.6** |
+| | | | | | | | | | | | ↑ *identical to the 6-ball row by construction — 12 balls **is** a 6-ball mix. Assert the equality.* | | | |
 | 18 | 265 | 2821.1 | 1833.7 | 916.9 | 6.88 | 987.4 | 1057.9 | 634.8 | 423.2 | 79.0 | **1588.1** | 74 | **63.0** | **70.5** |
 | 5 | 270 | 798.4 | 519.0 | 259.5 | 1.95 | 279.5 | 299.4 | 179.6 | 119.8 | 22.4 | 898.9 | 75 | 69.1 | 71.9 |
 | 7 | 260 | 1076.4 | 699.7 | 349.8 | 2.62 | 376.7 | 403.7 | 242.2 | 161.5 | 30.1 | 1211.9 | 74 | 64.1 | 70.6 |
@@ -414,14 +445,17 @@ The 5 °F gap between what was used and what was needed, times water's 30% share
 
 ### Bowl dilution
 
-Same FF, different apparent rise by batch size. Useful as a sanity check:
+Same FF, different apparent rise **by mix size**. Useful as a sanity check:
 
-| Batch | Bowl share of TOT | FF 14 appears as |
+| Balls per mix | Bowl share of TOT | FF 14 appears as |
 |---|---:|---:|
-| 3 balls | 18.0% | 11.5 °F |
-| 6 balls | 9.9% | 12.6 °F |
-| 9 balls | 6.8% | 13.0 °F |
-| 12 balls | 5.2% | 13.3 °F |
+| 3 | 17.9% | 11.5 °F |
+| 6 | 9.9% | 12.6 °F |
+| 9 | 6.8% | 13.0 °F |
+
+⚠️ **Keyed on mix size, not batch size.** An earlier draft carried a 12-ball row at 5.2% / 13.3 °F, computed on batch totals — that describes a thermal system this recipe never builds, because 12 balls runs as two 6-ball mixes. A 12-ball batch reads off the 6 row and an 18-ball batch off the 9 row.
+
+The largest single mix the machine allows is 9 × 270 g, so **6.8% is the floor** of the bowl's share — it never gets smaller than that no matter how big the batch.
 
 ### Shaped rise time
 
@@ -490,7 +524,17 @@ Group into three panels. **Batch** open by default; the other two collapsed with
 | Biga temp at mix (°F) | number | **58** | ⚠️ **Highest-leverage input in the model.** Was 64, which was unsourced; 58 is the one value ever measured (bake 1, after tearing). `d(T_water)/d(T_biga)` is −1.92 at 6 balls and −2.25 at 3, so a 6 °F miss here moves the required water 11.5 °F and the finished dough 3.5 °F. Mark the field as expecting a measurement and show that sensitivity inline. |
 | Bowl mass (g) | number | 965 | weigh once; persist |
 | Bowl state | 3-way selector | *Cold* (mix 1) / *Warm from previous mix* (mix 2+) | Prefills bowl temp from `T_biga`, `T_room` or `DDT` — see §4.2. Show the rinse note beside it |
-| Bowl temp at mix (°F) | number | *(from the selector)* | ⚠️ **Promoted to a real input.** The selector sets a starting value; a measurement always wins. The biga gains ~5 °F from tearing and the bowl does not. Worth 0.66 °F of water per °F at 3 balls, 0.11 at 18. Show that coefficient inline |
+| Bowl temp at mix (°F) | number | *(from the selector)* | ⚠️ **Promoted to a real input.** The selector sets a starting value; a measurement always wins. The biga gains ~5 °F from tearing and the bowl does not. Worth 0.66 °F of water per °F at a 3-ball mix, 0.22 at 9. Show that coefficient inline |
+
+#### Per-mix overrides — required when `nMix > 1`
+
+⚠️ **Biga temperature and bowl temperature become arrays of length `nMix`.** Everything else stays global.
+
+This was under-specified before and the gap was real: `mix-7` tells the user to re-measure both before each subsequent mix, and the mix-2 water card is computed from those readings — but with a single pair of fields there was nowhere to enter them, so the instruction was unactionable and the second card was a prediction the user could not correct.
+
+- Render the extra pairs only when `nMix > 1`, labelled by mix.
+- Default mix 1 from the selector as now; default later mixes to *warm* (`T_bowl = DDT`) and to mix 1's biga temperature, so behaviour is unchanged until the user overrides.
+- **Yes, this touches the URL codec.** It is worth it — a shared link for a split batch that silently drops the mix-2 readings is worse than the field not existing. Encode as a delimited list and keep the single-value form parsing as a length-1 array so old links still open.
 
 ### Panel 3 — Calibration
 | Field | Type | Default | Note |
@@ -516,12 +560,14 @@ Two columns, **Biga** and **Final mix**, gram weights large enough to read at ar
 
 Nothing else. No split, no grams, no ice, and no commentary about whether the number is warm or cold — the user reads the number and blends to it.
 
-**When `nMix > 1`, render one card per mix.** They are genuinely different numbers, not a repeat: mix 2 starts in a bowl that just ran mix 1, so at 12 balls the targets are 64.8 °F and 59.5 °F on the default prefills. Label them "Mix 1" and "Mix 2". Each card stays bare — the reason lives in the step content, not on the card.
+**When `nMix > 1`, render one card per mix.** They are genuinely different numbers, not a repeat: mix 2 starts in a bowl that just ran mix 1, so at 12 balls the targets are 64.8 °F and 59.5 °F on the default prefills. Label them "Mix 1" and "Mix 2". Each card stays bare — the reason lives in `mix-7`, not on the card.
 
-⚠️ **Prompt for a re-measure between mixes, and put it in the step list rather than on the card.** Both leveraged inputs drift while mix 1 runs: the bowl warms to roughly `DDT`, and the waiting biga warms toward the room. **The biga is the bigger term** — per-mix sensitivity is −1.59 °F of water per °F of biga against −0.33 for the bowl at 6 balls per mix. Do not model either drift; there is no data for it. Ask for two readings and recompute.
+Cards after the first recompute from that mix's own biga and bowl readings (§6, per-mix overrides), so the number updates as the user enters what they measured.
+
+⚠️ **The re-measure prompt lives in `mix-7`**, a step that exists only when `nMix > 1`. Both leveraged inputs drift while the previous mix runs: the bowl warms to roughly `DDT`, and the waiting biga warms toward the room. **The biga is the bigger term** — per-mix sensitivity is −1.59 °F of water per °F of biga against −0.33 for the bowl at 6 balls per mix. Do not model either drift; there is no data for it. Ask for two readings and recompute.
 
 ### 7.3 Warnings
-Render above the step list, never hidden in a collapsed panel. Sources: capacity splits, **water below 38 °F**, **water above 120 °F**, dough below mixer minimum, overnight timeline stages.
+Render above the step list, never hidden in a collapsed panel. Sources: capacity splits, **water below 38 °F**, **water above 120 °F**, dough below mixer minimum, overnight timeline stages, **uncentred stagger** (below).
 
 The two water warnings mirror each other — same failure ("you cannot get there by blending"), opposite end, and both point the user upstream rather than at the water card. Neither one puts commentary on the card itself; §7.2 stays bare.
 
@@ -658,13 +704,18 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 #### `mix-1` — Prep the bowl
 **phase:** mix
-**summary:** Break up clumps in {freshFlour} g of fresh flour. Crumble the biga small — smaller is better. Add flour, toss to coat.
-**values:** Fresh flour: {freshFlour} g
+**summary:** Break up clumps in {freshFlourPerMix} g of fresh flour. Crumble the biga small — smaller is better. Add flour, toss to coat.
+**values:** Fresh flour: {freshFlourPerMix} g
 
 **detail:**
 > The biga is the stiffest thing the machine will face all session. Crumbling it small is the difference between a smooth breakdown and tripping motor protection.
 >
 > Break up the fresh flour dry for the same reason as the biga flour — this is your last chance before water goes in.
+
+**detail, shown only when `nMix > 1`:**
+> **Weigh out every mix now, before you start the first one.** You are running {nMix} mixes, and the changeover between them is budgeted at five minutes. That is only achievable if the second mix's flour, biga and salt are already sitting in their own containers — if you weigh during the changeover it becomes fifteen or twenty, and every extra five minutes puts another 2½ minutes of uncorrectable fermentation onto the first dough.
+>
+> Split the tempered biga into {nMix} equal portions by weight, {bigaMassPerMix} g each, and cover them. Do the same with the fresh flour and salt.
 
 ---
 
@@ -775,6 +826,26 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 ---
 
+#### `mix-7` — Changeover to the next mix
+**phase:** mix
+**shown only when:** `nMix > 1`, repeated between mixes
+**summary:** Turn mix {mixIndex} out into the bulk container. **Don't clean the bowl.** Re-measure the biga and the bowl, then start mix {mixIndex + 1}.
+**values:** Mix {mixIndex + 1} water target: {waterTempNext} °F
+**timer:** 5 min
+
+**detail:**
+> **Leave the residue.** It costs you nothing and cleaning costs you time. The dough stuck to the bowl is already at your target temperature, so it is thermally neutral — the water target for the next mix is identical whether you leave 0 g or 60 g behind. And because both doughs end up in the same bulk container, whatever transfers forward comes back: mix {mixIndex} loses a little, the next mix gains it, and the batch total is unchanged. Only what stays in the bowl after the *last* mix is a real loss, which is what the 2.2% overage has always covered.
+>
+> **Take two readings before you start the next mix, because both have moved.**
+>
+> The **bowl** is no longer cold — it just held a finished dough and has had five minutes to shed. It will read close to your dough temperature. The **biga** waiting on the counter has been warming toward the room the whole time mix {mixIndex} ran.
+>
+> They pull the water target in the same direction, and the biga is the bigger term by five to one: about **1.6 °F of water per °F of biga**, against **0.33 °F per °F of bowl** at a 6-ball mix. Neither drift is modelled — there is no data for it — so measure rather than assume. Thirty seconds, and the calculator will give you the next target.
+>
+> **If the next target comes out awkward, rinse the bowl.** Thin stainless resets to roughly the rinse temperature in under a minute. It costs changeover time, so it isn't the default, but it is there when you want it.
+
+---
+
 #### `bulk-1` — Bulk rest
 **phase:** bulk
 **summary:** Lightly oiled container, 45–60 min at room temperature. **No folds.**
@@ -784,6 +855,20 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 > **No folds.** The mixer has already built the gluten network, and the biga contributed a developed one before that. Folding now only tightens the dough further and costs you extensibility.
 >
 > This is the one place where owning a spiral mixer changes the schedule rather than just the effort — a fold-based bulk would add hours here and actively make the dough worse.
+
+**detail, shown only when `nMix > 1`:**
+> **Start the clock when the last mix comes out, not the first.** Any other anchor leaves the final dough with no bulk at all.
+>
+> That means the first dough runs long — {staggerMinutes} minutes long, which is the time the later mixes took. There is no way around it. Both doughs are in the same container now and a container cannot hold two clocks.
+>
+> **What the calculator does about it, and what it does not.** It takes {staggerHalfMinutes} minutes — half the spread — off the ball room-temperature rise later on. That does not make the batch uniform. It **centres** the error: instead of the first dough running {staggerMinutes} minutes over while the last runs exactly on time, both end up about {staggerHalfMinutes} minutes off, in opposite directions. Halving the worst case is the whole of the gain.
+>
+> Read that carefully before you judge a result. If the batch comes out slightly over-fermented and you were expecting the correction to have made it uniform, you will reach for the wrong explanation.
+
+**warning, shown when `staggerUncentred > 2`:**
+> **{staggerUncentred} minutes of the spread could not be absorbed.** Your dough is warm enough that the ball rise is already at its 45-minute floor, so there is no room left to shorten it. The first dough will run that much long regardless.
+>
+> This bites hardest exactly where it matters most — a warm dough ferments fastest, so a given number of extra minutes costs more here than anywhere else in the table. The floor is not worth overruling for it. If you want the spread back, the lever is upstream: fewer, larger mixes, or a cooler dough temperature.
 
 ---
 
@@ -927,15 +1012,15 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 >
 > Specific heats: biga at 50% hydration 0.6133, flour 0.42, water 1.00, salt 0.21, stainless 0.12. A 965 g bowl contributes 115.8 — comparable to the fresh flour, and larger than it below about 5 balls.
 >
-> **Two bowl effects, and only one matters.** Its *temperature* enters with sensitivity `C_bowl/(Ct + C_bowl)` — 0.10 °F of dough per 1 °F of bowl error at 6 balls, 0.18 at 3 balls. So a 3 °F misestimate costs 0.3 °F and a 20 °F cold bowl costs 2.0 °F; same coefficient, different inputs. Defaulting to the biga temperature lands well inside that, which is why it needs no measurement (19 h of contact leaves bowl and biga at equilibrium). Its *mass* is the real effect: friction energy heats whatever is in the bowl, and the bowl is part of "whatever." At 3 balls it absorbs 18% of the mixer's work; at 18 balls, 3.5%.
+> **Two bowl effects, and both matter — but for different reasons.** Its *mass* is the larger one: friction energy heats whatever is in the bowl, and the bowl is part of "whatever." At a 3-ball mix it absorbs 18% of the mixer's work; at a 9-ball mix, 6.8%.
 >
-> **This is why the formula is not scale-independent.** The bowl is fixed mass while the dough scales, so the weights shift with batch size. It also explains why the bowl can't just be folded into FF — the same FF of 14 would appear as 11.5 °F at 3 balls and 13.5 °F at 18, drifting for no physical reason.
+> Its *temperature* looks negligible and isn't, because there are two coefficients and it is easy to quote the wrong one. What a bowl error costs the **dough** is `C_bowl/(Ct + C_bowl)` — 0.10 °F per 1 °F at 6 balls, 0.18 at 3 — so a 3 °F misestimate costs 0.3 °F. Small. But what it moves in the **water target** is `C_bowl/Cw`, three times larger because water is only 30% of the system: 0.66 °F per °F at a 3-ball mix, 0.33 at 6, 0.22 at 9. The water target is the number you act on, which is why the bowl is worth a five-second measurement even though the dough barely notices.
+>
+> **This is why the formula is not scale-independent.** The bowl is fixed mass while the dough scales, so the weights shift with batch size. It also explains why the bowl can't just be folded into FF — the same FF of 14 would appear as 11.5 °F in a 3-ball mix and 13.0 °F in a 9-ball one, drifting for no physical reason.
 >
 > **The scale that matters is the mix, not the batch.** A 12-ball batch runs as two 6-ball mixes, and the bowl faces one of them at a time — so it is a 6-ball thermal system twice over, not a 12-ball one. Computing it as a 12-ball system halves the bowl's apparent share and lands the water target 2.6 °F low.
 >
-> **The same fixed mass is why small batches ask for hot water.** At 3 balls the bowl is 18% of the system and only the water can lift it, so the requirement runs to about 107 °F where a 9-ball batch asks for 90 °F. Below 3 balls it leaves the range a tap can reach entirely, which is why 3 is the smallest supported batch.
->
-> **How much a bowl error costs is a different number from how much the bowl moves the answer.** Misjudging the bowl costs `C_bowl/(Ct + C_bowl)` of dough temperature — small, 0.10 °F per °F at 6 balls. But it shifts the water target by `C_bowl/Cw`, three times larger because water is only 30% of the system: 0.66 °F per °F at 3 balls, 0.33 at 6, 0.11 at 18. The water target is the number you act on, which is why the bowl is worth a five-second measurement even though the dough barely notices.
+> **The same fixed mass is why small mixes ask for hot water.** At 3 balls the bowl is 18% of the system and only the water can lift it, so the requirement runs to about 107 °F where a 9-ball mix asks for 90 °F. Below 3 balls it leaves the range a tap can reach entirely, which is why 3 is the smallest supported batch. Note this tracks the **mix**: a 12-ball batch is two 6-ball mixes, so it wants *hotter* water than a 9-ball batch does.
 >
 > **The biga always ferments in the bowl, so there is one lever on it: the temper.** An hour on the counter warms bowl and biga together and lifts the whole cold end of the system. Skipping it is the most expensive shortcut in the schedule — each °F of biga temperature is worth about 2 °F of water, and at 3 balls a skipped temper is what pushes the requirement toward 100 °F.
 >
