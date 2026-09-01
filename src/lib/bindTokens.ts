@@ -55,9 +55,9 @@ export function tokenValues(
      *
      * The ingredients card still shows batch totals; that is the shopping list.
      */
-    phaseAWater: formatGrams(formula.phaseAWater / capacity.nMix),
-    phaseBWater: formatGrams(formula.phaseBWater / capacity.nMix),
-    salt: formatGrams(formula.salt / capacity.nMix),
+    phaseAWaterPerMix: formatGrams(formula.phaseAWater / capacity.nMix),
+    phaseBWaterPerMix: formatGrams(formula.phaseBWater / capacity.nMix),
+    saltPerMix: formatGrams(formula.salt / capacity.nMix),
     probeTarget: formatTempF(result.probeTargetF),
     ddt: formatTempF(result.ddtF),
     /**
@@ -71,13 +71,13 @@ export function tokenValues(
     // §8.2a per-instance bindings. Bound the same way whether or not they vary
     // — hard-coding which ones differ is a trap the next change springs.
     mixIndex: String(mix),
-    'mixIndex + 1': String(mix + 1),
+    nextMixIndex: String(mix + 1),
     /** Mix 2's target while standing at the end of mix 1. */
     waterTempNext: formatTempF(
       (result.mixes[mix] ?? result.mixes[result.mixes.length - 1]!).waterTempF,
     ),
-    'nBiga > 1 ? " × " + nBiga + " bigas" : ""':
-      capacity.nBiga > 1 ? ` × ${capacity.nBiga} bigas` : '',
+    /** " × 2 bigas" when the biga splits, empty otherwise. §8.2 `biga-1`. */
+    bigaCountSuffix: capacity.nBiga > 1 ? ` × ${capacity.nBiga} bigas` : '',
     // §4.8 — computed from the measured final dough temperature, or from DDT
     // while the calculator is still in planning mode.
     roomMin: String(Math.round(result.roomMinutes)),
@@ -114,16 +114,23 @@ export function tokenValues(
 }
 
 /**
- * §8.2 introduced two brace forms that are not bare identifiers —
- * `{mixIndex + 1}` and `{nBiga > 1 ? " × " + nBiga + " bigas" : ""}`.
+ * §8.1: **every token is a bare identifier. No expressions, ever.**
  *
- * ⚠️ They are treated as LITERAL KEYS in the values table, not evaluated. The
- * prose is authored content; running it as code would make every future step
- * edit a code-injection surface for the sake of two strings. The keys happen to
- * contain spaces and operators, and the unknown-token guard still applies, so a
- * typo inside one fails loudly rather than silently rendering nothing.
+ * ⚠️ Deliberately strict. An earlier §8.2 carried `{mixIndex + 1}` and a
+ * ternary; those are now `{nextMixIndex}` and `{bigaCountSuffix}`, computed
+ * here where every other value lives. Keeping the pattern narrow means a
+ * convenient expression in prose is a *parse error* rather than something that
+ * quietly works and invites the next one — §8 prose is edited often, and an
+ * evaluator there is a code-execution surface that grows by accretion.
  */
-const TOKEN_RE = /\{([^{}]+)\}/g;
+const TOKEN_RE = /\{([a-zA-Z][a-zA-Z0-9]*)\}/g;
+
+/**
+ * Anything brace-delimited that is NOT a bare identifier. `unboundTokens` uses
+ * this to fail loudly on an expression rather than leaving it in the output,
+ * where it would render as literal braces and read as a template bug.
+ */
+const MALFORMED_TOKEN_RE = /\{(?![a-zA-Z][a-zA-Z0-9]*\})([^{}]*)\}/g;
 
 /** Substitute every {token}. Unknown ones become a visible marker. */
 export function bindTokens(text: string, values: Record<string, string>): string {
@@ -139,5 +146,9 @@ export function unboundTokens(text: string, values: Record<string, string>): str
     const name = m[1] as string;
     if (!Object.hasOwn(values, name)) missing.push(name);
   }
+  // An expression is not an unknown token, it is malformed content. Reported
+  // here so the "nothing unbound" test catches it: `bindTokens` would leave it
+  // in the output as literal braces, which reads as a template bug.
+  for (const m of text.matchAll(MALFORMED_TOKEN_RE)) missing.push(m[1] as string);
   return missing;
 }

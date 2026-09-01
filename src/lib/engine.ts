@@ -611,7 +611,7 @@ export interface CalculatorInputs extends BatchInputs {
   flourTempF: number;
   /**
    * §6. Biga temperature at mix, per mix. The waiting biga warms toward the
-   * room while an earlier mix runs, and that drift is not modelled — `mix-7`
+   * room while an earlier mix runs, and that drift is not modelled — `mix-8`
    * asks for a fresh reading instead. A scalar applies to every mix.
    */
   bigaTempF: PerMix<number>;

@@ -168,6 +168,14 @@ The old guidance said not to require a measurement, on the grounds that `C_bowl/
 
 Keep `T_biga` as the default value so nothing silently moves, but label the field as wanting a measurement and show the water sensitivity inline, the same treatment as biga temperature. **Do not invent a "tearing gain" constant** — 5 °F is a single observation and hardcoding it would be exactly the extrapolation this project has been burned by before. It is a quantity to be measured, not modelled.
 
+#### `DDT` is keyed to TOTAL balls — everywhere, including here
+
+⚠️ **`DDT` is the one quantity that did not go per-mix**, and that asymmetry is easy to lose now that everything around it did. It is 75 at ≤6 **total** balls and 74 at 7 or more, because the band is about how fast the *bulk mass* sheds heat and the doughs are bulked together (settled in MESSAGE-4 §11).
+
+A 12-ball batch therefore has `DDT` 74, even though it runs as two 6-ball mixes and a lone 6-ball batch would get 75. Applying the ≤6 rule to the per-mix ball count is the natural slip, and it is silent: at 12 balls it moves the warm-bowl prefill from 74 to 75 and the mix-2 water target from **59.5 to 59.2 °F** — small enough to look like rounding.
+
+**Use the batch `DDT` for:** the target itself, the probe formula's `0.2 × (DDT − T_room)` term, and the *warm* bowl-state prefill. There is no per-mix `DDT` anywhere in this model.
+
 #### Bowl state — a three-way selector, per mix
 
 The bowl is not always cold. A split batch runs the second mix in a bowl that just finished the first, and above one biga only one of them can occupy the bowl at all. Offer a selector whose options **prefill from values already in the model** — no new constants:
@@ -176,7 +184,7 @@ The bowl is not always cold. A split batch runs the second mix in a bowl that ju
 |---|---|---|
 | **Cold — held the biga** | `T_biga` | Default for mix 1, and for every `nMix = 1` batch |
 | **Room temperature** | `T_room` | Bowl washed and left out; or a second biga that fermented elsewhere |
-| **Warm from the previous mix** | `DDT` | Default for mix 2 and later. **Upper bound, not an estimate** |
+| **Warm from the previous mix** | the batch `DDT` | Default for mix 2 and later. **Upper bound, not an estimate** |
 
 The prefill is a starting point and the field stays editable — a measurement always wins.
 
@@ -308,9 +316,9 @@ Durations in hours, from biga mix at t=0. **These are authoritative** — they w
 | `bigaFridge` | 19 | 0 | user-adjustable 18–20 |
 | `bigaRoomOnly` | 0 | 16 | user-adjustable 12–18, at 61–65 °F |
 | `bigaTemper` | 1 | 0 | out of fridge before mixing |
-| `mix` | **0.5 × nMix + 0.0833 × (nMix − 1)** | same | ⚠️ **was a flat 0.5.** Includes the 10-min rest; the 0.0833 h is a **5-minute changeover** — Dave does not clean the bowl between mixes, and every mix is pre-weighed before the first starts (§8, `mix-1`, `nMix > 1` block) |
+| `mix` | **0.5 × nMix + (5 / 60) × (nMix − 1)** | same | ⚠️ **was a flat 0.5.** Includes the 10-min rest; the `5 / 60` is a **5-minute changeover** — Dave does not clean the bowl between mixes, and every mix is pre-weighed before the first starts (§8, `mix-1`, `nMix > 1` block) |
 | `bulkRest` | 1 | 1 | **fixed.** Recipe says 45–60 min; 60 is the planning number. **Clocked from the LAST mix**, not the first — see below |
-| `divideBall` | 0.33 | 0.33 | **fixed.** Flat 20 min; real time scales ~1 min/ball, but the 18-ball case is only ~10 min off |
+| `divideBall` | `20 / 60` | same | **fixed.** Flat 20 min; real time scales ~1 min/ball, but the 18-ball case is only ~10 min off. ⚠️ **Write it as `20 / 60`, not `0.33`** — see below |
 | `ballRoomTemp` | **computed** | **computed** | see §4.8 — no longer fixed |
 | `coldFerment` | **user input** | **user input** | 6–36, default 24 |
 | `temper` | 2.5 | 2.5 | user-adjustable 2–3 |
@@ -349,9 +357,9 @@ Fixed overhead outside the cold ferment spans **25.6–30.8 h** across the full 
 | 2 | 1.0833 | 1.2083 | 28.1250 | **28.12 h** |
 | 3 | 1.6667 | 0.9167 | 28.4167 | **28.42 h** |
 
-⚠️ **Compute each row from the stage list, never as a delta from another row's displayed value.** The `nMix = 3` figure is **28.42**: chaining `27.83 + (1.667 − 0.5) + (0.917 − 1.5)` gives 28.414 and rounds to 28.41, but that 27.83 is itself a rounded 27.8333, and the lost third of a hundredth is exactly the difference. Run the same chain from 27.8333 and it returns 28.4167.
+⚠️ **Every duration here is a count of minutes, and must be written as one.** `divideBall` is twenty minutes, so it is `20 / 60` — **not `0.33`**, which is a rendering of it. `CHANGEOVER` is five minutes, so it is `5 / 60`, not `0.0833`. Substituting the decimal for the fraction moves the `nMix = 3` overhead from 28.4167 to 28.4133, which is the entire disagreement behind an earlier 28.41 in this document.
 
-This is worth a rule rather than a correction, because the failure is invisible: every input looks right and the arithmetic is valid. **Derive from the constants, round once at the end, and never treat a displayed figure as an input.**
+**The rule is: derive from the constants, round once at the end, and never treat a displayed figure as an input — and that applies to the constants file itself, not only to derived tables.** An earlier draft of this section stated the rule and then violated it three lines above, by printing `0.33` in the column an implementer would copy from. A rounded constant is the most dangerous kind, because every downstream calculation looks correct and the arithmetic is valid.
 
 Assert all three. Treat the bands as range checks, not equalities.
 
@@ -366,7 +374,7 @@ Mix 1's dough finishes **35 minutes** before mix 2's — 30 min of mix plus a 5 
 **Then subtract half the stagger from `ballRoomTemp`:**
 
 ```
-CHANGEOVER   = 0.0833                                  // 5 min, bowl not cleaned
+CHANGEOVER   = 5 / 60                                  // 5 min, bowl not cleaned. NOT 0.0833
 stagger      = (MIX + CHANGEOVER) × (nMix − 1)         // 0.583 h = 35 min at nMix 2
 target       = computed − stagger/2                    // −17.5 min at nMix 2
 ballRoomTemp = clamp(target, 45, 180)
@@ -536,7 +544,7 @@ Group into three panels. **Batch** open by default; the other two collapsed with
 
 ⚠️ **Biga temperature and bowl temperature become arrays of length `nMix`.** Everything else stays global.
 
-This was under-specified before and the gap was real: `mix-7` tells the user to re-measure both before each subsequent mix, and the mix-2 water card is computed from those readings — but with a single pair of fields there was nowhere to enter them, so the instruction was unactionable and the second card was a prediction the user could not correct.
+This was under-specified before and the gap was real: `mix-8` tells the user to re-measure both before each subsequent mix, and the mix-2 water card is computed from those readings — but with a single pair of fields there was nowhere to enter them, so the instruction was unactionable and the second card was a prediction the user could not correct.
 
 - Render the extra pairs only when `nMix > 1`, labelled by mix.
 - Default mix 1 from the selector as now; default later mixes to *warm* (`T_bowl = DDT`) and to mix 1's biga temperature, so behaviour is unchanged until the user overrides.
@@ -566,11 +574,11 @@ Two columns, **Biga** and **Final mix**, gram weights large enough to read at ar
 
 Nothing else. No split, no grams, no ice, and no commentary about whether the number is warm or cold — the user reads the number and blends to it.
 
-**When `nMix > 1`, render one card per mix.** They are genuinely different numbers, not a repeat: mix 2 starts in a bowl that just ran mix 1, so at 12 balls the targets are 64.8 °F and 59.5 °F on the default prefills. Label them "Mix 1" and "Mix 2". Each card stays bare — the reason lives in `mix-7`, not on the card.
+**When `nMix > 1`, render one card per mix.** They are genuinely different numbers, not a repeat: mix 2 starts in a bowl that just ran mix 1, so at 12 balls the targets are 64.8 °F and 59.5 °F on the default prefills. Label them "Mix 1" and "Mix 2". Each card stays bare — the reason lives in `mix-8`, not on the card.
 
 Cards after the first recompute from that mix's own biga and bowl readings (§6, per-mix overrides), so the number updates as the user enters what they measured.
 
-⚠️ **The re-measure prompt lives in `mix-7`**, a step that exists only when `nMix > 1`. Both leveraged inputs drift while the previous mix runs: the bowl warms to roughly `DDT`, and the waiting biga warms toward the room. **The biga is the bigger term** — per-mix sensitivity is −1.59 °F of water per °F of biga against −0.33 for the bowl at 6 balls per mix. Do not model either drift; there is no data for it. Ask for two readings and recompute.
+⚠️ **The re-measure prompt lives in `mix-8`**, a step that exists only when `nMix > 1`. Both leveraged inputs drift while the previous mix runs: the bowl warms to roughly `DDT`, and the waiting biga warms toward the room. **The biga is the bigger term** — per-mix sensitivity is −1.59 °F of water per °F of biga against −0.33 for the bowl at 6 balls per mix. Do not model either drift; there is no data for it. Ask for two readings and recompute.
 
 ### 7.3 Warnings
 Render above the step list, never hidden in a collapsed panel. Sources: capacity splits, **water below 38 °F**, **water above 120 °F**, dough below mixer minimum, overnight timeline stages, **uncentred stagger** (below).
@@ -609,6 +617,10 @@ interface Step {
 
 Store step content in a separate `steps.ts` (or `steps.md` parsed at build time) so prose edits don't touch component code.
 
+⚠️ **Every `{token}` is a bare identifier. No expressions, ever.** An earlier draft of §8.2 wrote `{mixIndex + 1}` and a ternary building the biga-count suffix, which forced a choice between widening the token parser and building an expression evaluator in prose. Neither should have been necessary: those are `{nextMixIndex}` and `{bigaCountSuffix}`, computed in `bindTokens` where the rest of the values live.
+
+§8 prose is edited often and by design. Anything evaluated there becomes a code-execution surface that grows by accretion, one convenient expression at a time. Keep the unknown-token guard so a typo fails loudly, and keep the parser strict enough that an expression is a **parse error** rather than something that quietly works.
+
 **The detail text below is the content. Use it verbatim.** It is the reasoning that makes the recipe worth following rather than obeying, and it took a lot of iteration to get right. Don't summarize it, don't rewrite it in your own voice, don't trim it for brevity.
 
 ---
@@ -620,7 +632,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 #### `biga-1` — Break up the flour dry
 **phase:** biga
 **summary:** Weigh {bigaFlourPerBiga} g of flour, then whisk hard or push it through a coarse sieve to break up the clumps. Weigh first, break up second.
-**values:** Biga flour: {bigaFlourPerBiga} g{nBiga > 1 ? " × " + nBiga + " bigas" : ""}
+**values:** Biga flour: {bigaFlourPerBiga} g{bigaCountSuffix}
 
 **detail:**
 > Grain Craft arrives lumpy. It's a milling artifact, not a quality problem — but dry is the only easy time to fix it.
@@ -732,8 +744,8 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 #### `mix-2` — Phase A, breakdown
 **phase:** mix
-**summary:** Add **{phaseAWater} g** of water (60%) with the mixer **off**, then run at **15% / 85 RPM** for 3–4 min until the biga pieces disappear into a rough shaggy mass.
-**values:** Phase A water: {phaseAWater} g — weigh it, don't estimate
+**summary:** Add **{phaseAWaterPerMix} g** of water (60%) with the mixer **off**, then run at **15% / 85 RPM** for 3–4 min until the biga pieces disappear into a rough shaggy mass.
+**values:** Phase A water: {phaseAWaterPerMix} g — weigh it, don't estimate
 **speed:** 15% / 85 RPM, 3–4 min
 
 **detail:**
@@ -750,9 +762,9 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 #### `mix-3` — Phase B, salt and bassinage
 **phase:** mix
-**summary:** Add {salt} g salt. Then **{phaseBWater} g** (the remaining 40%) in **3 additions**, each fully absorbed before the next. **20% / 98 RPM**, 5–6 min.
+**summary:** Add {saltPerMix} g salt. Then **{phaseBWaterPerMix} g** (the remaining 40%) in **3 additions**, each fully absorbed before the next. **20% / 98 RPM**, 5–6 min.
 **speed:** 20% / 98 RPM, 5–6 min
-**values:** Salt: {salt} g · Phase B water: {phaseBWater} g
+**values:** Salt: {saltPerMix} g · Phase B water: {phaseBWaterPerMix} g
 
 **detail:**
 > **Salt goes in here — never in the biga**, where it would suppress the yeast you just spent 20 hours propagating.
@@ -840,8 +852,8 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 #### `mix-8` — Changeover to the next mix
 **phase:** mix
 **repeatsPerMix:** true — **suppressed on the final mix instance** (there is no changeover after the last one)
-**summary:** Turn mix {mixIndex} out into the bulk container. **Don't clean the bowl.** Re-measure the biga and the bowl, then start mix {mixIndex + 1}.
-**values:** Mix {mixIndex + 1} water target: {waterTempNext} °F
+**summary:** Turn mix {mixIndex} out into the bulk container. **Don't clean the bowl.** Re-measure the biga and the bowl, then start mix {nextMixIndex}.
+**values:** Mix {nextMixIndex} water target: {waterTempNext} °F
 **timer:** 5 min
 
 **detail:**
@@ -877,7 +889,21 @@ interface Step {
 - At `nMix = 1` there is one instance and `mix-8` never renders, so **nothing changes for 3, 6 or 9 balls** — including both calibration bakes.
 - §8.2 stays one entry per *kind* of step. The uniqueness assertion holds on the templates.
 
-**Per-mix values inside the expansion:** `{waterTempNext}` and the bowl and biga readings differ by instance (§6 per-mix overrides). Everything else — `{phaseAWater}`, `{freshFlourPerMix}`, the probe target — is identical across instances by construction, since every mix is the same size. Bind them all per instance anyway rather than special-casing; identical values are not a problem, and hard-coding which ones vary is a trap the next change will spring.
+**Per-mix values inside the expansion:** `{waterTempNext}` and the bowl and biga readings differ by instance (§6 per-mix overrides). Everything else — `{phaseAWaterPerMix}`, `{freshFlourPerMix}`, the probe target — is identical across instances by construction, since every mix is the same size. Bind them all per instance anyway rather than special-casing; identical values are not a problem, and hard-coding which ones vary is a trap the next change will spring.
+
+#### ⚠️ Every token names its scope, and this is a rule, not a convention
+
+Three separate bugs in three rounds have been a batch-scoped value rendered on a per-mix or per-biga step — `{freshFlour}` on `mix-1`, `{bigaFlour}` on `biga-1`, and `{phaseAWater}` / `{phaseBWater}` / `{salt}` on `mix-2` and `mix-3`. The last of those told a baker to pour **423.2 g** of Phase A water into a 12-ball mix that takes 211.6 — double.
+
+Prose can be read carefully and still get this wrong, because a bare `{salt}` looks complete. **So the scope goes in the identifier:**
+
+| Suffix | Scope | Used on |
+|---|---|---|
+| *(none)* | batch total | ingredient card, warnings, `{bigaFlourTotal}` |
+| `PerMix` | ÷ `nMix` | every `mix` phase step |
+| `PerBiga` | ÷ `nBiga` | every `biga` phase step |
+
+A bare token on a per-mix or per-biga step is then a **visible** error rather than one that needs checking against a table. Where a batch total genuinely belongs on a scoped step, name it explicitly — `{bigaFlourTotal}` in `biga-1`'s `nBiga > 1` block quotes the total precisely to explain why it cannot go in one container, and reads as deliberate because of the suffix.
 
 **The `biga` phase is deliberately NOT repeated**, even though `nBiga` reaches 2 at 18 and 24 balls. The two cases are not alike: mix instances are separated by a 35-minute changeover and carry different water targets, whereas the bigas are mixed back to back on the bench, carry identical values, and converge on one shared fermentation — `biga-4` and `biga-5` apply to both at once and would be wrong to duplicate. Handled with per-biga values and a note instead (`biga-1`).
 
@@ -901,6 +927,8 @@ interface Step {
 > Read that carefully before you judge a result. If the batch comes out slightly over-fermented and you were expecting the correction to have made it uniform, you will reach for the wrong explanation.
 
 **warning, shown when `staggerUncentred > 2`:**
+*Keep this alongside the §7.3 strip rather than choosing between them — they fire at different moments and the remedy differs. The strip is read while choosing a batch size, when the lever is still available: fewer, larger mixes, or a cooler dough. This block is read with the dough already in the tub, when the only thing left to get right is not misreading the result. Same condition, different job; make sure the wording of each reflects its moment rather than duplicating the other.*
+
 > **{staggerUncentred} minutes of the spread could not be absorbed.** Your dough is warm enough that the ball rise is already at its 45-minute floor, so there is no room left to shorten it. The first dough will run that much long regardless.
 >
 > This bites hardest exactly where it matters most — a warm dough ferments fastest, so a given number of extra minutes costs more here than anywhere else in the table. The floor is not worth overruling for it. If you want the spread back, the lever is upstream: fewer, larger mixes, or a cooler dough temperature.

@@ -91,7 +91,7 @@ export const STEPS: readonly Step[] = [
     phase: "biga",
     title: `Break up the flour dry`,
     summary: `Weigh {bigaFlourPerBiga} g of flour, then whisk hard or push it through a coarse sieve to break up the clumps. Weigh first, break up second.`,
-    values: [`Biga flour: {bigaFlourPerBiga} g{nBiga > 1 ? " × " + nBiga + " bigas" : ""}`],
+    values: [`Biga flour: {bigaFlourPerBiga} g{bigaCountSuffix}`],
     detail: `Grain Craft arrives lumpy. It's a milling artifact, not a quality problem — but dry is the only easy time to fix it.`,
     detailWhen: {
       condition: "nBiga > 1",
@@ -197,8 +197,8 @@ Split the tempered biga into {nMix} equal portions by weight, {bigaMassPerMix} g
     id: "mix-2",
     phase: "mix",
     title: `Phase A, breakdown`,
-    summary: `Add **{phaseAWater} g** of water (60%) with the mixer **off**, then run at **15% / 85 RPM** for 3–4 min until the biga pieces disappear into a rough shaggy mass.`,
-    values: [`Phase A water: {phaseAWater} g — weigh it, don't estimate`],
+    summary: `Add **{phaseAWaterPerMix} g** of water (60%) with the mixer **off**, then run at **15% / 85 RPM** for 3–4 min until the biga pieces disappear into a rough shaggy mass.`,
+    values: [`Phase A water: {phaseAWaterPerMix} g — weigh it, don't estimate`],
     speed: { dial: 15, rpm: 85, minutes: [3, 4], label: `15% / 85 RPM, 3–4 min` },
     detail: `**Highest-torque phase of the whole session.**
 
@@ -214,8 +214,8 @@ If motor protection engages, stop, rest 5 minutes, and resume one step lower. Lo
     id: "mix-3",
     phase: "mix",
     title: `Phase B, salt and bassinage`,
-    summary: `Add {salt} g salt. Then **{phaseBWater} g** (the remaining 40%) in **3 additions**, each fully absorbed before the next. **20% / 98 RPM**, 5–6 min.`,
-    values: [`Salt: {salt} g`, `Phase B water: {phaseBWater} g`],
+    summary: `Add {saltPerMix} g salt. Then **{phaseBWaterPerMix} g** (the remaining 40%) in **3 additions**, each fully absorbed before the next. **20% / 98 RPM**, 5–6 min.`,
+    values: [`Salt: {saltPerMix} g`, `Phase B water: {phaseBWaterPerMix} g`],
     speed: { dial: 20, rpm: 98, minutes: [5, 6], label: `20% / 98 RPM, 5–6 min` },
     detail: `**Salt goes in here — never in the biga**, where it would suppress the yeast you just spent 20 hours propagating.
 
@@ -300,8 +300,8 @@ It also breaks up the mixer's continuous run time, which keeps the whole session
     id: "mix-8",
     phase: "mix",
     title: `Changeover to the next mix`,
-    summary: `Turn mix {mixIndex} out into the bulk container. **Don't clean the bowl.** Re-measure the biga and the bowl, then start mix {mixIndex + 1}.`,
-    values: [`Mix {mixIndex + 1} water target: {waterTempNext} °F`],
+    summary: `Turn mix {mixIndex} out into the bulk container. **Don't clean the bowl.** Re-measure the biga and the bowl, then start mix {nextMixIndex}.`,
+    values: [`Mix {nextMixIndex} water target: {waterTempNext} °F`],
     timerLabel: `5 min`,
     timerMinutes: 5,
     detail: `**Leave the residue.** It costs you nothing and cleaning costs you time. The dough stuck to the bowl is already at your target temperature, so it is thermally neutral — the water target for the next mix is identical whether you leave 0 g or 60 g behind. And because both doughs end up in the same bulk container, whatever transfers forward comes back: mix {mixIndex} loses a little, the next mix gains it, and the batch total is unchanged. Only what stays in the bowl after the *last* mix is a real loss, which is what the 2.2% overage has always covered.

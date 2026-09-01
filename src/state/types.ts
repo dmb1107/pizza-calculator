@@ -34,7 +34,7 @@ export interface Inputs {
    * moves the required water 11.5 °F and the finished dough 3.5 °F.
    *
    * ⚠️ One entry per mix. The waiting biga warms toward the room while an
-   * earlier mix runs and that drift is not modelled, so `mix-7` asks for a
+   * earlier mix runs and that drift is not modelled, so `mix-8` asks for a
    * fresh reading instead. Index 0 is mix 1; a length-1 array applies to every
    * mix, which is what an older shared link decodes to.
    */

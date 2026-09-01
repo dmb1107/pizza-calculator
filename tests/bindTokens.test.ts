@@ -86,6 +86,35 @@ describe('every token in the content resolves', () => {
   });
 });
 
+describe('expressions in prose are a parse error', () => {
+  // §8.1: every token is a bare identifier, no expressions, ever. This is
+  // stronger than "they happen not to bind" — an expression must be REPORTED,
+  // because `bindTokens` leaves it as literal braces, which reads as a
+  // template bug rather than a content one.
+  it.each([
+    '{mixIndex + 1}',
+    '{nBiga > 1 ? " × " + nBiga + " bigas" : ""}',
+    '{salt * 2}',
+    '{some.property}',
+  ])('rejects %s', (expr) => {
+    expect(unboundTokens(`Weigh ${expr} g`, values)).not.toEqual([]);
+  });
+
+  it('still accepts every bare identifier the content uses', () => {
+    for (const { where, text } of allContent()) {
+      expect(unboundTokens(text, values), where).toEqual([]);
+    }
+  });
+
+  it('leaves no brace behind once bound', () => {
+    // The belt to the parse error's braces: if an expression ever did slip
+    // through, this catches it in the rendered output.
+    for (const { where, text } of allContent()) {
+      expect(bindTokens(text, values), where).not.toMatch(/[{}]/);
+    }
+  });
+});
+
 describe('per-mix scope', () => {
   it('gives the mix steps per-mix water and salt, not batch totals', () => {
     // The bug this guards: at 12 balls the baker runs two 6-ball mixes. Showing
@@ -96,7 +125,7 @@ describe('per-mix scope', () => {
       SCHEDULE,
     );
     const single = tokenValues(calculate({ ...INPUTS, balls: 6 }), SCHEDULE);
-    for (const key of ['phaseAWater', 'phaseBWater', 'salt']) {
+    for (const key of ['phaseAWaterPerMix', 'phaseBWaterPerMix', 'saltPerMix']) {
       expect(split[key], `${key} at 12 balls`).toBe(single[key]);
     }
     // And the ingredients card still gets the batch total from the engine.
@@ -112,12 +141,12 @@ describe('bound values', () => {
     expect(values['bigaWaterPerBiga']).toBe('305.6');
     expect(values['bigaADYPerBiga']).toBe('2.29');
     expect(values['freshFlourPerMix']).toBe('329.1');
-    expect(values['salt']).toBe('26.3');
+    expect(values['saltPerMix']).toBe('26.3');
   });
 
   it('splits the bassinage water 60/40', () => {
-    const sixty = Number(values['phaseAWater']);
-    const forty = Number(values['phaseBWater']);
+    const sixty = Number(values['phaseAWaterPerMix']);
+    const forty = Number(values['phaseBWaterPerMix']);
     // Each half is rounded to 1 dp independently, so the two can sum to 0.1 g
     // more than the rounded whole (211.6 + 141.1 = 352.7 vs 352.6). That is
     // display rounding, not a formula error, and 0.1 g of water is below what

@@ -78,7 +78,8 @@ export function buildRecipeText(result: CalculatorResult): string {
   lines.push('CONDITIONS');
   lines.push(row('Room', `${formatTempF(inputs.roomTempF)} °F`));
   lines.push(row('Flour', `${formatTempF(inputs.flourTempF)} °F`));
-  // Per mix when they differ — mix-7 asks for a fresh reading of both.
+  // Per mix when they differ — mix-8 (the changeover) asks for a fresh
+  // reading of both before each subsequent mix.
   for (const mix of result.mixes) {
     const label = result.mixes.length > 1 ? ` (mix ${mix.index})` : '';
     lines.push(row(`Biga at mix${label}`, `${formatTempF(atMix(inputs.bigaTempF, mix.index - 1))} °F`));

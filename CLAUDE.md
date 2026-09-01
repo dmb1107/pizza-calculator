@@ -39,7 +39,9 @@ question:
 | `MESSAGE-5-replies.md` | `thermal-model` rewritten, split-batch step content, `staggerUncentred`, per-mix temperature arrays, overhead 28.12 |
 | `FINDINGS-5-to-recipe-agent.md` | Settled by MESSAGE-6: `mix-8`, and the whole mix phase repeats |
 | `MESSAGE-6-replies.md` | `mix-8`, `repeatsPerMix` across the mix phase, per-biga values, overhead 28.42, bowl-share floor from the mixer cap |
-| `FINDINGS-6-to-recipe-agent.md` | No open questions. Records why `divideBall` is `20/60`, and the per-mix token bug |
+| `FINDINGS-6-to-recipe-agent.md` | Settled by MESSAGE-7 |
+| `MESSAGE-7-replies.md` | Scope suffixes (`PerMix`/`PerBiga`), bare identifiers only, both warnings kept, `mix-8` cross-references |
+| `FINDINGS-7-to-recipe-agent.md` | **Open.** 59.1 was flour temperature, not per-mix `DDT`; `bulk-1`'s warning still duplicates the strip |
 
 ## Rules that matter more than usual here
 
@@ -68,11 +70,16 @@ The ingredients card still shows batch totals; that is the shopping list. Three
 instances of this have been found in three rounds — check every new token
 against its step's scope.
 
-**Brace expressions are lookup keys, never evaluated.** §8.2 uses
-`{mixIndex + 1}` and a `{nBiga > 1 ? … : ""}` ternary. `bindTokens` matches any
-non-brace content and looks the whole string up in the values table. Do not add
-an expression evaluator: the prose is content, and evaluating it would make
-every future step edit a code-injection surface.
+**Every token is a bare identifier — an expression is a parse error.** The regex
+is deliberately narrow, and `unboundTokens` reports anything brace-delimited
+that isn't an identifier. §8 prose is edited often; an evaluator there is a
+code-execution surface that grows one convenient ternary at a time. What were
+`{mixIndex + 1}` and a ternary are now `{nextMixIndex}` and `{bigaCountSuffix}`,
+computed in `bindTokens` where every other value lives.
+
+**Scope goes in the token name.** Bare means a batch total; `PerMix` divides by
+`nMix`; `PerBiga` by `nBiga`. Three scope bugs in three rounds — the worst put
+423.2 g of water into a 211.6 g mix — so this is naming, not attention.
 
 **The §8 prose is generated from the spec and guarded by a test.**
 `src/content/steps.ts` and `concepts.ts` were generated from §8.2/§8.3, and

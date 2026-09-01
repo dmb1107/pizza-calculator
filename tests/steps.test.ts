@@ -36,6 +36,9 @@ function blockquote(chunk: string, marker: string): string | undefined {
     if (l.startsWith('>')) out.push(l.replace(/^> ?/, ''));
     else if (l.trim() === '' && out.length && lines[i + 1]?.startsWith('>')) out.push('');
     else if (l.trim() === '' && out.length === 0) continue;
+    // §8.2 may place an italic editorial note between the marker and its
+    // blockquote. Skip it rather than reading it as the end of the block.
+    else if (out.length === 0 && l.trim().startsWith('*') && !l.trim().startsWith('**')) continue;
     else break;
   }
   while (out.length && out.at(-1) === '') out.pop();
@@ -85,6 +88,9 @@ function conditionalDetail(chunk: string): { condition: string; detail: string }
 const specSteps = SPEC.slice(SPEC.indexOf('### 8.2 Steps'), SPEC.indexOf('### 8.3 Concepts'))
   .split(/\n#### /)
   .slice(1)
+  // §8.2 carries prose subheadings too, e.g. the scope-naming rule. A chunk is
+  // a step only if it opens with the `id` — title form.
+  .filter((chunk) => /^`([a-z0-9-]+)` — (.+)$/m.test(chunk))
   .map((chunk) => {
     const head = /^`([a-z0-9-]+)` — (.+)$/m.exec(chunk) as RegExpExecArray;
     return {

@@ -15,7 +15,7 @@ Read this, then the two attached documents. Everything below is context that isn
 
 **Keep them in sync.** Every change to one usually needs the other.
 
-Delta messages through `MESSAGE-4-corrections` are **historical and applied** (agent confirmed: 304 tests green). `MESSAGE-6-replies.md` is the current outstanding one. Earlier messages (`MESSAGE-to-calculator-agent`, `REPLY-*`, `MESSAGE-3-remove-ice`) are **historical**. Their content is folded into the spec, and the ice removal is applied and verified. `MESSAGE-4-corrections.md` is the current outstanding delta — it is also folded into both documents, and exists so the agent knows what moved.
+Delta messages through `MESSAGE-4-corrections` are **historical and applied** (agent confirmed: 304 tests green). `MESSAGE-7-replies.md` is the current outstanding one. Earlier messages (`MESSAGE-to-calculator-agent`, `REPLY-*`, `MESSAGE-3-remove-ice`) are **historical**. Their content is folded into the spec, and the ice removal is applied and verified. `MESSAGE-4-corrections.md` is the current outstanding delta — it is also folded into both documents, and exists so the agent knows what moved.
 
 ⚠️ **MESSAGE-3's rule "one warning, and only one" is withdrawn** by MESSAGE-4 §2. If you meet it in old text, it is superseded — there are now two water warnings, one at each end.
 
@@ -112,7 +112,10 @@ Delta messages through `MESSAGE-4-corrections` are **historical and applied** (a
 | Split-batch overhead 28.4 h | **28.12 h.** The stagger correction shortens a real stage, so it comes back out. 28.42 is `nMix = 3` |
 | Claiming step content says something | **Check §8.** Two MESSAGE-4 claims about `mix-1` and `bulk-3` were false; the agent couldn't build to them |
 | Batch totals on per-mix or per-biga steps | `{freshFlour}` on `mix-1`, `{bigaFlour}` on `biga-1`. Two rounds, two instances — check every step value against its scope |
-| Deriving a figure from a displayed value | **Round once, at the end.** 28.41 vs 28.42 came from chaining off a rounded 27.83 |
+| Deriving a figure from a displayed value | **Round once, at the end** — and this applies to the constants file, not just derived tables. `divideBall = 0.33` instead of `20/60` was the real cause of the 28.41/28.42 split |
+| Bare tokens in step prose | **Scope goes in the name:** `PerMix`, `PerBiga`, or bare for a batch total. Three bugs in three rounds, worst was 423.2 g of water into a 211.6 g mix |
+| Expressions in `{tokens}` | **Bare identifiers only.** Anything evaluated in §8 prose is a code-execution surface that grows by accretion |
+| Assuming everything went per-mix | **`DDT` did not.** It keys to TOTAL balls, because the band is about bulk cooling and the doughs are bulked together |
 | "The floor is set by the largest batch" | Set by the **2500 g mixer cap**. A split batch gets closer to it than any unsplit one |
 | `mix` a flat 0.5 h | **Scales with nMix**, +5 min changeover. Bowl is not cleaned between mixes; residue is thermally neutral and the yield cancels in the shared bulk tub |
 
