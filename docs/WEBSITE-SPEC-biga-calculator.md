@@ -343,11 +343,15 @@ Fixed overhead outside the cold ferment spans **25.6–30.8 h** across the full 
 
 ⚠️ **At `nMix = 2` the overhead is 28.12 h.** The second mix and changeover add 0.583 h, and the stagger correction below removes 0.292 h from `ballRoomTemp` — which is a real stage, so it comes straight back out. An earlier draft asserted 28.4, which is what you get by counting the mix and forgetting the rise. (28.42 is in fact the correct figure for `nMix = 3`; it was the right arithmetic against the wrong batch.)
 
-| `nMix` | `mix` | `ballRoomTemp` | Overhead |
-|---:|---:|---:|---:|
-| 1 | 0.500 | 1.500 | **27.83 h** |
-| 2 | 1.083 | 1.208 | **28.12 h** |
-| 3 | 1.667 | 0.917 | **28.42 h** |
+| `nMix` | `mix` | `ballRoomTemp` | Overhead (exact) | Assert |
+|---:|---:|---:|---:|---:|
+| 1 | 0.5000 | 1.5000 | 27.8333 | **27.83 h** |
+| 2 | 1.0833 | 1.2083 | 28.1250 | **28.12 h** |
+| 3 | 1.6667 | 0.9167 | 28.4167 | **28.42 h** |
+
+⚠️ **Compute each row from the stage list, never as a delta from another row's displayed value.** The `nMix = 3` figure is **28.42**: chaining `27.83 + (1.667 − 0.5) + (0.917 − 1.5)` gives 28.414 and rounds to 28.41, but that 27.83 is itself a rounded 27.8333, and the lost third of a hundredth is exactly the difference. Run the same chain from 27.8333 and it returns 28.4167.
+
+This is worth a rule rather than a correction, because the failure is invisible: every input looks right and the arithmetic is valid. **Derive from the constants, round once at the end, and never treat a displayed figure as an input.**
 
 Assert all three. Treat the bands as range checks, not equalities.
 
@@ -455,7 +459,9 @@ Same FF, different apparent rise **by mix size**. Useful as a sanity check:
 
 ⚠️ **Keyed on mix size, not batch size.** An earlier draft carried a 12-ball row at 5.2% / 13.3 °F, computed on batch totals — that describes a thermal system this recipe never builds, because 12 balls runs as two 6-ball mixes. A 12-ball batch reads off the 6 row and an 18-ball batch off the 9 row.
 
-The largest single mix the machine allows is 9 × 270 g, so **6.8% is the floor** of the bowl's share — it never gets smaller than that no matter how big the batch.
+**The floor of the bowl's share is about 6.6%**, and it is set by the mixer's 2500 g capacity rather than by any particular batch. `Ct` is 0.6516 per gram of dough, so at the 2500 g cap the share is `115.8 / (0.6516 × 2500 + 115.8)` = **6.64%**, and FF 14 reads 13.07. Nothing in the permitted input range gets below that, because nothing puts more than 2500 g against the bowl.
+
+⚠️ **Don't anchor this figure on a batch size — two earlier drafts did and both were wrong.** 6.8% is the 9 × 265 g mix and 6.68% is 9 × 270 g, but neither is the largest per-mix dough: **a split batch can beat any unsplit one.** 19 × 257 g runs as two mixes of 2495 g and reaches 6.65%, closer to the cap than 9 × 270 g's 2483 g. The capacity limit is the real constraint and it is the only stable way to state this.
 
 ### Shaped rise time
 
@@ -613,11 +619,16 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 #### `biga-1` — Break up the flour dry
 **phase:** biga
-**summary:** Weigh {bigaFlour} g of flour, then whisk hard or push it through a coarse sieve to break up the clumps. Weigh first, break up second.
-**values:** Biga flour: {bigaFlour} g
+**summary:** Weigh {bigaFlourPerBiga} g of flour, then whisk hard or push it through a coarse sieve to break up the clumps. Weigh first, break up second.
+**values:** Biga flour: {bigaFlourPerBiga} g{nBiga > 1 ? " × " + nBiga + " bigas" : ""}
 
 **detail:**
 > Grain Craft arrives lumpy. It's a milling artifact, not a quality problem — but dry is the only easy time to fix it.
+
+**detail, shown only when `nBiga > 1`:**
+> **This batch needs {nBiga} separate bigas**, and the weights above are for **one of them**. Don't weigh the batch total into a single container — {bigaFlourTotal} g of biga flour exceeds the 1610 g the machine handles at this hydration, which is why it splits.
+>
+> Make them back to back and keep them in separate containers. They are identical in every respect and they ferment side by side on the same clock, so the steps that follow cover both at once — only one of them can occupy the mixer bowl, so the second goes in its own tub.
 >
 > A clump that survives into the biga has dry flour at its core that never ferments, and in a stiff 50% hydration biga you will not find it by hand once the water is in. It turns up later as a hard nodule in the finished dough.
 >
@@ -627,8 +638,8 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 #### `biga-2` — Dissolve the yeast
 **phase:** biga
-**summary:** {bigaWater} g of **room-temperature** water, {bigaADY} g ADY. Stir to dissolve.
-**values:** Biga water: {bigaWater} g · ADY: {bigaADY} g
+**summary:** {bigaWaterPerBiga} g of **room-temperature** water, {bigaADYPerBiga} g ADY. Stir to dissolve.
+**values:** Biga water: {bigaWaterPerBiga} g · ADY: {bigaADYPerBiga} g
 
 **detail:**
 > **The dose is the Giorilli standard: 1% fresh yeast = 0.30% IDY = 0.375% ADY on biga flour**, the baseline for 12–18 h at 61–65 °F.
@@ -826,9 +837,9 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 ---
 
-#### `mix-7` — Changeover to the next mix
+#### `mix-8` — Changeover to the next mix
 **phase:** mix
-**shown only when:** `nMix > 1`, repeated between mixes
+**repeatsPerMix:** true — **suppressed on the final mix instance** (there is no changeover after the last one)
 **summary:** Turn mix {mixIndex} out into the bulk container. **Don't clean the bowl.** Re-measure the biga and the bowl, then start mix {mixIndex + 1}.
 **values:** Mix {mixIndex + 1} water target: {waterTempNext} °F
 **timer:** 5 min
@@ -845,6 +856,30 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 > **If the next target comes out awkward, rinse the bowl.** Thin stainless resets to roughly the rinse temperature in under a minute. It costs changeover time, so it isn't the default, but it is there when you want it.
 
 ---
+
+### 8.2a Repeating steps
+
+⚠️ **The whole `mix` phase repeats, not just the changeover.** At `nMix = 2` the baker runs `mix-1` through `mix-7`, does the changeover, then runs `mix-1` through `mix-7` again. Every one of those steps needs its own checkbox and its own timer on each pass — Phase A's 3–4 minute timer has exactly the problem the changeover has, seven times over.
+
+**Content model addition:**
+
+```ts
+interface Step {
+  // …
+  repeatsPerMix?: boolean;       // expand to one instance per mix
+  suppressOnFinal?: boolean;     // for mix-8: no changeover after the last mix
+}
+```
+
+- Mark **`mix-1` … `mix-8`** with `repeatsPerMix: true`. `mix-8` also gets `suppressOnFinal: true`.
+- Expand at render time to `mix-1#1 … mix-8#1, mix-1#2 …`, binding `{mixIndex}` per instance.
+- **Checkbox and timer state key off the expanded id**, which is the whole point.
+- At `nMix = 1` there is one instance and `mix-8` never renders, so **nothing changes for 3, 6 or 9 balls** — including both calibration bakes.
+- §8.2 stays one entry per *kind* of step. The uniqueness assertion holds on the templates.
+
+**Per-mix values inside the expansion:** `{waterTempNext}` and the bowl and biga readings differ by instance (§6 per-mix overrides). Everything else — `{phaseAWater}`, `{freshFlourPerMix}`, the probe target — is identical across instances by construction, since every mix is the same size. Bind them all per instance anyway rather than special-casing; identical values are not a problem, and hard-coding which ones vary is a trap the next change will spring.
+
+**The `biga` phase is deliberately NOT repeated**, even though `nBiga` reaches 2 at 18 and 24 balls. The two cases are not alike: mix instances are separated by a 35-minute changeover and carry different water targets, whereas the bigas are mixed back to back on the bench, carry identical values, and converge on one shared fermentation — `biga-4` and `biga-5` apply to both at once and would be wrong to duplicate. Handled with per-biga values and a note instead (`biga-1`).
 
 #### `bulk-1` — Bulk rest
 **phase:** bulk

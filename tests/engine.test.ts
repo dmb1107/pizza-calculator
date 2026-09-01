@@ -19,6 +19,7 @@ import {
   BATCH_VECTORS,
   BOWL_DILUTION,
   BOWL_SHARE_FLOOR,
+  BOWL_SHARE_MINIMUM_CASE,
   BELOW_MIN_BALLS_WATER,
   BOWL_DILUTION_SPLIT,
   BOWL_MODE_VECTORS,
@@ -203,17 +204,36 @@ describe('§4.2 the bowl', () => {
     within(14 * (t.cTotal / t.cSystem), d.apparentFF, 0.05, `apparent FF`);
   });
 
-  it('never lets the bowl share fall below its 6.68% floor', () => {
-    // §5: the largest mix the machine allows is 9 x 270 g, so the share cannot
-    // keep shrinking with batch size the way a batch-keyed table implied.
+  it('never lets the bowl share reach the floor the mixer cap implies', () => {
+    // §5: the floor is set by MAX_DOUGH, not by a batch size. Sweeping EVERY
+    // ball weight rather than a handful, because the minimum sits at an odd
+    // count with a non-round weight — which is exactly where a sweep anchored
+    // on "the largest single mix" does not look.
+    let lowest = 1;
+    let at = '';
     for (let b = C.MIN_BALLS; b <= 24; b++) {
-      for (const g of [240, 265, 270, 300]) {
+      for (let g = 240; g <= 300; g++) {
         const share = calculate(vectorInputs(b, g)).thermal.bowlShare;
-        expect(share, `bowl share at ${b} x ${g} g`).toBeGreaterThanOrEqual(
-          BOWL_SHARE_FLOOR - 0.0005,
-        );
+        expect(share, `bowl share at ${b} x ${g} g`).toBeGreaterThan(BOWL_SHARE_FLOOR);
+        if (share < lowest) {
+          lowest = share;
+          at = `${b} x ${g} g`;
+        }
       }
     }
+    const { balls, ballG, share } = BOWL_SHARE_MINIMUM_CASE;
+    expect(at, 'the closest approach to the cap').toBe(`${balls} x ${ballG} g`);
+    within(lowest, share, 0.0001, 'minimum bowl share');
+  });
+
+  it('derives the floor from the mixer cap rather than a batch size', () => {
+    // A split batch gets closer to the 2500 g cap than any unsplit one, so the
+    // bound has to come from the cap. Reproduces 6.637%.
+    const probe = calculate(vectorInputs(6, 265));
+    const ctPerGram = probe.thermal.cTotal / probe.formula.doughTotal;
+    const cBowl = bowlHeatCapacity(C.DEFAULT_BOWL_MASS_G);
+    within(ctPerGram, 0.6516, 0.0005, 'Ct per gram of dough');
+    within(cBowl / (ctPerGram * C.MAX_DOUGH + cBowl), BOWL_SHARE_FLOOR, 0.0001, 'infimum');
   });
 
   it('defaults T_bowl to T_biga', () => {

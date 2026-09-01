@@ -65,6 +65,23 @@ function table(chunk: string, marker: string): { headers: string[]; rows: string
   return { headers: raw[0] as string[], rows: raw.slice(2) };
 }
 
+/** §8.2's step-level warning blocks, e.g. "warning, shown when `staggerUncentred > 2`". */
+function conditionalWarning(chunk: string): { condition: string; text: string } | undefined {
+  const m = /^\*\*warning, shown when `([^`]+)`:\*\*$/m.exec(chunk);
+  if (!m) return undefined;
+  const text = blockquote(chunk, m[0]);
+  return text ? { condition: m[1] as string, text } : undefined;
+}
+
+/** §8.2's conditional detail blocks, e.g. "detail, shown only when `nMix > 1`". */
+function conditionalDetail(chunk: string): { condition: string; detail: string } | undefined {
+  for (const condition of ['nMix > 1', 'nBiga > 1']) {
+    const detail = blockquote(chunk, `**detail, shown only when \`${condition}\`:**`);
+    if (detail) return { condition, detail };
+  }
+  return undefined;
+}
+
 const specSteps = SPEC.slice(SPEC.indexOf('### 8.2 Steps'), SPEC.indexOf('### 8.3 Concepts'))
   .split(/\n#### /)
   .slice(1)
@@ -83,7 +100,14 @@ const specSteps = SPEC.slice(SPEC.indexOf('### 8.2 Steps'), SPEC.indexOf('### 8.
       watchFor: field(chunk, 'watchFor'),
       concepts: field(chunk, 'concepts'),
       detail: blockquote(chunk, '**detail:**'),
+      detailWhen: conditionalDetail(chunk),
+      warningWhen: conditionalWarning(chunk),
       troubleshoot: table(chunk, '**troubleshoot:**'),
+      // §8.2a marks the WHOLE mix phase as repeating, in prose rather than
+      // per-step, so it is derived from the phase. Only `mix-8` carries the
+      // explicit marker, for `suppressOnFinal`.
+      repeatsPerMix: field(chunk, 'phase') === 'mix',
+      suppressOnFinal: /\*\*repeatsPerMix:\*\*.*suppress/i.test(chunk),
     };
   });
 
@@ -137,6 +161,10 @@ describe('§8.2 steps are reproduced verbatim', () => {
     expect(step.values?.join(' · '), `${id} values`).toBe(spec.values);
     expect(step.concepts?.join(' '), `${id} concepts`).toBe(spec.concepts);
     expect(step.troubleshoot, `${id} troubleshoot`).toEqual(spec.troubleshoot);
+    expect(step.detailWhen, `${id} conditional detail`).toEqual(spec.detailWhen);
+    expect(step.warningWhen, `${id} conditional warning`).toEqual(spec.warningWhen);
+    expect(step.repeatsPerMix ?? false, `${id} repeatsPerMix`).toBe(spec.repeatsPerMix);
+    expect(step.suppressOnFinal ?? false, `${id} suppressOnFinal`).toBe(spec.suppressOnFinal);
   });
 
   it.runIf(SPEC_IDS_UNIQUE)('loses no detail prose to truncation', () => {

@@ -84,6 +84,13 @@ export interface AppState {
   clearCheckedSteps: () => void;
   /** {token} bindings for step and concept prose. */
   tokens: Record<string, string>;
+  /** The schedule inputs behind `tokens`, so per-instance tables can be rebuilt. */
+  scheduleTokens: {
+    bigaFridgeH: number;
+    bigaRoomOnlyH: number;
+    coldFermentH: number;
+    temperH: number;
+  };
 
   /** When the biga goes in. t = 0 for the timeline. */
   bigaStartAt: Date;
@@ -312,15 +319,20 @@ export function useAppState(): AppState {
     [timers, now],
   );
 
+  /** §8.2a: StepList rebuilds this per mix instance, so it needs the inputs too. */
+  const scheduleTokens = useMemo(
+    () => ({
+      bigaFridgeH: inputs.bigaFridgeH,
+      bigaRoomOnlyH: inputs.bigaRoomOnlyH,
+      coldFermentH: inputs.coldFermentH,
+      temperH: inputs.temperH,
+    }),
+    [inputs.bigaFridgeH, inputs.bigaRoomOnlyH, inputs.coldFermentH, inputs.temperH],
+  );
+
   const tokens = useMemo(
-    () =>
-      tokenValues(result, {
-        bigaFridgeH: inputs.bigaFridgeH,
-        bigaRoomOnlyH: inputs.bigaRoomOnlyH,
-        coldFermentH: inputs.coldFermentH,
-        temperH: inputs.temperH,
-      }),
-    [result, inputs.bigaFridgeH, inputs.bigaRoomOnlyH, inputs.coldFermentH, inputs.temperH],
+    () => tokenValues(result, scheduleTokens),
+    [result, scheduleTokens],
   );
 
   const shareUrl = useMemo(() => {
@@ -354,6 +366,7 @@ export function useAppState(): AppState {
     toggleStep,
     clearCheckedSteps,
     tokens,
+    scheduleTokens,
     bigaStartAt,
     setBigaStartAt,
     startNow,

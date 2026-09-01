@@ -301,7 +301,7 @@ At 12 balls that is a 5.3 °F spread in the water target between mix 1 and mix 2
 | 6 | 9.9% | 90% | 12.6 °F |
 | 9 | 6.8% | 93% | 13.0 °F |
 
-⚠️ **Keyed on mix size, not batch size.** Earlier drafts carried 12- and 18-ball rows at 5.2% and 3.5%, computed against batch totals. Those describe thermal systems this recipe never builds: 12 balls runs as two 6-ball mixes and reads off the 6 row, 18 balls as two 9-ball mixes and reads off the 9. Since the largest mix the machine takes is 9 × 270 g, **6.8% is the floor** — the bowl's share never gets smaller than that however big the batch.
+⚠️ **Keyed on mix size, not batch size.** Earlier drafts carried 12- and 18-ball rows at 5.2% and 3.5%, computed against batch totals. Those describe thermal systems this recipe never builds: 12 balls runs as two 6-ball mixes and reads off the 6 row, 18 balls as two 9-ball mixes and reads off the 9. The floor of the bowl's share is about **6.6%**, set by the mixer's 2500 g capacity rather than by any batch size: Ct runs 0.6516 per gram of dough, so at the cap the share is 115.8 / (0.6516 × 2500 + 115.8) = 6.64%. Nothing gets below it because nothing puts more than 2500 g against the bowl — and note a *split* batch can come closer to the cap than any unsplit one, since 19 × 257 g runs as two 2495 g mixes against 9 × 270 g's 2483 g.
 
 **This is exactly why folding the bowl into FF fails.** The apparent FF would drift from 11.5 to 13.0 across the range for no physical reason — you'd conclude the mixer behaves differently at different scales when really one constant is being read through three different dilutions.
 

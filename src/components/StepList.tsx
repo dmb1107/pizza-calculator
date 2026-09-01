@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Markdown } from './Markdown';
 import { NumberField } from './fields';
 import { StepTimer } from './StepTimer';
@@ -6,7 +6,7 @@ import { BOUNDS } from '../state/defaults';
 import { formatTempF } from '../lib/format';
 import { parseTimerLabel } from '../lib/timers';
 import { PHASE_LABELS, STEPS, type Phase, type Step, type StepTable } from '../content/steps';
-import { bindTokens } from '../lib/bindTokens';
+import { bindTokens, tokenValues } from '../lib/bindTokens';
 import type { AppState } from '../state/useAppState';
 
 /**
@@ -53,9 +53,12 @@ function Table({ table }: { table: StepTable }) {
 
 function StepRow({
   step,
+  label,
   summary,
   values,
   bind,
+  conditionHolds,
+  showWarning,
   checked,
   onToggleChecked,
   onOpenConcept,
@@ -63,9 +66,15 @@ function StepRow({
   timer,
 }: {
   step: Step;
+  /** "Mix 2" on a repeated instance, so the list reads unambiguously. */
+  label?: string;
   summary: string;
   values: string[];
   bind: (text: string) => string;
+  /** Whether a `detailWhen` condition holds for the current batch. */
+  conditionHolds?: (condition: 'nMix > 1' | 'nBiga > 1') => boolean;
+  /** Whether the step-level warning applies. §8.2 bulk-1. */
+  showWarning?: boolean;
   checked: boolean;
   onToggleChecked: () => void;
   onOpenConcept: (id: string) => void;
@@ -75,7 +84,14 @@ function StepRow({
   timer?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const hasDetail = Boolean(step.detail || step.watchFor || step.troubleshoot || step.concepts);
+  const conditionalDetail =
+    step.detailWhen && conditionHolds?.(step.detailWhen.condition)
+      ? step.detailWhen.detail
+      : undefined;
+  const warning = step.warningWhen && showWarning ? step.warningWhen.text : undefined;
+  const hasDetail = Boolean(
+    step.detail || conditionalDetail || step.watchFor || step.troubleshoot || step.concepts,
+  );
 
   return (
     <li
@@ -95,7 +111,7 @@ function StepRow({
           type="checkbox"
           checked={checked}
           onChange={onToggleChecked}
-          aria-label={`Mark "${step.title}" done`}
+          aria-label={`Mark "${step.title}"${label ? ` (${label})` : ''} done`}
           className="mt-1 size-6 shrink-0 accent-amber-700 dark:accent-amber-500"
         />
         <div className="min-w-0 flex-1">
@@ -103,12 +119,23 @@ function StepRow({
             className={`text-lg font-semibold ${checked ? 'text-stone-500 line-through dark:text-stone-500' : ''}`}
           >
             {step.title}
+            {label && (
+              <span className="ml-2 rounded bg-stone-200 px-1.5 py-0.5 align-middle text-xs font-medium text-stone-700 dark:bg-stone-700 dark:text-stone-200">
+                {label}
+              </span>
+            )}
           </h3>
 
           <div className={checked ? 'opacity-60' : undefined}>
             <div className="mt-1">
               <Markdown>{summary}</Markdown>
             </div>
+
+            {warning && (
+              <div className="mt-2 rounded-lg border border-amber-400 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-200">
+                <Markdown>{bind(warning)}</Markdown>
+              </div>
+            )}
 
             {(values.length > 0 || step.speed || step.timerLabel) && (
               <div className="mt-2 flex flex-wrap gap-1.5">
@@ -163,6 +190,13 @@ function StepRow({
               {open && (
                 <div className="mt-2 border-t border-stone-200 pt-3 dark:border-stone-800">
                   {step.detail && <Markdown>{bind(step.detail)}</Markdown>}
+
+                  {/* §8.2: extra detail that applies only to a split batch. */}
+                  {conditionalDetail && (
+                    <div className="mt-3 border-l-4 border-amber-400 pl-3 dark:border-amber-600">
+                      <Markdown>{bind(conditionalDetail)}</Markdown>
+                    </div>
+                  )}
 
                   {step.troubleshoot && (
                     <div className="mt-4">
@@ -256,10 +290,45 @@ export function StepList({
     stopTimer,
     nowMs,
   } = state;
-  const bind = (text: string) => bindTokens(text, tokens);
+  const nMix = state.result.capacity.nMix;
+  const nBiga = state.result.capacity.nBiga;
 
+  /**
+   * §8.2a. Expand the repeating steps to one instance per mix.
+   *
+   * At `nMix = 2` the baker runs `mix-1` through `mix-7`, changes over, then
+   * runs them again — so every one of those steps needs its own checkbox and
+   * its own timer on each pass. Phase A's 3–4 minute timer had exactly the
+   * defect the changeover had, seven times over.
+   *
+   * The instance id is the whole point: checkbox and timer state key off
+   * `mix-2#2` rather than `mix-2`. At `nMix = 1` there is one instance whose id
+   * is the bare template id, so nothing changes for 3, 6 or 9 balls — including
+   * both calibration bakes — and no persisted checkbox is orphaned.
+   */
+  const instances = useMemo(() => {
+    const out: { key: string; step: Step; mixIndex: number }[] = [];
+    for (const step of STEPS) {
+      if (!step.repeatsPerMix || nMix === 1) {
+        // `mix-8` is a changeover; with one mix there is nothing to change over.
+        if (step.suppressOnFinal && nMix === 1) continue;
+        out.push({ key: step.id, step, mixIndex: 1 });
+        continue;
+      }
+      for (let i = 1; i <= nMix; i++) {
+        // No changeover after the last mix.
+        if (step.suppressOnFinal && i === nMix) continue;
+        out.push({ key: `${step.id}#${i}`, step, mixIndex: i });
+      }
+    }
+    return out;
+  }, [nMix]);
+
+  /** Token table per instance — `{mixIndex}` and `{waterTempNext}` differ. */
+  const tokensFor = (mixIndex: number) =>
+    mixIndex === 1 ? tokens : tokenValues(state.result, state.scheduleTokens, mixIndex);
   const phases: Phase[] = ['biga', 'mix', 'bulk', 'bake'];
-  const doneCount = STEPS.filter((s) => checkedSteps.has(s.id)).length;
+  const doneCount = instances.filter((i) => checkedSteps.has(i.key)).length;
 
   /**
    * A timer for any step whose label states a duration. The label is bound
@@ -267,18 +336,18 @@ export function StepList({
    * step ids need special-casing. `biga-4`'s "per schedule" resolves to nothing,
    * which is right — the timeline owns that one.
    */
-  const renderTimer = (step: Step) => {
+  const renderTimer = (step: Step, key: string, bindHere: (t: string) => string) => {
     if (!step.timerLabel) return undefined;
-    const spec = parseTimerLabel(bind(step.timerLabel));
+    const spec = parseTimerLabel(bindHere(step.timerLabel));
     if (!spec) return undefined;
     return (
       <StepTimer
-        stepId={step.id}
+        stepId={key}
         spec={spec}
-        timer={timers.find((t) => t.stepId === step.id)}
+        timer={timers.find((t) => t.stepId === key)}
         now={nowMs}
-        onStart={() => startTimer(step.id, spec)}
-        onStop={() => stopTimer(step.id)}
+        onStart={() => startTimer(key, spec)}
+        onStop={() => stopTimer(key)}
       />
     );
   };
@@ -299,7 +368,7 @@ export function StepList({
         </h2>
         <div className="flex items-center gap-3">
           <span className="text-sm text-stone-500 tabular">
-            {doneCount} / {STEPS.length} done
+            {doneCount} / {instances.length} done
           </span>
           {doneCount > 0 && (
             <button
@@ -321,29 +390,44 @@ export function StepList({
             {PHASE_LABELS[phase]}
           </h3>
           <ol className="grid gap-2">
-            {STEPS.filter((s) => s.phase === phase).map((step) => {
-              // biga-4 reads differently depending on the schedule.
-              const raw =
-                step.summaryRetarded && step.summaryClassic
-                  ? inputs.schedule === 'retarded'
-                    ? step.summaryRetarded
-                    : step.summaryClassic
-                  : step.summary;
-              return (
-                <StepRow
-                  key={step.id}
-                  step={step}
-                  summary={bind(raw)}
-                  values={(step.values ?? []).map(bind)}
-                  bind={bind}
-                  checked={checkedSteps.has(step.id)}
-                  onToggleChecked={() => toggleStep(step.id)}
-                  onOpenConcept={onOpenConcept}
-                  extra={step.id === 'mix-7' ? <FinalTempCapture state={state} /> : undefined}
-                  timer={renderTimer(step)}
-                />
-              );
-            })}
+            {instances
+              .filter((i) => i.step.phase === phase)
+              .map(({ key, step, mixIndex }) => {
+                // biga-4 reads differently depending on the schedule.
+                const raw =
+                  step.summaryRetarded && step.summaryClassic
+                    ? inputs.schedule === 'retarded'
+                      ? step.summaryRetarded
+                      : step.summaryClassic
+                    : step.summary;
+                const bindHere = (text: string) => bindTokens(text, tokensFor(mixIndex));
+                const repeated = step.repeatsPerMix && nMix > 1;
+                return (
+                  <StepRow
+                    key={key}
+                    step={step}
+                    label={repeated ? `Mix ${mixIndex}` : undefined}
+                    summary={bindHere(raw)}
+                    values={(step.values ?? []).map(bindHere)}
+                    bind={bindHere}
+                    conditionHolds={(condition: 'nMix > 1' | 'nBiga > 1') =>
+                      condition === 'nMix > 1' ? nMix > 1 : nBiga > 1
+                    }
+                    showWarning={state.result.staggerUncentredMin > 2}
+                    checked={checkedSteps.has(key)}
+                    onToggleChecked={() => toggleStep(key)}
+                    onOpenConcept={onOpenConcept}
+                    // The final-temperature capture belongs to the LAST mix —
+                    // it is the dough that goes into the bulk tub last.
+                    extra={
+                      step.id === 'mix-7' && mixIndex === nMix ? (
+                        <FinalTempCapture state={state} />
+                      ) : undefined
+                    }
+                    timer={renderTimer(step, key, bindHere)}
+                  />
+                );
+              })}
           </ol>
         </div>
       ))}

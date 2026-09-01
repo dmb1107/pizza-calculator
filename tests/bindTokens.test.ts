@@ -35,6 +35,11 @@ function allContent(): { where: string; text: string }[] {
       ['summaryRetarded', s.summaryRetarded],
       ['summaryClassic', s.summaryClassic],
       ['detail', s.detail],
+      // §8.2's conditional blocks carry tokens of their own — {nBiga},
+      // {bigaFlourTotal}, {staggerUncentred} — and are rendered to the user,
+      // so they belong in every scan the unconditional detail belongs in.
+      ['detailWhen', s.detailWhen?.detail],
+      ['warningWhen', s.warningWhen?.text],
       ['watchFor', s.watchFor],
       ['timerLabel', s.timerLabel],
     ] as const) {
@@ -73,18 +78,40 @@ describe('every token in the content resolves', () => {
     // usually means a token was renamed in the spec.
     const used = new Set<string>();
     for (const { text } of allContent()) {
-      for (const m of text.matchAll(/\{([a-zA-Z][a-zA-Z0-9]*)\}/g)) used.add(m[1] as string);
+      // Must match the binder's own regex, which §8.2 widened beyond bare
+      // identifiers: `{mixIndex + 1}` and the nBiga ternary are literal keys.
+      for (const m of text.matchAll(/\{([^{}]+)\}/g)) used.add(m[1] as string);
     }
     expect([...Object.keys(values)].filter((k) => !used.has(k))).toEqual([]);
   });
 });
 
+describe('per-mix scope', () => {
+  it('gives the mix steps per-mix water and salt, not batch totals', () => {
+    // The bug this guards: at 12 balls the baker runs two 6-ball mixes. Showing
+    // the batch total on `mix-2` would have them pour 423.2 g into the first
+    // mix instead of 211.6 — double.
+    const split = tokenValues(
+      calculate({ ...INPUTS, balls: 12 }),
+      SCHEDULE,
+    );
+    const single = tokenValues(calculate({ ...INPUTS, balls: 6 }), SCHEDULE);
+    for (const key of ['phaseAWater', 'phaseBWater', 'salt']) {
+      expect(split[key], `${key} at 12 balls`).toBe(single[key]);
+    }
+    // And the ingredients card still gets the batch total from the engine.
+    expect(calculate({ ...INPUTS, balls: 12 }).formula.salt).toBeCloseTo(52.7, 1);
+  });
+});
+
 describe('bound values', () => {
   it('matches the §5 six-ball vector', () => {
-    expect(values['bigaFlour']).toBe('611.2');
-    expect(values['bigaWater']).toBe('305.6');
-    expect(values['bigaADY']).toBe('2.29');
-    expect(values['freshFlour']).toBe('329.1');
+    // Per-biga and per-mix at 6 balls, where nBiga and nMix are both 1, so
+    // these equal the batch totals from the §5 vector.
+    expect(values['bigaFlourPerBiga']).toBe('611.2');
+    expect(values['bigaWaterPerBiga']).toBe('305.6');
+    expect(values['bigaADYPerBiga']).toBe('2.29');
+    expect(values['freshFlourPerMix']).toBe('329.1');
     expect(values['salt']).toBe('26.3');
   });
 
@@ -108,7 +135,7 @@ describe('bound values', () => {
     expect(values['balls']).toBe('6');
     expect(values['temper']).toBe('2.5');
     expect(values['coldFerment']).toBe('24');
-    expect(values['bigaFlour']).toContain('.');
+    expect(values['bigaFlourPerBiga']).toContain('.');
   });
 
   it('carries the probe target and DDT as temperatures', () => {
@@ -142,7 +169,7 @@ describe('unknown tokens fail loudly', () => {
   });
 
   it('reports them', () => {
-    expect(unboundTokens('{a} and {bigaFlour} and {b}', values)).toEqual(['a', 'b']);
+    expect(unboundTokens('{a} and {bigaFlourPerBiga} and {b}', values)).toEqual(['a', 'b']);
   });
 
   it('leaves text with no tokens alone', () => {

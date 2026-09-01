@@ -96,18 +96,27 @@ export const BOWL_DILUTION: readonly {
 ];
 
 /**
- * §5. The largest mix the machine allows is 9 × 270 g, so the bowl's share has
- * a FLOOR — it never shrinks further however large the batch, because a bigger
- * batch splits into more mixes rather than one larger one. The old batch-keyed
- * table implied it kept falling.
+ * §5. The bowl's share has a floor, and it is set by the **2500 g mixer cap**
+ * rather than by any batch size:
  *
- * ⚠️ §5 says 6.8%, which is the 9 × **265** g figure. At the 9 × 270 g mix the
- * same sentence names as the largest, it is **6.68%**. The reasoning is right
- * and the identification of the limiting mix is right — 9 × 300 g splits in two
- * and jumps back to 11.4% — but the number is quoted against a different ball
- * weight than its own premise. Minor; raised with the recipe agent.
+ *     C_bowl / (Ct_per_gram × MAX_DOUGH + C_bowl)
+ *     115.8  / (0.6516      × 2500      + 115.8)  = 6.637%
+ *
+ * An infimum, approached but never reached, since a mix cannot sit exactly at
+ * the cap.
+ *
+ * ⚠️ Both earlier attempts anchored on a configuration and both were wrong.
+ * 6.8% was the 9 × 265 g figure; my 6.68% was 9 × 270 g, the largest UNSPLIT
+ * mix — but a SPLIT batch gets closer to the cap than any unsplit one. 19 × 257 g
+ * runs as two mixes of 2495.2 g and reaches 6.649%, and it is the true minimum
+ * over the whole 3–24 × 240–300 g grid. My sweep missed it by only trying four
+ * ball weights. Anchoring on the cap is the only form that survives a change to
+ * the ball-weight range or the nMix rule.
  */
-export const BOWL_SHARE_FLOOR = 0.0668;
+export const BOWL_SHARE_FLOOR = 0.06637;
+
+/** §5. The configuration that comes closest to the cap, and so to the infimum. */
+export const BOWL_SHARE_MINIMUM_CASE = { balls: 19, ballG: 257, share: 0.06649 } as const;
 
 /**
  * §5. A split batch reads off its own mix size: 12 balls off the 6 row, 18 off

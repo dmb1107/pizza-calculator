@@ -137,7 +137,7 @@ export function stageDurations(schedule: Schedule, a: ScheduleAdjustments): Stag
     bigaTemper: retarded ? 1 : 0,
     mix: MIX_H * nMix + C.CHANGEOVER_H * (nMix - 1),
     bulkRest: 1,
-    divideBall: 0.33,
+    divideBall: C.DIVIDE_BALL_H,
     ballRoomTemp: clampRise(a.ballRoomTempH - stagger / 2),
     coldFerment: a.coldFermentH,
     temper: a.temperH,

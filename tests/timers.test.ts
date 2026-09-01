@@ -44,11 +44,13 @@ describe('parsing timer labels', () => {
       '{temper} h': '2.5 h',
     };
     const labels = STEPS.map((s) => s.timerLabel).filter((l): l is string => Boolean(l));
-    expect(labels.length).toBe(7);
+    // 8 since MESSAGE-6: `mix-8`'s 5-minute changeover joins them.
+    expect(labels.length).toBe(8);
 
     const parsed = labels.map((l) => parseTimerLabel(bound[l] ?? l));
-    // Six resolve to a duration; only "per schedule" does not.
-    expect(parsed.filter(Boolean)).toHaveLength(6);
+    // Seven resolve to a duration since `mix-8` joined them; only "per
+    // schedule" does not, because the timeline owns that one.
+    expect(parsed.filter(Boolean)).toHaveLength(7);
     expect(labels[parsed.findIndex((p) => p === null)]).toBe('per schedule');
   });
 });

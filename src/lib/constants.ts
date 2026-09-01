@@ -96,7 +96,18 @@ const BASE = {
    * assumes mix 2 is weighed out before mix 1 starts (§8 mix-1). Time it on the
    * first split bake: every 5 min here moves the rise correction by 2.5 min.
    */
-  CHANGEOVER_H: 0.0833,
+  CHANGEOVER_H: 5 / 60,
+
+  /**
+   * §4.7. Divide-and-ball, in hours. The quantity is **20 minutes**; the 0.33
+   * the spec table displays is a rounded rendering of it.
+   *
+   * ⚠️ Expressed as 20/60 rather than 0.33 deliberately. Baking the displayed
+   * figure into the source is exactly the "never treat a displayed value as an
+   * input" error §4.7 warns about — and it is worth 0.0033 h, which is the
+   * whole of the 28.41-vs-28.42 disagreement at nMix 3.
+   */
+  DIVIDE_BALL_H: 20 / 60,
 
   /** Split of the fresh water between Phase A and Phase B. §5 of the update. */
   PHASE_A_FRACTION: 0.6,

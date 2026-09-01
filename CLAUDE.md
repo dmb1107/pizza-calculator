@@ -37,7 +37,8 @@ question:
 | `HANDOFF-new-context.md` | Background for a fresh session on either side. Not instructions |
 | `FINDINGS-4-to-recipe-agent.md` | Settled by MESSAGE-5: all six confirmed |
 | `MESSAGE-5-replies.md` | `thermal-model` rewritten, split-batch step content, `staggerUncentred`, per-mix temperature arrays, overhead 28.12 |
-| `FINDINGS-5-to-recipe-agent.md` | **Open.** §8.2 defines `mix-7` twice, and the changeover step repeats — both need a content-model decision before `steps.ts` can be regenerated |
+| `FINDINGS-5-to-recipe-agent.md` | Settled by MESSAGE-6: `mix-8`, and the whole mix phase repeats |
+| `MESSAGE-6-replies.md` | `mix-8`, `repeatsPerMix` across the mix phase, per-biga values, overhead 28.42, bowl-share floor from the mixer cap |
 
 ## Rules that matter more than usual here
 
@@ -49,14 +50,28 @@ than guessing — the numbers are load-bearing and were derived carefully.
 cross-checked. A plausible-looking simplification produces a wrong answer that
 won't be obvious until 50 hours of fermentation later.
 
-**`steps.ts` is deliberately stale, and one test is red because of it.** The
-spec defines `mix-7` twice — "Phase D, finish" and the new "Changeover to the
-next mix". Step ids are the primary key for `find`, persisted checkboxes,
-timers and concept links, so a duplicate silently breaks all four. `steps.ts`
-stays at the 18 pre-MESSAGE-5 steps and `§8.2 › gives every step in the spec a
-unique id` carries the blockage; the per-step comparisons skip while it fails,
-so the suite names the cause instead of 19 symptoms. Do not rename the id to
-clear it — that decision is the recipe agent's and is pending.
+**The whole `mix` phase repeats, and instances are the primary key.** §8.2a:
+`mix-1` … `mix-8` carry `repeatsPerMix`, so at `nMix = 2` the list renders them
+twice with ids `mix-2#1`, `mix-2#2`. **Checkbox and timer state key off the
+instance id**, which is the entire point — one id for two passes meant one
+checkbox and one timer slot for two mixes. `mix-8` (the changeover) also carries
+`suppressOnFinal`: there is no changeover after the last mix. At `nMix = 1` the
+instance id is the bare template id, so nothing changes for 3, 6 or 9 balls and
+no persisted checkbox is orphaned.
+
+**Step tokens are scoped to their step, and getting that wrong is a live
+bug class.** `mix-*` are per-mix steps, so `{phaseAWater}`, `{phaseBWater}` and
+`{salt}` bind to per-mix amounts — a batch total there would have the baker pour
+double into mix 1. `biga-1`/`biga-2` are per-biga, hence `{bigaFlourPerBiga}`.
+The ingredients card still shows batch totals; that is the shopping list. Three
+instances of this have been found in three rounds — check every new token
+against its step's scope.
+
+**Brace expressions are lookup keys, never evaluated.** §8.2 uses
+`{mixIndex + 1}` and a `{nBiga > 1 ? … : ""}` ternary. `bindTokens` matches any
+non-brace content and looks the whole string up in the values table. Do not add
+an expression evaluator: the prose is content, and evaluating it would make
+every future step edit a code-injection surface.
 
 **The §8 prose is generated from the spec and guarded by a test.**
 `src/content/steps.ts` and `concepts.ts` were generated from §8.2/§8.3, and

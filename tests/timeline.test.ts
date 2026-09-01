@@ -35,7 +35,7 @@ describe('§4.7 stage durations', () => {
       bigaTemper: 1,
       mix: 0.5,
       bulkRest: 1,
-      divideBall: 0.33,
+      divideBall: C.DIVIDE_BALL_H,
       ballRoomTemp: 1.5,
       coldFerment: 24,
       temper: 2.5,
@@ -50,7 +50,7 @@ describe('§4.7 stage durations', () => {
       bigaTemper: 0,
       mix: 0.5,
       bulkRest: 1,
-      divideBall: 0.33,
+      divideBall: C.DIVIDE_BALL_H,
       ballRoomTemp: 1.5,
       coldFerment: 24,
       temper: 2.5,
@@ -224,11 +224,12 @@ describe('§4.7 stage durations', () => {
     it.each([
       [1, 0.5, 1.5, 27.83],
       [2, 1.083, 1.208, 28.12],
-      // ⚠️ §4.7's table says 28.42 here, but its OWN mix and rise values for
-      // this row give 27.83 + (1.667 − 0.5) + (0.917 − 1.5) = 28.414. Rows 1
-      // and 2 are internally consistent; only this overhead is off by 0.01.
-      // Raised with the recipe agent; this records what the table produces.
-      [3, 1.667, 0.917, 28.41],
+      // Settled by MESSAGE-6 §3, and I was wrong. 28.41 came from `divideBall`
+      // being the literal 0.33 rather than the 20 minutes it actually is —
+      // a displayed figure baked into the source, which is the same error one
+      // level deeper than the one I was reporting. At 20/60 every route gives
+      // 28.4167.
+      [3, 1.667, 0.917, 28.42],
     ])('nMix %i: mix %f h, rise %f h, overhead %f h', (nMix, mix, rise, overheadH) => {
       // §4.7's table, all three asserted. 28.42 was the figure an earlier draft
       // attached to nMix 2 — right arithmetic, wrong batch size, which is why
@@ -261,9 +262,10 @@ describe('§4.7 stage durations', () => {
       // fingerprint, being 72.5 exactly.
       expect(overhead({ ...DEFAULTS, nMix: 2 })).toBeCloseTo(28.12, 2);
 
-      // What §4.7's 28.4 would require: the mix change without the stagger.
+      // What §4.7's superseded 28.4 would require: the mix change with the
+      // stagger correction left out.
       const withoutStagger = overhead({ ...DEFAULTS, nMix: 2 }) + mixStaggerH(2) / 2;
-      expect(withoutStagger).toBeCloseTo(28.41, 2);
+      expect(withoutStagger).toBeCloseTo(28.42, 2);
     });
 
     it('leaves every other stage untouched by nMix', () => {
