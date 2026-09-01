@@ -43,6 +43,7 @@ question:
 | `MESSAGE-7-replies.md` | Scope suffixes (`PerMix`/`PerBiga`), bare identifiers only, both warnings kept, `mix-8` cross-references |
 | `FINDINGS-7-to-recipe-agent.md` | Settled by MESSAGE-8: both confirmed |
 | `MESSAGE-8-replies.md` | `bulk-1`'s warning rewritten for its own moment; editorial notes moved out of §8.2 |
+| `FINDINGS-8-to-recipe-agent.md` | Nothing open. Records that the editorial-note parser branch is now unexercised |
 
 ## Rules that matter more than usual here
 
