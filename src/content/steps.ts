@@ -338,9 +338,11 @@ Read that carefully before you judge a result. If the batch comes out slightly o
     },
     warningWhen: {
       condition: "staggerUncentred > 2",
-      text: `**{staggerUncentred} minutes of the spread could not be absorbed.** Your dough is warm enough that the ball rise is already at its 45-minute floor, so there is no room left to shorten it. The first dough will run that much long regardless.
+      text: `**{staggerUncentred} minutes of the spread could not be absorbed.** Your dough is warm enough that the ball rise is already at its 45-minute floor, so there was nothing left to shorten. The first dough will run that much long, and this batch will not be uniform.
 
-This bites hardest exactly where it matters most — a warm dough ferments fastest, so a given number of extra minutes costs more here than anywhere else in the table. The floor is not worth overruling for it. If you want the spread back, the lever is upstream: fewer, larger mixes, or a cooler dough temperature.`,
+**One thing is still worth doing.** If you can tell the two doughs apart in the tub, divide and ball the **older** one first and get its trays into the fridge as they fill, rather than chilling everything at the end. That claws back roughly the time it takes to ball one mix's worth — about ten minutes at this batch size. It is not in the calculation and it is not precise; it is simply free.
+
+**Then read the result correctly.** Expect the older half to be a little further along: slacker on the bench, possibly more open, maybe faintly more acidic. If you see that variation across the batch, this is where it came from. Don't chase it with a formula change — nothing in the recipe is wrong, the batch just ran on one clock when it needed two. Log it and move on.`,
     },
   },
   {

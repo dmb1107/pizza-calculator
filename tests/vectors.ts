@@ -247,5 +247,22 @@ export const BELOW_MIN_BALLS_WATER: readonly { balls: number; ballG: number; max
   { balls: 2, ballG: 265, maxWaterF: 116.5 },
 ];
 
+/**
+ * §5. The app and the vectors deliberately use different flour temperatures,
+ * and the gap between them is a constant.
+ *
+ * The vectors pin flour at 69 °F so the flour term stays independently
+ * observable — a bug swapping `Cf` and `Cs` fails a test rather than hiding.
+ * The app defaults flour to room (70 °F), because that is what a bag of flour
+ * in the kitchen actually is. Both are correct; **a number quoted without its
+ * conditions is the defect.**
+ *
+ * The offset is `Cf/Cw` = (0.35 × 0.42) / (0.375 × 1.00), which has no `F` in
+ * it — so it is exactly 0.392 at every batch size and every ball weight, and
+ * the per-mix division cancels. Verified as a single distinct value across
+ * balls 3–24 × 240/265/300 g.
+ */
+export const APP_DEFAULT_FLOUR_OFFSET_F = 0.392;
+
 /** Assertion tolerances. §5: +/-0.1 g, +/-0.1 degF. */
 export const TOL = { grams: 0.1, degF: 0.1, ady: 0.005, weight: 0.0001 } as const;

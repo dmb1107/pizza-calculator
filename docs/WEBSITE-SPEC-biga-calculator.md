@@ -436,6 +436,14 @@ Splits are unchanged: `nBiga` = 1 except 18 balls (2); `nMix` = 1 except 12 and 
 
 **Observed-rate vectors** (`Ct/TOT`, for the §4.6 helper) — also per-mix: 3 → 0.821 · 6 → 0.901 · 9 → 0.932 · **12 → 0.901** · **18 → 0.932**. Note 12 and 18 now share values with 6 and 9, because they *are* 6- and 9-ball mixes.
 
+⚠️ **Vector conditions are not app defaults, and every quoted figure must say which it is.**
+
+`T_flour` is pinned at **69 °F** in the vectors while the app defaults it to *"same as room"* = **70 °F**. That is deliberate on both sides: 69 makes the flour term independently observable, so a bug swapping `Cf` and `Cs` fails a test instead of hiding, while 70 is what a bag of flour sitting in the kitchen actually is.
+
+The consequence is that **every water target renders 0.39 °F below its vector value at app defaults** — and it is exactly 0.39 at every batch size, because `Cf/Cw` is scale-invariant. Small enough to read as rounding, which is what makes it worth stating: a 12-ball mix-2 target is 59.50 at vector conditions and 59.11 in the app, and both are correct.
+
+**When quoting a rendered number in a report or a test name, state the conditions.** Neither value is wrong; a number without its conditions is.
+
 **Bowl-mode vectors** (§4.2 selector, 265 g, FF 14, biga 58, room 70, flour 69):
 
 | Batch | Cold | Room | Warm |
@@ -582,6 +590,17 @@ Cards after the first recompute from that mix's own biga and bowl readings (§6,
 
 ### 7.3 Warnings
 Render above the step list, never hidden in a collapsed panel. Sources: capacity splits, **water below 38 °F**, **water above 120 °F**, dough below mixer minimum, overnight timeline stages, **uncentred stagger** (below).
+
+#### The stagger warning appears twice, on purpose
+
+`staggerUncentred > 2` fires both this strip and a block inside `bulk-1`. **Keep both** — they share a condition but not a job:
+
+| | Read when | Says |
+|---|---|---|
+| **This strip** | choosing a batch size, before committing | the lever is still available: fewer, larger mixes, or a cooler dough |
+| **`bulk-1` block** | dough already in the tub | the decision is made — chill the older half first, then don't misread the result |
+
+⚠️ **Editorial guidance about step content belongs here, not inside §8.2.** An earlier draft put this note between the block marker and its blockquote, which is a parse hazard (a scanner reasonably reads the marker as ending at the first non-quoted line) and mixes spec voice into content that renders verbatim. **§8.2 contains only content.** Anything that tells an implementer *how* to write or place content goes in the section that governs it.
 
 The two water warnings mirror each other — same failure ("you cannot get there by blending"), opposite end, and both point the user upstream rather than at the water card. Neither one puts commentary on the card itself; §7.2 stays bare.
 
@@ -927,11 +946,11 @@ A bare token on a per-mix or per-biga step is then a **visible** error rather th
 > Read that carefully before you judge a result. If the batch comes out slightly over-fermented and you were expecting the correction to have made it uniform, you will reach for the wrong explanation.
 
 **warning, shown when `staggerUncentred > 2`:**
-*Keep this alongside the §7.3 strip rather than choosing between them — they fire at different moments and the remedy differs. The strip is read while choosing a batch size, when the lever is still available: fewer, larger mixes, or a cooler dough. This block is read with the dough already in the tub, when the only thing left to get right is not misreading the result. Same condition, different job; make sure the wording of each reflects its moment rather than duplicating the other.*
-
-> **{staggerUncentred} minutes of the spread could not be absorbed.** Your dough is warm enough that the ball rise is already at its 45-minute floor, so there is no room left to shorten it. The first dough will run that much long regardless.
+> **{staggerUncentred} minutes of the spread could not be absorbed.** Your dough is warm enough that the ball rise is already at its 45-minute floor, so there was nothing left to shorten. The first dough will run that much long, and this batch will not be uniform.
 >
-> This bites hardest exactly where it matters most — a warm dough ferments fastest, so a given number of extra minutes costs more here than anywhere else in the table. The floor is not worth overruling for it. If you want the spread back, the lever is upstream: fewer, larger mixes, or a cooler dough temperature.
+> **One thing is still worth doing.** If you can tell the two doughs apart in the tub, divide and ball the **older** one first and get its trays into the fridge as they fill, rather than chilling everything at the end. That claws back roughly the time it takes to ball one mix's worth — about ten minutes at this batch size. It is not in the calculation and it is not precise; it is simply free.
+>
+> **Then read the result correctly.** Expect the older half to be a little further along: slacker on the bench, possibly more open, maybe faintly more acidic. If you see that variation across the batch, this is where it came from. Don't chase it with a formula change — nothing in the recipe is wrong, the batch just ran on one clock when it needed two. Log it and move on.
 
 ---
 

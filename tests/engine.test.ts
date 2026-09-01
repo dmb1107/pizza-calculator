@@ -19,6 +19,7 @@ import {
   BATCH_VECTORS,
   BOWL_DILUTION,
   BOWL_SHARE_FLOOR,
+  APP_DEFAULT_FLOUR_OFFSET_F,
   BOWL_SHARE_MINIMUM_CASE,
   BELOW_MIN_BALLS_WATER,
   BOWL_DILUTION_SPLIT,
@@ -808,6 +809,41 @@ describe('§4.7 staggerUncentred', () => {
         expect(at(b, t), `${b} balls at ${t} degF`).toBeGreaterThanOrEqual(0);
       }
     }
+  });
+});
+
+describe('§5 the app-default flour offset', () => {
+  it('is exactly Cf/Cw, and the same at every batch size', () => {
+    // This constant is why a rendered water target sits 0.39 °F below its
+    // vector value. It cost a round of correspondence, so it is pinned rather
+    // than left as a note: the vectors use flour 69, the app defaults it to
+    // room (70), and both are deliberate.
+    const seen = new Set<string>();
+    for (let balls = C.MIN_BALLS; balls <= 24; balls++) {
+      for (const ballG of [240, 265, 300]) {
+        const at69 = calculate({ ...vectorInputs(balls, ballG), flourTempF: 69 });
+        const at70 = calculate({ ...vectorInputs(balls, ballG), flourTempF: 70 });
+        seen.add((at69.waterTempF - at70.waterTempF).toFixed(6));
+        // And it is the heat-capacity ratio, not a coincidence.
+        within(
+          at69.thermal.cFreshFlour / at69.thermal.cFreshWater,
+          APP_DEFAULT_FLOUR_OFFSET_F,
+          1e-9,
+          `Cf/Cw at ${balls} x ${ballG} g`,
+        );
+      }
+    }
+    expect([...seen], 'one offset for the whole grid').toEqual([
+      APP_DEFAULT_FLOUR_OFFSET_F.toFixed(6),
+    ]);
+  });
+
+  it('accounts for the gap between a rendered target and its vector', () => {
+    // The 12-ball case that prompted this: 59.505 at flour 69, 59.113 at 70.
+    const at69 = calculate({ ...vectorInputs(12, 265), flourTempF: 69 });
+    const at70 = calculate({ ...vectorInputs(12, 265), flourTempF: 70 });
+    within(at69.mixes[1]!.waterTempF, 59.505, 0.002, 'mix 2 at vector conditions');
+    within(at70.mixes[1]!.waterTempF, 59.113, 0.002, 'mix 2 at app defaults');
   });
 });
 

@@ -41,7 +41,8 @@ question:
 | `MESSAGE-6-replies.md` | `mix-8`, `repeatsPerMix` across the mix phase, per-biga values, overhead 28.42, bowl-share floor from the mixer cap |
 | `FINDINGS-6-to-recipe-agent.md` | Settled by MESSAGE-7 |
 | `MESSAGE-7-replies.md` | Scope suffixes (`PerMix`/`PerBiga`), bare identifiers only, both warnings kept, `mix-8` cross-references |
-| `FINDINGS-7-to-recipe-agent.md` | **Open.** 59.1 was flour temperature, not per-mix `DDT`; `bulk-1`'s warning still duplicates the strip |
+| `FINDINGS-7-to-recipe-agent.md` | Settled by MESSAGE-8: both confirmed |
+| `MESSAGE-8-replies.md` | `bulk-1`'s warning rewritten for its own moment; editorial notes moved out of §8.2 |
 
 ## Rules that matter more than usual here
 
@@ -76,6 +77,14 @@ that isn't an identifier. §8 prose is edited often; an evaluator there is a
 code-execution surface that grows one convenient ternary at a time. What were
 `{mixIndex + 1}` and a ternary are now `{nextMixIndex}` and `{bigaCountSuffix}`,
 computed in `bindTokens` where every other value lives.
+
+**Rendered numbers sit 0.392 °F below their vector values, and that is not a
+bug.** The §5 vectors pin flour at 69 °F so the flour term stays independently
+observable; the app defaults flour to room (70 °F), which is what a bag of flour
+actually is. The gap is `Cf/Cw`, which has no `F` in it — exactly 0.392 at every
+batch size and ball weight. `APP_DEFAULT_FLOUR_OFFSET_F` pins it. **Quote the
+conditions whenever you quote a rendered number**; one without them cost a round
+of correspondence.
 
 **Scope goes in the token name.** Bare means a batch total; `PerMix` divides by
 `nMix`; `PerBiga` by `nBiga`. Three scope bugs in three rounds — the worst put

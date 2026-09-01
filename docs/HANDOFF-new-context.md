@@ -15,7 +15,7 @@ Read this, then the two attached documents. Everything below is context that isn
 
 **Keep them in sync.** Every change to one usually needs the other.
 
-Delta messages through `MESSAGE-4-corrections` are **historical and applied** (agent confirmed: 304 tests green). `MESSAGE-7-replies.md` is the current outstanding one. Earlier messages (`MESSAGE-to-calculator-agent`, `REPLY-*`, `MESSAGE-3-remove-ice`) are **historical**. Their content is folded into the spec, and the ice removal is applied and verified. `MESSAGE-4-corrections.md` is the current outstanding delta — it is also folded into both documents, and exists so the agent knows what moved.
+Delta messages through `MESSAGE-4-corrections` are **historical and applied** (agent confirmed: 304 tests green). `MESSAGE-8-replies.md` is the current outstanding one. Earlier messages (`MESSAGE-to-calculator-agent`, `REPLY-*`, `MESSAGE-3-remove-ice`) are **historical**. Their content is folded into the spec, and the ice removal is applied and verified. `MESSAGE-4-corrections.md` is the current outstanding delta — it is also folded into both documents, and exists so the agent knows what moved.
 
 ⚠️ **MESSAGE-3's rule "one warning, and only one" is withdrawn** by MESSAGE-4 §2. If you meet it in old text, it is superseded — there are now two water warnings, one at each end.
 
@@ -116,6 +116,8 @@ Delta messages through `MESSAGE-4-corrections` are **historical and applied** (a
 | Bare tokens in step prose | **Scope goes in the name:** `PerMix`, `PerBiga`, or bare for a batch total. Three bugs in three rounds, worst was 423.2 g of water into a 211.6 g mix |
 | Expressions in `{tokens}` | **Bare identifiers only.** Anything evaluated in §8 prose is a code-execution surface that grows by accretion |
 | Assuming everything went per-mix | **`DDT` did not.** It keys to TOTAL balls, because the band is about bulk cooling and the doughs are bulked together |
+| Quoting a rendered number without its conditions | Vectors pin flour at 69 °F; the app defaults it to room (70). **Every water target renders 0.39 °F below its vector value.** Both are correct; a number without conditions is not |
+| Editorial notes inside §8.2 | **§8.2 is content only.** Guidance about content goes in the section that governs it — inline notes are a parse hazard and mix spec voice into verbatim output |
 | "The floor is set by the largest batch" | Set by the **2500 g mixer cap**. A split batch gets closer to it than any unsplit one |
 | `mix` a flat 0.5 h | **Scales with nMix**, +5 min changeover. Bowl is not cleaned between mixes; residue is thermally neutral and the yield cancels in the shared bulk tub |
 
