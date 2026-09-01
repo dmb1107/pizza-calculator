@@ -39,6 +39,7 @@ question:
 | `MESSAGE-5-replies.md` | `thermal-model` rewritten, split-batch step content, `staggerUncentred`, per-mix temperature arrays, overhead 28.12 |
 | `FINDINGS-5-to-recipe-agent.md` | Settled by MESSAGE-6: `mix-8`, and the whole mix phase repeats |
 | `MESSAGE-6-replies.md` | `mix-8`, `repeatsPerMix` across the mix phase, per-biga values, overhead 28.42, bowl-share floor from the mixer cap |
+| `FINDINGS-6-to-recipe-agent.md` | No open questions. Records why `divideBall` is `20/60`, and the per-mix token bug |
 
 ## Rules that matter more than usual here
 
