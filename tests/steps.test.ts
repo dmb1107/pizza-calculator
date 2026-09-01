@@ -36,6 +36,16 @@ function blockquote(chunk: string, marker: string): string | undefined {
     if (l.startsWith('>')) out.push(l.replace(/^> ?/, ''));
     else if (l.trim() === '' && out.length && lines[i + 1]?.startsWith('>')) out.push('');
     else if (l.trim() === '' && out.length === 0) continue;
+    // ⚠️ UNEXERCISED as of MESSAGE-8: §8.2 no longer carries editorial notes,
+    // so nothing in the spec reaches this branch. Kept because a spec is
+    // allowed to grow one again — but note what that means: **this branch will
+    // not fail if it breaks.** It is indistinguishable from a working one until
+    // the day it matters.
+    //
+    // What would actually catch a note reappearing is the bound-but-unused
+    // token check in `bindTokens.test.ts`. A note swallows the blockquote after
+    // it, which orphans that block's tokens, and a value with no consumer is
+    // reported. That is how the vanished `bulk-1` warning was found.
     // §8.2 may place an italic editorial note between the marker and its
     // blockquote. Skip it rather than reading it as the end of the block.
     else if (out.length === 0 && l.trim().startsWith('*') && !l.trim().startsWith('**')) continue;

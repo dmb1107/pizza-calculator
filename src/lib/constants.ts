@@ -139,7 +139,51 @@ const ADY_OF_BIGA_FLOUR =
 /** IDY as a fraction of biga flour: 0.00300. Reference only; the recipe uses ADY. */
 const IDY_OF_BIGA_FLOUR = BASE.FRESH_YEAST_OF_BIGA_FLOUR * BASE.FRESH_TO_IDY;
 
-export const C = { ...BASE, C_BIGA, ADY_OF_BIGA_FLOUR, IDY_OF_BIGA_FLOUR } as const;
+/**
+ * Fresh flour as a fraction of total flour: 0.350. Named rather than inlined
+ * because it appears in the formula, the batch table and the offset below —
+ * and because 0.35 and 0.375 are the pair most easily mistaken for each other.
+ */
+const FRESH_FLOUR_FRACTION = 1 - BASE.BIGA_FRACTION;
+
+/**
+ * Fresh water as a fraction of total flour: 0.375.
+ *
+ * ⚠️ Numerically equal to 100 × `ADY_OF_BIGA_FLOUR`, which is a coincidence and
+ * nothing more. They share no inputs; do not let one stand in for the other.
+ */
+const FRESH_WATER_FRACTION = BASE.HYDRATION - BASE.BIGA_FRACTION * BASE.BIGA_HYDRATION;
+
+/**
+ * §5. How far below its vector value a rendered water target sits, in °F.
+ *
+ * The vectors pin flour at 69 °F so the flour term stays independently
+ * observable; the app defaults flour to room (70 °F), which is what a bag of
+ * flour actually is. Both are deliberate — a number quoted without its
+ * conditions is the defect, not either convention.
+ *
+ * DERIVED, not hardcoded, for the same reason as `C_BIGA` and
+ * `ADY_OF_BIGA_FLOUR`. It is `Cf/Cw`, which has no total-flour term in it and
+ * so is identical at every batch size — but it very much has the formula in it,
+ * and 0.392 is only true of THIS formula:
+ *
+ *     as shipped 0.392 · hydration 65% 0.452 · biga 60% 0.420 · biga hyd 45% 0.361
+ *
+ * A literal 0.392 would be correct today and silently wrong the first time
+ * anyone moved the formula.
+ */
+const APP_DEFAULT_FLOUR_OFFSET_F =
+  (FRESH_FLOUR_FRACTION * BASE.C_FLOUR) / (FRESH_WATER_FRACTION * BASE.C_WATER);
+
+export const C = {
+  ...BASE,
+  C_BIGA,
+  ADY_OF_BIGA_FLOUR,
+  IDY_OF_BIGA_FLOUR,
+  FRESH_FLOUR_FRACTION,
+  FRESH_WATER_FRACTION,
+  APP_DEFAULT_FLOUR_OFFSET_F,
+} as const;
 
 /**
  * Heat capacity of the mixer bowl, cal/°C. 115.8 at the 965 g default —

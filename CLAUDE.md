@@ -43,7 +43,9 @@ question:
 | `MESSAGE-7-replies.md` | Scope suffixes (`PerMix`/`PerBiga`), bare identifiers only, both warnings kept, `mix-8` cross-references |
 | `FINDINGS-7-to-recipe-agent.md` | Settled by MESSAGE-8: both confirmed |
 | `MESSAGE-8-replies.md` | `bulk-1`'s warning rewritten for its own moment; editorial notes moved out of §8.2 |
-| `FINDINGS-8-to-recipe-agent.md` | Nothing open. Records that the editorial-note parser branch is now unexercised |
+| `FINDINGS-8-to-recipe-agent.md` | Settled by MESSAGE-9 |
+| `MESSAGE-9-replies.md` | Derive the flour offset rather than hardcode it; document the unexercised parser branch |
+| `FINDINGS-9-to-recipe-agent.md` | **Open (minor).** `MAX_RUN_MIN` is read by nothing while §8 states the same 20 minutes as prose |
 
 ## Rules that matter more than usual here
 
@@ -82,10 +84,17 @@ computed in `bindTokens` where every other value lives.
 **Rendered numbers sit 0.392 °F below their vector values, and that is not a
 bug.** The §5 vectors pin flour at 69 °F so the flour term stays independently
 observable; the app defaults flour to room (70 °F), which is what a bag of flour
-actually is. The gap is `Cf/Cw`, which has no `F` in it — exactly 0.392 at every
-batch size and ball weight. `APP_DEFAULT_FLOUR_OFFSET_F` pins it. **Quote the
-conditions whenever you quote a rendered number**; one without them cost a round
-of correspondence.
+actually is. The gap is `Cf/Cw`, which has no total-flour term in it — exactly
+0.392 at every batch size and ball weight. **Quote the conditions whenever you
+quote a rendered number**; one without them cost a round of correspondence.
+
+**Anything derivable from the formula constants is derived, never written down.**
+`C_BIGA`, `ADY_OF_BIGA_FLOUR`, `DIVIDE_BALL_H` (20/60, not 0.33),
+`FRESH_FLOUR_FRACTION`, `FRESH_WATER_FRACTION` and
+`APP_DEFAULT_FLOUR_OFFSET_F`. Three of those got that treatment only after a
+literal went wrong — a hardcoded value is correct today and silently wrong the
+first time the formula moves. `tests/constants.test.ts` recomputes each from its
+inputs, and separately asserts every constant has a reader.
 
 **Scope goes in the token name.** Bare means a batch total; `PerMix` divides by
 `nMix`; `PerBiga` by `nBiga`. Three scope bugs in three rounds — the worst put

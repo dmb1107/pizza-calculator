@@ -53,7 +53,10 @@ export function computeFormula({ balls, ballWeightG }: BatchInputs): Formula {
   const flourTotal = (balls * ballWeightG * C.OVERAGE) / C.DOUGH_YIELD;
   const bigaFlour = flourTotal * C.BIGA_FRACTION;
   const bigaWater = bigaFlour * C.BIGA_HYDRATION;
-  const freshWater = flourTotal * C.HYDRATION - bigaWater;
+  // Same quantities as `flourTotal × HYDRATION − bigaWater` and
+  // `flourTotal − bigaFlour`, expressed through the named fractions so the
+  // formula and the derived offset cannot drift apart.
+  const freshWater = flourTotal * C.FRESH_WATER_FRACTION;
 
   return {
     flourTotal,
@@ -61,7 +64,7 @@ export function computeFormula({ balls, ballWeightG }: BatchInputs): Formula {
     bigaWater,
     bigaMass: bigaFlour + bigaWater,
     bigaADY: bigaFlour * C.ADY_OF_BIGA_FLOUR,
-    freshFlour: flourTotal - bigaFlour,
+    freshFlour: flourTotal * C.FRESH_FLOUR_FRACTION,
     freshWater,
     // Weighable grams, not a percentage to estimate. §8.2 mix-2 / mix-3.
     phaseAWater: freshWater * C.PHASE_A_FRACTION,

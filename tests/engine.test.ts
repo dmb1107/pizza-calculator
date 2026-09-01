@@ -19,7 +19,6 @@ import {
   BATCH_VECTORS,
   BOWL_DILUTION,
   BOWL_SHARE_FLOOR,
-  APP_DEFAULT_FLOUR_OFFSET_F,
   BOWL_SHARE_MINIMUM_CASE,
   BELOW_MIN_BALLS_WATER,
   BOWL_DILUTION_SPLIT,
@@ -813,6 +812,32 @@ describe('§4.7 staggerUncentred', () => {
 });
 
 describe('§5 the app-default flour offset', () => {
+  it('is derived from the formula, not a literal', () => {
+    // MESSAGE-9: 0.392 is only true of THIS formula. A literal would be correct
+    // today and silently wrong the first time anyone moved hydration or the
+    // biga fraction — the same shape as the yeast constant and `divideBall`.
+    within(
+      C.APP_DEFAULT_FLOUR_OFFSET_F,
+      (C.FRESH_FLOUR_FRACTION * C.C_FLOUR) / (C.FRESH_WATER_FRACTION * C.C_WATER),
+      1e-12,
+      'offset is its own derivation',
+    );
+    within(C.FRESH_FLOUR_FRACTION, 0.35, 1e-12, 'fresh flour fraction');
+    within(C.FRESH_WATER_FRACTION, 0.375, 1e-12, 'fresh water fraction');
+    within(C.APP_DEFAULT_FLOUR_OFFSET_F, 0.392, 1e-12, 'offset as shipped');
+  });
+
+  it('tracks the formula rather than the number', () => {
+    // The sensitivity that makes deriving it worth doing. Recomputed the same
+    // way the constant is, against formulas this recipe does not use.
+    const at = (bigaFrac: number, hyd: number, bigaHyd: number) =>
+      ((1 - bigaFrac) * C.C_FLOUR) / ((hyd - bigaFrac * bigaHyd) * C.C_WATER);
+    within(at(0.65, 0.7, 0.5), C.APP_DEFAULT_FLOUR_OFFSET_F, 1e-12, 'as shipped');
+    within(at(0.65, 0.65, 0.5), 0.452, 0.0005, 'at 65% hydration');
+    within(at(0.6, 0.7, 0.5), 0.42, 0.0005, 'at a 60% biga');
+    within(at(0.65, 0.7, 0.45), 0.361, 0.0005, 'at 45% biga hydration');
+  });
+
   it('is exactly Cf/Cw, and the same at every batch size', () => {
     // This constant is why a rendered water target sits 0.39 °F below its
     // vector value. It cost a round of correspondence, so it is pinned rather
@@ -827,14 +852,14 @@ describe('§5 the app-default flour offset', () => {
         // And it is the heat-capacity ratio, not a coincidence.
         within(
           at69.thermal.cFreshFlour / at69.thermal.cFreshWater,
-          APP_DEFAULT_FLOUR_OFFSET_F,
+          C.APP_DEFAULT_FLOUR_OFFSET_F,
           1e-9,
           `Cf/Cw at ${balls} x ${ballG} g`,
         );
       }
     }
     expect([...seen], 'one offset for the whole grid').toEqual([
-      APP_DEFAULT_FLOUR_OFFSET_F.toFixed(6),
+      C.APP_DEFAULT_FLOUR_OFFSET_F.toFixed(6),
     ]);
   });
 

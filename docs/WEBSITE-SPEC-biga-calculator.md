@@ -440,7 +440,17 @@ Splits are unchanged: `nBiga` = 1 except 18 balls (2); `nMix` = 1 except 12 and 
 
 `T_flour` is pinned at **69 °F** in the vectors while the app defaults it to *"same as room"* = **70 °F**. That is deliberate on both sides: 69 makes the flour term independently observable, so a bug swapping `Cf` and `Cs` fails a test instead of hiding, while 70 is what a bag of flour sitting in the kitchen actually is.
 
-The consequence is that **every water target renders 0.39 °F below its vector value at app defaults** — and it is exactly 0.39 at every batch size, because `Cf/Cw` is scale-invariant. Small enough to read as rounding, which is what makes it worth stating: a 12-ball mix-2 target is 59.50 at vector conditions and 59.11 in the app, and both are correct.
+The consequence is that **every water target renders 0.392 °F below its vector value at app defaults** — the same figure at every batch size and every `nMix`, because `Cf/Cw` is scale-invariant. Small enough to read as rounding, which is what makes it worth stating: a 12-ball mix-2 target is 59.505 at vector conditions and 59.113 in the app, and both are correct.
+
+**Derive it; do not hardcode 0.392.** It is a ratio of formula constants with no `F` in it, so the per-mix division cancels top and bottom:
+
+```ts
+const freshFlourFrac = 1 - C.BIGA_FRACTION;                          // 0.350
+const freshWaterFrac = C.HYDRATION - C.BIGA_FRACTION*C.BIGA_HYDRATION; // 0.375
+const appDefaultFlourOffsetF = (freshFlourFrac*C.C_FLOUR) / (freshWaterFrac*C.C_WATER);
+```
+
+Same treatment as `C_BIGA` and `ADY_OF_BIGA_FLOUR`, and for the same reason — 0.392 is only true of *this* formula. At 65% hydration it is 0.452, at a 60% biga 0.420, at a 45% biga hydration 0.361. A hardcoded 0.392 is correct today and silently wrong the first time anyone touches the formula, which is precisely how the yeast constant went wrong.
 
 **When quoting a rendered number in a report or a test name, state the conditions.** Neither value is wrong; a number without its conditions is.
 
