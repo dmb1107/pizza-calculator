@@ -307,7 +307,10 @@ export function StepList({
    * is the bare template id, so nothing changes for 3, 6 or 9 balls — including
    * both calibration bakes — and no persisted checkbox is orphaned.
    */
-  const instances = useMemo(() => expandSteps(nMix), [nMix]);
+  const instances = useMemo(
+    () => expandSteps(nMix, inputs.schedule),
+    [nMix, inputs.schedule],
+  );
 
   /** Token table per instance — `{mixIndex}` and `{waterTempNext}` differ. */
   const tokensFor = (mixIndex: number) =>

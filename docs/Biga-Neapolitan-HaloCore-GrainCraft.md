@@ -194,6 +194,18 @@ Cover to prevent drying. Sources differ on venting (Gozney and Ooni say leave a 
 
 *This removes the Halo Core capacity problem entirely — no batch size is too small or too stiff for the biga phase any more.*
 
+### The temper: one hour, and the most leveraged hour in the schedule
+
+On the retarded track the biga comes out of the fridge **one hour before you mix**, and stays in the mixer bowl while it warms.
+
+**This is the cheapest hour in the recipe to skip and the most expensive.** Biga temperature is the most leveraged input in the whole model: one degree of biga moves the required water by roughly two — **1.9 °F at a 6-ball mix, 2.3 °F at a 3-ball one** (§6). Nothing else you measure comes close, which is why a biga that skipped its temper is the usual explanation when the calculator asks for water hotter than a tap delivers.
+
+**Leave it in the bowl.** The bowl is 965 g of stainless and part of the thermal system — the hour is meant to warm both together. Tempering the biga on the counter warms the biga and leaves the bowl cold, which is precisely backwards.
+
+**Then take both temperatures after crumbling, not before.** Crumbling is worth about five degrees on its own: bake 1 read **53 °F at pull and 58 °F once broken apart**. The bowl does not get those five degrees, which is why it is a separate reading rather than an assumption — one touch against the bowl wall, five seconds, worth 0.66 °F of water per degree at a 3-ball mix.
+
+On the classic room-temperature track there is no temper. The biga is already at room temperature.
+
 ### Why 61–65 °F specifically
 
 It isn't just about speed. That range produces the **right ratio of lactic to acetic acid**, which is what gives biga its characteristic sharp, vinegary profile. Ferment much warmer and you get a preferment that is biga-shaped but tastes different.

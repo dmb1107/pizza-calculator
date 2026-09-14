@@ -44,9 +44,24 @@ export interface ConditionalWarning {
   text: string;
 }
 
+/**
+ * §8.2 `**shown only when:**`. A literal drawn from a closed set and compared
+ * by string equality — deliberately NOT evaluated. §8 prose is content, and an
+ * expression evaluator reachable from it is a code-execution surface that grows
+ * one convenient condition at a time, which is the same reasoning that keeps
+ * `{token}` to bare identifiers.
+ */
+export type ShownWhen = "schedule === 'retarded'" | "schedule === 'classic'";
+
 export interface Step {
   id: string;
   phase: Phase;
+  /**
+   * Render this step only on the named schedule. `biga-6` only: the temper does
+   * not exist on the classic track, where the biga is already at room
+   * temperature and `bigaTemper` is zero.
+   */
+  shownWhen?: ShownWhen;
   /** Short, imperative. */
   title: string;
   /** Default view. May contain {token} bindings. */
@@ -177,6 +192,19 @@ To make this objective rather than a judgment call: fill a small straight-sided 
     },
   },
   {
+    id: "biga-6",
+    phase: "biga",
+    shownWhen: "schedule === 'retarded'",
+    title: `Temper the biga`,
+    summary: `Out of the fridge **{bigaTemper} hours** before you mix. Leave it in the mixer bowl.`,
+    timerLabel: `{bigaTemper} h`,
+    detail: `**This is the most expensive hour in the schedule to skip, and the easiest.** Biga temperature is the single most leveraged number in this recipe: one degree of biga moves the required water by about **two degrees** — 1.9 °F at a 6-ball mix, 2.3 °F at a 3-ball one. Nothing else you measure comes close.
+
+Skip the hour and the calculator will ask you for water hot enough that a tap can't supply it. That isn't the calculator being awkward; it is the arithmetic telling you the biga is too cold to make this dough at the temperature you asked for.
+
+**Leave it in the mixer bowl.** The bowl is 965 g of stainless and it is part of the thermal system — the hour warms both together, which is the whole point. Taking the biga out to temper on the counter warms the biga and leaves the bowl behind, which is the opposite of what you want.`,
+  },
+  {
     id: "mix-1",
     phase: "mix",
     title: `Prep the bowl`,
@@ -184,7 +212,11 @@ To make this objective rather than a judgment call: fill a small straight-sided 
     values: [`Fresh flour: {freshFlourPerMix} g`],
     detail: `The biga is the stiffest thing the machine will face all session. Crumbling it small is the difference between a smooth breakdown and tripping motor protection.
 
-Break up the fresh flour dry for the same reason as the biga flour — this is your last chance before water goes in.`,
+Break up the fresh flour dry for the same reason as the biga flour — this is your last chance before water goes in.
+
+**Take both temperatures once the biga is crumbled, not before.** The calculator wants the biga at the moment it meets the water, and crumbling warms it — bake 1 read **53 °F at pull and 58 °F once broken apart**, five degrees from handling alone.
+
+**The bowl does not get that five degrees**, which is why it is a separate reading rather than an assumption. One touch against the bowl wall, five seconds. It is worth 0.66 °F of water per degree at a 3-ball mix.`,
     detailWhen: {
       condition: "nMix > 1",
       detail: `**Weigh out every mix now, before you start the first one.** You are running {nMix} mixes, and the changeover between them is budgeted at five minutes. That is only achievable if the second mix's flour, biga and salt are already sitting in their own containers — if you weigh during the changeover it becomes fifteen or twenty, and every extra five minutes puts another 2½ minutes of uncorrectable fermentation onto the first dough.

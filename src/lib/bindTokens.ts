@@ -118,6 +118,10 @@ export function tokenValues(
     coldFerment: trim(schedule.coldFermentH),
     bigaFridge: trim(schedule.bigaFridgeH),
     bigaRoomOnly: trim(schedule.bigaRoomOnlyH),
+    // Fixed by §4.7, not user-adjustable, so it comes from the constant the
+    // timeline uses rather than from `schedule`. `biga-6` renders only on the
+    // retarded track, where this stage is always non-zero.
+    bigaTemper: trim(C.BIGA_TEMPER_H),
     temper: trim(schedule.temperH),
   };
 }

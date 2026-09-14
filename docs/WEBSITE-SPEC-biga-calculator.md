@@ -327,14 +327,33 @@ Durations in hours, from biga mix at t=0. **These are authoritative** — they w
 
 **The backward timeline is where this becomes visible.** Solving from a target bake time back through the stages turns the order into timestamps. Get it wrong and every total still asserts clean while every intermediate time is wrong, and the failure surfaces as a baker standing at a cold oven rather than as a red test.
 
-So assert the **stage sequence** alongside the total:
+So assert the **stage sequence** alongside the total. There are ten stages, not nine — an earlier draft of this paragraph omitted `bigaRoomOnly` and was therefore not implementable on its own:
 
 ```
-bigaRoomTemp → bigaFridge → bigaTemper → mix → bulkRest → divideBall
-             → ballRoomTemp → coldFerment → temper
+bigaRoomTemp → bigaFridge → bigaRoomOnly → bigaTemper → mix → bulkRest
+             → divideBall → ballRoomTemp → coldFerment → temper
 ```
 
-Note `coldFerment` sits **after** `ballRoomTemp`, not with the other biga stages — the balls go to the fridge shaped, which is the one placement in this list that is not obvious from the row order above. Write the sequence out explicitly in the test rather than deriving it from the table, so that reordering the table for readability cannot silently reorder the schedule.
+Two stages are zero on one track or the other, so the rendered sequences are:
+
+```
+retarded   bigaRoomTemp bigaFridge bigaTemper mix bulkRest divideBall
+           ballRoomTemp coldFerment temper
+
+classic    bigaRoomOnly mix bulkRest divideBall ballRoomTemp coldFerment temper
+```
+
+**Assert both.** `bigaRoomOnly`'s placement happens to be unfalsifiable at runtime — `bigaTemper` is zero on classic, so grouping it with the biga stages renders identically either way — which is exactly why it needs stating rather than inferring.
+
+Note `coldFerment` sits **after** `ballRoomTemp`, not with the other biga stages: the balls go to the fridge shaped. That is the one placement not obvious from the row order above. Write both sequences out explicitly in the test rather than deriving them from the table, so that reordering the table for readability cannot silently reorder the schedule.
+
+#### Every stage needs a step, and one didn't
+
+⚠️ **`bigaTemper` had no step.** It has a duration, a place in the sequence, a clock time in the timeline — and nothing in the guided step list told the baker to do it. A baker following the steps went from `biga-5` (pull at ~20% rise) straight to `mix-1` (prep the bowl).
+
+That is the worst possible stage to lose. Biga temperature is the most leveraged input in the model — `d(T_water)/d(T_biga)` runs −1.92 at a 6-ball mix to −2.25 at a 3-ball — and a skipped temper is named in the >120 °F warning as the usual cause of an unreachable water target. **The app scheduled the temper, computed from it, and warned about skipping it, while never instructing it.** Fixed by `biga-6`.
+
+**This is the same shape as `MAX_RUN_MIN` having no reader**, and it deserves the same kind of check: *every timeline stage maps to a step that instructs it, and every step maps to a stage.* Assert the mapping, name the deliberate exceptions, and let an orphan on either side point at whatever went missing.
 
 ### 4.8 Shaped rise time
 
@@ -800,6 +819,21 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 ---
 
+#### `biga-6` — Temper the biga
+**phase:** biga
+**shown only when:** `schedule === 'retarded'` — on the classic track the biga is already at room temperature and `bigaTemper` is zero
+**summary:** Out of the fridge **{bigaTemper} hours** before you mix. Leave it in the mixer bowl.
+**timer:** {bigaTemper} h
+
+**detail:**
+> **This is the most expensive hour in the schedule to skip, and the easiest.** Biga temperature is the single most leveraged number in this recipe: one degree of biga moves the required water by about **two degrees** — 1.9 °F at a 6-ball mix, 2.3 °F at a 3-ball one. Nothing else you measure comes close.
+>
+> Skip the hour and the calculator will ask you for water hot enough that a tap can't supply it. That isn't the calculator being awkward; it is the arithmetic telling you the biga is too cold to make this dough at the temperature you asked for.
+>
+> **Leave it in the mixer bowl.** The bowl is 965 g of stainless and it is part of the thermal system — the hour warms both together, which is the whole point. Taking the biga out to temper on the counter warms the biga and leaves the bowl behind, which is the opposite of what you want.
+
+---
+
 #### `mix-1` — Prep the bowl
 **phase:** mix
 **summary:** Break up clumps in {freshFlourPerMix} g of fresh flour. Crumble the biga small — smaller is better. Add flour, toss to coat.
@@ -809,6 +843,10 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 > The biga is the stiffest thing the machine will face all session. Crumbling it small is the difference between a smooth breakdown and tripping motor protection.
 >
 > Break up the fresh flour dry for the same reason as the biga flour — this is your last chance before water goes in.
+>
+> **Take both temperatures once the biga is crumbled, not before.** The calculator wants the biga at the moment it meets the water, and crumbling warms it — bake 1 read **53 °F at pull and 58 °F once broken apart**, five degrees from handling alone.
+>
+> **The bowl does not get that five degrees**, which is why it is a separate reading rather than an assumption. One touch against the bowl wall, five seconds. It is worth 0.66 °F of water per degree at a 3-ball mix.
 
 **detail, shown only when `nMix > 1`:**
 > **Weigh out every mix now, before you start the first one.** You are running {nMix} mixes, and the changeover between them is budgeted at five minutes. That is only achievable if the second mix's flour, biga and salt are already sitting in their own containers — if you weigh during the changeover it becomes fifteen or twenty, and every extra five minutes puts another 2½ minutes of uncorrectable fermentation onto the first dough.
@@ -970,7 +1008,14 @@ WRONG     mix-1#1 mix-1#2 mix-2#1 mix-2#2 … mix-7#1 mix-7#2   mix-8#1
 
 The wrong form has the **same instance count, the same labels, and the same suppression** — 26 instances at 12 balls either way. What it does not have is a procedure: it tells the baker to prep both bowls, then run Phase A twice, then Phase B twice, and it puts the changeover *last*, after both Phase Ds, which is the one position where "changeover to the next mix" means nothing.
 
-**Assert the full rendered id sequence at `nMix` 1, 2 and 3 against an expected sequence written out in the test.** Not the count, not the labels, not "the changeover appears once" — every one of those is true of the wrong form. Where order is the meaning, order is the thing to assert, and a golden sequence is the only assertion a plausible-looking reordering cannot satisfy.
+**Assert the full rendered id sequence at `nMix` 1, 2 and 3 against an expected sequence written out in the test** — and now **per schedule**, since `biga-6` renders only on the retarded track. Six golden sequences:
+
+| | `nMix` 1 | 2 | 3 |
+|---|---:|---:|---:|
+| retarded | **19** | 27 | 35 |
+| classic | **18** | 26 | 34 |
+
+(6 or 5 biga + 7/15/23 mix + 4 bulk + 2 bake.) The previous figures of 18/26/34 were the classic counts, and were correct only because the temper step did not exist. Not the count, not the labels, not "the changeover appears once" — every one of those is true of the wrong form. Where order is the meaning, order is the thing to assert, and a golden sequence is the only assertion a plausible-looking reordering cannot satisfy.
 
 **Keep the expansion in its own pure module.** Inside the component that renders it, no test can reach it.
 - **Checkbox and timer state key off the expanded id**, which is the whole point.

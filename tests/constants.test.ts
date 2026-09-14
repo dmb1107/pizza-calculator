@@ -150,7 +150,9 @@ describe('§5 the mix profile fits the mixer', () => {
     expect(followedBySpeed(asTemplates, mix8Template), 'templates: rule holds').toBe(false);
 
     // After expansion it does not. mix-8#1 is followed by the whole of mix 2.
-    const expanded = expandSteps(2);
+    // Schedule is irrelevant here - this is a mix-phase rule - but it is a
+    // required argument so that no caller can forget it where it matters.
+    const expanded = expandSteps(2, 'retarded');
     const mix8First = expanded.findIndex((x) => x.key === 'mix-8#1');
     expect(expanded[mix8First]?.key).toBe('mix-8#1');
     expect(

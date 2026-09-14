@@ -134,7 +134,7 @@ export function stageDurations(schedule: Schedule, a: ScheduleAdjustments): Stag
     bigaRoomTemp: retarded ? 2 : 0,
     bigaFridge: retarded ? a.bigaFridgeH : 0,
     bigaRoomOnly: retarded ? 0 : a.bigaRoomOnlyH,
-    bigaTemper: retarded ? 1 : 0,
+    bigaTemper: retarded ? C.BIGA_TEMPER_H : 0,
     mix: MIX_H * nMix + C.CHANGEOVER_H * (nMix - 1),
     bulkRest: 1,
     divideBall: C.DIVIDE_BALL_H,

@@ -121,6 +121,16 @@ const BASE = {
    * whole of the 28.41-vs-28.42 disagreement at nMix 3.
    */
   DIVIDE_BALL_H: 20 / 60,
+  /**
+   * §4.7. Biga out of the fridge before mixing, in hours. Retarded only — on
+   * the classic track the biga is already at room temperature and this stage is
+   * zero.
+   *
+   * Named rather than inlined because `biga-6` binds it as `{bigaTemper}` in
+   * both its summary and its timer. A literal in `stageDurations` and another
+   * in `bindTokens` is the shape that put `divideBall` at 0.33.
+   */
+  BIGA_TEMPER_H: 1,
 
   /** Split of the fresh water between Phase A and Phase B. §5 of the update. */
   PHASE_A_FRACTION: 0.6,

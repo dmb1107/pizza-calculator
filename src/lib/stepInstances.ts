@@ -6,7 +6,26 @@
  * the one piece of step logic nothing could assert against.
  */
 
-import { STEPS, type Step } from '../content/steps';
+import { STEPS, type ShownWhen, type Step } from '../content/steps';
+import type { Schedule } from '../state/types';
+
+/**
+ * §8.2's `shown only when` conditions, resolved by lookup rather than by
+ * evaluating the string. An unrecognised condition throws: silently showing or
+ * silently hiding a step are both wrong, and a missing temper step is exactly
+ * the failure this mechanism was added to fix.
+ */
+const SHOWN_WHEN: Record<ShownWhen, Schedule> = {
+  "schedule === 'retarded'": 'retarded',
+  "schedule === 'classic'": 'classic',
+};
+
+function showsOn(step: Step, schedule: Schedule): boolean {
+  if (!step.shownWhen) return true;
+  const required = SHOWN_WHEN[step.shownWhen];
+  if (!required) throw new Error(`unknown shownWhen condition: ${step.shownWhen}`);
+  return required === schedule;
+}
 
 export interface StepInstance {
   /**
@@ -28,7 +47,18 @@ export interface StepInstance {
  * At `nMix = 1` every instance key is the bare template id, so nothing changes
  * for 3, 6 or 9 balls and no persisted checkbox is orphaned.
  */
-export function expandSteps(nMix: number, steps: readonly Step[] = STEPS): StepInstance[] {
+export function expandSteps(
+  nMix: number,
+  /**
+   * Required, not defaulted. `biga-6` renders only on the retarded track, and a
+   * default would let a caller that forgot to pass one silently instruct a
+   * classic baker to temper a biga that never went in the fridge — or, worse in
+   * the other direction, silently drop the temper again.
+   */
+  schedule: Schedule,
+  allSteps: readonly Step[] = STEPS,
+): StepInstance[] {
+  const steps = allSteps.filter((step) => showsOn(step, schedule));
   const out: StepInstance[] = [];
   const passes = Math.max(1, nMix);
 

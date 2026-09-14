@@ -107,6 +107,9 @@ const specSteps = SPEC.slice(SPEC.indexOf('### 8.2 Steps'), SPEC.indexOf('### 8.
       id: head[1] as string,
       title: (head[2] as string).trim(),
       phase: field(chunk, 'phase'),
+      // §8.2 "**shown only when:** `<condition>` — prose". Only the backticked
+      // condition is content; what follows the em-dash is rationale.
+      shownWhen: /^\*\*shown only when:\*\*\s*`([^`]+)`/m.exec(chunk)?.[1],
       summary: field(chunk, 'summary'),
       summaryRetarded: field(chunk, 'summary \\(retarded\\)'),
       summaryClassic: field(chunk, 'summary \\(classic\\)'),
@@ -163,6 +166,7 @@ describe('§8.2 steps are reproduced verbatim', () => {
 
     expect(step.title, `${id} title`).toBe(spec.title);
     expect(step.phase, `${id} phase`).toBe(spec.phase);
+    expect(step.shownWhen, `${id} shownWhen`).toBe(spec.shownWhen);
 
     // The prose. This is the assertion the whole file exists for.
     expect(step.detail, `${id} detail`).toBe(spec.detail);

@@ -42,15 +42,16 @@ describe('parsing timer labels', () => {
     const bound: Record<string, string> = {
       '{coldFerment} h': '24 h',
       '{temper} h': '2.5 h',
+      '{bigaTemper} h': '1 h',
     };
     const labels = STEPS.map((s) => s.timerLabel).filter((l): l is string => Boolean(l));
-    // 8 since MESSAGE-6: `mix-8`'s 5-minute changeover joins them.
-    expect(labels.length).toBe(8);
+    // 9 since MESSAGE-13: `biga-6`'s temper hour joins `mix-8`'s changeover.
+    expect(labels.length).toBe(9);
 
     const parsed = labels.map((l) => parseTimerLabel(bound[l] ?? l));
-    // Seven resolve to a duration since `mix-8` joined them; only "per
-    // schedule" does not, because the timeline owns that one.
-    expect(parsed.filter(Boolean)).toHaveLength(7);
+    // Eight resolve to a duration; only "per schedule" does not, because the
+    // timeline owns that one.
+    expect(parsed.filter(Boolean)).toHaveLength(8);
     expect(labels[parsed.findIndex((p) => p === null)]).toBe('per schedule');
   });
 });

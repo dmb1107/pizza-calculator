@@ -64,13 +64,17 @@ for c in body.split('\n#### ')[1:]:
     h=re.search(r'^`([a-z0-9-]+)` — (.+)$', c, re.M)
     if not h: continue
     ph=field(c,'phase'); rm=field(c,'repeatsPerMix')
+    # 8.2 "**shown only when:** `<condition>` - prose". Take only the backticked
+    # condition; the prose after the em-dash is rationale for a reader.
+    sw=re.search(r'^\*\*shown only when:\*\*\s*`([^`]+)`', c, re.M)
     s={'id':h.group(1),'title':h.group(2).strip(),'phase':ph,
        'summary':field(c,'summary'),'summaryRetarded':field(c,r'summary \(retarded\)'),
        'summaryClassic':field(c,r'summary \(classic\)'),'values':field(c,'values'),
        'timer':field(c,'timer'),'speed':field(c,'speed'),'watchFor':field(c,'watchFor'),
        'concepts':field(c,'concepts'),'detail':bq(c,'**detail:**'),
        'troubleshoot':table(c,'**troubleshoot:**'),
-       'repeatsPerMix':ph=='mix','suppressOnFinal':bool(rm and 'suppress' in rm.lower())}
+       'repeatsPerMix':ph=='mix','suppressOnFinal':bool(rm and 'suppress' in rm.lower()),
+       'shownWhen':sw.group(1) if sw else None}
     for cond in ['nMix > 1','nBiga > 1']:
         b=bq(c,'**detail, shown only when `%s`:**'%cond)
         if b: s['detailWhen']={'condition':cond,'detail':b}
@@ -100,6 +104,7 @@ for s in steps:
     out.append('  {\n')
     out.append('    id: %s,\n'%json.dumps(s['id']))
     out.append('    phase: %s,\n'%json.dumps(s['phase']))
+    if s['shownWhen']: out.append('    shownWhen: %s,\n'%json.dumps(s['shownWhen']))
     out.append('    title: `%s`,\n'%tpl(s['title']))
     out.append('    summary: `%s`,\n'%tpl(s['summary'] or s['summaryRetarded'] or ''))
     if s['summaryRetarded']: out.append('    summaryRetarded: `%s`,\n'%tpl(s['summaryRetarded']))
