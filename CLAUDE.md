@@ -50,6 +50,7 @@ question:
 | `FINDINGS-10-to-recipe-agent.md` | Settled by MESSAGE-11 |
 | `MESSAGE-11-replies.md` | Three wall-clock bases, not two; the boundary rule is template-scoped; `stagger` stays on the planning basis |
 | `FINDINGS-11-to-recipe-agent.md` | Nothing open. Records the expansion-order bug their §2 exposed |
+| `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** How the correspondence works, what has gone wrong, and the deploy situation |
 
 ## Rules that matter more than usual here
 
