@@ -281,7 +281,7 @@ Friction per minute at each speed, if you need to correct elsewhere: 15% ≈ 0.7
     timerMinutes: 10,
     detail: `Relaxes the gluten. The dough smooths out on its own without any further work — this is doing something, even though it looks like nothing is happening.
 
-It also breaks up the mixer's continuous run time, which keeps the whole session inside the Halo Core's 20-minute continuous limit.`,
+It also breaks up the mixer's continuous run time, which keeps the whole session inside the Halo Core's {maxRunMin}-minute continuous limit.`,
     repeatsPerMix: true,
   },
   {
@@ -292,7 +292,7 @@ It also breaks up the mixer's continuous run time, which keeps the whole session
     speed: { dial: 20, rpm: 98, minutes: [1, 1], label: `20% / 98 RPM, ~1 min` },
     detail: `**Temperature is a pass/fail gate, not a suggestion.** Record the actual number every time; it's the input to your friction factor and therefore to every future batch.
 
-**Never above 40% / 148 RPM with this dough.** Total run time is about 15 minutes, inside the mixer's 20-minute continuous limit, and the rest breaks it up anyway.`,
+**Never above 40% / 148 RPM with this dough.** Total run time is about 15 minutes, inside the mixer's {maxRunMin}-minute continuous limit, and the rest breaks it up anyway.`,
     watchFor: `Smooth and glossy, "pumpkin-lattice" surface, cleans the bowl, thin windowpane with only slight tearing — **and at DDT ±1 °F.**`,
     repeatsPerMix: true,
   },

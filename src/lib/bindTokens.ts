@@ -9,6 +9,7 @@
  * `unboundTokens` lets the test suite prove there are none.
  */
 
+import { C } from './constants';
 import { formatAdy, formatGrams, formatTempF } from './format';
 import { mixStaggerH, observedRate, type CalculatorResult } from './engine';
 
@@ -102,6 +103,14 @@ export function tokenValues(
     staggerMinutes: String(Math.round(mixStaggerH(capacity.nMix) * 60)),
     staggerHalfMinutes: String(Math.round((mixStaggerH(capacity.nMix) / 2) * 60)),
     staggerUncentred: String(Math.round(result.staggerUncentredMin)),
+
+    /**
+     * §3. The mixer's continuous run limit. Bound rather than written into the
+     * prose so the number lives in one place — `mix-6` and `mix-7` both state
+     * it, and a constant nothing reads beside a literal nothing checks is how
+     * the two drift apart.
+     */
+    maxRunMin: trim(C.MAX_RUN_MIN),
 
     // Inputs — trimmed, since the prose supplies the unit.
     balls: String(inputs.balls),

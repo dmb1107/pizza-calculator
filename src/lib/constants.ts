@@ -49,7 +49,20 @@ const BASE = {
   MIN_DOUGH: 500, // g
   FLOUR_CAP_66: 1505, // g, at 66%+ hydration (final mix)
   FLOUR_CAP_55: 1610, // g, at 55-59% hydration (biga)
-  MAX_RUN_MIN: 20, // continuous
+  /**
+   * Continuous run limit, minutes. Read by the profile assertion in
+   * `tests/constants.test.ts` and bound into `mix-6` / `mix-7` prose as
+   * `{maxRunMin}`, so the number lives in one place.
+   */
+  MAX_RUN_MIN: 20,
+
+  /**
+   * §4.6. The ceiling of Phase C's temperature authority, minutes — the longest
+   * run the recipe actually lets a user produce, against the 3–4 min printed on
+   * the card. Stretching past this trades gluten development for temperature
+   * and loses both, so it is the number the run-time assertion must use.
+   */
+  PHASE_C_MAX_MIN: 5.5,
 
   // Speed
   RPM_INTERCEPT: 47.4, // RPM = 47.4 + 2.526 * dial%   (measured: 5% = 60 RPM)

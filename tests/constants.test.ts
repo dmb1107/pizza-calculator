@@ -2,6 +2,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { C } from '../src/lib/constants';
+import { STEPS } from '../src/content/steps';
 
 /**
  * Structural checks on the constants — WEBSITE-SPEC-biga-calculator.md §3.
@@ -40,25 +41,8 @@ describe('every constant has a consumer', () => {
    * and both are load-bearing. What this catches is a constant read by
    * *nothing at all*.
    */
-  /**
-   * ⚠️ The one constant nothing reads, and it is deliberate rather than dead.
-   *
-   * §3 lists the Halo Core's 20-minute continuous limit, but nothing in the app
-   * computes against it: the nominal profile is ~15 min of run time and the
-   * 10-minute rest breaks it up, so there is no state in which the app could
-   * warn. §8's `mix-6` and `mix-7` state the limit as prose instead — which
-   * means the number lives in two places, once as a constant nobody reads and
-   * once as a literal in verbatim content.
-   *
-   * Kept rather than deleted because §3 is transcribed from the spec, and
-   * listed here rather than filtered silently so it stays visible. Raised with
-   * the recipe agent.
-   */
-  const DELIBERATELY_UNREAD = ['MAX_RUN_MIN'];
-
   it('finds a reader for each one', () => {
     const orphans = Object.keys(C).filter((key) => {
-      if (DELIBERATELY_UNREAD.includes(key)) return false;
       const uses = ALL_READERS.split(key).length - 1;
       // One occurrence is its own declaration in constants.ts.
       return uses <= 1;
@@ -105,5 +89,79 @@ describe('derived constants are derived', () => {
     // Both of these are whole minutes, so they must divide exactly by 60.
     expect((C.DIVIDE_BALL_H * 60) % 1).toBe(0);
     expect((C.CHANGEOVER_H * 60) % 1).toBe(0);
+  });
+});
+
+describe('§5 the mix profile fits the mixer', () => {
+  /**
+   * The longest continuous run the recipe can produce, against the Halo Core's
+   * limit. Phases A, B and C run back to back — the ~30-second probe pause
+   * between B and C is treated as NOT resetting motor thermal load, which is
+   * the conservative reading. `mix-6`'s ten-minute rest unambiguously breaks
+   * the run, so Phase D starts fresh and is not in the sum.
+   *
+   * ⚠️ Deliberately a build-time assertion rather than a runtime warning. A
+   * warning here could never fire — the profile is fixed and minutes clear —
+   * and that is exactly the point: this catches a future phase extension
+   * quietly eating the margin, which is the only route by which the limit ever
+   * gets breached.
+   */
+  const MIX_STEPS = STEPS.filter((s) => s.phase === 'mix');
+
+  /**
+   * The rest is the FIRST mix step with a timer and no speed — a pause with a
+   * speed step still ahead of it.
+   *
+   * `mix-8` shares that shape (a 5-minute changeover, no speed) but sits after
+   * Phase D, so it ends the mix rather than interrupting the run. Taking the
+   * first match is what distinguishes them, and the test below pins both so a
+   * new pause anywhere in the phase has to be looked at rather than silently
+   * changing where the run is measured.
+   */
+  const restIndex = MIX_STEPS.findIndex((s) => s.timerLabel && !s.speed);
+
+  it('identifies the rest as the pause that interrupts the run', () => {
+    const pauses = MIX_STEPS.filter((s) => s.timerLabel && !s.speed);
+    expect(pauses.map((s) => s.id), 'mix steps that pause the motor').toEqual([
+      'mix-6', // the 10-minute rest, mid-run
+      'mix-8', // the changeover, after Phase D
+    ]);
+    expect(MIX_STEPS[restIndex]?.id, 'the one that bounds the continuous run').toBe('mix-6');
+    // A pause only interrupts the run if a speed step follows it.
+    expect(MIX_STEPS.slice(restIndex + 1).some((s) => s.speed)).toBe(true);
+  });
+
+  it('keeps A + B + C inside the continuous limit, with headroom', () => {
+    // Derived from the step content rather than transcribed, so extending a
+    // phase in §8.2 moves this sum automatically — which is the whole purpose.
+    const continuousMin = MIX_STEPS.slice(0, restIndex).reduce((total, step) => {
+      if (!step.speed) return total;
+      // Phase C's reachable ceiling is its §4.6 temperature authority (5.5 min),
+      // not the 3–4 printed on the card. Assert against what a user can produce.
+      const reachable =
+        step.speed.dial === 30
+          ? Math.max(step.speed.minutes[1], C.PHASE_C_MAX_MIN)
+          : step.speed.minutes[1];
+      return total + reachable;
+    }, 0);
+
+    expect(continuousMin, 'A + B + C at their maxima').toBeCloseTo(15.5, 6);
+    expect(continuousMin).toBeLessThanOrEqual(C.MAX_RUN_MIN);
+    expect(C.MAX_RUN_MIN - continuousMin, 'headroom, minutes').toBeCloseTo(4.5, 6);
+  });
+
+  it('shows how sharp the margin is', () => {
+    // §5: stretching Phase C to 10 minutes lands on exactly 20.0 and still
+    // passes. Anything beyond that is the failure this assertion exists for.
+    const aPlusB = MIX_STEPS.slice(0, restIndex)
+      .filter((s) => s.speed && s.speed.dial !== 30)
+      .reduce((total, s) => total + s.speed!.minutes[1], 0);
+    expect(aPlusB + 10).toBeCloseTo(C.MAX_RUN_MIN, 6);
+    expect(aPlusB + 10.5).toBeGreaterThan(C.MAX_RUN_MIN);
+  });
+
+  it('leaves Phase D out, because the rest breaks the run', () => {
+    const afterRest = MIX_STEPS.slice(restIndex + 1).filter((s) => s.speed);
+    expect(afterRest.map((s) => s.id), 'speed steps after the rest').toEqual(['mix-7']);
   });
 });

@@ -66,7 +66,7 @@ export const C = {
   MIN_BALLS: 3,               // smallest supported machine batch - see 4.4
   FLOUR_CAP_66: 1505,         // g, at 66%+ hydration (final mix)
   FLOUR_CAP_55: 1610,         // g, at 55-59% hydration (biga)
-  MAX_RUN_MIN: 20,            // continuous
+  MAX_RUN_MIN: 20,            // continuous. Read by the profile assertion in §5 and bound into mix-6/mix-7 prose
 
   // Speed
   RPM_INTERCEPT: 47.4,        // RPM = 47.4 + 2.526 * dial%   (measured: 5% = 60 RPM)
@@ -536,6 +536,23 @@ For reference, had `MIN_BALLS` stayed at 1 the maximum would be **152.2 °F** (1
 - ❌ **Do NOT assert bowl-inclusive thermal weights are scale-invariant.** They aren't.
 - ❌ **Do NOT assert a flat `DDT − 4` probe target.** No such rule exists.
 
+### The mix profile fits the mixer — assert it
+
+`MAX_RUN_MIN` had no reader, which made it look decorative. It isn't: it is a **bound on the mix profile**, and nothing was enforcing it.
+
+Treat the ~30-second probe pause as *not* resetting motor thermal load — the conservative reading — and the longest continuous run is Phase A + B + C at their maxima. The 10-minute rest unambiguously breaks it, so Phase D starts fresh:
+
+```
+PHASE_A_MAX + PHASE_B_MAX + PHASE_C_MAX ≤ MAX_RUN_MIN
+        4.0 +         6.0 +         5.5  =  15.5  ≤  20    ✓  4.5 min headroom
+```
+
+`PHASE_C_MAX` is **5.5**, the documented ceiling of Phase C's temperature authority (§4.6), not its nominal 3–4. Assert against the ceiling a user can actually reach, not the number on the card.
+
+This is a build-time assertion on the profile, **not** a runtime warning. A user-facing warning here could never fire — the profile is fixed and 4.5 minutes clear — and that is exactly what makes the assertion worth having: it catches a future phase extension quietly eating the margin, which is the only way this limit ever gets breached. Worth knowing how sharp it is: stretching Phase C to 10 minutes lands on exactly 20.0 and still passes.
+
+⚠️ **Duty cycle across a split batch is unknown territory and stays out of the model.** At `nMix = 2` the motor runs about 33 minutes inside 57 minutes of wall clock. That is not a continuous run — the 10-minute rest and the 5-minute changeover are real breaks — so it does not breach the stated limit. But Ooni publishes a continuous figure and no duty-cycle guidance, so there is nothing to compute against. Don't model it, don't warn on it. It is worth watching on the first split bake, which is a note for the baker rather than a feature.
+
 ## 6. Inputs
 
 Group into three panels. **Batch** open by default; the other two collapsed with a summary line, since most sessions only touch the first.
@@ -861,7 +878,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 **detail:**
 > Relaxes the gluten. The dough smooths out on its own without any further work — this is doing something, even though it looks like nothing is happening.
 >
-> It also breaks up the mixer's continuous run time, which keeps the whole session inside the Halo Core's 20-minute continuous limit.
+> It also breaks up the mixer's continuous run time, which keeps the whole session inside the Halo Core's {maxRunMin}-minute continuous limit.
 
 ---
 
@@ -874,7 +891,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 **detail:**
 > **Temperature is a pass/fail gate, not a suggestion.** Record the actual number every time; it's the input to your friction factor and therefore to every future batch.
 >
-> **Never above 40% / 148 RPM with this dough.** Total run time is about 15 minutes, inside the mixer's 20-minute continuous limit, and the rest breaks it up anyway.
+> **Never above 40% / 148 RPM with this dough.** Total run time is about 15 minutes, inside the mixer's {maxRunMin}-minute continuous limit, and the rest breaks it up anyway.
 
 ---
 

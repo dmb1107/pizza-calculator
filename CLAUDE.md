@@ -45,7 +45,8 @@ question:
 | `MESSAGE-8-replies.md` | `bulk-1`'s warning rewritten for its own moment; editorial notes moved out of §8.2 |
 | `FINDINGS-8-to-recipe-agent.md` | Settled by MESSAGE-9 |
 | `MESSAGE-9-replies.md` | Derive the flour offset rather than hardcode it; document the unexercised parser branch |
-| `FINDINGS-9-to-recipe-agent.md` | **Open (minor).** `MAX_RUN_MIN` is read by nothing while §8 states the same 20 minutes as prose |
+| `FINDINGS-9-to-recipe-agent.md` | Settled by MESSAGE-10 |
+| `MESSAGE-10-replies.md` | `{maxRunMin}` bound into `mix-6`/`mix-7`; the profile asserted against `MAX_RUN_MIN` at build time; split-batch duty cycle deliberately unmodelled |
 
 ## Rules that matter more than usual here
 
@@ -95,6 +96,21 @@ quote a rendered number**; one without them cost a round of correspondence.
 literal went wrong — a hardcoded value is correct today and silently wrong the
 first time the formula moves. `tests/constants.test.ts` recomputes each from its
 inputs, and separately asserts every constant has a reader.
+
+**The mix profile is asserted against `MAX_RUN_MIN` at build time, not warned
+about at runtime.** Phases A + B + C run back to back — the probe pause is
+treated as *not* resetting motor thermal load, the conservative reading — and
+`mix-6`'s rest breaks the run, so Phase D starts fresh. The sum is derived from
+the step content rather than transcribed, so extending a phase in §8.2 moves it
+automatically; that is the whole purpose, since a runtime warning could never
+fire on a fixed profile with 4.5 minutes of headroom. Phase C contributes its
+§4.6 authority ceiling (5.5 min), not the 3–4 printed on the card.
+
+**Split-batch duty cycle is deliberately unmodelled.** The motor runs ~33 min
+inside ~59 min of wall clock at `nMix = 2`, which is not a continuous run. Ooni
+publishes a continuous figure and no duty-cycle guidance, so there is nothing to
+compute against — and a bound invented for the occasion is how the yeast table
+went wrong. Don't model it, don't warn on it.
 
 **Scope goes in the token name.** Bare means a batch total; `PerMix` divides by
 `nMix`; `PerBiga` by `nBiga`. Three scope bugs in three rounds — the worst put
