@@ -185,6 +185,32 @@ describe('§4.7 stage durations', () => {
       expect(total({ ballRoomTempH: 2 })).toBeCloseTo(52.33, 2);
     });
 
+    it('keeps stagger on the planning basis, tied to the timeline', () => {
+      // ⚠️ §5 names THREE wall-clock bases for a mix, spanning 12 minutes:
+      //   nominal mid-range 23.9 · phase maxima 27.0 · planning 30.0
+      //
+      // `stagger` uses the planning basis, and must: it and the timeline are
+      // the same quantity — how long a mix takes — so rebasing one decouples
+      // the correction from the schedule it corrects. On the maxima basis the
+      // stagger would be 32 min and the rise cut 16.0 rather than 17.5, and
+      // the schedule and the correction would describe different sessions.
+      //
+      // Pinned because the tempting "improvement" is to notice the duty-cycle
+      // figure uses maxima and conclude this should too. If one moves, both
+      // move.
+      const planningMixH = stageDurations('retarded', DEFAULTS).mix;
+      expect(planningMixH, 'one mix on the planning basis').toBeCloseTo(0.5, 6);
+      expect(mixStaggerH(2) * 60, 'stagger at nMix 2').toBeCloseTo(35, 6);
+      expect(mixStaggerH(2) / 2, 'half the stagger, hours').toBeCloseTo(
+        (planningMixH + C.CHANGEOVER_H) / 2,
+        6,
+      );
+
+      // What the maxima basis would give, so the difference is visible.
+      const maximaMixH = 27 / 60;
+      expect((maximaMixH + C.CHANGEOVER_H) * 60, 'maxima-based stagger').toBeCloseTo(32, 6);
+    });
+
     it('adds a second mix and a changeover at nMix 2', () => {
       // §4.7: `mix` was a flat 0.5 h and counted one mix for a 12-ball batch
       // that runs two back to back. 0.5 × 2 + 0.0833 = 1.083 h.

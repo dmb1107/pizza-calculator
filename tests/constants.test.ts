@@ -2,7 +2,8 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { C } from '../src/lib/constants';
-import { STEPS } from '../src/content/steps';
+import { STEPS, type Step } from '../src/content/steps';
+import { expandSteps } from '../src/lib/stepInstances';
 
 /**
  * Structural checks on the constants — WEBSITE-SPEC-biga-calculator.md §3.
@@ -109,26 +110,56 @@ describe('§5 the mix profile fits the mixer', () => {
   const MIX_STEPS = STEPS.filter((s) => s.phase === 'mix');
 
   /**
-   * The rest is the FIRST mix step with a timer and no speed — a pause with a
-   * speed step still ahead of it.
+   * The run boundary is the ten-minute rest, `mix-6`.
    *
-   * `mix-8` shares that shape (a 5-minute changeover, no speed) but sits after
-   * Phase D, so it ends the mix rather than interrupting the run. Taking the
-   * first match is what distinguishes them, and the test below pins both so a
-   * new pause anywhere in the phase has to be looked at rather than silently
-   * changing where the run is measured.
+   * ⚠️ **Identified by id, deliberately.** `mix-8` shares its shape — a pause
+   * with a timer and no speed — and the tempting general rule is "a pause with
+   * a speed step still ahead of it." That rule is TEMPLATE-SCOPED AND DOES NOT
+   * SURVIVE §8.2a EXPANSION: the rendered order is
+   *
+   *     … mix-7#1, mix-8#1, mix-1#2, mix-2#2 …
+   *
+   * so after expansion `mix-8#1` *is* followed by a speed step, and the rule
+   * classifies the changeover as interrupting a run rather than ending one —
+   * the exact misclassification it was written to prevent, one layer up. The
+   * test below pins that failure so the rule cannot be quietly adopted.
+   *
+   * **A new pause in the mix phase is something a person has to classify.** Do
+   * not replace this pinning with the general form.
    */
-  const restIndex = MIX_STEPS.findIndex((s) => s.timerLabel && !s.speed);
+  const restIndex = MIX_STEPS.findIndex((s) => s.id === 'mix-6');
 
-  it('identifies the rest as the pause that interrupts the run', () => {
+  it('identifies the rest as the pause that bounds the run', () => {
     const pauses = MIX_STEPS.filter((s) => s.timerLabel && !s.speed);
     expect(pauses.map((s) => s.id), 'mix steps that pause the motor').toEqual([
-      'mix-6', // the 10-minute rest, mid-run
+      'mix-6', // the ten-minute rest, mid-run
       'mix-8', // the changeover, after Phase D
     ]);
     expect(MIX_STEPS[restIndex]?.id, 'the one that bounds the continuous run').toBe('mix-6');
-    // A pause only interrupts the run if a speed step follows it.
-    expect(MIX_STEPS.slice(restIndex + 1).some((s) => s.speed)).toBe(true);
+  });
+
+  it('pins why the general boundary rule cannot be used', () => {
+    // On the TEMPLATES the rule happens to work: mix-8 is last, so nothing
+    // with a speed follows it.
+    const templatePauses = MIX_STEPS.filter((s) => s.timerLabel && !s.speed);
+    const followedBySpeed = (list: { step: Step }[], i: number) =>
+      list.slice(i + 1).some((x) => x.step.speed);
+
+    const asTemplates = MIX_STEPS.map((step) => ({ step }));
+    const mix8Template = asTemplates.findIndex((x) => x.step.id === 'mix-8');
+    expect(followedBySpeed(asTemplates, mix8Template), 'templates: rule holds').toBe(false);
+
+    // After expansion it does not. mix-8#1 is followed by the whole of mix 2.
+    const expanded = expandSteps(2);
+    const mix8First = expanded.findIndex((x) => x.key === 'mix-8#1');
+    expect(expanded[mix8First]?.key).toBe('mix-8#1');
+    expect(
+      followedBySpeed(expanded, mix8First),
+      'expanded: the rule would misclassify the changeover as mid-run',
+    ).toBe(true);
+
+    // Which is why `restIndex` is pinned by id rather than derived.
+    expect(templatePauses.length, 'two pauses share the shape').toBe(2);
   });
 
   it('keeps A + B + C inside the continuous limit, with headroom', () => {

@@ -549,9 +549,25 @@ PHASE_A_MAX + PHASE_B_MAX + PHASE_C_MAX ≤ MAX_RUN_MIN
 
 `PHASE_C_MAX` is **5.5**, the documented ceiling of Phase C's temperature authority (§4.6), not its nominal 3–4. Assert against the ceiling a user can actually reach, not the number on the card.
 
+⚠️ **Identify the run boundary by step id, not by step shape.** The rest and `mix-8` are structurally identical — a mix-phase step with a timer and no speed — so shape cannot tell an interruption from an ending. The natural rule, *"a pause with a speed step still ahead of it"*, **is correct only within a single mix instance and false after `repeatsPerMix` expansion**: the order is `… mix-7#1, mix-8#1, mix-1#2, mix-2#2 …`, so `mix-8#1` is followed by a speed step and the rule would classify the changeover as interrupting a run rather than ending one. Pin both boundaries by id, and treat a new pause in the mix phase as something a person has to classify.
+
 This is a build-time assertion on the profile, **not** a runtime warning. A user-facing warning here could never fire — the profile is fixed and 4.5 minutes clear — and that is exactly what makes the assertion worth having: it catches a future phase extension quietly eating the margin, which is the only way this limit ever gets breached. Worth knowing how sharp it is: stretching Phase C to 10 minutes lands on exactly 20.0 and still passes.
 
-⚠️ **Duty cycle across a split batch is unknown territory and stays out of the model.** At `nMix = 2` the motor runs about 33 minutes inside 57 minutes of wall clock. That is not a continuous run — the 10-minute rest and the 5-minute changeover are real breaks — so it does not breach the stated limit. But Ooni publishes a continuous figure and no duty-cycle guidance, so there is nothing to compute against. Don't model it, don't warn on it. It is worth watching on the first split bake, which is a note for the baker rather than a feature.
+⚠️ **Duty cycle across a split batch is unknown territory and stays out of the model.** At `nMix = 2` the motor runs **33.0 minutes** (A 4 + B 6 + C 5.5 + D 1 = 16.5 per mix, doubled). That is not a continuous run — the 10-minute rest and the 5-minute changeover are real breaks — so it does not breach the stated limit. But Ooni publishes a continuous figure and no duty-cycle guidance, so there is nothing to compute against. Don't model it, don't warn on it. Watch it on the first split bake; that is a note for the baker, not a feature.
+
+#### Three wall-clock figures for the mix stage, all correct
+
+The motor time above is unambiguous. **Wall clock is not**, and the three bases differ by 12 minutes — enough to look like a bug to anyone comparing two of them:
+
+| Basis | Per mix | `nMix = 2` | Answers |
+|---|---:|---:|---|
+| Nominal, mid-range phase times | 23.9 min | **52.8 min** | how long it usually takes |
+| Phase maxima, Phase C at its 5.5 ceiling | 27.0 min | **59.0 min** | the worst case — the right basis for duty cycle |
+| §4.7's planning number (`0.5 h × nMix + changeover`) | 30.0 min | **65.0 min** | what the schedule is built on |
+
+Same discipline as the 0.392 flour offset: none of them is wrong, and quoting one without naming its basis is.
+
+⚠️ **`stagger` correctly uses the planning basis — do not "fix" it to the maxima.** `stagger = (MIX + CHANGEOVER) × (nMix − 1)` = 35 min, and `MIX` is the same 0.5 h the timeline uses, because they are the same quantity: how long a mix takes. Rebasing `stagger` on phase maxima would give 32 min and a 16.0-minute rise cut, and would leave the schedule and the correction describing different sessions. If one ever moves, both move.
 
 ## 6. Inputs
 

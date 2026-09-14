@@ -47,7 +47,9 @@ question:
 | `MESSAGE-9-replies.md` | Derive the flour offset rather than hardcode it; document the unexercised parser branch |
 | `FINDINGS-9-to-recipe-agent.md` | Settled by MESSAGE-10 |
 | `MESSAGE-10-replies.md` | `{maxRunMin}` bound into `mix-6`/`mix-7`; the profile asserted against `MAX_RUN_MIN` at build time; split-batch duty cycle deliberately unmodelled |
-| `FINDINGS-10-to-recipe-agent.md` | Nothing open. Notes that the duty-cycle wall clock and the §4.7 mix stage use different bases |
+| `FINDINGS-10-to-recipe-agent.md` | Settled by MESSAGE-11 |
+| `MESSAGE-11-replies.md` | Three wall-clock bases, not two; the boundary rule is template-scoped; `stagger` stays on the planning basis |
+| `FINDINGS-11-to-recipe-agent.md` | Nothing open. Records the expansion-order bug their §2 exposed |
 
 ## Rules that matter more than usual here
 
@@ -61,7 +63,12 @@ won't be obvious until 50 hours of fermentation later.
 
 **The whole `mix` phase repeats, and instances are the primary key.** §8.2a:
 `mix-1` … `mix-8` carry `repeatsPerMix`, so at `nMix = 2` the list renders them
-twice with ids `mix-2#1`, `mix-2#2`. **Checkbox and timer state key off the
+twice with ids `mix-2#1`, `mix-2#2`. **`expandSteps` repeats the contiguous
+block per mix, not each template in turn** — the baker runs mix-1 through mix-8,
+then mix-1 through mix-7 again. Repeating each template individually gives the
+same instance count and the same labels but the wrong procedure: both bowls
+prepped, then Phase A twice, changeover last. That shipped once and browser
+checks that counted instances rather than reading the order missed it. **Checkbox and timer state key off the
 instance id**, which is the entire point — one id for two passes meant one
 checkbox and one timer slot for two mixes. `mix-8` (the changeover) also carries
 `suppressOnFinal`: there is no changeover after the last mix. At `nMix = 1` the
@@ -97,6 +104,18 @@ quote a rendered number**; one without them cost a round of correspondence.
 literal went wrong — a hardcoded value is correct today and silently wrong the
 first time the formula moves. `tests/constants.test.ts` recomputes each from its
 inputs, and separately asserts every constant has a reader.
+
+**The continuous-run boundary is `mix-6`, pinned by id.** The general rule — "a
+pause with a speed step still ahead of it" — is **template-scoped and does not
+survive §8.2a expansion**: after expansion `mix-8#1` is followed by the whole of
+mix 2, so the rule classifies the changeover as interrupting a run. A test pins
+that failure. A new pause in the mix phase is something a person classifies.
+
+**Three wall-clock bases for a mix, spanning 12 minutes** — nominal mid-range
+23.9, phase maxima 27.0 (the duty-cycle basis), §4.7 planning 30.0. `stagger`
+uses the **planning** basis and must: it and the timeline are the same quantity,
+so rebasing one decouples the correction from the schedule it corrects. If one
+moves, both move.
 
 **The mix profile is asserted against `MAX_RUN_MIN` at build time, not warned
 about at runtime.** Phases A + B + C run back to back — the probe pause is

@@ -5,8 +5,9 @@ import { StepTimer } from './StepTimer';
 import { BOUNDS } from '../state/defaults';
 import { formatTempF } from '../lib/format';
 import { parseTimerLabel } from '../lib/timers';
-import { PHASE_LABELS, STEPS, type Phase, type Step, type StepTable } from '../content/steps';
+import { PHASE_LABELS, type Phase, type Step, type StepTable } from '../content/steps';
 import { bindTokens, tokenValues } from '../lib/bindTokens';
+import { expandSteps } from '../lib/stepInstances';
 import type { AppState } from '../state/useAppState';
 
 /**
@@ -306,23 +307,7 @@ export function StepList({
    * is the bare template id, so nothing changes for 3, 6 or 9 balls — including
    * both calibration bakes — and no persisted checkbox is orphaned.
    */
-  const instances = useMemo(() => {
-    const out: { key: string; step: Step; mixIndex: number }[] = [];
-    for (const step of STEPS) {
-      if (!step.repeatsPerMix || nMix === 1) {
-        // `mix-8` is a changeover; with one mix there is nothing to change over.
-        if (step.suppressOnFinal && nMix === 1) continue;
-        out.push({ key: step.id, step, mixIndex: 1 });
-        continue;
-      }
-      for (let i = 1; i <= nMix; i++) {
-        // No changeover after the last mix.
-        if (step.suppressOnFinal && i === nMix) continue;
-        out.push({ key: `${step.id}#${i}`, step, mixIndex: i });
-      }
-    }
-    return out;
-  }, [nMix]);
+  const instances = useMemo(() => expandSteps(nMix), [nMix]);
 
   /** Token table per instance — `{mixIndex}` and `{waterTempNext}` differ. */
   const tokensFor = (mixIndex: number) =>
