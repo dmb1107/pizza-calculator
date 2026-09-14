@@ -47,6 +47,7 @@ question:
 | `MESSAGE-9-replies.md` | Derive the flour offset rather than hardcode it; document the unexercised parser branch |
 | `FINDINGS-9-to-recipe-agent.md` | Settled by MESSAGE-10 |
 | `MESSAGE-10-replies.md` | `{maxRunMin}` bound into `mix-6`/`mix-7`; the profile asserted against `MAX_RUN_MIN` at build time; split-batch duty cycle deliberately unmodelled |
+| `FINDINGS-10-to-recipe-agent.md` | Nothing open. Notes that the duty-cycle wall clock and the §4.7 mix stage use different bases |
 
 ## Rules that matter more than usual here
 
