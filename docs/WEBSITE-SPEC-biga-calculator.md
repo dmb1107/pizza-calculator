@@ -323,6 +323,19 @@ Durations in hours, from biga mix at t=0. **These are authoritative** — they w
 | `coldFerment` | **user input** | **user input** | 6–36, default 24 |
 | `temper` | 2.5 | 2.5 | user-adjustable 2–3 |
 
+⚠️ **This table is a sequence, and the overhead total cannot detect a wrong one.** Addition is commutative, so a stage-order error produces a correct sum and a wrong schedule. That has already happened once here, in the step expansion (§8.2a), where the instance count was right and the order was not — and the sum is a weaker check than the count was.
+
+**The backward timeline is where this becomes visible.** Solving from a target bake time back through the stages turns the order into timestamps. Get it wrong and every total still asserts clean while every intermediate time is wrong, and the failure surfaces as a baker standing at a cold oven rather than as a red test.
+
+So assert the **stage sequence** alongside the total:
+
+```
+bigaRoomTemp → bigaFridge → bigaTemper → mix → bulkRest → divideBall
+             → ballRoomTemp → coldFerment → temper
+```
+
+Note `coldFerment` sits **after** `ballRoomTemp`, not with the other biga stages — the balls go to the fridge shaped, which is the one placement in this list that is not obvious from the row order above. Write the sequence out explicitly in the test rather than deriving it from the table, so that reordering the table for readability cannot silently reorder the schedule.
+
 ### 4.8 Shaped rise time
 
 The balls' room-temperature phase is computed from the **measured final dough temperature**, not fixed.
@@ -946,7 +959,20 @@ interface Step {
 ```
 
 - Mark **`mix-1` … `mix-8`** with `repeatsPerMix: true`. `mix-8` also gets `suppressOnFinal: true`.
-- Expand at render time to `mix-1#1 … mix-8#1, mix-1#2 …`, binding `{mixIndex}` per instance.
+- Expand at render time, binding `{mixIndex}` per instance.
+
+⚠️ **The expansion repeats the contiguous block once per mix. It does not repeat each template in turn.** An ellipsis in an earlier draft left this to be inferred, and it was implemented the other way round for four rounds:
+
+```
+correct   mix-1#1 mix-2#1 … mix-7#1 mix-8#1   mix-1#2 mix-2#2 … mix-7#2
+WRONG     mix-1#1 mix-1#2 mix-2#1 mix-2#2 … mix-7#1 mix-7#2   mix-8#1
+```
+
+The wrong form has the **same instance count, the same labels, and the same suppression** — 26 instances at 12 balls either way. What it does not have is a procedure: it tells the baker to prep both bowls, then run Phase A twice, then Phase B twice, and it puts the changeover *last*, after both Phase Ds, which is the one position where "changeover to the next mix" means nothing.
+
+**Assert the full rendered id sequence at `nMix` 1, 2 and 3 against an expected sequence written out in the test.** Not the count, not the labels, not "the changeover appears once" — every one of those is true of the wrong form. Where order is the meaning, order is the thing to assert, and a golden sequence is the only assertion a plausible-looking reordering cannot satisfy.
+
+**Keep the expansion in its own pure module.** Inside the component that renders it, no test can reach it.
 - **Checkbox and timer state key off the expanded id**, which is the whole point.
 - At `nMix = 1` there is one instance and `mix-8` never renders, so **nothing changes for 3, 6 or 9 balls** — including both calibration bakes.
 - §8.2 stays one entry per *kind* of step. The uniqueness assertion holds on the templates.

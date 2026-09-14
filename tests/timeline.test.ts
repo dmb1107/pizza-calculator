@@ -12,6 +12,7 @@ import {
   toDatetimeLocal,
   type ScheduleAdjustments,
 } from '../src/lib/timeline';
+import type { Schedule } from '../src/state/types';
 
 /** Timeline — WEBSITE-SPEC-biga-calculator.md §4.7. TZ is pinned to America/New_York. */
 
@@ -311,6 +312,93 @@ describe('§4.7 stage durations', () => {
       expect(total({ temperH: 2 })).toBeCloseTo(51.33, 2);
       expect(total({ temperH: 3 })).toBeCloseTo(52.33, 2);
     });
+  });
+});
+
+/**
+ * §4.7's duration table is a SEQUENCE, and the overhead total cannot detect a
+ * wrong one. Addition is commutative, so any stage-order error produces a
+ * correct sum and a wrong schedule — a weaker check than the instance count
+ * that failed to catch the §8.2a ordering bug, because a sum cannot even tell
+ * you the count is wrong.
+ *
+ * The forward timeline hides this: stages accumulate to the same end time
+ * either way. The BACKWARD timeline is where order becomes timestamps — solve
+ * from a target bake time back through a mis-ordered stage list and every total
+ * still asserts clean while every intermediate time is wrong. It surfaces as a
+ * baker standing at a cold oven, not as a red test.
+ *
+ * Both sequences below are written out by hand, NOT derived from `STAGE_ORDER`
+ * or from the duration table — those are the things under test, and a check
+ * that compares something to a description of itself cannot fail usefully.
+ * Reordering the table for readability must not silently reorder the schedule.
+ */
+describe('§4.7 stage sequence', () => {
+  // ⚠️ `coldFerment` sits AFTER `ballRoomTemp`, not with the other biga stages:
+  // the balls go to the fridge shaped. That is the one placement here that is
+  // not obvious from reading §4.7's table top to bottom.
+  const RETARDED_SEQUENCE = [
+    'bigaRoomTemp',
+    'bigaFridge',
+    'bigaTemper',
+    'mix',
+    'bulkRest',
+    'divideBall',
+    'ballRoomTemp',
+    'coldFerment',
+    'temper',
+  ];
+
+  // §4.7 writes its sequence for the retarded schedule, where `bigaRoomOnly` is
+  // zero and therefore absent. On classic it replaces all three retarded biga
+  // stages; everything from `mix` onward is identical.
+  const CLASSIC_SEQUENCE = [
+    'bigaRoomOnly',
+    'mix',
+    'bulkRest',
+    'divideBall',
+    'ballRoomTemp',
+    'coldFerment',
+    'temper',
+  ];
+
+  const keysFor = (schedule: Schedule, adjustments: ScheduleAdjustments = DEFAULTS) =>
+    buildTimeline({ startAt: new Date(2026, 7, 21, 9, 0), schedule, adjustments }).stages.map(
+      (s) => s.key,
+    );
+
+  it('runs the retarded stages in the order §4.7 gives', () => {
+    expect(keysFor('retarded')).toEqual(RETARDED_SEQUENCE);
+  });
+
+  it('runs the classic stages in that order, with bigaRoomOnly for the fridge', () => {
+    expect(keysFor('classic')).toEqual(CLASSIC_SEQUENCE);
+  });
+
+  it('holds the sequence at nMix 2, where `mix` and `ballRoomTemp` both move', () => {
+    // Splitting the batch changes two durations. It must not change the order.
+    expect(keysFor('retarded', { ...DEFAULTS, nMix: 2 })).toEqual(RETARDED_SEQUENCE);
+    expect(keysFor('classic', { ...DEFAULTS, nMix: 2 })).toEqual(CLASSIC_SEQUENCE);
+  });
+
+  it('holds the sequence when the backward solve sets the start', () => {
+    // This is the case §4.7 warns about. Solve back from a bake time, rebuild
+    // forward from the answer, and the stages must still be in order, butt-join
+    // end to start, and land exactly on the requested bake.
+    const bakeAt = new Date(2026, 7, 23, 18, 30);
+    const startAt = solveBigaStart({ bakeAt, schedule: 'retarded', adjustments: DEFAULTS });
+    const timeline = buildTimeline({ startAt, schedule: 'retarded', adjustments: DEFAULTS });
+
+    expect(timeline.stages.map((s) => s.key)).toEqual(RETARDED_SEQUENCE);
+    expect(timeline.bakeAt.getTime()).toBe(bakeAt.getTime());
+
+    for (let i = 1; i < timeline.stages.length; i += 1) {
+      const prev = timeline.stages[i - 1]!;
+      const here = timeline.stages[i]!;
+      expect(here.startsAt.getTime(), here.key + ' starts where ' + prev.key + ' ends').toBe(
+        prev.endsAt.getTime(),
+      );
+    }
   });
 });
 

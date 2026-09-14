@@ -5,9 +5,9 @@ Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
 **Status:** Tasks 0–7 complete, on the bowl-aware thermal model with **per-mix
-weights**, the ice calculation removed, and MESSAGE-4 applied. Task 8 (backward
-timeline) next — §4.7's durations have stopped moving, so it is now safe to
-solve against them.
+weights**, the ice calculation removed, and **MESSAGE-12 applied**. Task 8
+(backward timeline) next — §4.7's durations have stopped moving, so it is now
+safe to solve against them.
 
 ---
 
