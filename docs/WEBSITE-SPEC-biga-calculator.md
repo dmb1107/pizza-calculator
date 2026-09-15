@@ -351,7 +351,7 @@ Note `coldFerment` sits **after** `ballRoomTemp`, not with the other biga stages
 
 ⚠️ **`bigaTemper` had no step.** It has a duration, a place in the sequence, a clock time in the timeline — and nothing in the guided step list told the baker to do it. A baker following the steps went from `biga-5` (pull at ~20% rise) straight to `mix-1` (prep the bowl).
 
-That is the worst possible stage to lose. Biga temperature is the most leveraged input in the model — `d(T_water)/d(T_biga)` runs −1.92 at a 6-ball mix to −2.25 at a 3-ball — and a skipped temper is named in the >120 °F warning as the usual cause of an unreachable water target. **The app scheduled the temper, computed from it, and warned about skipping it, while never instructing it.** Fixed by `biga-6`.
+That is the worst possible stage to lose. Biga temperature is the most leveraged input in the model — `d(T_water)/d(T_biga)` runs **−1.92 at a 6-ball mix to −2.25 at a 3-ball** — and a skipped temper is named in the >120 °F warning as the usual cause of an unreachable water target. **The app scheduled the temper, computed from it, and warned about skipping it, while never instructing it.** Fixed by `biga-6`.
 
 **This is the same shape as `MAX_RUN_MIN` having no reader**, and it deserves the same kind of check: *every timeline stage maps to a step that instructs it, and every step maps to a stage.* Assert the mapping, name the deliberate exceptions, and let an orphan on either side point at whatever went missing.
 
@@ -663,6 +663,19 @@ Cards after the first recompute from that mix's own biga and bowl readings (§6,
 
 ⚠️ **The re-measure prompt lives in `mix-8`**, a step that exists only when `nMix > 1`. Both leveraged inputs drift while the previous mix runs: the bowl warms to roughly `DDT`, and the waiting biga warms toward the room. **The biga is the bigger term** — per-mix sensitivity is −1.59 °F of water per °F of biga against −0.33 for the bowl at 6 balls per mix. Do not model either drift; there is no data for it. Ask for two readings and recompute.
 
+⚠️ **−1.59 here and −1.92 in §4.7 are both correct. Do not reconcile them.** They are partial derivatives on different assumptions, and which one applies depends on whether the bowl moves with the biga:
+
+| | Expression | 3 | 6 | 9 balls/mix |
+|---|---|---:|---:|---:|
+| **Bowl held at its own measured value** | `Cb / Cw` | −1.59 | −1.59 | −1.59 |
+| **Bowl tracking the biga** | `(Cb + C_bowl) / Cw` | −2.25 | −1.92 | −1.81 |
+
+`Cb/Cw` is a **dough-only ratio and therefore scale-invariant** — identical at every mix size, by the same rule that makes `Cb/Ct` invariant. `(Cb + C_bowl)/Cw` is not, because `C_bowl` is fixed while everything else scales.
+
+**Here — `mix-8` — the bowl is held**, because the baker measures it separately and it has drifted the *other* way, toward `DDT`. Two independent readings, two partial derivatives, each holding the other fixed. **In `biga-6` the bowl tracks**, because the biga tempers inside it and the hour warms both together; that is also what the engine computes, since `T_bowl` defaults to `T_biga`.
+
+Quoting −1.59 against a tempering biga understates the effect by 20%; quoting −1.92 against two separate readings overstates it. Across every legal mix size the bowl-tracking figure spans **1.81 to 2.32** — all of which round to "about two degrees".
+
 ### 7.3 Warnings
 Render above the step list, never hidden in a collapsed panel. Sources: capacity splits, **water below 38 °F**, **water above 120 °F**, dough below mixer minimum, overnight timeline stages, **uncentred stagger** (below).
 
@@ -822,7 +835,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 #### `biga-6` — Temper the biga
 **phase:** biga
 **shown only when:** `schedule === 'retarded'` — on the classic track the biga is already at room temperature and `bigaTemper` is zero
-**summary:** Out of the fridge **{bigaTemper} hours** before you mix. Leave it in the mixer bowl.
+**summary:** Out of the fridge **{bigaTemper} h** before you mix. Leave it in the mixer bowl.
 **timer:** {bigaTemper} h
 
 **detail:**

@@ -15,7 +15,9 @@ Read this, then the two attached documents. Everything below is context that isn
 
 **Keep them in sync.** Every change to one usually needs the other.
 
-Delta messages through `MESSAGE-4-corrections` are **historical and applied** (agent confirmed: 304 tests green). `MESSAGE-13-replies.md` is the current outstanding one. Earlier messages (`MESSAGE-to-calculator-agent`, `REPLY-*`, `MESSAGE-3-remove-ice`) are **historical**. Their content is folded into the spec, and the ice removal is applied and verified. `MESSAGE-4-corrections.md` is the current outstanding delta — it is also folded into both documents, and exists so the agent knows what moved.
+**Every delta message through `MESSAGE-13-replies` has been sent, applied and confirmed** (369 tests green at last report). They are historical; their content is folded into the spec and the recipe, which are the only two documents that need reading. `MESSAGE-14-replies.md` is the current outstanding one.
+
+The numbered messages are a correspondence log, not instructions — read them only to trace why a decision was made.
 
 ⚠️ **MESSAGE-3's rule "one warning, and only one" is withdrawn** by MESSAGE-4 §2. If you meet it in old text, it is superseded — there are now two water warnings, one at each end.
 
@@ -45,7 +47,7 @@ Delta messages through `MESSAGE-4-corrections` are **historical and applied** (a
 
 **The mixer bowl had to be added to the thermal model.** Omitting it made the water-temperature output 5 °F wrong. This killed the old scale-independent `3.00 ×` shortcut — everything now computes from component masses.
 
-**Website is mid-build.** MESSAGE-4 was the last change sent; the agent is on Task 8 (backward timeline), which is unaffected by it.
+**Website is mid-build.** `MESSAGE-13-replies.md` was the last change sent and is applied; the agent is on Task 8's UI (the backward timeline itself is built). **The deploy has hung in `actions/deploy-pages` on every push since the ice removal**, so the live site is still the pre-MESSAGE-4 build — batch-total thermal weights, a flat `DDT − 4`, `ADY 0.0038`, no hot-end warning. Nothing since MESSAGE-4 is live.
 
 **A second round of cross-checking found six more issues**, all now fixed in both documents (MESSAGE-4 has the full list): the ADY constant disagreed between the two docs; the `DDT − 4` probe shorthand was 1.2 °F wrong at 3 balls; dough-only friction figures were being quoted as if a thermometer would show them; the documented water span topped out near 90 °F when the true maximum is 106.6 °F at 3 balls; the biga-temperature default was unsourced at 64 °F; and two "800–900 °F" references survived in the recipe.
 
@@ -117,6 +119,7 @@ Delta messages through `MESSAGE-4-corrections` are **historical and applied** (a
 | Expressions in `{tokens}` | **Bare identifiers only.** Anything evaluated in §8 prose is a code-execution surface that grows by accretion |
 | Assuming everything went per-mix | **`DDT` did not.** It keys to TOTAL balls, because the band is about bulk cooling and the doughs are bulked together |
 | Quoting a rendered number without its conditions | Vectors pin flour at 69 °F; the app defaults it to room (70). **Every water target renders 0.39 °F below its vector value.** Both are correct; a number without conditions is not |
+| Two sensitivity figures in one sentence | **Name the basis.** `Cb/Cw` = 1.59 (bowl held, scale-invariant) and `(Cb+C_bowl)/Cw` = 1.81–2.32 (bowl tracking) are both correct and are not a range |
 | Verifying a list by its contents | **Order is the meaning** in a procedure or a schedule. Count, labels and suppression were all correct while the step order was wrong for four rounds. Assert a golden sequence |
 | Hardcoding a value derivable from the formula constants | **Derive it.** ADY, `divideBall`, and the 0.392 flour offset were all the same shape — correct today, silently wrong the first time the formula moves |
 | Editorial notes inside §8.2 | **§8.2 is content only.** Guidance about content goes in the section that governs it — inline notes are a parse hazard and mix spec voice into verbatim output |

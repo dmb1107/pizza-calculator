@@ -196,7 +196,7 @@ To make this objective rather than a judgment call: fill a small straight-sided 
     phase: "biga",
     shownWhen: "schedule === 'retarded'",
     title: `Temper the biga`,
-    summary: `Out of the fridge **{bigaTemper} hours** before you mix. Leave it in the mixer bowl.`,
+    summary: `Out of the fridge **{bigaTemper} h** before you mix. Leave it in the mixer bowl.`,
     timerLabel: `{bigaTemper} h`,
     detail: `**This is the most expensive hour in the schedule to skip, and the easiest.** Biga temperature is the single most leveraged number in this recipe: one degree of biga moves the required water by about **two degrees** — 1.9 °F at a 6-ball mix, 2.3 °F at a 3-ball one. Nothing else you measure comes close.
 

@@ -1002,3 +1002,111 @@ describe('engine purity', () => {
     expect(bowlHeatCapacity(0)).toBe(0);
   });
 });
+
+/**
+ * §4.2's two biga sensitivities. The spec documents both and says **do not
+ * reconcile them** — they are partial derivatives on different assumptions, and
+ * a previous round quoted one from each basis as though they were a batch-size
+ * range. This pins the distinction so that "fixing" the apparent disagreement
+ * turns the suite red.
+ *
+ * `Cb/Cw`            bowl held at its own measured value — `mix-8`, where the
+ *                    baker takes two readings and the bowl has drifted the other
+ *                    way, toward DDT.
+ * `(Cb + C_bowl)/Cw` bowl tracking the biga — `biga-6`, where the biga tempers
+ *                    inside the bowl and the hour warms both together. This is
+ *                    also what the engine computes, since `T_bowl` defaults to
+ *                    `T_biga`.
+ */
+describe('§4.2 the two biga sensitivities are different quantities', () => {
+  /**
+   * Measured off `computeWaterTempF` by perturbing the biga a degree, NOT
+   * re-derived from the heat capacities. The point is to check the engine
+   * against §4.2's table rather than to check §4.2's algebra against itself —
+   * a coefficient recomputed from `cBiga` and `cBowl` would agree with the
+   * table even if the water formula had dropped the bowl entirely.
+   */
+  const sens = (balls: number, ballWeightG: number = C.DEFAULT_BALL_G, nMix = 1) => {
+    const f = computeFormula({ balls, ballWeightG });
+    const th = computeThermal(f, C.DEFAULT_BOWL_MASS_G, nMix);
+    const base = {
+      ddtF: 73.5,
+      frictionFactorF: C.DEFAULT_FF,
+      bigaTempF: 58,
+      flourTempF: 70,
+      roomTempF: 70,
+    };
+    const d = (extra: Partial<typeof base> & { bowlTempF?: number }) =>
+      computeWaterTempF({ ...base, ...extra, bigaTempF: 59 }, th) -
+      computeWaterTempF({ ...base, ...extra }, th);
+
+    return {
+      // T_bowl pinned: the bowl is measured separately and stays put.
+      bowlHeld: -d({ bowlTempF: 58 }),
+      // T_bowl left to default to T_biga, so both move together.
+      bowlTracking: -d({}),
+      bowlShare: th.bowlShare,
+    };
+  };
+
+  it('holds Cb/Cw scale-invariant at 1.59', () => {
+    // A dough-only ratio: 0.975 x C_BIGA over FRESH_WATER_FRACTION, with no
+    // total-flour term and no bowl term, so it cannot vary with mix size — the
+    // same rule that makes Cb/Ct invariant while anything over cSystem is not.
+    for (const balls of [3, 6, 9]) {
+      expect(sens(balls).bowlHeld, `${balls} balls`).toBeCloseTo(1.5947, 3);
+    }
+    expect(sens(12, C.DEFAULT_BALL_G, 2).bowlHeld).toBeCloseTo(1.5947, 3);
+    expect(sens(3, 240).bowlHeld, 'smallest legal mix').toBeCloseTo(1.5947, 3);
+  });
+
+  it('reproduces the §4.2 table for a tracking bowl', () => {
+    expect(sens(3).bowlTracking).toBeCloseTo(2.251, 3);
+    expect(sens(6).bowlTracking).toBeCloseTo(1.923, 3);
+    expect(sens(9).bowlTracking).toBeCloseTo(1.814, 3);
+  });
+
+  it('never lets the two bases coincide', () => {
+    // (Cb + C_bowl)/Cw = Cb/Cw would require C_bowl = 0, which is the
+    // superseded bowl-free model. The gap IS the bowl's share of the water term.
+    for (const balls of [3, 6, 9]) {
+      const { bowlHeld, bowlTracking } = sens(balls);
+      expect(bowlTracking - bowlHeld, `${balls} balls`).toBeGreaterThan(0.2);
+    }
+  });
+
+  it('spans 1.81 to 2.32 across every legal mix size', () => {
+    let min = Infinity;
+    let max = -Infinity;
+    let minAt = '';
+    let maxAt = '';
+    for (let balls = C.MIN_BALLS; balls <= 24; balls += 1) {
+      for (let w = 240; w <= 300; w += 1) {
+        const f = computeFormula({ balls, ballWeightG: w });
+        const nMix = computeCapacity(f).nMix;
+        const v = sens(balls, w, nMix).bowlTracking;
+        if (v < min) { min = v; minAt = `${balls} x ${w} g`; }
+        if (v > max) { max = v; maxAt = `${balls} x ${w} g`; }
+      }
+    }
+    expect(min).toBeCloseTo(1.809, 2);
+    expect(max).toBeCloseTo(2.320, 2);
+    // Every value rounds to "about two degrees", which is what biga-6 claims.
+    expect(Math.round(min)).toBe(2);
+    expect(Math.round(max)).toBe(2);
+    // §4.2: the minimum sits at the largest per-mix dough, which is the same
+    // configuration that sets the bowl-share floor — not a coincidence, since
+    // both fall as per-mix dough rises, and a SPLIT batch gets closest to the
+    // 2500 g cap. 19 x 257 g runs as two 2495 g mixes; 9 x 270 g is only 2483.
+    expect(minAt).toBe('19 x 257 g');
+    expect(maxAt).toBe('3 x 240 g');
+  });
+
+  it('puts the bowl-share floor at that same configuration', () => {
+    // 6.8% is the 9 x 265 g ROW, not the floor. The floor is 6.6%, set by the
+    // mixer cap - the distinction two earlier drafts got wrong.
+    expect(sens(9, 265).bowlShare).toBeCloseTo(0.068, 3);
+    expect(sens(9, 270).bowlShare).toBeCloseTo(0.0668, 3);
+    expect(sens(19, 257, 2).bowlShare).toBeCloseTo(0.0665, 3);
+  });
+});

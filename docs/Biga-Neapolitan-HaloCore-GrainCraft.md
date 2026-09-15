@@ -305,6 +305,8 @@ At 12 balls that is a 5.3 °F spread in the water target between mix 1 and mix 2
 
 **Re-measure both the bowl and the biga before mix 2.** They drift in opposite directions while mix 1 runs — bowl up toward DDT, waiting biga up toward the room — and **the biga is the bigger term:** −1.59 °F of water per °F of biga against −0.33 for the bowl. Neither drift is modelled here and neither should be; there is no data for it. Two readings, thirty seconds, recompute.
 
+⚠️ **−1.59 here and −1.9 in §5's temper section are both right.** It depends on whether the bowl moves with the biga. During the temper it does — biga and bowl warm together in the same vessel — so the coefficient is `(Cb + C_bowl)/Cw`, which runs 2.25 at a 3-ball mix down to 1.81 at the largest. Between mixes the bowl has drifted the *other* way and you measure it separately, so the coefficient is `Cb/Cw` alone: **1.59, and the same at every batch size**, because it's a dough-only ratio. Two different questions, not two estimates of one.
+
 **Its mass — this is the real one.** Friction energy heats whatever is in the bowl, and the bowl is part of "whatever." Same work, more mass, less temperature rise:
 
 | Balls **per mix** | Bowl share | Rise diluted to | FF 14 appears as |
