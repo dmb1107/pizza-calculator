@@ -140,6 +140,36 @@ describe('bake 1 regression — 21 Aug 2026', () => {
     expect(gap).toBeGreaterThan(5);
     expect(gap).toBeLessThan(6);
   });
+
+  it('but 5 degF is the SIX-ball figure, not a general one', () => {
+    // §4.3 states it "on the first real bake", which was 6 balls, and the index
+    // is load-bearing. Subtracting the two formulas leaves
+    //
+    //     gap = C_bowl x (DDT - T_bowl) / Cw
+    //
+    // and `Cw` scales linearly with balls per mix, so the bowl-free error is
+    // exactly INVERSELY PROPORTIONAL to mix size. It is a hyperbola, and 5 °F is
+    // one point on it — not a property of the superseded model.
+    //
+    // Pinned because the figure has already been restated without its condition
+    // once. Conditions throughout: bake 1's inputs, so DDT 75 (the target that
+    // day) rather than the 73.5 actually achieved.
+    const gapAt = (balls: number) => {
+      const f = computeFormula({ balls, ballWeightG: BAKE_1.ballG });
+      return (
+        computeWaterTempF(temps, computeThermal(f, BAKE_1.bowlMassG)) -
+        computeWaterTempF(temps, computeThermal(f, 0))
+      );
+    };
+
+    expect(gapAt(3)).toBeCloseTo(11.16, 1);
+    expect(gapAt(6)).toBeCloseTo(5.58, 1);
+    expect(gapAt(9)).toBeCloseTo(3.72, 1);
+
+    // Exactly three-fold across the unsplit range, because the relationship is
+    // 1/n. No single number covers it.
+    expect(gapAt(3) / gapAt(9)).toBeCloseTo(3, 6);
+  });
 });
 
 describe('§4.3 the three formulas round-trip', () => {

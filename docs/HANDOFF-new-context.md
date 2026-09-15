@@ -15,7 +15,7 @@ Read this, then the two attached documents. Everything below is context that isn
 
 **Keep them in sync.** Every change to one usually needs the other.
 
-**Every delta message through `MESSAGE-13-replies` has been sent, applied and confirmed** (369 tests green at last report). They are historical; their content is folded into the spec and the recipe, which are the only two documents that need reading. `MESSAGE-15-replies.md` is the current outstanding one.
+**Every delta message through `MESSAGE-13-replies` has been sent, applied and confirmed** (369 tests green at last report). They are historical; their content is folded into the spec and the recipe, which are the only two documents that need reading. `MESSAGE-16-replies.md` is the current outstanding one.
 
 The numbered messages are a correspondence log, not instructions — read them only to trace why a decision was made.
 
@@ -90,7 +90,9 @@ The numbered messages are a correspondence log, not instructions — read them o
 
 ## Errors already made — don't repeat
 
-⚠️ **These rows are lessons, not sources.** Where a figure appears here it is illustrative; the spec and the recipe are authoritative for every number. **If a figure in this table disagrees with them, this table is the bug** — two rows have already drifted this way, each by restating a conclusion that later moved. Prefer the lesson in the right-hand column over the number attached to it.
+⚠️ **These rows are lessons, not sources.** Where a figure appears here it is illustrative; the spec and the recipe are authoritative for every number. **If a figure in this table disagrees with them, this table is the bug** — four rows have already drifted this way, each by restating a conclusion that later moved. Prefer the lesson in the right-hand column over the number attached to it.
+
+⚠️ **Never put a figure here that needs an operand to interpret.** Three of the four drifts were in rows whose left column names the exact error the right column then commits, and the mechanism is compression: a row that says *"don't quote X, quote Y"* has to shorten Y, and shortening drops the thing Y is multiplied by or indexed on. A figure earns a place in this table only if it is **self-contained** — the correction itself (`0.375%, derived`), or a value with its index stated inline (`0.66 °F per °F at a 3-ball mix`). Anything that is a factor, a ratio, or one term of a product goes in as the **operation plus a section pointer**, never as a bare number.
 
 | Error | Correction |
 |---|---|
@@ -105,7 +107,7 @@ The numbered messages are a correspondence log, not instructions — read them o
 | Ice calculations | **Removed.** Output a water temperature; Dave blends fridge and tap by hand |
 | ADY at 0.0038 in the spec while the recipe's tables used 0.00375 | **0.00375, derived** from the published 1% fresh dose |
 | Flat "probe at DDT − 4" | **Batch-size dependent:** DDT − 2.8 / 3.2 / 3.5 at 3 / 6 / 9 balls |
-| Quoting 0.75/0.86/1.08 °F/min against a thermometer | Those are **dough-only.** Observed = `× Ct/(Ct + C_bowl)` = 0.82 / 0.90 / 0.93 |
+| Quoting 0.75/0.86/1.08 °F/min (**by dial: 15/20/30**) against a thermometer | Those are **dough-only.** Multiply by `Ct/(Ct + C_bowl)`, which is **by balls per mix**: 0.82 / 0.90 / 0.93 at 3/6/9. At dial 30 that gives an observed **0.89 / 0.97 / 1.01**. ⚠️ Two different indices — don't read the triples as answering each other. §4.6 |
 | "Required water spans 52–90 °F" | **53–109 °F.** Hottest at *small mixes*, not small batches, and not monotonic — 12 balls (two 6-ball mixes) wants hotter water than 9 |
 | Biga-temp default of 64 °F | **58 °F**, the one measured value. Most leveraged input in the model |
 | "The bowl matters for its mass, not its temperature" | Half right. `C_bowl/TOT` (dough) is small; `C_bowl/Cw` (water) is 3× larger — 0.66 °F per °F at 3 balls. **Measure the bowl** |
@@ -145,7 +147,10 @@ T_water = (DDT × TOT − FF × Ct
 probeTarget = DDT − 0.33 × FF × (Ct/TOT) + 0.2 × (DDT − T_room)
               // NO flat "DDT − 4" shorthand. It is 1.2 °F wrong at 3 balls.
 
-observedRate  = doughOnlyRate × (Ct/TOT)     // 0.821/0.901/0.932 at 3/6/9 balls PER MIX
+observedRate  = doughOnlyRate × (Ct/TOT)
+                //   doughOnlyRate  0.75 / 0.86 / 1.08   BY DIAL 15/20/30
+                //   Ct/TOT         0.821/0.901/0.932    BY BALLS PER MIX 3/6/9
+                //   product at dial 30: observed 0.89 / 0.97 / 1.01
 adyOfBigaFlour = 0.01 × 0.30 × 1.25 = 0.00375
 
 d(T_water)/d(T_biga) = Cb/Cw                 // 1.59, bowl held, scale-invariant
