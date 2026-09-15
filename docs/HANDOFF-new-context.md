@@ -15,7 +15,7 @@ Read this, then the two attached documents. Everything below is context that isn
 
 **Keep them in sync.** Every change to one usually needs the other.
 
-**Every delta message through `MESSAGE-13-replies` has been sent, applied and confirmed** (369 tests green at last report). They are historical; their content is folded into the spec and the recipe, which are the only two documents that need reading. `MESSAGE-14-replies.md` is the current outstanding one.
+**Every delta message through `MESSAGE-13-replies` has been sent, applied and confirmed** (369 tests green at last report). They are historical; their content is folded into the spec and the recipe, which are the only two documents that need reading. `MESSAGE-15-replies.md` is the current outstanding one.
 
 The numbered messages are a correspondence log, not instructions — read them only to trace why a decision was made.
 
@@ -60,7 +60,7 @@ The numbered messages are a correspondence log, not instructions — read them o
    ⚠️ **Measure the bowl temperature at mix start, both bakes.** FF = 14.04 was fitted assuming `T_bowl` = 58; fit it at 53 and the same bake gives FF = 14.58. Both reproduce bake 1 exactly and diverge by **1.67 °F at 3 balls** — the same size and sign as the signal bake 2 is testing. Without the measurement the two are not separable after the fact.
 2. **Phase A water split.** Dave guessed at the 60% on bake 1 and it ran dry, so we can't tell whether 60/40 is wrong or he added 50%. Now specified in grams. **Needs a clean repeat before changing the split.**
 3. **Fridge temperature** — never measured. The biga came out warmer than a 39 °F fridge predicts.
-4. **Biga yeast off-baseline.** Baseline is the Giorilli standard (0.38% ADY of biga flour). Anything outside 12–18 h at 61–65 °F goes to PizzaBlab's calculator — **do not write a new table.**
+4. **Biga yeast off-baseline.** Baseline is the Giorilli standard (0.375% ADY of biga flour). Anything outside 12–18 h at 61–65 °F goes to PizzaBlab's calculator — **do not write a new table.**
 
 ---
 
@@ -90,9 +90,11 @@ The numbered messages are a correspondence log, not instructions — read them o
 
 ## Errors already made — don't repeat
 
+⚠️ **These rows are lessons, not sources.** Where a figure appears here it is illustrative; the spec and the recipe are authoritative for every number. **If a figure in this table disagrees with them, this table is the bug** — two rows have already drifted this way, each by restating a conclusion that later moved. Prefer the lesson in the right-hand column over the number attached to it.
+
 | Error | Correction |
 |---|---|
-| Yeast table extrapolated from session data | Giorilli standard, 0.38% ADY of biga flour |
+| Yeast table extrapolated from session data | Giorilli standard, **0.375%** ADY of biga flour, derived from the published 1% fresh |
 | "Biga triples, domed" | **Puffs ~20%, does not double.** Doubling = over-mixed |
 | Mixing the biga in the spiral mixer | **Hand-mix always.** A hook builds gluten, which is exactly wrong |
 | Flouring the proofing trays | **Oil.** Flour is hygroscopic and skins the dough |
@@ -110,7 +112,7 @@ The numbered messages are a correspondence log, not instructions — read them o
 | `T_bowl = T_biga` treated as settled | Holds through fermentation, **breaks at tearing** — biga gained 5 °F, bowl didn't. Bake 1's Phase C rate climb is the evidence |
 | Thermal weights from batch totals | **Per-mix.** A 12-ball batch is a 6-ball system twice; the bowl faces one mix at a time. Batch totals land the water 2.6 °F low at 12 balls |
 | One water temperature per batch | **One per mix** when `nMix > 1` — mix 2's bowl is warm from mix 1 |
-| Bowl-share / dilution tables keyed on batch size | **Keyed on balls per mix.** 12 balls reads the 6 row, 18 reads the 9. 6.8% is the floor of the bowl's share |
+| Bowl-share / dilution tables keyed on batch size | **Keyed on balls per mix.** 12 balls reads the 6 row, 18 reads the 9. The floor is set by the 2500 g mixer cap (~6.6%), not by any row — 6.8% is the 9 × 265 g mix |
 | Split-batch overhead 28.4 h | **28.12 h.** The stagger correction shortens a real stage, so it comes back out. 28.42 is `nMix = 3` |
 | Claiming step content says something | **Check §8.** Two MESSAGE-4 claims about `mix-1` and `bulk-3` were false; the agent couldn't build to them |
 | Batch totals on per-mix or per-biga steps | `{freshFlour}` on `mix-1`, `{bigaFlour}` on `biga-1`. Two rounds, two instances — check every step value against its scope |
@@ -132,7 +134,9 @@ The numbered messages are a correspondence log, not instructions — read them o
 
 ```
 C_bowl = bowlMassG × 0.12                    // 115.8 at 965 g
-Ct     = Cb + Cf + Cw + Cs                   // dough only
+Ct     = Cb + Cf + Cw + Cs                   // dough only, and PER MIX —
+                                             // masses ÷ nMix. A 12-ball batch
+                                             // is a 6-ball thermal system twice.
 TOT    = Ct + C_bowl
 
 T_water = (DDT × TOT − FF × Ct
@@ -141,8 +145,13 @@ T_water = (DDT × TOT − FF × Ct
 probeTarget = DDT − 0.33 × FF × (Ct/TOT) + 0.2 × (DDT − T_room)
               // NO flat "DDT − 4" shorthand. It is 1.2 °F wrong at 3 balls.
 
-observedRate  = doughOnlyRate × (Ct/TOT)     // 0.821/0.901/0.932 at 3/6/9 balls
+observedRate  = doughOnlyRate × (Ct/TOT)     // 0.821/0.901/0.932 at 3/6/9 balls PER MIX
 adyOfBigaFlour = 0.01 × 0.30 × 1.25 = 0.00375
+
+d(T_water)/d(T_biga) = Cb/Cw                 // 1.59, bowl held, scale-invariant
+                     = (Cb + C_bowl)/Cw      // 1.81–2.32, bowl tracking
+                     // NOT a range. Two bases. Which applies depends on whether
+                     // the bowl moves with the biga (it does during the temper).
 
 roomMin = clamp((90 + 150)/f − 150, 45, 180)   where f = 2^((T_actual − DDT)/17)
 ```
