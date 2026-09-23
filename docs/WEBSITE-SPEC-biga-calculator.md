@@ -463,37 +463,24 @@ Show cumulative clock times for each stage plus a total elapsed figure. Flag whe
 ```
 openDiameterIn       = TREAD_MAX_DIAMETER_IN × min(1, sqrt(ballWeightG / DEFAULT_BALL_G))
 thicknessPercentOver = max(0, ballWeightG / DEFAULT_BALL_G − 1) × 100
-thickerThanDefault   = round(thicknessPercentOver) ≥ 1        // on the DISPLAYED value
+thickerThanDefault   = Number(printed {thicknessPercentOver}) ≥ 1
 ```
 
-| Ball | Open to | Thicker than default |
+| Ball | Open to | Thicker than 265 g on the same stone |
 |---:|---:|---:|
 | 240 g | 11.4 in | — |
 | 265 g | 12.0 in | — |
 | 266 g | 12.0 in | 0% — block hidden |
-| 267 g | 12.0 in | **1%** — block shows |
-| 300 g | 12.0 in | **13%** |
+| 267 g | 12.0 in | 1% — block shows |
+| 300 g | 12.0 in | 13% |
 
-⚠️ **This replaces a thickness-factor model that rested on an unsourced constant.** The previous revision defined `TARGET_THICKNESS_FACTOR = 0.083` as "the classic Neapolitan band". It was not sourced: it was 265 g on a 12-inch stone (0.08265) rounded up. No authoritative published Neapolitan thickness factor exists — AVPN specifies ball weight and maximum diameter, not thickness factor — and the informal figures in circulation run about 0.08–0.09, with home-oven variants higher. So "squarely in the classic Neapolitan band" was a claim with nothing behind it, and at 300 g (0.094) it was false against even the informal figures.
+The cap binds for **any** ball over 265 g — at 266 g the uncapped diameter is 12.02 inches. The block stays hidden there because the difference prints as 0%. Display the diameter to one decimal.
 
-The previous revision also stated as a finding that the default 265 g ball "fills the Tread at the target thickness to within a gram". **That was circular** — the target had been defined from the 265 g ball. The gram was the rounding of 0.08265 to 0.083.
+**`thickerThanDefault` is a detail-block condition, not a `shownWhen` condition.** `shownWhen` gates whole steps; this governs a block inside `bulk-2`. The detail-block set is exactly `nMix > 1`, `nBiga > 1`, `thickerThanDefault`.
 
-Stating the reference honestly as *the default ball on the full stone* removes the constant entirely: thickness factor, `G_PER_OZ` and π all cancel, and the geometry reduces to a square-root scaling. **Remove `TARGET_THICKNESS_FACTOR` and `G_PER_OZ`**; nothing reads them now.
+**Decide display on displayed values.** The condition reads the same printed string the sentence prints, so the block and its sentence cannot disagree about rounding. The computation stays unrounded; only the decision to show uses the printed value.
 
-⚠️ **The block's condition is evaluated on the displayed percentage, not the unrounded one.** A condition that triggers prose must be decided on the values the prose will print — otherwise, as at 267 g under the previous rule, the block appears to announce a difference its own numbers show as zero. The computation stays unrounded; only the display decision uses the rounded value. `thickerThanDefault` replaces `openDiameterCapped`, which was also inaccurately named: at 266 g the diameter *is* capped, by 0.02 inches, and the block correctly stays hidden.
-
-| Ball | Uncapped diameter | Open to | Thickness factor |
-|---:|---:|---:|---:|
-| 240 g | 11.4 in | 11.4 in | 0.083 |
-| 265 g | 12.0 in | 12.0 in | 0.083 |
-| 270 g | 12.1 in | **12.0 in** ← capped | 0.084 |
-| 300 g | 12.7 in | **12.0 in** ← capped | 0.094 |
-
-**The cap binds above 266.1 g** — so the default 265 g ball is, to within a gram, the weight that fills the Tread at the target thickness. That is not a coincidence worth leaning on as a design claim, but it is why 265 g reads so naturally against a 12-inch stone.
-
-Display the diameter to one decimal.
-
-⚠️ **`thickerThanDefault` is a detail-block condition, not a `shownWhen` condition.** The previous revision of this section called it a `shownWhen` condition, which is wrong: `shownWhen` gates whole steps, and used there it would make the entire divide-and-ball step vanish for any ball under 267 g. It governs a conditional detail block inside `bulk-2`, the same grammar as `nMix > 1`. The detail-block set is therefore exactly `nMix > 1`, `nBiga > 1`, `thickerThanDefault`.
+⚠️ **There is no thickness-factor constant, and none should be reintroduced.** An earlier revision carried `TARGET_THICKNESS_FACTOR = 0.083` as "the classic Neapolitan band". It was 265 g on a 12-inch stone, rounded up — not a published figure. No authoritative Neapolitan thickness factor exists; AVPN specifies ball weight and maximum diameter. Referencing the default ball directly is the honest statement of what the recipe knows, and it makes thickness factor, unit conversion and π cancel.
 
 ### 4.10 Tokens added in this revision
 
@@ -1170,7 +1157,7 @@ A bare token on a per-mix or per-biga step is then a **visible** error rather th
 > At {ballWeight} g, open to about **{openDiameterIn} inches** — the same thickness a {defaultBallG} g ball gives on the full {treadMaxDiameterIn}-inch stone. For a fatter cornicione, open an inch smaller.
 
 **detail, shown only when `thickerThanDefault`:**
-> **At this ball weight the oven sets the size, not the dough.** The Tread takes a pizza up to {treadMaxDiameterIn} inches, so a {ballWeight} g ball can't spread any thinner than that allows — it will run about **{thicknessPercentOver}% thicker** than a {defaultBallG} g ball on the same stone. More dough per square inch means a softer, breadier centre and a slightly longer time on the stone.
+> **At this ball weight the oven sets the size, not the dough.** The Tread takes a pizza up to {treadMaxDiameterIn} inches, so a {ballWeight} g ball can't spread any thinner than that allows — it will run about **{thicknessPercentOver}% thicker** than a {defaultBallG} g ball on the same stone. Extra dough per square inch pushes the bake toward a softer, breadier centre and a little more time on the stone — how much you'll notice depends on how far over you are.
 
 ---
 

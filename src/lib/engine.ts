@@ -380,7 +380,7 @@ export interface ProbeParts {
   restSignedF: number;
   /** §4.10 `{restExchangeF}` — the same, unsigned. Prose says "toward room temperature". */
   restExchangeF: number;
-  /** `DDT − target`. §4.10 `{probeGapF}`; signed, and negative when the target is ABOVE DDT. */
+  /** `DDT − target`, signed: negative when the target sits ABOVE DDT. §4.10 prints it as `{probeGapPhrase}`. */
   gapF: number;
   targetF: number;
 }
@@ -422,7 +422,7 @@ export function computeProbeTargetF(args: Parameters<typeof computeProbeParts>[0
 }
 
 // ---------------------------------------------------------------------------
-// §4.9 Opening diameter and thickness factor
+// §4.9 Opening diameter
 // ---------------------------------------------------------------------------
 
 export interface Opening {
@@ -727,7 +727,7 @@ export interface CalculatorResult {
   probeTargetF: number;
   /** §4.10. The target's parts, per mix at the user's inputs. `probeTargetF === probe.targetF`. */
   probe: ProbeParts;
-  /** §4.9. Opening diameter and thickness factor for the entered ball weight. */
+  /** §4.9. Opening diameter, and how much thicker than the default ball, for the entered weight. */
   opening: Opening;
   /** §4.8 room-temperature minutes before the fridge. */
   roomMinutes: number;

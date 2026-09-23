@@ -14,6 +14,8 @@ import {
 import { stageDurations } from '../src/lib/timeline';
 import { BOUNDS } from '../src/state/defaults';
 import { BAKE_1 } from './vectors';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 /**
  * §8.1: *no literal in §8 content may restate an engine output unchecked.*
@@ -687,5 +689,46 @@ describe('§8.1 every numeric literal in §8 is classified', () => {
     for (const s of STEPS.filter((x) => x.speed)) {
       expect(s.speed?.rpm, `${s.id} rpm`).toBe(Math.round(rpmForDial(s.speed?.dial ?? NaN)));
     }
+  });
+});
+
+/**
+ * §8.1 applies to UI copy too. Everything above reads §8 content, so a figure
+ * typed into a component is invisible to it — which is how the ball-weight
+ * hint kept saying "265 g opens to about 11.5–12 inches" for three rounds
+ * after §4.9 retracted that figure. It was found by hand, in MESSAGE-20's
+ * sweep; this makes the next one fail instead.
+ *
+ * Scope: quoted string attributes in components, which is where every piece
+ * of numeric UI copy currently lives. A computed figure belongs in a template
+ * literal fed from the engine, which this deliberately does not match.
+ */
+describe('§8.1 numbers in component copy are classified too', () => {
+  const COMPONENT_FIXED: Record<string, string> = {
+    'Biga at 61–65 °F': 'the published fermentation band — procedure',
+    'put the water 5 °F wrong on the first bake': 'bake-1 history, with its condition stated',
+  };
+
+  const componentStrings = () =>
+    readdirSync('src/components')
+      .filter((f) => f.endsWith('.tsx'))
+      .flatMap((f) =>
+        // Attributes that carry words a person reads. `className` and the
+        // like are not copy, and guessing at class syntax is what not to do.
+        [...readFileSync(join('src/components', f), 'utf8').matchAll(
+          /\b(?:hint|label|title|placeholder|aria-label|alt|description|summary|caption)="([^"]*\d[^"]*)"/g,
+        )].map((m) => ({ f, text: m[1] as string })),
+      );
+
+  it('leaves no numeric UI string unclassified', () => {
+    const orphans = componentStrings()
+      .filter(({ text }) => !Object.keys(COMPONENT_FIXED).some((k) => text.includes(k)))
+      .map(({ f, text }) => `${f}: ${JSON.stringify(text)}`);
+    expect(orphans.join('\n'), 'bind it to the engine, or classify it here with a reason').toBe('');
+  });
+
+  it('keeps no stale entry', () => {
+    const all = componentStrings().map(({ text }) => text).join('\n');
+    expect(Object.keys(COMPONENT_FIXED).filter((k) => !all.includes(k))).toEqual([]);
   });
 });

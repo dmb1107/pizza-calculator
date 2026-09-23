@@ -597,7 +597,7 @@ The traditional flour dusting comes from **wooden** dough boxes, which breathe a
 **Keep doing exactly what already works: preheat until the gauge reads 750 °F, launch on full flame, 60–90 s.** Don't change the oven and the dough in the same bake — preferment, mixer and schedule are already three new variables.
 
 - **Turn every 15–20 s.** Lateral flame plus a small chamber means a static face scorches fast.
-- **265 g opens to 11.5–12"** — thickness factor 0.083 oz/in², squarely in the classic Neapolitan band. For a fatter cornicione against the Tread's 12" ceiling, open to 11" instead.
+- **265 g opens to the full 12" stone.** A lighter ball opens smaller at the same thickness — 240 g to about 11.4". A heavier one can't go wider than 12", so it bakes thicker: 300 g is about 13% thicker than 265 g. For a fatter cornicione, open an inch smaller.
 - **Recovery between pies.** The Tread heats and cools fast, which is the price of low thermal mass. Across 9–18 pizzas the stone is the limiting variable, not the dough — let the gauge come back to 750 rather than launching on a dropping stone.
 
 ### Why 750 + full flame is the correct call, not a compromise

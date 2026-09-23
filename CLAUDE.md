@@ -57,7 +57,8 @@ question:
 | `MESSAGE-17-replies.md` | Probe gap moves with room far more than batch; no §8 literal may restate an engine output |
 | `MESSAGE-18-replies.md` | §4.9 thickness factor and `openDiameterCapped`; §4.10 probe tokens; all eight FINDINGS-17 items |
 | `MESSAGE-19-replies.md` | §4.9 re-referenced to the default ball on the full stone (the 0.083 thickness target had no source); `{probeGapPhrase}`; display conditions decided on printed values |
-| `FINDINGS-12` … `FINDINGS-19` | Replies to the above. 17 carries the §8 literal audit; 18 the parser gap that dropped a whole block |
+| `MESSAGE-20-replies.md` | §4.9 rewritten header to header; the thickness claim traced to the recipe, where it started |
+| `FINDINGS-12` … `FINDINGS-20` | Replies to the above. 17 carries the §8 literal audit; 18 the parser gap that dropped a whole block; 20 a retracted figure still live in UI copy |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** How the correspondence works, what has gone wrong, and the deploy situation |
 
 ## Rules that matter more than usual here
@@ -182,6 +183,14 @@ claim, or classify it with a reason. Never widen `FIXED` just to go green: a
 computed value filed as fixed is the defect this exists to catch. A known
 disagreement the spec author must fix gets `knownWrong`, which is pinned both
 ways.
+
+**The same applies to UI copy.** The gate reads §8, so a figure typed into a
+component is invisible to it: the ball-weight hint said "265 g opens to about
+11.5–12 inches" for three rounds after §4.9 retracted it. Numeric strings in
+component copy attributes (`hint`, `label`, …) are classified in the same suite,
+and a computed figure there comes from the engine in a template literal. **The
+gate checks numbers, not sources** — a claim with no digit in it passes by
+construction, so sourcing worded claims stays a human read.
 
 **Do not shorten the prose in spec §8.** The step `detail` blocks are the point
 of the app, not decoration on it. They are the reasoning that makes the recipe
