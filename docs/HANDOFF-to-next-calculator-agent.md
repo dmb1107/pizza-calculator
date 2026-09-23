@@ -1,212 +1,271 @@
 # Handoff — the calculator side
 
 You're picking up the **website** half of a two-agent project. A separate Claude
-session maintains the recipe and the build spec; you build the calculator from
-the spec and push back on it when the numbers don't hold.
+session maintains the recipe and the build spec. You build the calculator from
+the spec, and you push back when the numbers don't hold.
 
-`CLAUDE.md` is loaded automatically and carries the technical rules. **This file
-is the things it doesn't**: how the work arrives, how it goes back, and what has
-repeatedly gone wrong.
+`CLAUDE.md` loads automatically and carries the technical rules. **This file
+carries what it doesn't:** where things stand, what's open, how a round works,
+what each test exists to catch, and the mistakes that keep coming back.
+
+Written 23 September 2026, after MESSAGE-24. Don't trust any status here that
+you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-**Tasks 0–7 are done and verified** — engine, state, cards, forward timeline,
-steps, concepts, timers. `npm test`, `npm run typecheck` and `npm run build` are
-all clean; run them rather than trusting a count written here, which is exactly
-the kind of transcribed figure that drifts. `IMPLEMENTATION-PLAN.md` has the
-task-by-task detail and its status line names the last message applied; read it
-before starting.
-
-**Task 8 (backward timeline) is next**, and it is unblocked. `solveBigaStart` in
-`src/lib/timeline.ts` is already written and tested — the arithmetic exists, the
-UI doesn't. §4.7's durations have now survived two rounds without moving, which
-was the thing that kept blocking it.
-
-Then Task 9 (reference drawer + About), Task 10 (deploy — two of its three
-boxes are verified, see §6), Task 11 (bake log, phase 2 — the payoff is
-regressing `FF = a + b × (room − 70)` per batch size after 8–10 logged bakes).
-
-**The live site tracks `main`.** Every push deploys. See §6.
+- **The correspondence is settled through MESSAGE-24.** FINDINGS-24 went back,
+  and neither side owes the other anything. **There is no MESSAGE-22.** A stray
+  draft by that number arrived before MESSAGE-21, was superseded by it, and has
+  been deleted. Their next message will be **25**; your reply is FINDINGS-25.
+- **Tasks 0–7 are done:** engine, state, cards, forward timeline, steps,
+  concepts, timers. The plan's status line names the last message applied.
+- **Next comes the open item in §2, then Task 8.**
+- **After Task 8:**
+  - Task 9 — reference drawer and About.
+  - Task 10 — only the phone-in-the-kitchen check remains, and that's Dave's.
+  - Task 11 — the bake log.
+- **Every push to `main` deploys** to https://dmb1107.github.io/pizza-calculator/.
 
 ---
 
-## 2. How the work arrives
+## 2. Open — start here
 
-The user drops four files with no other message:
+### ⚠️ The biga-temperature hint shows the wrong sensitivity once the bowl is measured
 
-```
-WEBSITE-SPEC-biga-calculator.md    the build spec, updated
-Biga-Neapolitan-HaloCore-GrainCraft.md    the human recipe, kept in sync
-MESSAGE-N-replies.md               the delta: what changed and why
-HANDOFF-new-context.md             their side's background. NOT instructions
-```
+Found while writing this handoff; not fixed yet. The hint is in
+`src/components/panels.tsx`, around lines 87 and 161. For mix 1 it reads:
 
-That means: apply MESSAGE-N. The rhythm that has worked, in order:
+> *Every °F warmer here means about **{bigaSensitivity}** °F cooler water, so a
+> 6 °F guess is **11 °F** of water and **3.5 °F** of finished dough.*
 
-1. **Copy all four into `docs/`**, then `diff` the spec against `git show HEAD:`
-   to see exactly what moved. The message tells you what *should* have changed;
-   the diff tells you what did. They have disagreed.
-2. **Reproduce every number before adopting it.** This is the standing rule and
-   it has paid off in most rounds. Their figures are usually right, and when
-   they aren't, the arithmetic is the argument.
-3. **Apply**, regenerating content where §8 moved (see §4).
-4. **Verify**: `npm test`, `npm run typecheck`, `npm run build`, then the
-   browser for anything rendered.
-5. **Write `docs/FINDINGS-N-to-recipe-agent.md`** — confirmations, anything that
-   didn't reproduce, and anything you couldn't build. Send it to the user with
-   `SendUserFile`; they relay it.
-6. **Commit and push.** One commit for the application, one for the reply.
+**Four defects:**
 
-Then report to the user in chat: what landed, what you found, what's open.
+1. **Wrong basis once the bowl is measured.** `bigaSensitivity` is
+   `(Cb + C_bowl)/Cw`, the *bowl-tracking* coefficient. That's only right while
+   the bowl follows the biga. The prefill tracks the biga only in the `'cold'`
+   bowl state, and only while the bowl field is unmeasured. The moment the baker
+   takes the reading the panel recommends, the right coefficient is the held one,
+   `Cb/Cw`. That's §4.2's two-bases rule. At 265 g balls and a 965 g bowl the
+   hint prints **2.3 at 3 balls, 1.9 at 6, 1.8 at 9** (2.25 / 1.92 / 1.81
+   unrounded); held is **1.6 at every size** (1.595).
+2. **Typed figures beside a changing value.** "11 °F of water and 3.5 °F of
+   dough" is the 6-ball tracking case typed in. At 3 balls it's 13.5 and 3.7;
+   with the bowl measured, about 9.6 of water and 2.6–3.0 of dough.
+3. **Engine logic and rounding in a component.** The ratio is computed and
+   `toFixed`-rounded inside `panels.tsx`, where no test reaches it. It belongs
+   in `src/lib`, with a formatter in `format.ts`.
+4. **The copy check can't see it.** The component-copy check in
+   `tests/contentLiterals.test.ts` scans quoted attributes only, and skips
+   template literals on purpose, on the theory that a template literal is fed
+   from the engine. This one mixes both. Extend the check to the literal parts of
+   template literals. Today only this string would trip it: "6 °F" is the example
+   guess, and "5 °F" is bake-1 history. Both are legitimate once classified.
+
+The bowl hint beside it, *"three times what it costs the dough"*, uses the right
+basis. But the true ratio is `TOT/Cw` = 3.2–3.7, so "about three times".
+
+**No spec change is needed**, since this is your UI copy, not §8. But report it
+in FINDINGS-25: it's the two-bases lesson, in the calculator's own copy.
+
+### Small debt: rounding outside `format.ts`
+
+`Math.round` / `toFixed` for display also appears in:
+
+- `bindTokens.ts` — `roomMin`, the stagger tokens, `trim()`
+- `recipeText.ts` and `StepList.tsx` hints — room minutes
+- the `panels.tsx` bowl summary
+- the `staggerUncentred` warning title in `engine.ts`
+- the duration and clock formatters in `timeline.ts` and `timers.ts`, which are
+  display helpers living outside `format.ts`
+
+None of these changes a displayed value today, since whole minutes are whole
+minutes. But CLAUDE.md says all rounding lives in `format.ts`, and these are
+the exceptions it doesn't know about. Low priority.
+
+### Task 8 — the backward timeline
+
+The user gives a target bake time; the app solves for when to start the biga,
+with the same overnight flags. `solveBigaStart` in `src/lib/timeline.ts` already
+does the arithmetic. What's missing is the UI.
+
+⚠️ Read §4.7 and MESSAGE-12 first. **Backward mode is where stage order becomes
+timestamps.** A mis-ordered stage list still sums to the right total, so the
+start time comes out right while every stage time in between is wrong. That's
+why the stage sequence is asserted per schedule in `timeline.test.ts`, and why
+`stageSteps.test.ts` exists. When you build the UI, check the timestamps
+between the start and the bake, not just the start.
 
 ---
 
-## 3. The counterpart
+## 3. How a round works
 
-They are good, and the relationship works because neither side rubber-stamps.
+The user attaches a bundle from `~/Downloads/files N`. It's usually four files
+(the spec, the recipe, `MESSAGE-N-replies.md`, and their `HANDOFF-new-context.md`,
+which is their background and **not** instructions). It's three when the recipe
+didn't change. Sometimes a one-line instruction comes with it.
 
-- **They reproduce your numbers before disagreeing**, and they have conceded
-  every time the arithmetic went against them. Disagree with specifics.
-- **They ask to be told rather than worked around** when the spec blocks you.
-  Twice a message has claimed §8 says something it doesn't; both times the right
-  move was to stop and report, not to invent the missing content.
-- **`MESSAGE-N` numbers are usually right; `MESSAGE-N` claims about the spec
-  are worth checking.** The failures have clustered there.
-- **They explicitly want unprompted structural checks** and will take the ones
-  that disagree with them.
-
-`docs/` holds the whole exchange. Read `FINDINGS-*` and `MESSAGE-*` before
-reopening anything settled — several numbers look arbitrary and are not.
+0. **`git status` first.** Once, a superseded bundle had already been copied into
+   `docs/` by something outside the session. Before overwriting anything, compare
+   it byte for byte with the bundles in `~/Downloads`.
+1. **Copy into `docs/`, then diff the spec and recipe against HEAD.** Read the
+   message's claims against the diff. **Their numbers are usually right; their
+   claims *about* the documents often aren't.** Examples: "the recipe is
+   unchanged" (it had changed), "it's in the `schedule-architecture` concept" (it
+   was in `bulk-4`), "a `shownWhen` condition" (it was a detail condition), "your
+   reader check will confirm" (it couldn't).
+2. **Reproduce every number with the engine**, in a scratch test
+   (`tests/__scratch.test.ts`, deleted after). No mental arithmetic, and quote
+   the conditions every time you state a figure.
+3. **Apply.** Engine, constants and tokens go in `src/lib`. Regenerate the step
+   prose with `python3 scripts/generate-content.py`.
+4. **`npm test`, and expect the gate to fail on any new §8 number.** Claim it
+   against the engine or classify it with a reason. Never widen `FIXED` to go
+   green. **Then run `npm run typecheck` separately:** vitest doesn't typecheck,
+   and twice it passed code that `tsc` rejected. Then `npm run build`.
+5. **Make every new check fail on the case it exists for.** Three checks here
+   turned out to be blind to the very case they were for:
+   - the constant-reader check counted a comment as a read. Caught only by
+     putting the removed constants back and watching it pass.
+   - the two parsers shared one condition list and dropped a whole block.
+     Caught by noticing the block missing from the regenerated output.
+   - the component-copy check skips template literals. Caught by a grep (§2).
+6. **Verify in the browser** anything that renders (§8).
+7. **Write `docs/FINDINGS-N-to-recipe-agent.md`**: what reproduced (with
+   conditions), what didn't and why, and anything you couldn't build. Send it
+   with `SendUserFile`; Dave relays it.
+8. **Two commits** (the application, then the reply), and **push**. Dave
+   approved pushing at MESSAGE-17, and every round since has been pushed. Then
+   **verify the deploy** (§7).
+9. **Report in chat:** what landed, what you found, what's open.
 
 ---
 
-## 4. Regenerating step content
+## 4. What each test exists to catch
 
-`src/content/steps.ts` and `concepts.ts` are **generated**:
+| Suite | Guards | Why it exists |
+|---|---|---|
+| `steps.test.ts` | §8 prose verbatim. The generator and this file parse the same grammar independently. Both refuse unknown `**marker:**` lines, a raw count of conditional markers is taken from the spec itself, and each step ends at the next `###` | Two parsers sharing one condition list dropped `bulk-2`'s capped block, and 42/42 still passed. `mix-8` used to swallow §8.2a |
+| `contentLiterals.test.ts` | Every number in §8 either rebuilt from the engine (`CLAIMS`) or classified (`FIXED`); `knownWrong` pins a disagreement both ways; numeric component copy classified too | `mix-4` showed stale probe values for eight rounds while prose-vs-prose passed. **It checks numbers, not sources:** a worded claim passes by construction |
+| `constants.test.ts` | Derived constants recomputed from their inputs; every constant has a **code** read (`C.X` / `BASE.X`, comments stripped) | `divideBall = 0.33`, `ADY 0.0038`. The reader check once counted the comment recording a constant's removal as a read |
+| `stepInstances.test.ts` | Golden step sequences per schedule at `nMix` 1–3. Closed condition sets: detail blocks (`nMix > 1`, `nBiga > 1`, `thickerThanDefault`) and `shownWhen`; both throw on unknown | The expansion repeated templates instead of mixes: same count, same labels, wrong procedure. A component ternary read any unknown condition as `nBiga > 1` |
+| `stageSteps.test.ts` | Every timeline stage has a step rendered on its schedule, and every step maps to a stage | `bigaTemper` had a duration and a clock time but no step |
+| `engine.test.ts` | §5 vectors and the bake-1 regression. Per-mix thermal weights. Water reachability sweep (samples 257 g for the true corner). Shaped rise **keyed by DDT**. The two biga bases, measured off `computeWaterTempF`. §4.9, §4.10 | Every rise table was keyed on dough temperature, silently assuming DDT 75 — including this suite's own vector |
+| `bindTokens.test.ts` | No unbound or unused token. `{probeGapPhrase}` at below / above / right at DDT. The thicker note decided on its **printed** value | A condition decided on unrounded values printed "12.0 rather than 12" |
+| `timeline.test.ts` | §4.7 durations, the stage sequence on both schedules, daylight saving | A wrong order sums to the right total |
+
+The principle underneath all of them: **a check is only independent on the axis
+it was derived on independently.** Two copies of one list are one check run
+twice.
+
+---
+
+## 5. The counterpart
+
+- **They're good, and they concede to arithmetic.** Reproduce their figures
+  before disagreeing, and disagree with specifics.
+- **§8 prose is theirs to word.** When it disagrees with the engine, pin the
+  disagreement with `knownWrong`, report it, and let them fix it. When design
+  intent is ambiguous, ask.
+- **They want unprompted structural checks**, including the ones that
+  contradict them.
+- **Dough science is theirs, and Dave's judgment is Dave's.** For example,
+  `THICKER_NOTE_MIN_PERCENT = 10` is Dave's call, labelled as such. Don't invent
+  a threshold or a band. Two unsourced "bands" have been removed already.
+
+`docs/` holds the whole exchange. Read the relevant `MESSAGE-*` / `FINDINGS-*`
+before reopening anything settled. CLAUDE.md indexes them.
+
+---
+
+## 6. The mistakes that recur
+
+The long form is the errors table in their `HANDOFF-new-context.md`. The shapes:
+
+- **A figure typed instead of computed:** `ADY 0.0038`, `divideBall 0.33`,
+  `0.8213`, "about 2½ hours", and the superseded 51.7–90.6 °F span in this
+  side's own CLAUDE.md.
+- **A figure without its conditions, or without the axis that moves it:**
+  "5 °F error" (a hyperbola in mix size), "2.6 °F low" (2.0–5.3 across the
+  envelope), "30% of the system".
+- **A difference tabulated against one of its terms:** the probe gap indexed by
+  batch size, the shaped rise indexed by dough temperature.
+- **Two bases in one sentence:** 1.59 against 1.92 for the biga. It's live
+  again in the panel hint (§2).
+- **Verifying a list by its contents when order is the meaning:** the step
+  expansion.
+- **Logic in a component:** the expansion, the condition resolver, the
+  sensitivity hint. Move it to `src/lib`, where tests reach it.
+- **A display decided on unrounded values:** keep the computation unrounded, but
+  decide what to show from what will be printed.
+- **A status claim repeated without checking:** "the deploy is broken" held
+  back five rounds of pushes, and was never true.
+- **A retraction swept for its figures only.** Sweep for the idea as well, in
+  the documents *and* the code. The retired rise idea survived in two UI strings
+  with no number in them.
+
+---
+
+## 7. The deploy
+
+It works, and has since 1 September. **Check it rather than believe it:**
 
 ```bash
-python3 scripts/generate-content.py
+gh run list --limit 3
 ```
 
-`tests/steps.test.ts` re-parses §8 on every run and compares character for
-character, so hand-editing those files turns the suite red. That is deliberate:
-the prose is the product.
+To confirm the site itself, compare the `assets/index-*.js` name in the live
+`index.html` with the one `npm run build` prints.
 
-The generator and the test parser implement the same grammar twice **on
-purpose** — one writes, one independently re-derives, so a parser bug surfaces as
-a mismatch rather than as both agreeing on garbage. **If you change one, change
-the other.**
-
-⚠️ **That only works where the two copies differ.** In MESSAGE-18 both matched
-conditional blocks from the same hard-coded condition list, so a whole block of
-new prose was dropped by both and the verbatim test passed 42/42. Both now
-refuse any `**marker:**` they don't know — so when the generator stops with
-*unknown field marker*, teach **both** files the new grammar, then decide where
-its condition is resolved.
+Don't change the workflow or the Pages source; both are right. Two runner
+notices need nothing yet: `deploy-pages@v4` is forced onto Node 24, and
+`ubuntu-latest` moves to Ubuntu 26 from 19 October 2026. Look at those first if
+a deploy fails after that date.
 
 ---
 
-## 5. What has actually gone wrong
+## 8. Practical notes
 
-Nine rounds of corrections. The patterns worth internalising, because they
-recur:
+**Git and scripts**
 
-**A number transcribed from its source instead of read from it.** Three times:
-`ADY = 0.0038`, `divideBall = 0.33`, and a hardcoded `0.392`. Each was correct
-when written and silently wrong the moment the formula moved. Anything derivable
-from the constants is now derived, and `tests/constants.test.ts` recomputes each
-from its inputs.
+- **Push over HTTPS.** The remote is already HTTPS with `gh` as credential
+  helper.
+- **Write edit scripts to files**, not inline heredocs: backticks in regexes get
+  mangled. When a script matches on a short anchor, check where the edit landed.
+  An anchor replaces what it matches and keeps everything between — the
+  counterpart's §4.9 lesson, and it applies to our scripts too.
+- **Scratch tests** go in `tests/__scratch.test.ts`, and get deleted after. The
+  scratchpad is wiped between sessions.
 
-**A figure quoted without its conditions.** Cost a full round. The vectors pin
-flour at 69 °F and the app defaults it to room (70), so every rendered water
-target sits exactly 0.392 °F below its vector value. Both correct; the number
-without its basis was the defect. Same again with three different wall-clock
-bases for one mix, spanning 12 minutes. **Say which basis you're quoting.**
+**The browser pane**
 
-**Verifying a list by its contents rather than its order.** My own, and the most
-recent. The step expansion repeated each template instead of each mix — same
-instance count, same labels, same suppression, completely wrong procedure. I
-checked all three and never read the sequence. Where order *is* the meaning,
-assert the order.
-
-**Logic that lives somewhere untestable.** That expansion bug survived five
-rounds because it sat inside a React component. It's now `src/lib/stepInstances.ts`
-and it broke immediately. `src/lib` must stay DOM-free precisely so this can't
-happen.
-
-**Structural checks catch what reading misses.** Three times now, and the
-common property is that **none of them know what the content means**: a token
-with no consumer found a spec block that had silently vanished; a constant with
-no reader found a number living in two places; a test pinning a rule found the
-thing the rule ran against was broken. They assert that every value has a
-producer and a consumer and let the broken link point at whatever went wrong.
-Keep adding them; the counterpart asked for it explicitly.
+- **Start the dev server** as `biga-calculator` from `.claude/launch.json`. The
+  app is under `/pizza-calculator/`. If the port moves, `preview_logs` gives the
+  real URL.
+- **Read text rather than screenshots:** `javascript_tool` reading `innerText`
+  is reliable.
+- **Number fields commit on blur:** triple-click, type, then Tab. Get refs with
+  `find`, and find them again after any navigation.
+- **"Divide and ball" is both a timeline stage and a step.** Take the last match
+  for the step.
+- **The Today's temperatures and Calibration panels are toggles** that remember
+  their state, so a click can close one that was already open.
+- **Clear `localStorage` after each check**, so state doesn't leak into the
+  next one.
+- **The console tool keeps history across reloads.** Log a marker before
+  deciding whether an error is new.
 
 ---
 
-## 6. The deploy works — and this section used to say it didn't
+## 9. If you read one thing
 
-**Every push since 1 September has deployed.** The only failed runs in the
-Actions history are two on 27 August. The build job passes, `deploy-pages`
-finishes in seconds, and the site at
-`https://dmb1107.github.io/pizza-calculator/` serves what `main` builds.
-
-Verified end to end on 23 September: the live `index.html` references the same
-bundle hash a local `npm run build` produces, and the served bundle contains
-MESSAGE-13's `biga-6` content.
-
-⚠️ **An earlier version of this section said every push since the ice removal
-had hung**, and five rounds of pushes were held back on the strength of it. It
-was already stale when it was written — the commit that added it deployed
-successfully. Two consequences worth knowing:
-
-- **The step-ordering bug was live from 1 to 14 September**, not "never reached
-  anyone". It only affects `nMix ≥ 2` (10+ balls), and bakes 1–3 are 3, 6 and 9
-  balls, so no calibration bake could have hit it.
-- **Check deploy state rather than reading about it.** `gh run list` shows the
-  history in one line per run; to confirm the site itself, compare the
-  `assets/index-*.js` name in the live `index.html` with the one `npm run build`
-  prints. A status in a document is a transcription like any other.
-
-**Do not change the workflow or the Pages source.** Both are correct: Pages is
-`build_type: workflow`, and the source was already fixed once (it had been set
-to deploy-from-branch, which served the dev `index.html`).
-
-Two runner notices appear in the logs and need nothing yet: `deploy-pages@v4` is
-forced from Node 20 onto Node 24, and `ubuntu-latest` moves to Ubuntu 26 from
-19 October 2026. Worth a look if a deploy fails after that date.
-
----
-
-## 7. Practical notes
-
-- **Push over HTTPS.** `gh` is set to SSH here and no key is loaded; a push over
-  `git@github.com` fails with `Permission denied (publickey)`. The remote is
-  already HTTPS with `gh` as credential helper — don't "fix" it back.
-- **Write Python to a file, never an inline heredoc.** Backticks in regexes get
-  mangled even inside a quoted heredoc, and it silently produces a
-  non-matching pattern rather than an error. Cost a debugging round.
-- **Prefer text extraction to screenshots** in the browser pane. `javascript_tool`
-  reading `innerText` is reliable; screenshots after a programmatic scroll have
-  repeatedly come back blank or timed out.
-- **The dev server picks its own port** and serves under `/pizza-calculator/`.
-  Check `preview_logs` for the real URL rather than trusting the assigned port.
-- **Use the scratchpad for scripts**, not `/tmp` — but remember it is wiped
-  between sessions. Anything the next session needs belongs in the repo, which
-  is why the generator is now committed.
-
----
-
-## 8. If you read one thing
-
-The user is technical and checks arithmetic. The counterpart is careful and
-still gets numbers wrong. The value you add is **reproducing figures before
-adopting them and saying plainly when they don't hold** — that has been the
-whole basis of the exchange, and every round where it mattered started with a
-number that looked fine.
+Dave is technical and checks arithmetic. The counterpart is careful and still
+gets numbers wrong, and so does this side: the open item in §2 is ours. The
+value here is **reproducing a figure before adopting it and saying plainly when
+it doesn't hold**. Just as much, it's **testing each check against the case it's
+meant to catch**, because a check that has never failed is taken on faith.
 
 When a number is provably wrong, fix it and show the arithmetic. When design
-intent is ambiguous, ask. Conflating those two is the failure mode both sides
-have named.
+intent is ambiguous, ask. Conflating the two is the failure mode both sides have
+named.
