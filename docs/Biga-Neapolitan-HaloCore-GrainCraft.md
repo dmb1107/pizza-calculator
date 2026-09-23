@@ -228,7 +228,7 @@ It isn't just about speed. That range produces the **right ratio of lactic to ac
 
 A 65% biga delivers a large, already-active yeast population into the final mix, so warmth is expensive. The room-temperature rise after balling is built around this target — at exactly DDT the balls get 90 minutes, and a warmer or cooler dough gets less or more — so a miss at the mixer is partly corrected before the fridge. What isn't corrected is the cooldown: a warmer ball spends longer above 50 °F once it goes in, and that is fermentation nothing in the schedule budgets for. Bigger batches cool slower in the shared bulk tub, hence the extra degree down at 7 and above.
 
-⚠️ Earlier drafts said this dough "goes straight into the fridge" — it doesn't; there are about 2½ hours at room temperature first — and that 75 °F sits "at the cool end of the 73–77 °F Neapolitan band". **No source defines a Neapolitan DDT band.** DDT follows the fermentation schedule, not the pizza style: bakers cold-fermenting pizza from the start often mix much cooler, and commercial walk-in practice runs warmer. 75/74 are this recipe's validated values; they need no external band to justify them.
+⚠️ Earlier drafts said this dough "goes straight into the fridge" — it doesn't; on target it spends nearly 3 hours at room temperature first (60 min bulk, 20 to divide, 90 to rise) — and that 75 °F sits "at the cool end of the 73–77 °F Neapolitan band". **No source defines a Neapolitan DDT band.** DDT follows the fermentation schedule, not the pizza style: bakers cold-fermenting pizza from the start often mix much cooler, and commercial walk-in practice runs warmer. 75/74 are this recipe's validated values; they need no external band to justify them.
 
 ### The water temperature formula
 
@@ -416,7 +416,7 @@ Published professional practice, and the fridge holds the biga at a stable tempe
 | Final mix | ~30 min | DDT 74–75 °F | §8.2 |
 | Bulk rest | 45–60 min | ambient | §8.3 step 7 |
 | Divide and ball | 15–20 min | ambient | §8.3 step 8 |
-| Balls at room temperature | **set by final dough temp** (71–144 min) | ambient | §8.3 step 9 |
+| Balls at room temperature | **set by how far the dough landed from DDT** — 90 min on target, 45–180 at the limits | ambient | §8.3 step 9 |
 | Dough, refrigerated | **6–36 h** | 38–40 °F | §8.3 step 10 |
 | Temper | 2–3 h | ambient | §8.4 step 11 |
 
@@ -548,7 +548,7 @@ The 0.33 assumes nominal phase durations. Run Phase A or B long and more of the 
 7. Turn out into a lightly oiled container. Rest **45–60 min** at room temp.
    **No folds.** The mixer has already built the gluten network, and the biga contributed a developed one before that. Folding now only tightens the dough further and costs extensibility.
 8. Divide to **265 g**. Pre-round, rest 10–15 min, then ball tight.
-9. Onto **very lightly oiled** half-sheet trays with lids — a thin film wiped out with a paper towel, not a pool. Nothing on top of the balls. **Room temp per the table below** — set by the dough temperature you actually hit, not a fixed number — then refrigerate.
+9. Onto **very lightly oiled** half-sheet trays with lids — a thin film wiped out with a paper towel, not a pool. Nothing on top of the balls. **Room temp per the table below** — set by how far the dough you actually hit is from DDT, not a fixed number — then refrigerate.
 
    *Oil, not flour — see the note below.*
    **Adjust the room-temperature time to your actual dough temperature** (see below) rather than using a flat 90 min.
@@ -764,7 +764,7 @@ NEVER above 40%.  20 min continuous max.
 FRICTION RATES 0.75/0.86/1.08 F-min @15/20/30% ARE DOUGH-ONLY.
   To compare against a thermometer, x Ct/(Ct+C_bowl): 0.82/0.90/0.93 at 3/6/9.
 
-BULK 45-60 min (no folds) -> ball -> RT per final dough temp -> fridge (unstacked)
+BULK 45-60 min (no folds) -> ball -> RT per offset from DDT -> fridge (unstacked)
   BY OFFSET FROM DDT (holds at 75 AND 74):
   on target=90min  -1F=100  -2F=110  -3F=121  -4F=133  -5F=144   (+1F=80, +2F=71)
   9 balls = DDT 74, so a 74 F dough is ON TARGET = 90 min, not 100.

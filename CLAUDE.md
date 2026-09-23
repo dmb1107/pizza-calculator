@@ -59,7 +59,8 @@ question:
 | `MESSAGE-19-replies.md` | §4.9 re-referenced to the default ball on the full stone (the 0.083 thickness target had no source); `{probeGapPhrase}`; display conditions decided on printed values |
 | `MESSAGE-20-replies.md` | §4.9 rewritten header to header; the thickness claim traced to the recipe, where it started |
 | `MESSAGE-21-replies.md` | The DDT "band" removed as unsourced; every rise table keyed on the offset from DDT; the thicker note from 10%, Dave's call (`THICKER_NOTE_MIN_PERCENT`) |
-| `FINDINGS-12` … `FINDINGS-21` | Replies to the above. 17 carries the §8 literal audit; 18 the parser gap that dropped a whole block; 20 a retracted figure still live in UI copy |
+| `MESSAGE-23-replies.md` | Sweep a retraction for the idea, not only its figures; `bulk-3` reworded. **There is no MESSAGE-22** — a stray draft by that number was superseded by 21 |
+| `FINDINGS-12` … `FINDINGS-23` | Replies to the above. 17 carries the §8 literal audit; 18 the parser gap that dropped a whole block; 20 a retracted figure still live in UI copy |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** How the correspondence works, what has gone wrong, and the deploy situation |
 
 ## Rules that matter more than usual here

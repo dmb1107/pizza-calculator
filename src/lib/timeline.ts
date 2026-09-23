@@ -95,7 +95,9 @@ const STAGE_INFO: Record<StageKey, { title: string; description: string }> = {
   },
   ballRoomTemp: {
     title: 'Balls at room temperature',
-    description: 'On lightly oiled trays, lids on. Length set by the dough temperature you hit.',
+    // By the OFFSET from DDT, not the thermometer reading alone (MESSAGE-21/23):
+    // §4.8's rise depends only on `T_actual − DDT`.
+    description: 'On lightly oiled trays, lids on. Length set by how far the dough landed from DDT.',
   },
   coldFerment: {
     title: 'Cold ferment',

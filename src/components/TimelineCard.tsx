@@ -163,7 +163,7 @@ export function TimelineCard(s: AppState) {
             />
             <p className="text-sm text-stone-500 dark:text-stone-400">
               Cold ferment is set in the Batch panel. The balls' room-temperature phase is not
-              adjustable — it is computed from the dough temperature you actually hit.
+              adjustable — it is computed from how far the dough you actually hit is from DDT.
             </p>
           </div>
         )}

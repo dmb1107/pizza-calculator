@@ -406,7 +406,7 @@ At {ballWeight} g, open to about **{openDiameterIn} inches** — the same thickn
     id: "bulk-3",
     phase: "bulk",
     title: `Onto trays`,
-    summary: `**Very lightly oiled** half-sheet trays with lids — a film wiped with a paper towel, not a pool. Nothing on top of the balls. Room temperature **{roomMin} min**, set by the dough temperature you actually hit.`,
+    summary: `**Very lightly oiled** half-sheet trays with lids — a film wiped with a paper towel, not a pool. Nothing on top of the balls. Room temperature **{roomMin} min**, set by how far the dough you actually hit is from DDT.`,
     values: [`Room time: {roomMin} min (final dough {finalDoughTemp} °F)`],
     detail: `**Oil, not flour.**
 
