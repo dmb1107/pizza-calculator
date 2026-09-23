@@ -86,9 +86,10 @@ export interface FrictionMeasurement {
  */
 export interface Calibration {
   /**
-   * §6: "Friction factor is not one number." Keyed by batch size in balls,
-   * because a 9-ball batch runs hotter than a 3-ball — more total work, less
-   * surface area per unit mass to shed it.
+   * §6: keyed by balls per mix (`ballsPerMix`), because FF is per-mix by
+   * definition — a 12-ball batch is two 6-ball mixes and reads the 6 entry.
+   * Whether FF varies with mix size at all is an untested hypothesis; a
+   * value per size costs nothing if it doesn't and is needed if it does.
    */
   frictionFactors: Record<number, FrictionMeasurement>;
   /** null uses the §4.3 default: 75 °F for <=6 balls, 74 °F for 7+. */

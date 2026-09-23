@@ -132,9 +132,9 @@ Weigh before you break up, not after, so anything lost to the sieve doesn't chan
     title: `Dissolve the yeast`,
     summary: `{bigaWaterPerBiga} g of **room-temperature** water, {bigaADYPerBiga} g ADY. Stir to dissolve.`,
     values: [`Biga water: {bigaWaterPerBiga} g`, `ADY: {bigaADYPerBiga} g`],
-    detail: `**The dose is the Giorilli standard: 1% fresh yeast = 0.30% IDY = 0.375% ADY on biga flour**, the baseline for 12–18 h at 61–65 °F.
+    detail: `**The dose is the Giorilli standard: 1% fresh yeast = 0.30% IDY = 0.375% ADY on biga flour**, the baseline for 16–18 h at 61–65 °F (16–18 °C).
 
-This is the number Piergiorgio Giorilli codified and that essentially every serious source repeats — PizzaBlab, Gozney's own 100% biga recipe, Stadler Made, the Italian baking literature. Go longer and you cut it; run warmer and you cut it. For a time or temperature off that baseline, use PizzaBlab's dough calculator rather than guessing.
+This is the dose Piergiorgio Giorilli codified, and the sources this recipe draws on repeat it — Gozney's own 100% biga recipe and Baking With Theory with that window, PizzaBlab with a wider 12–24 h at the same temperature. Go longer and you cut it; run warmer and you cut it. For a time or temperature off that baseline, use PizzaBlab's dough calculator rather than guessing.
 
 **Room-temperature water, not warm and not cold.** Cold water damages yeast cells. There is no proofing or activation step in the classic method — you are not trying to wake the yeast up, just disperse it. At these quantities you are well clear of scale resolution, so no slurry workaround is needed either.`,
     concepts: ["giorilli-standard"],
@@ -349,7 +349,7 @@ It also breaks up the mixer's continuous run time, which keeps the whole session
 
 **Take two readings before you start the next mix, because both have moved.**
 
-The **bowl** is no longer cold — it just held a finished dough and has had five minutes to shed. It will read close to your dough temperature. The **biga** waiting on the counter has been warming toward the room the whole time mix {mixIndex} ran.
+The **bowl** is no longer cold — it just held a finished dough. It won't be warmer than that dough, but how far it has cooled toward the room in five minutes has never been measured, so read it rather than assume it. The **biga** waiting on the counter has been warming toward the room the whole time mix {mixIndex} ran.
 
 They pull the water target in the same direction, and the biga is the bigger term by five to one: about **1.6 °F of water per °F of biga**, against **0.33 °F per °F of bowl** at a 6-ball mix. Neither drift is modelled — there is no data for it — so measure rather than assume. Thirty seconds, and the calculator will give you the next target.
 

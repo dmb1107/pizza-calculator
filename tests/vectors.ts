@@ -65,7 +65,12 @@ export const BATCH_VECTORS: readonly BatchVector[] = [
 export const BAKE_1 = {
   balls: 6,
   ballG: 265,
-  ff: 14.04,
+  /**
+   * 14.031 solved from these inputs with the §4.3 form (MESSAGE-25). The 14.04
+   * carried before could not be reproduced from any logged input; at 14.04
+   * the pins below read 73.508 and 67.97.
+   */
+  ff: 14.03,
   tBigaF: 58,
   tBowlF: 58,
   tFlourF: 69,
@@ -75,7 +80,7 @@ export const BAKE_1 = {
   /** What was actually used on the day. */
   waterUsedF: 63.0,
   /** What the corrected model says it should have been. */
-  waterRequiredF: 67.97,
+  waterRequiredF: 68.0,
   /** Predicted, and measured on the day. */
   finalTempF: 73.5,
 } as const;

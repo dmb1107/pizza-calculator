@@ -2,7 +2,7 @@ import { Panel } from './Panel';
 import { Badge, NumberField, SegmentedField, SliderField, Stepper, ToggleField } from './fields';
 import { BOUNDS } from '../state/defaults';
 import { bigaReadingCost, bowlReadingCost } from '../lib/engine';
-import { formatCoefficient, formatInches, formatTempF } from '../lib/format';
+import { formatBallsPerMix, formatCoefficient, formatInches, formatTempF } from '../lib/format';
 import type { AppState } from '../state/useAppState';
 import type { BowlState, Schedule } from '../state/types';
 
@@ -184,7 +184,7 @@ export function TemperaturesPanel(s: AppState) {
                 min={BOUNDS.bowlTempF.min}
                 max={BOUNDS.bowlTempF.max}
                 step={BOUNDS.bowlTempF.step}
-                hint={`${measuredBowl == null ? `Prefilled from ${mix.index === 1 ? 'the bowl state above' : 'the previous mix'}. ` : 'Measured — a reading always beats the prefill. '}Worth ${formatCoefficient(bowlCost.waterPerF, 2)} °F of water per °F at this mix size, which is more than three times what it costs the dough. That gap is why it earns a measurement even though the dough barely notices.`}
+                hint={`${measuredBowl == null ? `Prefilled from ${mix.index === 1 ? 'the bowl state above' : 'the previous mix'}. ` : 'Measured — a reading always beats the prefill. '}Worth ${formatCoefficient(bowlCost.waterPerF, 2)} °F of water per °F at this mix size, which is ${formatCoefficient(bowlCost.waterOverDough, 1)} times what it costs the dough. That gap is why it earns a measurement even though the dough barely notices.`}
               />
             </div>
           );
@@ -210,12 +210,13 @@ export function CalibrationPanel(s: AppState) {
     panels,
     togglePanel,
     friction,
-    setFrictionForCurrentBatch,
-    clearFrictionForCurrentBatch,
+    setFrictionForCurrentMix,
+    clearFrictionForCurrentMix,
     calibration,
     setDdtOverride,
     autoDdtF,
     ddtF,
+    mixSize,
   } = s;
 
   const ddtIsAuto = calibration.ddtOverrideF === null;
@@ -230,10 +231,10 @@ export function CalibrationPanel(s: AppState) {
       <div className="grid gap-6">
         <div>
           <NumberField
-            label={`Friction factor · ${inputs.balls}-ball batch`}
+            label={`Friction factor · ${formatBallsPerMix(mixSize)}-ball mix`}
             unit="°F"
             value={friction.ff}
-            onCommit={setFrictionForCurrentBatch}
+            onCommit={setFrictionForCurrentMix}
             min={BOUNDS.frictionFactorF.min}
             max={BOUNDS.frictionFactorF.max}
             step={BOUNDS.frictionFactorF.step}
@@ -246,14 +247,14 @@ export function CalibrationPanel(s: AppState) {
             }
             hint={
               friction.isEstimate
-                ? 'Stored separately for each batch size. A 9-ball batch runs hotter than a 3-ball, so one number will not do.'
-                : `Recorded for ${inputs.balls} balls. Other batch sizes keep their own value.`
+                ? 'Stored separately for each mix size. Whether it changes with mix size is untested; a value for each size you bake is how you find out.'
+                : `Recorded for ${formatBallsPerMix(mixSize)}-ball mixes. Other mix sizes keep their own value.`
             }
           />
           {!friction.isEstimate && (
             <button
               type="button"
-              onClick={clearFrictionForCurrentBatch}
+              onClick={clearFrictionForCurrentMix}
               className="mt-2 min-h-touch text-sm font-medium text-amber-800 underline underline-offset-2 dark:text-amber-400"
             >
               Clear this measurement

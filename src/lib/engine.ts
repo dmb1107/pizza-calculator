@@ -103,7 +103,7 @@ export interface Thermal {
    * by cSystem.
    */
   weights: { biga: number; flour: number; water: number; salt: number };
-  /** cBowl / cSystem. 18.0% at 3 balls, 3.5% at 18. */
+  /** cBowl / cSystem. 18.0% at a 3-ball mix, 6.8% at 9; never below 6.6%, the mixer cap's floor. */
   bowlShare: number;
 }
 
@@ -113,11 +113,13 @@ export interface Thermal {
  * ⚠️ THE MASSES ARE PER-MIX, NOT BATCH TOTALS. `C_bowl` is one bowl, and the
  * bowl only ever faces one mix at a time — so feeding a 12-ball batch total
  * into the heat balance models the whole batch sitting against a single bowl,
- * which never happens. That error landed the water target 2.6 °F low at 12
- * balls and 1.8 °F low at 18. Every `nMix = 1` batch is unaffected.
+ * which never happens. At the §5 vector conditions (biga and bowl 58 °F) that
+ * error landed the water target 2.6 °F low at 12 balls and 1.8 °F low at 18;
+ * across the envelope, 1.5–6.2 °F, largest with the coldest biga and
+ * independent of room and flour. Every `nMix = 1` batch is unaffected.
  *
  * FF is per-mix by the same argument: it is the rise the mixer produces in the
- * dough actually in the bowl, and 14.04 was measured on a single 6-ball mix.
+ * dough actually in the bowl, and 14.03 was measured on a single 6-ball mix.
  */
 export function computeThermal(
   f: Formula,
@@ -241,7 +243,9 @@ export function computeFinalTempF(
 
 /**
  * §4.3. Solve FF from a bake that has been measured. This is what the bake log
- * uses — `final − predicted_mix` omits the bowl and understates FF by 1.5–2.5 °F.
+ * uses — `final − predicted_mix` is the rise after the bowl diluted it, low by
+ * `FF × C_bowl/(Ct + C_bowl)`: at FF 14, 2.5 °F at a 3-ball mix, 1.4 at 6,
+ * 0.95 at 9 (§10).
  */
 export function solveFrictionFactorF(
   t: Omit<TempInputs, 'frictionFactorF' | 'ddtF'>,
@@ -296,10 +300,10 @@ export type BowlState =
  * §4.2. The prefill only — the field stays editable and a measurement always
  * wins.
  *
- * `warm` uses DDT as a good estimate rather than merely a ceiling: the bowl is
- * not cleaned between mixes and the changeover is about 5 minutes, so it comes
- * off mix 1 near dough temperature with little time to shed. It runs a degree
- * or two high.
+ * `warm` uses DDT as an upper bound (§4.2, MESSAGE-25): the bowl can't come
+ * off mix 1 warmer than the dough it held, provided mix 1 finished at or below
+ * DDT. How far it cools during the 5-minute changeover has never been
+ * measured, so it is not modelled — `mix-8` asks for a reading instead.
  */
 export function bowlTempForState(
   state: BowlState,
@@ -354,15 +358,23 @@ export function bigaReadingCost(
 }
 
 /**
- * §4.2. The bowl's own reading: °F of water per °F of bowl, and how many times
- * that exceeds what the same °F does to the dough — `cSystem/Cw`, 3.2–3.7
- * across the legal envelope at the default bowl. Above three for any bowl:
- * `cTotal/Cw` alone is 3.00, and the bowl only adds to it.
+ * §4.2. The bowl's own reading: °F of water per °F of bowl, what the same °F
+ * does to the dough, and the ratio of the two — `cSystem/Cw`, 3.2–3.7 across
+ * the legal envelope at the default bowl.
+ *
+ * The ratio is printed, not described. The hint said "three times" and then
+ * "more than three times", resting on `cTotal/Cw` = 3.0023 — a margin of
+ * 0.0023 that a 72% hydration (2.90) would erase for a light bowl. MESSAGE-25.
  */
-export function bowlReadingCost(thermal: Thermal): { waterPerF: number; doughPerF: number } {
+export function bowlReadingCost(thermal: Thermal): {
+  waterPerF: number;
+  doughPerF: number;
+  waterOverDough: number;
+} {
   return {
     waterPerF: thermal.cBowl / thermal.cFreshWater,
     doughPerF: thermal.cBowl / thermal.cSystem,
+    waterOverDough: thermal.cSystem / thermal.cFreshWater,
   };
 }
 
@@ -408,6 +420,16 @@ export function computeCapacity(f: Formula): Capacity {
     tightFinalMix: doughPerMix >= 0.95 * C.MAX_DOUGH,
     divideBigaAcrossMixes: nBiga < nMix,
   };
+}
+
+/**
+ * §6 Panel 3. The key the friction-factor map is stored under: FF is per-mix
+ * by definition (§4.2), so a 12-ball batch — two 6-ball mixes — reads and
+ * files under 6. Fractional on an odd split (13 balls → 6.5), and deliberately
+ * not rounded: §6 is exact-match only, so 6.5 must not read the 6 or 7 entry.
+ */
+export function ballsPerMix(b: BatchInputs): number {
+  return b.balls / computeCapacity(computeFormula(b)).nMix;
 }
 
 // ---------------------------------------------------------------------------
@@ -742,10 +764,10 @@ export interface CalculatorInputs extends BatchInputs {
    * §4.2. Measured bowl temperature at mix 1, overriding the selector's
    * prefill. A measurement always wins.
    *
-   * Worth 0.66 °F of water per °F at 3 balls — three times the dough
-   * sensitivity, because water is only 30% of the system. The biga gains ~5 °F
-   * from tearing and the bowl does not, so this is a real reading, not a
-   * formality.
+   * Worth `C_bowl/Cw` °F of water per °F — 0.66 at a 3-ball mix, 0.22 at 9 —
+   * and `cSystem/Cw` times what it costs the dough (`bowlReadingCost`). The
+   * biga gains ~5 °F from tearing and the bowl does not, so this is a real
+   * reading, not a formality.
    */
   bowlTempF?: PerMix<number | null>;
   /** null / undefined uses the §4.3 default: 75 °F for <=6 balls, 74 °F for 7+. */

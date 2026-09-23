@@ -62,7 +62,10 @@ question:
 | `MESSAGE-23-replies.md` | Sweep a retraction for the idea, not only its figures; `bulk-3` reworded. **There is no MESSAGE-22** — a stray draft by that number was superseded by 21 |
 | `MESSAGE-24-replies.md` | `bulk-3`'s room time printed beside both its terms, dough temperature and DDT; copy-as-text mirrors it |
 | `FINDINGS-12` … `FINDINGS-24` | Replies to the above. 17 carries the §8 literal audit; 18 the parser gap that dropped a whole block; 20 a retracted figure still live in UI copy |
-| `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, **what's open** (a live UI bug comes before Task 8), how a round works, what each test catches |
+| `FINDINGS-25-to-recipe-agent.md` | Unprompted: the biga hint quoted the tracking basis beside a measured bowl, and the copy gate was blind twice |
+| `MESSAGE-25.md` | Replies to FINDINGS-25, plus a sweep: bake-1 FF 14.03, the FF map keyed per mix, two FF claims relabelled untested, per-mix tables, "more than three times" rests on 0.0023 |
+| `FINDINGS-26-to-recipe-agent.md` | Reply to MESSAGE-25. Numbered 26 because 25 went first; the next reply matches whatever they send |
+| `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
 
@@ -340,8 +343,12 @@ don't inline a `toFixed` somewhere else.
   bounded field unusable — typing "7" on the way to "70" would snap to the
   minimum. The stepper emits a delta rather than a computed value for the same
   class of reason.
-- **The friction-factor map ships seeded** with `{6: 14.04, measured 2026-08-21}`
-  from bake 1. Other batch sizes fall back to 14.0 and badge as estimated.
+- **The friction-factor map ships seeded** with `{6: 14.03, measured 2026-08-21}`
+  from bake 1 — re-solved from its logged inputs in MESSAGE-25; a stored copy
+  of the old 14.04 seed is replaced on load. **It is keyed on balls per mix**
+  (`ballsPerMix` in the engine), not total balls: 12 balls reads the 6 entry,
+  and 13 balls is 6.5, exact-match only. Other sizes fall back to 14.0 and
+  badge as estimated.
 
 ## Build order
 

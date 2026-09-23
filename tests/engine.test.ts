@@ -12,6 +12,7 @@ import {
   computeProbeParts,
   computeProbeTargetF,
   mixStaggerH,
+  staggerUncentredMin,
   observedRate,
   computeRoomMinutes,
   computeThermal,
@@ -111,13 +112,18 @@ describe('bake 1 regression — 21 Aug 2026', () => {
     roomTempF: BAKE_1.tRoomF,
   };
 
+  // §5: at FF 14.03 both pins are exact to the printed precision (73.499,
+  // 67.999), so they are held to it rather than to TOL.degF — at 0.1, this
+  // suite could not tell 67.97 from 68.00, which is the whole of the change.
+  const PRINTED = 0.005;
+
   it('predicts the 73.5 degF the dough actually finished at', () => {
     // If this fails, the bowl term is wired wrong.
-    within(computeFinalTempF(temps, thermal, BAKE_1.waterUsedF), BAKE_1.finalTempF, TOL.degF, 'final temp');
+    within(computeFinalTempF(temps, thermal, BAKE_1.waterUsedF), BAKE_1.finalTempF, PRINTED, 'final temp');
   });
 
-  it('says the water should have been 67.97 degF, not the 63.0 used', () => {
-    within(computeWaterTempF(temps, thermal), BAKE_1.waterRequiredF, TOL.degF, 'required water');
+  it('says the water should have been 68.00 degF, not the 63.0 used', () => {
+    within(computeWaterTempF(temps, thermal), BAKE_1.waterRequiredF, PRINTED, 'required water');
   });
 
   it('accounts for the miss exactly: 5 degF of water x water’s share of the system', () => {
@@ -126,15 +132,16 @@ describe('bake 1 regression — 21 Aug 2026', () => {
     within(shortfall * waterShare, BAKE_1.ddtF - BAKE_1.finalTempF, 0.05, 'temperature shortfall');
   });
 
-  it('recovers FF = 14.04 from the measured bake', () => {
-    // The same solve the bake log uses. `final − predicted_mix` omits the bowl
-    // and would understate FF by 1.5–2.5 degF.
+  it('recovers FF = 14.03 from the measured bake', () => {
+    // The same solve the bake log uses. `final − predicted_mix` is the rise
+    // after the bowl diluted it, low by FF x C_bowl/(Ct + C_bowl) — §10.
     const ff = solveFrictionFactorF(
       { bigaTempF: BAKE_1.tBigaF, flourTempF: BAKE_1.tFlourF, roomTempF: BAKE_1.tRoomF },
       thermal,
       { waterTempF: BAKE_1.waterUsedF, finalTempF: BAKE_1.finalTempF },
     );
-    within(ff, BAKE_1.ff, 0.02, 'solved FF');
+    within(ff, 14.031, 0.0005, 'solved FF');
+    within(ff, BAKE_1.ff, 0.0015, 'the seed is the solve, to two decimals');
   });
 
   it('is about 5 degF away from what the superseded bowl-free model said', () => {
@@ -686,12 +693,32 @@ describe('§4.6 observed vs dough-only rates', () => {
     within(observedRate(30, thermal), v.at30, 0.01, `observed 30% at ${v.balls}`);
   });
 
-  it('stays inside [0.88, 1.05] across the whole supported range', () => {
+  it('stays inside [0.86, 1.01] across every ball count and ball weight', () => {
+    // §5, MESSAGE-25. Was [0.88, 1.05] at 265 g only: the upper bound was sized
+    // to batch-total weights, and the lower one fails at 3 x 240 g. The
+    // extremes are pinned too, so a bound that is merely loose can't pass.
+    let lo = Infinity;
+    let hi = -Infinity;
     for (let b = C.MIN_BALLS; b <= 24; b++) {
-      const rate = observedRate(30, calculate(vectorInputs(b, 265)).thermal);
-      expect(rate, `observed 30% rate at ${b} balls`).toBeGreaterThanOrEqual(0.88);
-      expect(rate, `observed 30% rate at ${b} balls`).toBeLessThanOrEqual(1.05);
+      for (let w = 240; w <= 300; w++) {
+        const rate = observedRate(30, calculate(vectorInputs(b, w)).thermal);
+        expect(rate, `observed 30% rate at ${b} x ${w} g`).toBeGreaterThanOrEqual(0.86);
+        expect(rate, `observed 30% rate at ${b} x ${w} g`).toBeLessThanOrEqual(1.01);
+        lo = Math.min(lo, rate);
+        hi = Math.max(hi, rate);
+      }
     }
+    within(lo, 0.8699, 0.0001, 'minimum, 3 x 240 g');
+    within(hi, 1.0082, 0.0001, 'maximum, a mix at the 2500 g cap');
+  });
+
+  it('reads per-mix masses on a split batch', () => {
+    // MESSAGE-25 asked. `calculate` builds the thermal weights per mix, so 12
+    // balls reads the 6-ball figure — not the 1.02 a batch-total 12-ball system
+    // would give.
+    const twelve = calculate(vectorInputs(12, 265));
+    expect(twelve.capacity.nMix).toBe(2);
+    within(observedRate(30, twelve.thermal), observedRate(30, calculate(vectorInputs(6, 265)).thermal), 1e-12, '12 reads 6');
   });
 
   it('always reads lower than the dough-only figure it comes from', () => {
@@ -772,7 +799,7 @@ describe('§4.2 bowl state', () => {
   it('lets a measurement beat the selector', () => {
     const r = calculate({ ...vectorInputs(6, 265), bowlState: 'cold', bowlTempF: 63 });
     expect(r.mixes[0]!.bowlTempF).toBe(63);
-    // And it moves the answer by C_bowl/Cw — three times the dough sensitivity.
+    // And it moves the answer by C_bowl/Cw — cSystem/Cw times the dough sensitivity (3.2–3.7).
     const base = calculate({ ...vectorInputs(6, 265), bowlState: 'cold' });
     const perDegree = (r.waterTempF - base.waterTempF) / (63 - VECTOR_CONDITIONS.tBigaF);
     within(perDegree, -0.328, 0.005, 'C_bowl/Cw at 6 balls');
@@ -847,6 +874,23 @@ describe('§4.7 staggerUncentred', () => {
     // Points upstream rather than at the floor.
     expect(warning?.detail).toMatch(/fewer, larger mixes/);
     expect(warning?.detail).not.toMatch(/lower the floor|below 45/i);
+  });
+
+  it('separates the clamp from the warning at the §4.8 table cells', () => {
+    // §4.8, MESSAGE-25: "a clamp and a warning are different things — test
+    // them separately." Rows at DDT 74, where 77 °F computes 62 min.
+    const cell = (finalDoughTempF: number, nMix: number) => {
+      const rise = computeRoomMinutes({ finalDoughTempF, ddtF: 74 });
+      const target = rise - (mixStaggerH(nMix) / 2) * 60;
+      return { target, uncentred: staggerUncentredMin(rise, nMix) };
+    };
+    // 75 °F / nMix 3: 45.4 — above the floor, NOT clamped; prints 45 by rounding.
+    within(cell(75, 3).target, 45.41, 0.01, '75 / 3 target');
+    expect(cell(75, 3).uncentred).toBe(0);
+    // 77 °F / nMix 2: clamped, but by 0.13 min — under the > 2 warning.
+    within(cell(77, 2).uncentred, 0.13, 0.01, '77 / 2 clamped by');
+    // 77 °F / nMix 3: the one cell that warns.
+    within(cell(77, 3).uncentred, 17.63, 0.01, '77 / 3 unabsorbed');
   });
 
   it('never reports a negative residual', () => {
@@ -1222,18 +1266,26 @@ describe('§4.2 the biga hint quotes the basis the engine applies', () => {
     within(at(9, [58]).doughF, 2.97, 0.01, '9 held, dough');
   });
 
-  it('keeps the bowl hint\'s "more than three times" true for any bowl', () => {
-    // cSystem/Cw: cTotal/Cw is 3.00 by the formula, and any bowl adds to it.
-    for (const bowlMassG of [500, 965, 1500]) {
-      for (let balls = C.MIN_BALLS; balls <= 24; balls += 1) {
-        for (const w of [240, 265, 300]) {
-          const f = computeFormula({ balls, ballWeightG: w });
-          const th = computeThermal(f, bowlMassG, computeCapacity(f).nMix);
-          const { waterPerF, doughPerF } = bowlReadingCost(th);
-          expect(waterPerF / doughPerF, `${balls} x ${w} g, ${bowlMassG} g bowl`).toBeGreaterThan(3);
-        }
-      }
+  it('quotes the bowl ratio the engine applies, at every mix size', () => {
+    // The hint prints waterOverDough rather than a worded "three times": the
+    // wording rested on Ct/Cw = 3.0023, which MESSAGE-25 showed a 72%
+    // hydration takes to 2.90. Measured by moving a MEASURED bowl a degree
+    // through `calculate`, so a ratio computed on the wrong basis fails.
+    for (const balls of [3, 6, 9, 12, 19]) {
+      const inputs = { ...vectorInputs(balls, balls === 19 ? 257 : 265), bowlTempF: [58] };
+      const r = calculate(inputs);
+      const warmer = calculate({ ...inputs, bowlTempF: [59] });
+      const water = r.waterTempF - warmer.waterTempF;
+      const dough =
+        computeFinalTempF({ ...inputs, ddtF: r.ddtF, bigaTempF: BIGA_F, bowlTempF: 59 }, r.thermal, r.waterTempF) - r.ddtF;
+      const cost = bowlReadingCost(r.thermal);
+      within(water, cost.waterPerF, 1e-9, `${balls}: water per °F of bowl`);
+      within(dough, cost.doughPerF, 1e-9, `${balls}: dough per °F of bowl`);
+      within(water / dough, cost.waterOverDough, 1e-9, `${balls}: the printed ratio`);
     }
+    // 3.2–3.7 across the envelope at the default bowl, as MESSAGE-25 reproduced.
+    within(bowlReadingCost(calculate(vectorInputs(3, 240)).thermal).waterOverDough, 3.728, 0.001, 'smallest mix');
+    within(bowlReadingCost(calculate(vectorInputs(19, 257)).thermal).waterOverDough, 3.216, 0.001, 'mix at the cap');
   });
 });
 

@@ -25,10 +25,11 @@ export const DEFAULT_INPUTS: Inputs = {
 
 /**
  * §6: seed the friction map with the one real measurement.
- * FF 14.04 °F at 6 balls, bake 1, 21 Aug 2026. Other sizes fall back to 14.0.
+ * FF 14.03 °F at 6 balls per mix, bake 1, 21 Aug 2026 — solved from the
+ * logged inputs (§5; 14.04 before MESSAGE-25). Other sizes fall back to 14.0.
  */
 export const DEFAULT_CALIBRATION: Calibration = {
-  frictionFactors: { 6: { ff: 14.04, measuredAt: '2026-08-21' } },
+  frictionFactors: { 6: { ff: 14.03, measuredAt: '2026-08-21' } },
   ddtOverrideF: null,
 };
 

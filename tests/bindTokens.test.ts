@@ -252,7 +252,7 @@ describe('§4.10 tokens', () => {
     // Swept across the directions and the zero crossing.
     for (const balls of [3, 6, 9, 12, 18]) {
       for (let room = 60; room <= 84; room += 0.5) {
-        for (const ff of [8, 10, 11, 11.1, 12, 14, 14.04, 16]) {
+        for (const ff of [8, 10, 11, 11.1, 12, 14, 14.03, 16]) {
           const inputs = { ...INPUTS, balls, roomTempF: room, flourTempF: room, frictionFactorF: ff };
           const v = tokenValues(calculate(inputs), SCHEDULE);
           const printed = Number(v.ddt) - Number(v.probeTarget);

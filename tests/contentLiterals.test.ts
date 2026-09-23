@@ -454,34 +454,55 @@ const CLAIMS: readonly Claim[] = [
     text: `the same FF of 14 would appear as ${fx(14 * ctOverTot(3), 1)} °F in a 3-ball mix and ${fx(14 * ctOverTot(9), 1)} °F in a 9-ball one`,
     covers: ['14', '11.5 °F', '3-ball', '13.0 °F', '9-ball'],
   },
-  {
-    at: 'concept:thermal-model',
-    restates: '12 balls computed as one system instead of two mixes, across the §5 envelope (every ball weight, biga 45–60, room 60–84)',
-    holds: () => {
+  // MESSAGE-25 offered this as a counterfactual to classify, since no token can
+  // bind it. The gate can still rebuild it: `computeThermal` at nMix 1 IS the
+  // batch-total model the sentence describes, so it is a claim, not FIXED.
+  // Split batches only — an unsplit batch has nothing to get wrong.
+  ...(() => {
+    const envelope = (roomTempF: number) => {
       let lo = Infinity;
       let hi = -Infinity;
-      for (let w = BOUNDS.ballWeightG.min; w <= BOUNDS.ballWeightG.max; w++) {
-        const f = computeFormula({ balls: 12, ballWeightG: w });
-        for (const bigaTempF of [45, 60]) {
-          for (const roomTempF of [60, 84]) {
-            // Linear in both temperatures, so the corners bound the envelope.
-            const t = { ddtF: defaultDdtF(12), frictionFactorF: 14, bigaTempF, flourTempF: roomTempF, roomTempF };
+      let hiBigaF = NaN;
+      for (let balls = C.MIN_BALLS; balls <= BOUNDS.balls.max; balls++) {
+        for (let w = BOUNDS.ballWeightG.min; w <= BOUNDS.ballWeightG.max; w++) {
+          const f = computeFormula({ balls, ballWeightG: w });
+          const nMix = computeCapacity(f).nMix;
+          if (nMix === 1) continue;
+          // Linear in the biga, so its ends bound the envelope.
+          for (const bigaTempF of [45, 60]) {
+            const t = { ddtF: defaultDdtF(balls), frictionFactorF: 14, bigaTempF, flourTempF: roomTempF, roomTempF };
             const low =
-              computeWaterTempF(t, computeThermal(f, C.DEFAULT_BOWL_MASS_G, 2)) -
+              computeWaterTempF(t, computeThermal(f, C.DEFAULT_BOWL_MASS_G, nMix)) -
               computeWaterTempF(t, computeThermal(f, C.DEFAULT_BOWL_MASS_G, 1));
             lo = Math.min(lo, low);
-            hi = Math.max(hi, low);
+            if (low > hi) { hi = low; hiBigaF = bigaTempF; }
           }
         }
       }
-      // 2.03–5.26: the 5.26 is at 240 g, biga 45, room 60. The prose said "2
-      // and 5" until MESSAGE-19 — its corners were all at 265 g, and ball
-      // weight is the axis that takes it past 5.
-      return lo >= 2 && hi <= 5.5;
-    },
-    text: 'by between 2 and 5½ °F',
-    covers: ['2', '5'],
-  },
+      return { lo, hi, hiBigaF };
+    };
+    const at70 = envelope(70);
+    return [
+      {
+        at: 'concept:thermal-model',
+        restates: 'batch-total model against per-mix, every split batch in the §5 envelope (1.497 at 19 x 257 g, 6.185 at 18 x 272 g)',
+        text: `by ${fx(at70.lo, 1)} to ${fx(at70.hi, 1)} °F across the supported range`,
+        covers: ['1.5', '6.2 °F'],
+      },
+      {
+        at: 'concept:thermal-model',
+        restates: 'the largest gap is at the coldest biga, and room/flour move neither end',
+        holds: () => {
+          const cold = envelope(60);
+          const hot = envelope(84);
+          const same = (a: number, b: number) => Math.abs(a - b) < 1e-9;
+          return at70.hiBigaF === 45 && same(cold.lo, hot.lo) && same(cold.hi, hot.hi) && same(cold.hi, at70.hi);
+        },
+        text: "most with the coldest biga, where the water is already hottest. Your kitchen temperature doesn't change it.",
+        covers: [],
+      },
+    ] satisfies Claim[];
+  })(),
   {
     at: 'concept:thermal-model',
     restates: 'maximum required water at 3 and 9 balls — the hot corner, biga 45, room 60',
@@ -547,7 +568,9 @@ const CLAIMS: readonly Claim[] = [
  */
 const FIXED: Record<Loc, readonly string[]> = {
   // Procedure: biga — the hand-mix, the published 61–65 °F band, the ripeness cue.
-  'biga-2.detail': ['12–18 h', '61–65 °F', '100%'], // Giorilli baseline; Gozney's 100% biga recipe
+  // Giorilli's window in °F and °C, PizzaBlab's wider one (§11 sources);
+  // Gozney's 100% biga recipe.
+  'biga-2.detail': ['16–18 h', '61–65 °F', '16–18 °C', '12–24 h', '100%'],
   'biga-3.summary': ['3–6 minutes'],
   'biga-3.timerLabel': ['3–6 min'],
   'biga-3.detail': ['100%', '3–6 minutes'],
@@ -611,8 +634,13 @@ const FIXED: Record<Loc, readonly string[]> = {
   'concept:thermal-model': ['4', '12-ball', '6-ball', '3 balls', '100 °F'],
   // Bake 1's date and batch; the retired DDT − 4; published spiral friction
   // and flour exotherm; the bake-2/3 hypothesis "FF holds near 14".
-  'concept:friction-factor': ['1', '21', '2026', '6 balls', '4', '20–26 °F', '14', '3', '9 balls', '9-ball', '3-ball', '1.5–3 °F'],
-  'concept:giorilli-standard': ['12–18 h', '61–65 °F', '45–50%', '100%', '12–16 h', '68 °F', '16–18 h', '0.38%'],
+  // "Bakes 2 and 3" are the planned bakes, by number (§12).
+  'concept:friction-factor': ['1', '21', '2026', '6 balls', '4', '20–26 °F', '14', '3', '9 balls', '2', '1.5–3 °F'],
+  // All published (§11): Gozney / Italian Pizza Secrets 16–18 h at 16–18 °C,
+  // Baking With Theory 16–20 h at 16–20 °C (ideally 18), PizzaBlab 12–24 h;
+  // Giorilli's 44–45% and his 50% allowance; "00" is the flour grade; 20% is
+  // the biga-5 pull cue.
+  'concept:giorilli-standard': ['61–65 °F', '16–18 °C', '100%', '16–18 h', '16–20 h', '16–20 °C', '18', '12–24 h', '44–45%', '50%', '00', '20%', '0.38%'],
   'concept:no-creep-speed': ['15 RPM'], // Ooni's published chart, which is wrong
   'concept:burn-ring': ['1', '100 °C', '1–1.5 cm', '2'],
 };
@@ -714,8 +742,6 @@ describe('§8.1 numbers in component copy are classified too', () => {
     'put the water 5 °F wrong on the first bake': 'bake-1 history, with its condition stated',
     'handling gains about 5 °F that the bowl does not share':
       'bake-1 history: §6, 53 °F at pull and 58 °F after tearing — one observation, which §6 forbids turning into a constant',
-    'A 9-ball batch runs hotter than a 3-ball':
-      'batch sizes as an illustration of §6 "FF itself also grows with batch size" — no figure claimed',
   };
 
   const COPY_ATTR = /\b(?:hint|label|title|placeholder|aria-label|alt|description|summary|caption)=/g;

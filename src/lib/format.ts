@@ -85,6 +85,14 @@ export function formatCoefficient(value: number, decimals: number): string {
   return roundTo(value, decimals).toFixed(decimals);
 }
 
+/**
+ * §6 balls per mix, for the friction-factor label: "6", or "6.5" on an odd
+ * split. The stored key stays exact (20/3 is not 6.7) — only the label rounds.
+ */
+export function formatBallsPerMix(value: number): string {
+  return String(roundTo(value, 1));
+}
+
 /** "65%" from 0.65. */
 export function formatPercent(fraction: number, decimals = 0): string {
   return `${roundTo(fraction * 100, decimals).toFixed(decimals)}%`;

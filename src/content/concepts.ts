@@ -70,7 +70,7 @@ Its *temperature* looks negligible and isn't, because there are two coefficients
 
 **This is why the formula is not scale-independent.** The bowl is fixed mass while the dough scales, so the weights shift with batch size. It also explains why the bowl can't just be folded into FF — the same FF of 14 would appear as 11.5 °F in a 3-ball mix and 13.0 °F in a 9-ball one, drifting for no physical reason.
 
-**The scale that matters is the mix, not the batch.** A 12-ball batch runs as two 6-ball mixes, and the bowl faces one of them at a time — so it is a 6-ball thermal system twice over, not a 12-ball one. Computing it as a 12-ball system halves the bowl's apparent share and lands the water target low — by between 2 and 5½ °F, most at the cold end of the envelope where the water is already hottest.
+**The scale that matters is the mix, not the batch.** A 12-ball batch runs as two 6-ball mixes, and the bowl faces one of them at a time — so it is a 6-ball thermal system twice over, not a 12-ball one. Computing it as a 12-ball system halves the bowl's apparent share and lands the water target low — by 1.5 to 6.2 °F across the supported range, most with the coldest biga, where the water is already hottest. Your kitchen temperature doesn't change it.
 
 **The same fixed mass is why small mixes ask for hot water.** At 3 balls the bowl is 18% of the system and only the water can lift it, so the requirement runs to about 107 °F where a 9-ball mix asks for 90 °F. Below 3 balls it leaves the range a tap can reach entirely, which is why 3 is the smallest supported batch. Note this tracks the **mix**: a 12-ball batch is two 6-ball mixes, so it wants *hotter* water than a 9-ball batch does.
 
@@ -91,22 +91,28 @@ Note what this implies: with a fridge-retarded biga you need **warm** water. The
 
 For context on plausibility: commercial spirals land 20–26 °F on a full bread mix, and this is a shorter profile on a smaller machine with a 10-minute rest in the middle, so the low end is where it belongs.
 
-**Still one data point.** The falsifiable test is whether FF holds near 14 at 3 and 9 balls while the raw temperature rise differs (11.5 vs 13.0). If it drifts even after the dilution correction, something else is going on.
+**Still one data point.** Bakes at 3 and 9 balls test the bowl model: if it is right, the raw temperature rise differs (11.5 vs 13.0) while the solved FF stays near 14. What a difference in solved FF means depends on which way it goes:
 
-Protocol: record every input mass and temperature, run the mix profile exactly, probe the dough **immediately** at the end (three spots, center of the mass, averaged), then subtract.
+- **Higher at 3 balls than at 9** — the bowl term is too big. Nothing else predicts FF *falling* as the mix grows, so this result is clean.
+- **Higher at 9 balls than at 3** — either the bowl term is too small, or FF genuinely rises with mix size (the untested hypothesis below). These two bakes cannot tell those apart.
+- **About the same** — consistent with the bowl model, and with FF not varying by mix size.
+
+Protocol: record every input mass and temperature, run the mix profile exactly, probe the dough **immediately** at the end (three spots, center of the mass, averaged), then solve with the formula above. Don't subtract a predicted temperature from the measured one: that difference is the rise *after* the bowl has diluted it, and it reads low by \`FF × C_bowl/(Ct + C_bowl)\`.
 
 **Three things that will bite you:**
 
 - **FF is a property of the profile, not the machine.** Change speeds or times and it moves. Roughly +1 °F per additional minute at 30%. Re-measure whenever you change the routine.
-- **FF differs by batch size.** A 9-ball batch runs higher than a 3-ball — more total work done, less surface area per unit mass to shed it. Keep a separate value for each size you actually use.
+- **FF may differ by mix size — untested.** An earlier recipe session reasoned that a bigger mix should run a higher FF: more total work, less surface area per unit mass to shed it. Nothing has measured it yet. The calculator keeps a separate value for each mix size you measure, so it costs nothing either way; this note gets updated once bakes 2 and 3 are in.
 - **Heat of hydration is already included.** Flour releases roughly 1.5–3 °F of exothermic heat as it absorbs water. That happens during the mix, so it's already inside the temperature you measured and therefore already inside your FF. It is a single combined number covering mixer friction *and* hydration exotherm. If you meet a calculator asking for friction alongside a *separate* hydration correction, that's a different convention — don't feed it this number.`,
   },
   {
     id: "giorilli-standard",
     title: "Where the yeast number comes from",
-    body: `**1% fresh yeast = 0.30% IDY = 0.375% ADY, on biga flour**, for 12–18 h at 61–65 °F with the biga at 45–50% hydration.
+    body: `**1% fresh yeast = 0.30% IDY = 0.375% ADY, on biga flour**, for 16–18 h at 61–65 °F (16–18 °C).
 
-This is the figure Piergiorgio Giorilli codified, and essentially every serious source repeats it — PizzaBlab, Gozney's own 100% biga recipe, Stadler Made, the Italian baking literature. It is a *baseline* for 12–16 h at around 68 °F, or 16–18 h at 61–65 °F. Go longer and you cut it; run warmer and you cut it.
+This is the dose Piergiorgio Giorilli codified. Gozney's 100% biga recipe gives it with a 16–18 h window at 16–18 °C, and Baking With Theory with 16–20 h at 16–20 °C (ideally 18). PizzaBlab gives the same dose and temperature with a wider window, 12–24 h. Go longer and you cut it; run warmer and you cut it.
+
+**Giorilli's biga is 44–45% hydration; this one is 50%.** Giorilli allows up to 50% water only for semolina or less-refined flours, so a 50% biga on 00 sits one step outside the codified formula — and a wetter biga ferments faster. The dose is still the published anchor. It is one more reason to pull the biga on the cue, about 20% rise, rather than on the clock.
 
 **The sourced number is the fresh-yeast dose.** Everything after it is unit conversion — fresh to instant at 0.30, instant to active-dry at ×1.25 — which lands on 0.375% exactly. Earlier drafts rounded that to 0.38% in the prose while computing at 0.375%, a 1.3% disagreement the dough would never have noticed but which made the arithmetic uncheckable.
 

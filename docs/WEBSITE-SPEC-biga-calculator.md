@@ -147,9 +147,9 @@ Cs = perMix.salt       × C_SALT
 Ct = Cb + Cf + Cw + Cs
 ```
 
-**FF is per-mix by definition** — it is the rise the mixer produces in the dough in the bowl, and 14.04 was measured on a single 6-ball mix. Using it against a whole 12-ball batch was the same category error.
+**FF is per-mix by definition** — it is the rise the mixer produces in the dough in the bowl, and 14.03 was measured on a single 6-ball mix. Using it against a whole 12-ball batch was the same category error.
 
-Effect of the fix: **12 balls +2.6 °F of water, 18 balls +1.8 °F.** Every `nMix = 1` batch is unchanged.
+Effect of the fix, at the §5 vector conditions (biga and bowl 58 °F): **12 balls +2.6 °F of water, 18 balls +1.8 °F.** Across the supported envelope it runs from **1.5 °F** (19 × 257 g, biga 60 °F) to **6.2 °F** (18 × 272 g, biga 45 °F) — largest with the coldest biga, and independent of room and flour temperature. Every `nMix = 1` batch is unchanged.
 
 ```
 C_bowl = bowlMassG × 0.12          // 115.8 at the 965 g default
@@ -162,13 +162,13 @@ TOT    = Ct + C_bowl
 
 The old guidance said not to require a measurement, on the grounds that `C_bowl/TOT` is only 0.10 °F per °F at 6 balls. **That was the wrong coefficient for the question.** Dough sensitivity is what a bowl error *costs*; `C_bowl/Cw` is how much it *moves the number the user acts on*, and it is three times larger:
 
-| Balls | `C_bowl/TOT` (dough) | `C_bowl/Cw` (water) |
+| Balls per mix | `C_bowl/TOT` (dough) | `C_bowl/Cw` (water) |
 |---:|---:|---:|
 | 3 | 0.179 | **0.657** |
 | 6 | 0.099 | 0.328 |
 | 9 | 0.068 | 0.219 |
-| 12 | 0.052 | 0.164 |
-| 18 | 0.035 | 0.109 |
+
+Keyed on balls **per mix**: a 12-ball batch reads the 6 row and an 18-ball batch the 9 row. ⚠️ An earlier version carried 12- and 18-ball rows at 0.052 / 0.164 and 0.035 / 0.109, computed on batch totals — a thermal system this recipe never builds.
 
 Keep `T_biga` as the default value so nothing silently moves, but label the field as wanting a measurement and show the water sensitivity inline, the same treatment as biga temperature. **Do not invent a "tearing gain" constant** — 5 °F is a single observation and hardcoding it would be exactly the extrapolation this project has been burned by before. It is a quantity to be measured, not modelled.
 
@@ -188,11 +188,11 @@ The bowl is not always cold. A split batch runs the second mix in a bowl that ju
 |---|---|---|
 | **Cold — held the biga** | `T_biga` | Default for mix 1, and for every `nMix = 1` batch |
 | **Room temperature** | `T_room` | Bowl washed and left out; or a second biga that fermented elsewhere |
-| **Warm from the previous mix** | the batch `DDT` | Default for mix 2 and later. **Upper bound, not an estimate** |
+| **Warm from the previous mix** | the batch `DDT` | Default for mix 2 and later. **An upper bound — see below** |
 
 The prefill is a starting point and the field stays editable — a measurement always wins.
 
-**"Warm from the previous mix" is a good estimate, not just a ceiling.** The bowl is not cleaned between mixes and the changeover is about 5 minutes, so it comes off mix 1 at roughly the dough temperature with very little time to shed. `DDT` will run a degree or two high; still measure, but the prefill is sound.
+**"Warm from the previous mix" is an upper bound, and how far below it the bowl sits is unmeasured.** The bowl can't come off mix 1 warmer than the dough it held, so `DDT` bounds it from above — *provided mix 1 finished at or below `DDT`*; a mix 1 that ran warm leaves a warmer bowl. How much the bowl then sheds toward the room during the 5-minute changeover has never been measured. ⚠️ An earlier version called this prefill "a good estimate" that would "run a degree or two high", on the grounds that five minutes is too short to shed much. Nothing supports either claim — thin stainless in open air may shed a real part of its gap to the room in that time, or may not. The gap it can shed is `DDT − T_room`, so whatever the rate, the prefill matters least in a warm kitchen and most in a cold one. Do not model it: `mix-8` asks for a reading, and the first split bake should log it (§10, `bowl_temp_f` on the `mix_index` 2 row).
 
 **Rinsing is available as a lever and is deliberately not used.** Thin stainless resets to about the rinse temperature in under a minute. Surface it only as a fallback if mix 2's target ever comes out awkward — it costs changeover time and the default workflow skips it.
 
@@ -248,7 +248,7 @@ The user blends fridge-cold water with tap water by hand, measuring as they pour
 | `waterTempF < WATER_MIN_F` (38) | Warn: below what fridge water reaches. Suggest chilling the biga or the fresh flour; mention ice only here. |
 | `waterTempF > WATER_MAX_F` (120) | Warn: above what a domestic tap delivers. **Do not tell the user to heat water.** The cause is upstream — almost always a biga that skipped its 1-hour temper. Say so: each °F of biga temperature is worth about 2 °F of water. |
 
-**Why the asymmetry in how likely they are.** The cold warning is essentially unreachable — swept across the whole permitted input space the minimum required water is about **51 °F**, never near 38. The hot warning is the one that guards a real edge, and it exists because the requirement climbs as the batch gets *smaller*: the bowl is fixed mass, so at 3 balls it is 18% of the thermal system against 3.5% at 18, and only the water can drag it up.
+**Why the asymmetry in how likely they are.** The cold warning is essentially unreachable — swept across the whole permitted input space the minimum required water is **53.2 °F** (§5), never near 38. The hot warning is the one that guards a real edge, and it exists because the requirement climbs as the **mix** gets *smaller*: the bowl is fixed mass, so at a 3-ball mix it is 18% of the thermal system against 6.8% at a 9-ball mix — and never below 6.6%, the floor set by the mixer's 2500 g capacity (§5, *Bowl dilution*) — and only the water can drag it up.
 
 **Minimum batch size is 3 balls (`MIN_BALLS`).** This is a hard input constraint, not a warning, and it is what keeps the hot end tractable:
 
@@ -257,7 +257,9 @@ The user blends fridge-cold water with tap water by hand, measuring as they pour
 | 1 | 271 g | **146 °F** (152 at a 240 g ball) — below the mixer minimum anyway |
 | 2 | 542 g | **116 °F** — clears the 500 g floor on paper, but a spiral hook won't grip it |
 | **3** | **812 g** | **106.6 °F** at 265 g, 108.7 at 240 g — reachable from a hot tap |
-| 9+ | — | ≤ 91 °F |
+| 9 | 2437 g | **90.3 °F** at 265 g — the largest unsplit batch at the default ball |
+
+⚠️ **An earlier last row read "9+ — ≤ 91 °F". That holds only while the batch stays in one mix.** Above that the batch splits and the requirement follows the *mix*: 10 × 265 g runs as two 5-ball mixes and asks for **95.3 °F** (95.4 at 11 × 240 g). Nothing in the supported range exceeds the 3-ball figure, which is what the table exists to show.
 
 With `MIN_BALLS = 3`, the 120 °F warning **does not fire anywhere** in the temperature grid at the default FF — it is a guard rail for a user-entered calibration FF or an out-of-band temperature, not something that should appear in normal use. If it starts firing routinely, that is a signal, not noise.
 
@@ -314,10 +316,12 @@ Phase C's entire correction authority is about −1.5 to +1.9 °F at 6 balls, so
 
 **Where the old rule came from — this is the trap to avoid everywhere in this codebase.** `FRICTION_RATE` (0.75 / 0.86 / 1.08) and `FF` are **dough-only** quantities, matching the `FF × Ct` work term. A thermometer reads the dough *after* it has equilibrated with the bowl, so an observed rate is the dough-only rate times `Ct / TOT`:
 
-| Balls | 3 | 6 | 9 | 12 | 18 |
-|---|---:|---:|---:|---:|---:|
-| `Ct / TOT` | 0.821 | 0.901 | 0.932 | 0.948 | 0.965 |
-| Observed °F/min at 30% | 0.89 | 0.97 | 1.01 | 1.02 | 1.04 |
+| Balls per mix | 3 | 6 | 9 |
+|---|---:|---:|---:|
+| `Ct / TOT` | 0.821 | 0.901 | 0.932 |
+| Observed °F/min at 30% | 0.89 | 0.97 | 1.01 |
+
+Keyed on balls **per mix**, matching the §5 observed-rate vectors: a 12-ball batch reads the 6 column and an 18-ball batch the 9. ⚠️ An earlier version carried 12- and 18-ball columns at 0.948 / 1.02 and 0.965 / 1.04, computed on batch totals.
 
 Any place the app converts a *duration* into a *predicted temperature change* must apply this factor. Expose it as a named helper (`observedRate(dialPct, batch)`) so the conversion happens in exactly one place.
 
@@ -331,7 +335,7 @@ Durations in hours, from biga mix at t=0. **These are authoritative** — they w
 |---|---:|---:|---|
 | `bigaRoomTemp` | 2 | 0 | |
 | `bigaFridge` | 19 | 0 | user-adjustable 18–20 |
-| `bigaRoomOnly` | 0 | 16 | user-adjustable 12–18, at 61–65 °F |
+| `bigaRoomOnly` | 0 | 16 | user-adjustable 12–18, at 61–65 °F. 16–18 is the Giorilli window; 12–16 rests on PizzaBlab's wider 12–24 h alone (§8.3, `giorilli-standard`) |
 | `bigaTemper` | 1 | 0 | out of fridge before mixing |
 | `mix` | **0.5 × nMix + (5 / 60) × (nMix − 1)** | same | ⚠️ **was a flat 0.5.** Includes the 10-min rest; the `5 / 60` is a **5-minute changeover** — Dave does not clean the bowl between mixes, and every mix is pre-weighed before the first starts (§8, `mix-1`, `nMix > 1` block) |
 | `bulkRest` | 1 | 1 | **fixed.** Recipe says 45–60 min; 60 is the planning number. **Clocked from the LAST mix**, not the first — see below |
@@ -439,9 +443,11 @@ staggerUncentred = ballRoomTemp − target               // ≥ 0; minutes that 
 | Measured dough | Computed rise | `nMix` 1 | `nMix` 2 | `nMix` 3 |
 |---:|---:|---:|---:|---:|
 | 77 °F | 62 min | 62 | **45** ← clamped | **45** ← clamped |
-| 75 °F | 80 min | 80 | 63 | **45** ← clamped |
+| 75 °F | 80 min | 80 | 63 | 45 — *not* clamped (45.4) |
 | 73 °F | 100 min | 100 | 82 | 65 |
 | 70 °F | 133 min | 133 | 115 | 98 |
+
+⚠️ **A clamp and a warning are different things — test them separately.** The 75 °F / `nMix` 3 target is 45.4 min, just above the floor: unclamped, `staggerUncentred` 0, and it prints 45 only by rounding. An earlier version marked it clamped. The 77 °F / `nMix` 2 cell *is* clamped, but by 0.13 min — below the `> 2` threshold (§7.3), so no warning fires. Only the 77 °F / `nMix` 3 cell (17.6 min unabsorbed) warns.
 
 **Do not let the rise go below 45 to make room.** That floor exists for its own reasons and silently overruling it trades a known problem for an unknown one. Instead **surface the residual**: `staggerUncentred` is the number of minutes that could not be absorbed, and it drives a warning (§7.3) plus the conditional block in `bulk-1`. Zero in every unclamped case, so it appears only when it is true.
 
@@ -566,12 +572,14 @@ Same treatment as `C_BIGA` and `ADY_OF_BIGA_FLOUR`, and for the same reason — 
 
 ### Regression test — bake 1, 21 Aug 2026
 
-The real bake this model was corrected against. 6 balls, `FF = 14.04`, biga 58 °F, flour 69 °F, room 70 °F, bowl 965 g at 58 °F, **water actually used 63.0 °F**:
+The real bake this model was corrected against. 6 balls, `FF = 14.03`, biga 58 °F, flour 69 °F, room 70 °F, bowl 965 g at 58 °F, **water actually used 63.0 °F**:
 
 - `finalTempF` must predict **73.50 °F** — measured on the day: **73.5 °F**
-- `waterTempF` for DDT 75 must return **67.97 °F**
+- `waterTempF` for DDT 75 must return **68.00 °F**
 
 The 5 °F gap between what was used and what was needed, times water's 30% share of the system, is exactly the 1.5 °F the dough finished low. **If this test fails, the bowl term is wired wrong.**
+
+⚠️ **FF 14.03, not 14.04.** Solved from these logged inputs with the §4.3 form, bake 1 gives **14.031**. The 14.04 carried previously can't be reproduced from any logged input and its source is unknown; at 14.04 this test pinned 73.508 and 67.97 °F. At 14.03 both pins are exact to the printed precision — `finalTempF` 73.499 → 73.50, `waterTempF` 67.999 → 68.00 — and the second now matches the recipe's bake log, which has always said the water should have been 68.0 °F.
 
 ### Bowl dilution
 
@@ -636,7 +644,7 @@ For reference, had `MIN_BALLS` stayed at 1 the maximum would be **152.2 °F** (1
 - Round-trip: `waterTempF` → `finalTempF` = `DDT`
 - `bigaADY / bigaFlour` = 0.00375 exactly, and equals `FRESH_YEAST_OF_BIGA_FLOUR × FRESH_TO_IDY × IDY_TO_ADY`
 - `probeTargetF` is strictly decreasing in **per-mix** ball count at fixed FF and room temp. ⚠️ It is *not* monotonic in total balls — 12 balls (a 6-ball mix) sits above 9. Assert on per-mix size, not batch size
-- `observedRate(30, batch)` ∈ [0.88, 1.05] across balls 3–24
+- `observedRate(30, batch)` ∈ [0.86, 1.01] across balls 3–24 **and** ball weight 240–300 g — per-mix extremes 0.8699 (3 × 240 g) and 1.0082 (a mix at the 2500 g cap). ⚠️ Was [0.88, 1.05]: the upper bound was sized to batch-total weights, and the lower bound fails at 3 × 240 g
 - ❌ **Do NOT assert bowl-inclusive thermal weights are scale-invariant.** They aren't.
 - ❌ **Do NOT assert a flat `DDT − 4` probe target.** No such rule exists.
 
@@ -690,7 +698,7 @@ Group into three panels. **Batch** open by default; the other two collapsed with
 |---|---|---|---|
 | Room temp (°F) | number | 70 | |
 | Flour temp (°F) | number | = room | "same as room" toggle |
-| Biga temp at mix (°F) | number | **58** | ⚠️ **Highest-leverage input in the model.** Was 64, which was unsourced; 58 is the one value ever measured (bake 1, after tearing). `d(T_water)/d(T_biga)` is −1.92 at 6 balls and −2.25 at 3, so a 6 °F miss here moves the required water 11.5 °F and the finished dough 3.5 °F. Mark the field as expecting a measurement and show that sensitivity inline. |
+| Biga temp at mix (°F) | number | **58** | ⚠️ **Highest-leverage input in the model.** Was 64, which was unsourced; 58 is the one value ever measured (bake 1, after tearing). `d(T_water)/d(T_biga)` is −1.92 at 6 balls and −2.25 at 3 **on the bowl-tracking basis, `(Cb + C_bowl)/Cw`** — the field's default, where the cold-bowl prefill follows the biga reading — so a 6 °F miss here moves the required water 11.5 °F and the finished dough 3.5 °F. **Once the bowl is measured, or its state is room or warm, the bowl holds and the coefficient is `Cb/Cw` = −1.59 at every mix size (§7.2):** the same miss moves the water 9.6 °F. Mark the field as expecting a measurement and show the sensitivity inline **on whichever basis currently applies** — never a fixed figure. |
 | Bowl mass (g) | number | 965 | weigh once; persist |
 | Bowl state | 3-way selector | *Cold* (mix 1) / *Warm from previous mix* (mix 2+) | Prefills bowl temp from `T_biga`, `T_room` or `DDT` — see §4.2. Show the rinse note beside it |
 | Bowl temp at mix (°F) | number | *(from the selector)* | ⚠️ **Promoted to a real input.** The selector sets a starting value; a measurement always wins. The biga gains ~5 °F from tearing and the bowl does not. Worth 0.66 °F of water per °F at a 3-ball mix, 0.22 at 9. Show that coefficient inline |
@@ -708,14 +716,14 @@ This was under-specified before and the gap was real: `mix-8` tells the user to 
 ### Panel 3 — Calibration
 | Field | Type | Default | Note |
 |---|---|---|---|
-| Friction factor (°F) | number | 14.0 | **per batch size**. 6 balls is MEASURED (bake 1); others fall back |
+| Friction factor (°F) | number | 14.0 | **per mix size** (balls per mix). 6 is MEASURED (bake 1); others fall back |
 | DDT override (°F) | number | auto | auto = 75 (≤6 balls) / 74 (7+) |
 
-**Friction factor is not one number.** Store a map of `batchSize → measuredFF` in `localStorage`, select by current batch size, fall back to 14.0. Badge the fallback "estimated"; show the recorded date when measured.
+**Store friction factor per mix size.** Store a map of `ballsPerMix → measuredFF` in `localStorage`, select by the current batch's balls per mix (`balls / nMix`), fall back to 14.0. Badge the fallback "estimated"; show the recorded date when measured. **Exact match only** — a fractional mix size (13 balls → 6.5) falls back rather than interpolating. **Key on balls per mix, not total balls:** FF is per-mix by definition (§4.2), so a 12-ball batch — two 6-ball mixes — reads the 6 entry, and an FF solved on a 12-ball bake is filed under 6. Keying on total balls would send every split batch to the fallback and file split-batch measurements under a size the mixer never ran.
 
-Seed it with `{6: {value: 14.04, date: '2026-08-21'}}`.
+Seed it with `{6: {value: 14.03, date: '2026-08-21'}}` — keyed 6 balls per mix.
 
-Note this is *separate* from bowl dilution — the bowl explains why the same FF produces different temperature rises at different scales, but FF itself also grows with batch size (more work, less surface area per unit mass). Both effects are real and stack.
+Note this is *separate* from bowl dilution — the bowl explains why the same FF produces different temperature rises at different mix sizes. **Whether FF itself varies with mix size is an untested hypothesis**, reasoned by an earlier recipe session (more work, less surface area per unit mass to shed it) and never observed. The per-size map costs nothing if FF turns out constant and is needed if it doesn't. Update this note once bakes 2 and 3 are in.
 
 ---
 
@@ -733,7 +741,7 @@ Nothing else. No split, no grams, no ice, and no commentary about whether the nu
 
 Cards after the first recompute from that mix's own biga and bowl readings (§6, per-mix overrides), so the number updates as the user enters what they measured.
 
-⚠️ **The re-measure prompt lives in `mix-8`**, a step that exists only when `nMix > 1`. Both leveraged inputs drift while the previous mix runs: the bowl warms to roughly `DDT`, and the waiting biga warms toward the room. **The biga is the bigger term** — per-mix sensitivity is −1.59 °F of water per °F of biga against −0.33 for the bowl at 6 balls per mix. Do not model either drift; there is no data for it. Ask for two readings and recompute.
+⚠️ **The re-measure prompt lives in `mix-8`**, a step that exists only when `nMix > 1`. Both leveraged inputs drift while the previous mix runs: the bowl warms toward `DDT`, and the waiting biga warms toward the room. **The biga is the bigger term** — per-mix sensitivity is −1.59 °F of water per °F of biga against −0.33 for the bowl at 6 balls per mix. Do not model either drift; there is no data for it. Ask for two readings and recompute.
 
 ⚠️ **−1.59 here and −1.92 in §4.7 are both correct. Do not reconcile them.** They are partial derivatives on different assumptions, and which one applies depends on whether the bowl moves with the biga:
 
@@ -835,9 +843,9 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 **values:** Biga water: {bigaWaterPerBiga} g · ADY: {bigaADYPerBiga} g
 
 **detail:**
-> **The dose is the Giorilli standard: 1% fresh yeast = 0.30% IDY = 0.375% ADY on biga flour**, the baseline for 12–18 h at 61–65 °F.
+> **The dose is the Giorilli standard: 1% fresh yeast = 0.30% IDY = 0.375% ADY on biga flour**, the baseline for 16–18 h at 61–65 °F (16–18 °C).
 >
-> This is the number Piergiorgio Giorilli codified and that essentially every serious source repeats — PizzaBlab, Gozney's own 100% biga recipe, Stadler Made, the Italian baking literature. Go longer and you cut it; run warmer and you cut it. For a time or temperature off that baseline, use PizzaBlab's dough calculator rather than guessing.
+> This is the dose Piergiorgio Giorilli codified, and the sources this recipe draws on repeat it — Gozney's own 100% biga recipe and Baking With Theory with that window, PizzaBlab with a wider 12–24 h at the same temperature. Go longer and you cut it; run warmer and you cut it. For a time or temperature off that baseline, use PizzaBlab's dough calculator rather than guessing.
 >
 > **Room-temperature water, not warm and not cold.** Cold water damages yeast cells. There is no proofing or activation step in the classic method — you are not trying to wake the yeast up, just disperse it. At these quantities you are well clear of scale resolution, so no slurry workaround is needed either.
 **concepts:** giorilli-standard
@@ -1063,7 +1071,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 >
 > **Take two readings before you start the next mix, because both have moved.**
 >
-> The **bowl** is no longer cold — it just held a finished dough and has had five minutes to shed. It will read close to your dough temperature. The **biga** waiting on the counter has been warming toward the room the whole time mix {mixIndex} ran.
+> The **bowl** is no longer cold — it just held a finished dough. It won't be warmer than that dough, but how far it has cooled toward the room in five minutes has never been measured, so read it rather than assume it. The **biga** waiting on the counter has been warming toward the room the whole time mix {mixIndex} ran.
 >
 > They pull the water target in the same direction, and the biga is the bigger term by five to one: about **1.6 °F of water per °F of biga**, against **0.33 °F per °F of bowl** at a 6-ball mix. Neither drift is modelled — there is no data for it — so measure rather than assume. Thirty seconds, and the calculator will give you the next target.
 >
@@ -1306,7 +1314,7 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 >
 > **This is why the formula is not scale-independent.** The bowl is fixed mass while the dough scales, so the weights shift with batch size. It also explains why the bowl can't just be folded into FF — the same FF of 14 would appear as 11.5 °F in a 3-ball mix and 13.0 °F in a 9-ball one, drifting for no physical reason.
 >
-> **The scale that matters is the mix, not the batch.** A 12-ball batch runs as two 6-ball mixes, and the bowl faces one of them at a time — so it is a 6-ball thermal system twice over, not a 12-ball one. Computing it as a 12-ball system halves the bowl's apparent share and lands the water target low — by between 2 and 5½ °F, most at the cold end of the envelope where the water is already hottest.
+> **The scale that matters is the mix, not the batch.** A 12-ball batch runs as two 6-ball mixes, and the bowl faces one of them at a time — so it is a 6-ball thermal system twice over, not a 12-ball one. Computing it as a 12-ball system halves the bowl's apparent share and lands the water target low — by 1.5 to 6.2 °F across the supported range, most with the coldest biga, where the water is already hottest. Your kitchen temperature doesn't change it.
 >
 > **The same fixed mass is why small mixes ask for hot water.** At 3 balls the bowl is 18% of the system and only the water can lift it, so the requirement runs to about 107 °F where a 9-ball mix asks for 90 °F. Below 3 balls it leaves the range a tap can reach entirely, which is why 3 is the smallest supported batch. Note this tracks the **mix**: a 12-ball batch is two 6-ball mixes, so it wants *hotter* water than a 9-ball batch does.
 >
@@ -1325,20 +1333,26 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 >
 > For context on plausibility: commercial spirals land 20–26 °F on a full bread mix, and this is a shorter profile on a smaller machine with a 10-minute rest in the middle, so the low end is where it belongs.
 >
-> **Still one data point.** The falsifiable test is whether FF holds near 14 at 3 and 9 balls while the raw temperature rise differs (11.5 vs 13.0). If it drifts even after the dilution correction, something else is going on.
+> **Still one data point.** Bakes at 3 and 9 balls test the bowl model: if it is right, the raw temperature rise differs (11.5 vs 13.0) while the solved FF stays near 14. What a difference in solved FF means depends on which way it goes:
 >
-> Protocol: record every input mass and temperature, run the mix profile exactly, probe the dough **immediately** at the end (three spots, center of the mass, averaged), then subtract.
+> - **Higher at 3 balls than at 9** — the bowl term is too big. Nothing else predicts FF *falling* as the mix grows, so this result is clean.
+> - **Higher at 9 balls than at 3** — either the bowl term is too small, or FF genuinely rises with mix size (the untested hypothesis below). These two bakes cannot tell those apart.
+> - **About the same** — consistent with the bowl model, and with FF not varying by mix size.
+>
+> Protocol: record every input mass and temperature, run the mix profile exactly, probe the dough **immediately** at the end (three spots, center of the mass, averaged), then solve with the formula above. Don't subtract a predicted temperature from the measured one: that difference is the rise *after* the bowl has diluted it, and it reads low by `FF × C_bowl/(Ct + C_bowl)`.
 >
 > **Three things that will bite you:**
 >
 > - **FF is a property of the profile, not the machine.** Change speeds or times and it moves. Roughly +1 °F per additional minute at 30%. Re-measure whenever you change the routine.
-> - **FF differs by batch size.** A 9-ball batch runs higher than a 3-ball — more total work done, less surface area per unit mass to shed it. Keep a separate value for each size you actually use.
+> - **FF may differ by mix size — untested.** An earlier recipe session reasoned that a bigger mix should run a higher FF: more total work, less surface area per unit mass to shed it. Nothing has measured it yet. The calculator keeps a separate value for each mix size you measure, so it costs nothing either way; this note gets updated once bakes 2 and 3 are in.
 > - **Heat of hydration is already included.** Flour releases roughly 1.5–3 °F of exothermic heat as it absorbs water. That happens during the mix, so it's already inside the temperature you measured and therefore already inside your FF. It is a single combined number covering mixer friction *and* hydration exotherm. If you meet a calculator asking for friction alongside a *separate* hydration correction, that's a different convention — don't feed it this number.
 
 **`giorilli-standard`** — *Where the yeast number comes from*
-> **1% fresh yeast = 0.30% IDY = 0.375% ADY, on biga flour**, for 12–18 h at 61–65 °F with the biga at 45–50% hydration.
+> **1% fresh yeast = 0.30% IDY = 0.375% ADY, on biga flour**, for 16–18 h at 61–65 °F (16–18 °C).
 >
-> This is the figure Piergiorgio Giorilli codified, and essentially every serious source repeats it — PizzaBlab, Gozney's own 100% biga recipe, Stadler Made, the Italian baking literature. It is a *baseline* for 12–16 h at around 68 °F, or 16–18 h at 61–65 °F. Go longer and you cut it; run warmer and you cut it.
+> This is the dose Piergiorgio Giorilli codified. Gozney's 100% biga recipe gives it with a 16–18 h window at 16–18 °C, and Baking With Theory with 16–20 h at 16–20 °C (ideally 18). PizzaBlab gives the same dose and temperature with a wider window, 12–24 h. Go longer and you cut it; run warmer and you cut it.
+>
+> **Giorilli's biga is 44–45% hydration; this one is 50%.** Giorilli allows up to 50% water only for semolina or less-refined flours, so a 50% biga on 00 sits one step outside the codified formula — and a wetter biga ferments faster. The dose is still the published anchor. It is one more reason to pull the biga on the cue, about 20% rise, rather than on the clock.
 >
 > **The sourced number is the fresh-yeast dose.** Everything after it is unit conversion — fresh to instant at 0.30, instant to active-dry at ×1.25 — which lands on 0.375% exactly. Earlier drafts rounded that to 0.38% in the prose while computing at 0.375%, a 1.3% disagreement the dough would never have noticed but which made the arithmetic uncheckable.
 >
@@ -1393,10 +1407,12 @@ Put these on a secondary page or in a drawer — needed occasionally, not every 
 
 **As observed on a thermometer** — multiply by `Ct/(Ct + C_bowl)`:
 
-| Balls | 3 | 6 | 9 | 12 | 18 |
-|---|---:|---:|---:|---:|---:|
-| Factor | 0.821 | 0.901 | 0.932 | 0.948 | 0.965 |
-| At 30% | 0.89 | 0.97 | 1.01 | 1.02 | 1.04 |
+| Balls per mix | 3 | 6 | 9 |
+|---|---:|---:|---:|
+| Factor | 0.821 | 0.901 | 0.932 |
+| At 30% | 0.89 | 0.97 | 1.01 |
+
+A 12-ball batch runs as two 6-ball mixes and reads the 6 column; 18 balls reads the 9.
 
 ### Water temperature
 Blend fridge-cold water with tap to the target, measuring as you pour. Fridge water reaches ~38 °F; tap covers upward. Across the supported range (3–24 balls, 240–300 g, biga 45–60 °F, room 60–84 °F) the required water spans **53–109 °F**, and **53–107 °F** at the 265 g default — hottest at *small mixes*, not small batches. No ice and no split calculation.
@@ -1429,9 +1445,9 @@ gauge_temp_f, stone_ir_f, bake_seconds
 notes_crumb, notes_cornicione, notes_base
 ```
 
-`ff_measured` uses the §4.3 solve-for-FF form, which includes the bowl. Do not use `final − predicted_mix`; that omits the bowl and understates FF by 1.5–2.5 °F depending on batch size.
+`ff_measured` uses the §4.3 solve-for-FF form, which includes the bowl. Do not compute FF as `final − predicted_mix` (a prediction with friction left out). That difference is the rise *after* bowl dilution, so it reads low by `FF × C_bowl/(Ct + C_bowl)` — at FF 14, about 2.5 °F at a 3-ball mix, 1.4 at 6, 0.95 at 9 and 0.93 at the 2500 g cap. An earlier version said 1.5–2.5 °F, which is wrong from 6 balls per mix up.
 
-**The payoff, and the reason this is worth building:** with 8–10 logged bakes you can regress `FF = a + b × (room_temp_f − 70)` per batch size. Friction factor isn't a constant — it rises with batch size (more work, less surface area per unit mass to shed it) and drifts with room temperature (heat lost during a 15-minute mix scales with the dough-to-air gap). Generic calculators use a single fixed FF. Modeling it is the thing this app can do that they can't.
+**The payoff, and the reason this is worth building:** with 8–10 logged bakes you can regress `FF = a + b × (room_temp_f − 70)` per mix size. Friction factor may not be a constant — an earlier recipe session hypothesised that it rises with mix size (more work, less surface area per unit mass to shed it) and that it rises with room temperature (heat lost during a 15-minute mix scales with the dough-to-air gap). **Both are untested** — the regression is how you find out. Generic calculators use a single fixed FF. Modeling it is the thing this app can do that they can't.
 
 Auto-populate the log from the current session's inputs so only the measured values need typing.
 
@@ -1441,12 +1457,14 @@ Auto-populate the log from the current session's inputs so only the measured val
 
 Link these from an About page. The recipe is built on published practice, not invention.
 
-- [PizzaBlab — Biga (Preferment)](https://www.pizzablab.com/the-encyclopizza/biga-preferment/) — hydration, yeast, ripeness cues, mixing technique
+- [PizzaBlab — Biga (Preferment)](https://www.pizzablab.com/the-encyclopizza/biga-preferment/) — hydration, yeast, ripeness cues, mixing technique; 1% fresh yeast, 12–24 h at 16–18 °C
 - [PizzaBlab — Dough Calculator](https://www.pizzablab.com/calculators/pizza-dough-calculator/) — for biga yeast off the baseline time/temp
 - [Gozney — 100% Biga Pizza Dough](https://us.gozney.com/blogs/recipes/100-biga-pizza-dough-recipe) — 1% yeast, 16–18 h at 61–64 °F, hand-mixed
 - [Ooni / Marco Fuso — 100% Biga using Halo Pro](https://ooni.com/blogs/recipes/ooni-100-biga-dough-using-halo-pro) — the fridge-retarded schedule
 - [Stadler Made — Biga](https://www.stadlermade.com/pizza/ingredients/biga/) — warm-kitchen workaround
-- [Baking With Theory — Biga](https://www.bakingwiththeory.com/theory/biga/) — Giorilli formula
+- [Baking With Theory — Biga](https://www.bakingwiththeory.com/theory/biga/) — Giorilli formula: 44–45% hydration, 1% fresh yeast, short biga 16–20 h at 16–20 °C (ideally 18)
+- [Italian Pizza Secrets — Essential guide to biga](https://www.italianpizzasecrets.com/essential-guide-to-biga-for-pizza/) — Giorilli's short biga (16–18 h at 16–18 °C) and long biga
+- [Giochi di Gusto — How to make Biga at home](https://www.giochidigusto.it/en/how-to-make-biga-at-home-the-complete-and-definitive-method/) — Giorilli's hydration: 45%, up to 50% only for semolina or less-refined flours
 
 ---
 

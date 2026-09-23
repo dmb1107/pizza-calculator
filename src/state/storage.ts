@@ -12,7 +12,7 @@
  */
 
 import { C } from '../lib/constants';
-import { DEFAULT_CALIBRATION, DEFAULT_PANELS, DEFAULT_PERSISTED, clampField } from './defaults';
+import { BOUNDS, DEFAULT_CALIBRATION, DEFAULT_PANELS, DEFAULT_PERSISTED, clampField } from './defaults';
 import type { Calibration, EffectiveFriction, PanelPrefs, Persisted, RunningTimer } from './types';
 
 export const STORAGE_KEY = 'biga-calculator:v1';
@@ -46,21 +46,46 @@ function finiteOr(v: unknown, fallback: number): number {
   return typeof v === 'number' && Number.isFinite(v) ? v : fallback;
 }
 
+/**
+ * A key the map can legitimately hold: some whole number of balls split
+ * evenly across some number of mixes, `balls / nMix` exactly. 6, 6.5 and 20/3
+ * pass; 0, 99 and 6.4 are corruption.
+ */
+export function isMixSizeKey(key: number): boolean {
+  if (!Number.isFinite(key) || key <= 0) return false;
+  for (let nMix = 1; nMix <= BOUNDS.balls.max; nMix++) {
+    const balls = Math.round(key * nMix);
+    if (balls >= 1 && balls <= BOUNDS.balls.max && balls / nMix === key) return true;
+  }
+  return false;
+}
+
+/**
+ * The seed as it shipped before MESSAGE-25. §5 re-solved bake 1 to 14.031; a
+ * stored map still carrying this exact entry is the untouched seed rather than
+ * a measurement, so it is replaced. Anything the baker typed is left alone.
+ */
+const SUPERSEDED_SEED = { key: 6, ff: 14.04, measuredAt: '2026-08-21' } as const;
+
 function parseFrictionFactors(raw: unknown): Calibration['frictionFactors'] {
   if (!isRecord(raw)) return {};
   const out: Calibration['frictionFactors'] = {};
   for (const [key, value] of Object.entries(raw)) {
-    const balls = Number(key);
-    // Keys are batch sizes; anything else is corruption.
-    if (!Number.isInteger(balls) || balls < 1 || balls > 24) continue;
+    // §6: keyed on balls per mix. Maps stored before MESSAGE-25 were keyed on
+    // batch size; every batch of up to 9 balls at the default ball weight is
+    // one mix, so those keys read the same either way. A split-batch key (12,
+    // 18) now names a mix size that can't occur and is simply never read.
+    const size = Number(key);
+    if (!isMixSizeKey(size)) continue;
     if (!isRecord(value)) continue;
     const ff = value['ff'];
     if (typeof ff !== 'number' || !Number.isFinite(ff)) continue;
-    const measuredAt = value['measuredAt'];
-    out[balls] = {
-      ff: clampField('frictionFactorF', ff),
-      measuredAt: typeof measuredAt === 'string' ? measuredAt : '',
-    };
+    const measuredAt = typeof value['measuredAt'] === 'string' ? value['measuredAt'] : '';
+    const seed =
+      size === SUPERSEDED_SEED.key && ff === SUPERSEDED_SEED.ff && measuredAt === SUPERSEDED_SEED.measuredAt;
+    out[size] = seed
+      ? { ...DEFAULT_CALIBRATION.frictionFactors[SUPERSEDED_SEED.key]! }
+      : { ff: clampField('frictionFactorF', ff), measuredAt };
   }
   return out;
 }
@@ -159,13 +184,15 @@ export function savePersisted(storage: StorageLike | null, value: Persisted): vo
 }
 
 /**
- * §6: select the friction factor by current batch size, falling back to 14.
+ * §6: select the friction factor by the batch's balls per mix
+ * (`ballsPerMix` in the engine), falling back to 14. Exact match only — 6.5
+ * does not borrow from 6 or 7.
  *
  * "When the value in use is the fallback, badge it 'estimated — not yet
  * calibrated.' When it's measured, show the date it was recorded."
  */
-export function effectiveFriction(calibration: Calibration, balls: number): EffectiveFriction {
-  const measured = calibration.frictionFactors[balls];
+export function effectiveFriction(calibration: Calibration, ballsPerMix: number): EffectiveFriction {
+  const measured = calibration.frictionFactors[ballsPerMix];
   if (!measured) return { ff: C.DEFAULT_FF, isEstimate: true };
   return {
     ff: measured.ff,
@@ -174,10 +201,10 @@ export function effectiveFriction(calibration: Calibration, balls: number): Effe
   };
 }
 
-/** Record a measured friction factor for one batch size. */
+/** Record a measured friction factor for one mix size — an FF solved on a 12-ball bake files under 6. */
 export function recordFriction(
   calibration: Calibration,
-  balls: number,
+  ballsPerMix: number,
   ff: number,
   today: string,
 ): Calibration {
@@ -185,14 +212,14 @@ export function recordFriction(
     ...calibration,
     frictionFactors: {
       ...calibration.frictionFactors,
-      [balls]: { ff: clampField('frictionFactorF', ff), measuredAt: today },
+      [ballsPerMix]: { ff: clampField('frictionFactorF', ff), measuredAt: today },
     },
   };
 }
 
-/** Forget a batch size's measurement, returning it to the estimate. */
-export function clearFriction(calibration: Calibration, balls: number): Calibration {
+/** Forget a mix size's measurement, returning it to the estimate. */
+export function clearFriction(calibration: Calibration, ballsPerMix: number): Calibration {
   const next = { ...calibration.frictionFactors };
-  delete next[balls];
+  delete next[ballsPerMix];
   return { ...calibration, frictionFactors: next };
 }

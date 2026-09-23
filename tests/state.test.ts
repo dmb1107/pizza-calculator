@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { C } from '../src/lib/constants';
 import { BOUNDS, DEFAULT_INPUTS, DEFAULT_PERSISTED, clampField } from '../src/state/defaults';
 import { decodeInputs, encodeInputs, hasInputs } from '../src/state/url';
+import { ballsPerMix } from '../src/lib/engine';
 import {
   STORAGE_KEY,
   clearFriction,
   effectiveFriction,
+  isMixSizeKey,
   loadPersisted,
   recordFriction,
   savePersisted,
@@ -217,7 +219,7 @@ describe('localStorage persistence', () => {
       // which carries the seeded bake-1 measurement — losing a real calibration
       // because localStorage got scrambled would be the worse failure.
       for (const [size, entry] of Object.entries(loaded.calibration.frictionFactors)) {
-        expect(Number.isInteger(Number(size))).toBe(true);
+        expect(isMixSizeKey(Number(size))).toBe(true);
         expect(Number.isFinite(entry.ff)).toBe(true);
         expect(typeof entry.measuredAt).toBe('string');
       }
@@ -251,17 +253,18 @@ describe('localStorage persistence', () => {
   });
 });
 
-describe('§6 friction factor is per batch size', () => {
-  it('ships the bake-1 measurement for 6 balls', () => {
-    // §6: seed with {6: {value: 14.04, date: '2026-08-21'}}.
+describe('§6 friction factor is per mix size', () => {
+  it('ships the bake-1 measurement for 6 balls per mix', () => {
+    // §6: seed with {6: {value: 14.03, date: '2026-08-21'}} — 14.04 before
+    // MESSAGE-25 re-solved bake 1 from its logged inputs.
     const f = effectiveFriction(DEFAULT_CALIBRATION, 6);
-    expect(f.ff).toBe(14.04);
+    expect(f.ff).toBe(14.03);
     expect(f.isEstimate).toBe(false);
     expect(f.measuredAt).toBe('2026-08-21');
   });
 
   it('falls back to 14.0 and badges it as an estimate at uncalibrated sizes', () => {
-    for (const balls of [3, 9, 12, 18]) {
+    for (const balls of [3, 9, 6.5, 9.5]) {
       const f = effectiveFriction(DEFAULT_CALIBRATION, balls);
       expect(f.ff, `${balls} balls`).toBe(C.DEFAULT_FF);
       expect(f.isEstimate, `${balls} balls`).toBe(true);
@@ -277,11 +280,10 @@ describe('§6 friction factor is per batch size', () => {
     expect(f.measuredAt).toBe('2026-08-21');
   });
 
-  it('does not apply one batch size’s measurement to another', () => {
-    // A 9-ball batch runs hotter than a 3-ball: more work, less surface area
-    // per unit mass to shed it. Sharing one number across sizes is the bug §6
-    // exists to prevent. This is separate from bowl dilution — both are real
-    // and they stack.
+  it('does not apply one mix size’s measurement to another', () => {
+    // Whether FF varies with mix size is untested (§6, MESSAGE-25); keeping a
+    // value per size is how the bake log finds out, so one size's measurement
+    // must not leak into another's.
     const cal = recordFriction(DEFAULT_CALIBRATION, 9, 16.4, '2026-08-21');
     expect(effectiveFriction(cal, 3).ff).toBe(C.DEFAULT_FF);
     expect(effectiveFriction(cal, 3).isEstimate).toBe(true);
@@ -315,6 +317,60 @@ describe('§6 friction factor is per batch size', () => {
   it('clamps a recorded value into range', () => {
     const cal = recordFriction(DEFAULT_CALIBRATION, 6, -20, '2026-08-21');
     expect(effectiveFriction(cal, 6).ff).toBe(BOUNDS.frictionFactorF.min);
+  });
+
+  // The key is what the engine says the batch's mix size is — so these go
+  // through `ballsPerMix`, the function the app actually looks up with.
+  const key = (balls: number, ballWeightG = 265) => ballsPerMix({ balls, ballWeightG });
+
+  it('reads the 6 entry for a 12-ball batch, and files a 12-ball bake under 6', () => {
+    expect(key(12)).toBe(6);
+    expect(effectiveFriction(DEFAULT_CALIBRATION, key(12))).toEqual(effectiveFriction(DEFAULT_CALIBRATION, 6));
+    const cal = recordFriction(DEFAULT_CALIBRATION, key(12), 14.6, '2026-10-01');
+    expect(effectiveFriction(cal, key(6)).ff).toBe(14.6);
+    expect(Object.keys(cal.frictionFactors)).toEqual(['6']);
+  });
+
+  it('keys on the mix, so ball weight can move a batch to another entry', () => {
+    // 9 balls is one mix at 265 g and two at 280 g.
+    expect(key(9, 265)).toBe(9);
+    expect(key(9, 280)).toBe(4.5);
+  });
+
+  it('matches a fractional mix size exactly and never interpolates', () => {
+    // §6: 13 balls -> 6.5 falls back rather than borrowing from 6 or 7.
+    let cal = recordFriction(DEFAULT_CALIBRATION, 7, 15.0, '2026-10-01');
+    expect(key(13)).toBe(6.5);
+    expect(effectiveFriction(cal, key(13))).toEqual({ ff: C.DEFAULT_FF, isEstimate: true });
+    // A bake at 13 balls files under 6.5 and is found there next time.
+    cal = recordFriction(cal, key(13), 14.4, '2026-10-02');
+    expect(effectiveFriction(cal, key(13)).ff).toBe(14.4);
+    expect(effectiveFriction(cal, 6).ff).toBe(14.03);
+  });
+
+  it('round-trips a fractional key through localStorage', () => {
+    const storage = fakeStorage();
+    const cal = recordFriction(DEFAULT_CALIBRATION, 20 / 3, 14.2, '2026-10-01');
+    savePersisted(storage, { ...DEFAULT_PERSISTED, calibration: cal });
+    const loaded = loadPersisted(storage).calibration;
+    expect(effectiveFriction(loaded, key(20, 265)).ff).toBe(14.2);
+    expect(key(20, 265)).toBe(20 / 3);
+  });
+
+  it('replaces the untouched 14.04 seed on load, and nothing else', () => {
+    const stored = (entry: object) =>
+      loadPersisted(
+        fakeStorage({ [STORAGE_KEY]: JSON.stringify({ calibration: { frictionFactors: { 6: entry }, ddtOverrideF: null } }) }),
+      ).calibration.frictionFactors[6];
+    expect(stored({ ff: 14.04, measuredAt: '2026-08-21' })).toEqual({ ff: 14.03, measuredAt: '2026-08-21' });
+    // Typed by the baker — same value on another day, or another value on the seed's day.
+    expect(stored({ ff: 14.04, measuredAt: '2026-09-30' })).toEqual({ ff: 14.04, measuredAt: '2026-09-30' });
+    expect(stored({ ff: 14.1, measuredAt: '2026-08-21' })).toEqual({ ff: 14.1, measuredAt: '2026-08-21' });
+  });
+
+  it('accepts exactly the keys a batch can produce', () => {
+    for (const k of [3, 6, 6.5, 9.5, 20 / 3, 8, 10]) expect(isMixSizeKey(k), String(k)).toBe(true);
+    for (const k of [0, -6, 99, 6.4, NaN, Infinity]) expect(isMixSizeKey(k), String(k)).toBe(false);
   });
 });
 

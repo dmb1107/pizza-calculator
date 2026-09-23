@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { calculate, type CalculatorResult } from '../lib/engine';
+import { ballsPerMix, calculate, type CalculatorResult } from '../lib/engine';
 import { defaultDdtF } from '../lib/constants';
 import {
   buildTimeline,
@@ -57,10 +57,12 @@ export interface AppState {
   resetInputs: () => void;
 
   calibration: Calibration;
-  /** The friction factor in use for the current batch size, and its provenance. */
+  /** The friction factor in use for the current mix size, and its provenance. */
   friction: EffectiveFriction;
-  setFrictionForCurrentBatch: (ff: number) => void;
-  clearFrictionForCurrentBatch: () => void;
+  /** §6: the key `friction` was looked up under — balls per mix, possibly fractional. */
+  mixSize: number;
+  setFrictionForCurrentMix: (ff: number) => void;
+  clearFrictionForCurrentMix: () => void;
   setDdtOverride: (ddtF: number | null) => void;
   /** The DDT actually in use, whether overridden or automatic. */
   ddtF: number;
@@ -215,22 +217,25 @@ export function useAppState(): AppState {
     setInputs({ ...DEFAULT_INPUTS, bowlMassG: inputs.bowlMassG });
   }, [inputs.bowlMassG]);
 
-  const friction = useMemo(
-    () => effectiveFriction(calibration, inputs.balls),
-    [calibration, inputs.balls],
+  // §6: FF is looked up and filed by balls per mix, not total balls.
+  const mixSize = useMemo(
+    () => ballsPerMix({ balls: inputs.balls, ballWeightG: inputs.ballWeightG }),
+    [inputs.balls, inputs.ballWeightG],
   );
 
-  const setFrictionForCurrentBatch = useCallback(
+  const friction = useMemo(() => effectiveFriction(calibration, mixSize), [calibration, mixSize]);
+
+  const setFrictionForCurrentMix = useCallback(
     (ff: number) => {
       if (!Number.isFinite(ff)) return;
-      setCalibration((prev) => recordFriction(prev, inputs.balls, ff, todayIso()));
+      setCalibration((prev) => recordFriction(prev, mixSize, ff, todayIso()));
     },
-    [inputs.balls],
+    [mixSize],
   );
 
-  const clearFrictionForCurrentBatch = useCallback(() => {
-    setCalibration((prev) => clearFriction(prev, inputs.balls));
-  }, [inputs.balls]);
+  const clearFrictionForCurrentMix = useCallback(() => {
+    setCalibration((prev) => clearFriction(prev, mixSize));
+  }, [mixSize]);
 
   const setDdtOverride = useCallback((ddtF: number | null) => {
     setCalibration((prev) => ({
@@ -350,8 +355,9 @@ export function useAppState(): AppState {
     resetInputs,
     calibration,
     friction,
-    setFrictionForCurrentBatch,
-    clearFrictionForCurrentBatch,
+    mixSize,
+    setFrictionForCurrentMix,
+    clearFrictionForCurrentMix,
     setDdtOverride,
     ddtF: result.ddtF,
     autoDdtF: defaultDdtF(inputs.balls),

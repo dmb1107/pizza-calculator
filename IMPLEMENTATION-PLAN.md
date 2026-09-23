@@ -5,7 +5,7 @@ Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
 **Status:** Tasks 0–7 complete, on the bowl-aware thermal model with **per-mix
-weights**, the ice calculation removed, and **MESSAGE-24 applied**. Task 8
+weights**, the ice calculation removed, and **MESSAGE-25 applied**. Task 8
 (backward timeline) next — §4.7's durations have stopped moving, so it is now
 safe to solve against them.
 
@@ -57,7 +57,8 @@ formulas before any code changed.
 - [x] `computeWaterTempF` / `computeFinalTempF` / `solveFrictionFactorF`, all
       three round-tripping exactly
 - [x] **The `3.00 ×` shortcut is gone**, not kept as a fallback
-- [x] FF is now measured: 14.04 °F at 6 balls, seeded into the calibration map
+- [x] FF is now measured: 14.03 °F at 6 balls, seeded into the calibration map
+      (14.04 until MESSAGE-25 re-solved it from bake 1's logged inputs)
 - [x] §4.8 shaped rise time replacing the fixed `ballRoomTemp` stage
 - [x] §4.6 probe target with bowl dilution and the room-gap term
 - [x] Phase A/B water as weighable grams behind a named constant
@@ -75,7 +76,7 @@ and asserts the engine matches the first — then asserts the difference exceeds
 4 °F, so the test fails loudly rather than drifting if someone swaps them.
 
 The bake-1 regression pins the whole model to reality: predicted 73.51 °F
-against 73.5 measured, required water 67.97 °F against the 63.0 actually used,
+against 73.5 measured, required water 68.00 °F against the 63.0 actually used,
 and the 5 °F gap times water's share of the system reproducing the 1.5 °F the
 dough finished low. Zeroing the bowl mass reconstructs the superseded model and
 shows the gap it caused.
@@ -129,7 +130,8 @@ kitchen.
 
 The cause is structural rather than a rounding difference: the requirement rises
 as the batch gets *smaller*, because the bowl is a fixed cold mass and a much
-larger share of a small batch — 18% at 3 balls against 3.5% at 18.
+larger share of a small mix — 18% at a 3-ball mix against 6.8% at 9, and never
+below 6.6%, the floor the mixer cap sets.
 
 | Balls | Max required water |
 |---:|---:|
@@ -142,6 +144,13 @@ larger share of a small batch — 18% at 3 balls against 3.5% at 18.
 
 90.6 sits just above the 9-ball maximum, so the published sweep looks not to
 have gone below about 9 balls. **Raised with the recipe agent; not resolved.**
+
+> **Historical — resolved long since; §5 now gives 53.2–108.7 °F.** The table
+> above predates the per-mix correction: its 12- and 18-ball rows are
+> batch-total. The engine today, at the same corner (biga 45 °F, room and flour
+> 60 °F, 265 g, FF 14), gives 3 → 106.6, 5 → 98.7, 6 → 96.8, 9 → 90.3,
+> 12 → 93.4, 18 → 90.3. 18 equals 9 because it runs as two 9-ball mixes; 12
+> sits above 9 for the same reason. Recomputed for MESSAGE-25.
 `WATER_REACHABILITY.max` records what the model actually does, with the
 disagreement written down beside it rather than silently adopted — the same
 handling the 30.2 h overhead finding got before §4.7 was corrected.
@@ -264,7 +273,8 @@ three §6 panels.
 - [x] `localStorage` for calibration, panel state and the freezer temperature
 - [x] Precedence URL > localStorage > default, applied per key
 - [x] "Flour temp same as room" toggle, tracking in both directions
-- [x] Friction factor as a `batchSize → { ff, measuredAt }` map, badged
+- [x] Friction factor as a `ballsPerMix → { ff, measuredAt }` map (batch-size
+      keyed until MESSAGE-25; exact match, so 6.5 falls back), badged
       "estimated — not yet calibrated" on the fallback and with the recorded
       date when measured
 - [x] DDT override with a "back to automatic" escape
@@ -617,9 +627,12 @@ Not required for v1, but §10 says design the data layer so it can be added.
 
 - [ ] localStorage-backed log, the §10 schema, JSON export.
 - [ ] Auto-populate from the current session so only measured values get typed.
-- [ ] `ff_measured = final_dough_temp_f − predicted_mix_temp_f`.
+- [ ] `ff_measured` from `solveFrictionFactorF`, the §4.3 solve that includes
+      the bowl — **not** `final − predicted_mix`, which reads low by
+      `FF × C_bowl/(Ct + C_bowl)` (§10). File it under the bake's balls per mix.
 - [ ] The payoff: with 8–10 logged bakes, regress
-      `FF = a + b × (room_temp_f − 70)` per batch size. Generic calculators use
+      `FF = a + b × (room_temp_f − 70)` per mix size — both effects are
+      untested hypotheses, and this is how they get tested. Generic calculators use
       one fixed FF; modeling it is the thing this app can do that they can't.
 
 ---
