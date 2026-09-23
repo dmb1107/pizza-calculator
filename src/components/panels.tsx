@@ -1,7 +1,8 @@
 import { Panel } from './Panel';
 import { Badge, NumberField, SegmentedField, SliderField, Stepper, ToggleField } from './fields';
 import { BOUNDS } from '../state/defaults';
-import { formatInches, formatTempF } from '../lib/format';
+import { bigaReadingCost, bowlReadingCost } from '../lib/engine';
+import { formatCoefficient, formatInches, formatTempF } from '../lib/format';
 import type { AppState } from '../state/useAppState';
 import type { BowlState, Schedule } from '../state/types';
 
@@ -17,6 +18,13 @@ const BOWL_STATE_OPTIONS: { value: BowlState; label: string; description: string
   { value: 'room', label: 'Room temperature', description: 'Washed and left out' },
   { value: 'warm', label: 'Warm from a previous mix', description: 'Straight off the last mix' },
 ];
+
+/**
+ * The biga hint's worked example, §6's "a 6 °F miss": how far off a guessed
+ * reading might be. An illustration, not a model input — the figures it
+ * produces are computed, on the basis the bowl field is actually on.
+ */
+const BIGA_GUESS_EXAMPLE_F = 6;
 
 const SCHEDULE_OPTIONS: { value: Schedule; label: string; description: string }[] = [
   { value: 'retarded', label: 'Retarded biga', description: '2 h room, then 18–20 h fridge' },
@@ -78,14 +86,11 @@ export function BatchPanel(s: AppState) {
 export function TemperaturesPanel(s: AppState) {
   const { inputs, setInput, commitNumber, panels, togglePanel, result } = s;
 
-  // §4.2 / §6: show the coefficient that makes each field worth measuring.
-  // d(T_water)/d(T_biga) and C_bowl/Cw both scale with batch size, so they are
-  // computed rather than quoted — a fixed number would be wrong at most sizes.
+  // §4.2 / §6: show the coefficient that makes each field worth measuring,
+  // from the engine and on the right basis — see `bigaReadingCost`.
   const { thermal } = result;
-  // Quoted as magnitudes: both move the water the OTHER way, and the prose
-  // says so, so a signed number here would read as a double negative.
-  const bigaSensitivity = ((thermal.cBiga + thermal.cBowl) / thermal.cFreshWater).toFixed(1);
-  const bowlSensitivity = (thermal.cBowl / thermal.cFreshWater).toFixed(2);
+  const bigaCost = bigaReadingCost(thermal, result.mixes[0]!.bowlTracksBiga, BIGA_GUESS_EXAMPLE_F);
+  const bowlCost = bowlReadingCost(thermal);
   const bigaAt = (i: number) => inputs.bigaTempF[i] ?? inputs.bigaTempF[0]!;
 
   /**
@@ -158,7 +163,7 @@ export function TemperaturesPanel(s: AppState) {
                 step={BOUNDS.bigaTempF.step}
                 hint={
                   mix.index === 1
-                    ? `Measure it — this is the highest-leverage input in the model. Every °F warmer here means about ${bigaSensitivity} °F cooler water, so a 6 °F guess is 11 °F of water and 3.5 °F of finished dough. Take the reading after tearing the biga, not at the pull: handling gains about 5 °F that the bowl does not share.`
+                    ? `Measure it — this is the highest-leverage input in the model. Every °F warmer here means about ${formatCoefficient(bigaCost.waterPerF, 1)} °F cooler water, so a ${BIGA_GUESS_EXAMPLE_F} °F guess is ${formatTempF(bigaCost.waterF)} °F of water and ${formatTempF(bigaCost.doughF)} °F of finished dough. Take the reading after tearing the biga, not at the pull: handling gains about 5 °F that the bowl does not share.`
                     : `Re-read it before this mix. The waiting biga has been warming toward the room the whole time the previous mix ran, and that drift is not modelled — there is no data for it.`
                 }
               />
@@ -179,7 +184,7 @@ export function TemperaturesPanel(s: AppState) {
                 min={BOUNDS.bowlTempF.min}
                 max={BOUNDS.bowlTempF.max}
                 step={BOUNDS.bowlTempF.step}
-                hint={`${measuredBowl == null ? `Prefilled from ${mix.index === 1 ? 'the bowl state above' : 'the previous mix'}. ` : 'Measured — a reading always beats the prefill. '}Worth ${bowlSensitivity} °F of water per °F at this mix size, which is three times what it costs the dough. That gap is why it earns a measurement even though the dough barely notices.`}
+                hint={`${measuredBowl == null ? `Prefilled from ${mix.index === 1 ? 'the bowl state above' : 'the previous mix'}. ` : 'Measured — a reading always beats the prefill. '}Worth ${formatCoefficient(bowlCost.waterPerF, 2)} °F of water per °F at this mix size, which is more than three times what it costs the dough. That gap is why it earns a measurement even though the dough barely notices.`}
               />
             </div>
           );

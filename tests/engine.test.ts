@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { C, bowlHeatCapacity, defaultDdtF } from '../src/lib/constants';
 import { formatInches, formatWhole } from '../src/lib/format';
 import {
+  bigaReadingCost,
+  bowlReadingCost,
   calculate,
   computeCapacity,
   computeFinalTempF,
@@ -1153,6 +1155,85 @@ describe('§4.2 the two biga sensitivities are different quantities', () => {
     expect(sens(9, 265).bowlShare).toBeCloseTo(0.068, 3);
     expect(sens(9, 270).bowlShare).toBeCloseTo(0.0668, 3);
     expect(sens(19, 257, 2).bowlShare).toBeCloseTo(0.0665, 3);
+  });
+});
+
+/**
+ * The panel hint quotes `bigaReadingCost` on the basis `calculate` reports for
+ * mix 1. It printed the tracking figure beside a measured bowl until
+ * FINDINGS-25, so what is pinned here is the PAIRING: the flag must pick the
+ * coefficient the engine actually applies. Measured by perturbing the biga
+ * through `calculate` itself, the path the water card takes — a check against
+ * the heat capacities would agree with a flag that pointed the wrong way.
+ */
+describe('§4.2 the biga hint quotes the basis the engine applies', () => {
+  const BIGA_F = VECTOR_CONDITIONS.tBigaF;
+  const base = { ...vectorInputs(3, 265), roomTempF: 70, ddtOverrideF: 75 };
+  const ERROR_F = 6;
+
+  const cases: [string, Partial<CalculatorInputs>, boolean][] = [
+    ['cold, unmeasured', { bowlState: 'cold' }, true],
+    ['cold, measured', { bowlState: 'cold', bowlTempF: [58] }, false],
+    ['room, unmeasured', { bowlState: 'room' }, false],
+    ['warm, unmeasured', { bowlState: 'warm' }, false],
+  ];
+
+  for (const [name, extra, tracks] of cases) {
+    it(`${name}: ${tracks ? 'tracking' : 'held'}`, () => {
+      const r = calculate({ ...base, ...extra });
+      expect(r.mixes[0]!.bowlTracksBiga).toBe(tracks);
+      const cost = bigaReadingCost(r.thermal, r.mixes[0]!.bowlTracksBiga, ERROR_F);
+
+      // Water: what a warmer reading does to the card.
+      const warmer = calculate({ ...base, ...extra, bigaTempF: BIGA_F + ERROR_F });
+      within(r.waterTempF - warmer.waterTempF, cost.waterF, 1e-9, 'water moved');
+
+      // Dough: mix at the guess's water when the truth was ERROR_F warmer.
+      // The bowl the dough meets is the one `warmer` says it is.
+      const m = warmer.mixes[0]!;
+      const finalF = computeFinalTempF(
+        { ...base, ddtF: r.ddtF, bigaTempF: BIGA_F + ERROR_F, bowlTempF: m.bowlTempF },
+        r.thermal,
+        r.waterTempF,
+      );
+      within(finalF - r.ddtF, cost.doughF, 1e-9, 'dough missed DDT by');
+    });
+  }
+
+  it('reproduces FINDINGS-25 at 3 / 6 / 9 balls', () => {
+    const at = (balls: number, bowlTempF?: number[]) => {
+      const r = calculate({ ...vectorInputs(balls, 265), bowlState: 'cold', bowlTempF });
+      return bigaReadingCost(r.thermal, r.mixes[0]!.bowlTracksBiga, ERROR_F);
+    };
+    // Tracking, the §4.2 table row. What the hint printed at every state.
+    within(at(3).waterPerF, 2.251, 0.001, '3 tracking');
+    within(at(6).waterPerF, 1.923, 0.001, '6 tracking');
+    within(at(9).waterPerF, 1.814, 0.001, '9 tracking');
+    within(at(3).waterF, 13.51, 0.01, '3 tracking, 6 °F of water');
+    within(at(3).doughF, 3.69, 0.01, '3 tracking, 6 °F of dough');
+    within(at(6).waterF, 11.54, 0.01, 'the typed "11 °F"');
+    within(at(6).doughF, 3.46, 0.01, 'the typed "3.5 °F"');
+    // Held: scale-invariant in water, not in dough (cSystem carries the bowl).
+    for (const balls of [3, 6, 9]) {
+      within(at(balls, [58]).waterPerF, 1.5947, 0.0001, `${balls} held`);
+      within(at(balls, [58]).waterF, 9.57, 0.01, `${balls} held, water`);
+    }
+    within(at(3, [58]).doughF, 2.61, 0.01, '3 held, dough');
+    within(at(9, [58]).doughF, 2.97, 0.01, '9 held, dough');
+  });
+
+  it('keeps the bowl hint\'s "more than three times" true for any bowl', () => {
+    // cSystem/Cw: cTotal/Cw is 3.00 by the formula, and any bowl adds to it.
+    for (const bowlMassG of [500, 965, 1500]) {
+      for (let balls = C.MIN_BALLS; balls <= 24; balls += 1) {
+        for (const w of [240, 265, 300]) {
+          const f = computeFormula({ balls, ballWeightG: w });
+          const th = computeThermal(f, bowlMassG, computeCapacity(f).nMix);
+          const { waterPerF, doughPerF } = bowlReadingCost(th);
+          expect(waterPerF / doughPerF, `${balls} x ${w} g, ${bowlMassG} g bowl`).toBeGreaterThan(3);
+        }
+      }
+    }
   });
 });
 

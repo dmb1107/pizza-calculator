@@ -76,6 +76,15 @@ export function formatPercentNumber(fraction: number): string {
   return String(roundTo(fraction * 100, 1));
 }
 
+/**
+ * A dimensionless coefficient — °F of water per °F of an input. Callers pick
+ * the decimals: the biga's runs 1.6–2.3 and reads at one, the bowl's runs
+ * 0.2–0.7 and needs two.
+ */
+export function formatCoefficient(value: number, decimals: number): string {
+  return roundTo(value, decimals).toFixed(decimals);
+}
+
 /** "65%" from 0.65. */
 export function formatPercent(fraction: number, decimals = 0): string {
   return `${roundTo(fraction * 100, decimals).toFixed(decimals)}%`;

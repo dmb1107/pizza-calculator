@@ -21,7 +21,7 @@ you can check instead (§7).
   been deleted. Their next message will be **25**; your reply is FINDINGS-25.
 - **Tasks 0–7 are done:** engine, state, cards, forward timeline, steps,
   concepts, timers. The plan's status line names the last message applied.
-- **Next comes the open item in §2, then Task 8.**
+- **The §2 hint fix is done but not yet reported. Next comes Task 8.**
 - **After Task 8:**
   - Task 9 — reference drawer and About.
   - Task 10 — only the phone-in-the-kitchen check remains, and that's Dave's.
@@ -32,42 +32,41 @@ you can check instead (§7).
 
 ## 2. Open — start here
 
-### ⚠️ The biga-temperature hint shows the wrong sensitivity once the bowl is measured
+### Fixed, not yet reported: the biga-temperature hint's basis — owed in FINDINGS-25
 
-Found while writing this handoff; not fixed yet. The hint is in
-`src/components/panels.tsx`, around lines 87 and 161. For mix 1 it reads:
+Fixed on 23 September, after this handoff was written. **FINDINGS-25 must
+report it**; there's no spec change, since it was our UI copy, not §8.
 
-> *Every °F warmer here means about **{bigaSensitivity}** °F cooler water, so a
-> 6 °F guess is **11 °F** of water and **3.5 °F** of finished dough.*
-
-**Four defects:**
-
-1. **Wrong basis once the bowl is measured.** `bigaSensitivity` is
-   `(Cb + C_bowl)/Cw`, the *bowl-tracking* coefficient. That's only right while
-   the bowl follows the biga. The prefill tracks the biga only in the `'cold'`
-   bowl state, and only while the bowl field is unmeasured. The moment the baker
-   takes the reading the panel recommends, the right coefficient is the held one,
-   `Cb/Cw`. That's §4.2's two-bases rule. At 265 g balls and a 965 g bowl the
-   hint prints **2.3 at 3 balls, 1.9 at 6, 1.8 at 9** (2.25 / 1.92 / 1.81
-   unrounded); held is **1.6 at every size** (1.595).
-2. **Typed figures beside a changing value.** "11 °F of water and 3.5 °F of
-   dough" is the 6-ball tracking case typed in. At 3 balls it's 13.5 and 3.7;
-   with the bowl measured, about 9.6 of water and 2.6–3.0 of dough.
-3. **Engine logic and rounding in a component.** The ratio is computed and
-   `toFixed`-rounded inside `panels.tsx`, where no test reaches it. It belongs
-   in `src/lib`, with a formatter in `format.ts`.
-4. **The copy check can't see it.** The component-copy check in
-   `tests/contentLiterals.test.ts` scans quoted attributes only, and skips
-   template literals on purpose, on the theory that a template literal is fed
-   from the engine. This one mixes both. Extend the check to the literal parts of
-   template literals. Today only this string would trip it: "6 °F" is the example
-   guess, and "5 °F" is bake-1 history. Both are legitimate once classified.
-
-The bowl hint beside it, *"three times what it costs the dough"*, uses the right
-basis. But the true ratio is `TOT/Cw` = 3.2–3.7, so "about three times".
-
-**No spec change is needed**, since this is your UI copy, not §8. But report it
-in FINDINGS-25: it's the two-bases lesson, in the calculator's own copy.
+- **What was wrong.** The mix-1 biga hint always quoted the tracking
+  coefficient `(Cb + C_bowl)/Cw`, even once the bowl was measured, when the
+  right one is the held `Cb/Cw` (§4.2's two bases). Its example, "a 6 °F guess
+  is 11 °F of water and 3.5 °F of dough", was the 6-ball tracking case typed
+  in, and the ratio was computed and `toFixed`-rounded inside `panels.tsx`.
+- **What changed.** `calculate` reports `bowlTracksBiga` per mix. It's true only
+  for the `cold` state with the bowl unmeasured. `bigaReadingCost` and
+  `bowlReadingCost` in `engine.ts` compute the figures, and
+  `formatCoefficient` in `format.ts` rounds them. Conditions: 265 g balls,
+  965 g bowl, 6 °F error. Tracking reads 2.25 / 1.92 / 1.81 °F of water per °F
+  at 3 / 6 / 9 balls. Held reads 1.595 at every size, with 2.6–3.0 °F of dough.
+  At the defaults, the rendered hint goes from 1.9 / 11.5 / 3.5 to
+  1.6 / 9.6 / 2.9 when a bowl reading is entered. Checked in the browser.
+- **The test that pins it** perturbs the biga through `calculate` in each bowl
+  state. It fails with the flag forced to `true`, the old behaviour.
+- **The bowl hint** now reads "more than three times". `cSystem/Cw` is
+  3.2–3.7, and it stays above 3 for any bowl mass, since `cTotal/Cw` alone is
+  3.00. A test sweeps it.
+- **The copy check** now reads the literal parts of template literals. **It had
+  a second blind spot**, found by putting the old string back and watching it
+  pass: a whole string was excused if it contained *any* classified phrase, and
+  the typed "11 °F … 3.5 °F" shared a fragment with the classified "5 °F"
+  tearing sentence. Now a classified phrase excuses only itself. The widening
+  also surfaced "a 9-ball batch runs hotter than a 3-ball" in the FF hint, which
+  was never visible before. It's classified as §6's "FF grows with batch size".
+- **For the counterpart:** spec §6's biga row, "a 6 °F miss here moves the
+  required water 11.5 °F and the finished dough 3.5 °F", is the tracking basis
+  at 6 balls. It's correct for the field's default state, but it doesn't say so,
+  and §6 asks for the sensitivity inline without saying which basis applies once
+  the bowl is measured. Worth one clause from them.
 
 ### Small debt: rounding outside `format.ts`
 
@@ -131,6 +130,8 @@ didn't change. Sometimes a one-line instruction comes with it.
    - the two parsers shared one condition list and dropped a whole block.
      Caught by noticing the block missing from the regenerated output.
    - the component-copy check skips template literals. Caught by a grep (§2).
+   - then the widened copy check excused a whole string for one classified
+     phrase in it. Caught by reinstating the bug (§2).
 6. **Verify in the browser** anything that renders (§8).
 7. **Write `docs/FINDINGS-N-to-recipe-agent.md`**: what reproduced (with
    conditions), what didn't and why, and anything you couldn't build. Send it
@@ -191,8 +192,8 @@ The long form is the errors table in their `HANDOFF-new-context.md`. The shapes:
   envelope), "30% of the system".
 - **A difference tabulated against one of its terms:** the probe gap indexed by
   batch size, the shaped rise indexed by dough temperature.
-- **Two bases in one sentence:** 1.59 against 1.92 for the biga. It's live
-  again in the panel hint (§2).
+- **Two bases in one sentence:** 1.59 against 1.92 for the biga. It came back
+  in the panel hint, and was fixed on 23 September (§2).
 - **Verifying a list by its contents when order is the meaning:** the step
   expansion.
 - **Logic in a component:** the expansion, the condition resolver, the
@@ -261,7 +262,7 @@ a deploy fails after that date.
 ## 9. If you read one thing
 
 Dave is technical and checks arithmetic. The counterpart is careful and still
-gets numbers wrong, and so does this side: the open item in §2 is ours. The
+gets numbers wrong, and so does this side: the hint fixed in §2 was ours. The
 value here is **reproducing a figure before adopting it and saying plainly when
 it doesn't hold**. Just as much, it's **testing each check against the case it's
 meant to catch**, because a check that has never failed is taken on faith.

@@ -699,31 +699,104 @@ describe('§8.1 every numeric literal in §8 is classified', () => {
  * after §4.9 retracted that figure. It was found by hand, in MESSAGE-20's
  * sweep; this makes the next one fail instead.
  *
- * Scope: quoted string attributes in components, which is where every piece
- * of numeric UI copy currently lives. A computed figure belongs in a template
- * literal fed from the engine, which this deliberately does not match.
+ * Scope: copy attributes in components — quoted strings, and every string
+ * inside a `{…}` expression: the literal parts of template literals (at any
+ * nesting) and quoted strings in their interpolations. A computed figure
+ * belongs in an interpolation fed from the engine, and interpolations are
+ * skipped, but the text AROUND them is typed. Template literals used to be
+ * skipped wholesale on that theory, and the biga hint mixed both: a computed
+ * coefficient beside "11 °F of water and 3.5 °F of finished dough" typed in,
+ * wrong at every size but 6 balls and wrong at 6 once the bowl was measured.
  */
 describe('§8.1 numbers in component copy are classified too', () => {
   const COMPONENT_FIXED: Record<string, string> = {
     'Biga at 61–65 °F': 'the published fermentation band — procedure',
     'put the water 5 °F wrong on the first bake': 'bake-1 history, with its condition stated',
+    'handling gains about 5 °F that the bowl does not share':
+      'bake-1 history: §6, 53 °F at pull and 58 °F after tearing — one observation, which §6 forbids turning into a constant',
+    'A 9-ball batch runs hotter than a 3-ball':
+      'batch sizes as an illustration of §6 "FF itself also grows with batch size" — no figure claimed',
   };
+
+  const COPY_ATTR = /\b(?:hint|label|title|placeholder|aria-label|alt|description|summary|caption)=/g;
+
+  /**
+   * Every string literal inside a JSX expression starting at `src[start]`
+   * (the `{`): template-literal text segments and quoted strings, but not
+   * the code in `${…}`. A small lexer rather than a regex, because template
+   * literals nest — the bowl hint has one inside an interpolation inside
+   * another.
+   */
+  function expressionStrings(src: string, start: number): string[] {
+    const out: string[] = [];
+    let i = start;
+    const code = (): void => {
+      // At a `{`; consume through its matching `}`.
+      let depth = 0;
+      for (; i < src.length; i += 1) {
+        const ch = src[i];
+        if (ch === '{') depth += 1;
+        else if (ch === '}') {
+          depth -= 1;
+          if (depth === 0) { i += 1; return; }
+        } else if (ch === "'" || ch === '"') {
+          const end = src.indexOf(ch, i + 1);
+          out.push(src.slice(i + 1, end));
+          i = end;
+        } else if (ch === '`') {
+          template();
+          i -= 1;
+        }
+      }
+      throw new Error(`unbalanced expression at ${start}`);
+    };
+    const template = (): void => {
+      // At a backtick; consume through its closing backtick.
+      let text = '';
+      for (i += 1; i < src.length; i += 1) {
+        const ch = src[i];
+        if (ch === '\\') { text += src[i + 1]; i += 1; }
+        else if (ch === '`') { out.push(text); i += 1; return; }
+        else if (ch === '$' && src[i + 1] === '{') {
+          out.push(text);
+          text = '';
+          i += 1;
+          code();
+          i -= 1;
+        } else text += ch;
+      }
+      throw new Error(`unterminated template at ${start}`);
+    };
+    code();
+    return out;
+  }
 
   const componentStrings = () =>
     readdirSync('src/components')
       .filter((f) => f.endsWith('.tsx'))
-      .flatMap((f) =>
+      .flatMap((f) => {
+        const src = readFileSync(join('src/components', f), 'utf8');
         // Attributes that carry words a person reads. `className` and the
         // like are not copy, and guessing at class syntax is what not to do.
-        [...readFileSync(join('src/components', f), 'utf8').matchAll(
-          /\b(?:hint|label|title|placeholder|aria-label|alt|description|summary|caption)="([^"]*\d[^"]*)"/g,
-        )].map((m) => ({ f, text: m[1] as string })),
-      );
+        return [...src.matchAll(COPY_ATTR)].flatMap((m) => {
+          const at = m.index! + m[0].length;
+          if (src[at] === '"') return [src.slice(at + 1, src.indexOf('"', at + 1))];
+          if (src[at] === '{') return expressionStrings(src, at);
+          return [];
+        })
+          .filter((text) => /\d/.test(text))
+          .map((text) => ({ f, text }));
+      });
 
   it('leaves no numeric UI string unclassified', () => {
+    // A classified phrase excuses itself, not the string around it. Matching
+    // a whole string on any one key let the biga hint's typed "11 °F … 3.5 °F"
+    // through once its fragment also held the classified "5 °F" sentence.
+    const residue = (text: string) =>
+      Object.keys(COMPONENT_FIXED).reduce((t, k) => t.split(k).join(' '), text);
     const orphans = componentStrings()
-      .filter(({ text }) => !Object.keys(COMPONENT_FIXED).some((k) => text.includes(k)))
-      .map(({ f, text }) => `${f}: ${JSON.stringify(text)}`);
+      .filter(({ text }) => /\d/.test(residue(text)))
+      .map(({ f, text }) => `${f}: ${JSON.stringify(residue(text))}`);
     expect(orphans.join('\n'), 'bind it to the engine, or classify it here with a reason').toBe('');
   });
 

@@ -315,6 +315,57 @@ export function bowlTempForState(
   }
 }
 
+/**
+ * §4.2's two bases, as the Today's temperatures panel quotes them. What a
+ * reading error costs depends on whether the bowl figure moves with it:
+ *
+ * - **tracking** — the bowl field is the `cold` prefill, i.e. the biga reading
+ *   itself, so a wrong biga reading is a wrong bowl too: `(Cb + C_bowl)/Cw`.
+ * - **held** — the bowl is measured, or prefilled from something else (room,
+ *   DDT), so it stays put when the biga moves: `Cb/Cw`, scale-invariant.
+ *
+ * Quoting the tracking figure beside a measured bowl overstates the effect by
+ * 41% at 3 balls of the default weight — the panel did exactly that until FINDINGS-25.
+ *
+ * Magnitudes: warmer biga means cooler water and warmer dough, and the prose
+ * supplies the direction.
+ */
+export interface BigaReadingCost {
+  /** °F of water per °F of biga. */
+  waterPerF: number;
+  /** °F of water a reading off by `errorF` moves the target. */
+  waterF: number;
+  /** °F the finished dough misses DDT by, having mixed with that water. */
+  doughF: number;
+}
+
+export function bigaReadingCost(
+  thermal: Thermal,
+  bowlTracksBiga: boolean,
+  errorF: number,
+): BigaReadingCost {
+  const moved = thermal.cBiga + (bowlTracksBiga ? thermal.cBowl : 0);
+  const waterPerF = moved / thermal.cFreshWater;
+  return {
+    waterPerF,
+    waterF: errorF * waterPerF,
+    doughF: (errorF * moved) / thermal.cSystem,
+  };
+}
+
+/**
+ * §4.2. The bowl's own reading: °F of water per °F of bowl, and how many times
+ * that exceeds what the same °F does to the dough — `cSystem/Cw`, 3.2–3.7
+ * across the legal envelope at the default bowl. Above three for any bowl:
+ * `cTotal/Cw` alone is 3.00, and the bowl only adds to it.
+ */
+export function bowlReadingCost(thermal: Thermal): { waterPerF: number; doughPerF: number } {
+  return {
+    waterPerF: thermal.cBowl / thermal.cFreshWater,
+    doughPerF: thermal.cBowl / thermal.cSystem,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // §4.5 Capacity splits
 // ---------------------------------------------------------------------------
@@ -712,6 +763,12 @@ export interface MixTarget {
   index: number;
   bowlState: BowlState;
   bowlTempF: number;
+  /**
+   * §4.2. True while the bowl figure is the `cold` prefill — the biga reading
+   * itself — so the two move together. A measurement, or any other state,
+   * holds the bowl. Selects the basis for `bigaReadingCost`.
+   */
+  bowlTracksBiga: boolean;
   waterTempF: number;
 }
 
@@ -784,6 +841,7 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
       index: i + 1,
       bowlState,
       bowlTempF,
+      bowlTracksBiga: measured == null && bowlState === 'cold',
       waterTempF: computeWaterTempF({ ...baseTemps, bigaTempF, bowlTempF }, thermal),
     };
   });
