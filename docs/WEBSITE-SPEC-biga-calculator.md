@@ -1176,7 +1176,7 @@ A bare token on a per-mix or per-biga step is then a **visible** error rather th
 #### `bulk-3` — Onto trays
 **phase:** bulk
 **summary:** **Very lightly oiled** half-sheet trays with lids — a film wiped with a paper towel, not a pool. Nothing on top of the balls. Room temperature **{roomMin} min**, set by how far the dough you actually hit is from DDT.
-**values:** Room time: {roomMin} min (final dough {finalDoughTemp} °F)
+**values:** Room time: {roomMin} min (final dough {finalDoughTemp} °F against DDT {ddt} °F)
 
 **detail:**
 > **Oil, not flour.**

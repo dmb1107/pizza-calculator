@@ -45,10 +45,18 @@ describe('recipe text', () => {
   });
 
   it('marks the room time as planned until a dough temperature is measured', () => {
-    expect(text()).toContain('planned at DDT');
+    expect(text()).toContain('planned at DDT 75.0 °F');
     const measured = text({ finalDoughTempF: 72 });
     expect(measured).toContain('121 min');
-    expect(measured).toContain('final dough 72.0 °F');
+    expect(measured).toContain('final dough 72.0 °F against DDT 75.0 °F');
+  });
+
+  it('pairs the room time with both of its terms, as bulk-3 does', () => {
+    // The case MESSAGE-21 found every table getting wrong: at 9 balls DDT is
+    // 74, so a 74 °F dough is ON TARGET and gets 90 min. Printed beside its
+    // DDT, that is visible on the line rather than two lines up.
+    const nine = text({ balls: 9, finalDoughTempF: 74 });
+    expect(nine).toContain('90 min (final dough 74.0 °F against DDT 74.0 °F)');
   });
 
   it('records the conditions, so the numbers can be reproduced', () => {

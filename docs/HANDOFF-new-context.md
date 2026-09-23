@@ -15,7 +15,7 @@ Read this, then the two attached documents. Everything below is context that isn
 
 **Keep them in sync.** Every change to one usually needs the other.
 
-**Every delta message through `MESSAGE-13-replies` has been sent, applied and confirmed** (369 tests green at last report). They are historical; their content is folded into the spec and the recipe, which are the only two documents that need reading. `MESSAGE-23-replies.md` is the current outstanding one. **There is no MESSAGE-22 in the sequence** — a stray draft by that number reached the agent before MESSAGE-21 and was superseded by it; the numbering skips it so the two can't be confused.
+**Every delta message through `MESSAGE-13-replies` has been sent, applied and confirmed** (369 tests green at last report). They are historical; their content is folded into the spec and the recipe, which are the only two documents that need reading. `MESSAGE-24-replies.md` is the current outstanding one. **There is no MESSAGE-22 in the sequence** — a stray draft by that number reached the agent before MESSAGE-21 and was superseded by it; the numbering skips it so the two can't be confused.
 
 The numbered messages are a correspondence log, not instructions — read them only to trace why a decision was made.
 

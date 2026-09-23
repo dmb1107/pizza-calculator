@@ -60,7 +60,8 @@ question:
 | `MESSAGE-20-replies.md` | §4.9 rewritten header to header; the thickness claim traced to the recipe, where it started |
 | `MESSAGE-21-replies.md` | The DDT "band" removed as unsourced; every rise table keyed on the offset from DDT; the thicker note from 10%, Dave's call (`THICKER_NOTE_MIN_PERCENT`) |
 | `MESSAGE-23-replies.md` | Sweep a retraction for the idea, not only its figures; `bulk-3` reworded. **There is no MESSAGE-22** — a stray draft by that number was superseded by 21 |
-| `FINDINGS-12` … `FINDINGS-23` | Replies to the above. 17 carries the §8 literal audit; 18 the parser gap that dropped a whole block; 20 a retracted figure still live in UI copy |
+| `MESSAGE-24-replies.md` | `bulk-3`'s room time printed beside both its terms, dough temperature and DDT; copy-as-text mirrors it |
+| `FINDINGS-12` … `FINDINGS-24` | Replies to the above. 17 carries the §8 literal audit; 18 the parser gap that dropped a whole block; 20 a retracted figure still live in UI copy |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** How the correspondence works, what has gone wrong, and the deploy situation |
 
 ## Rules that matter more than usual here

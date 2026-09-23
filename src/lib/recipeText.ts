@@ -68,9 +68,11 @@ export function buildRecipeText(result: CalculatorResult): string {
     row(
       'Room time',
       `${Math.round(result.roomMinutes)} min` +
+        // Both terms, paired on the line (MESSAGE-24): the rise depends only on
+        // the dough's offset from DDT, and a DDT two lines up isn't paired.
         (result.roomMinutesIsPlanned
-          ? ' (planned at DDT — recompute once you measure)'
-          : ` (final dough ${formatTempF(result.effectiveFinalTempF)} °F)`),
+          ? ` (planned at DDT ${formatTempF(result.ddtF)} °F — recompute once you measure)`
+          : ` (final dough ${formatTempF(result.effectiveFinalTempF)} °F against DDT ${formatTempF(result.ddtF)} °F)`),
     ),
   );
   lines.push('');

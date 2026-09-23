@@ -407,7 +407,7 @@ At {ballWeight} g, open to about **{openDiameterIn} inches** — the same thickn
     phase: "bulk",
     title: `Onto trays`,
     summary: `**Very lightly oiled** half-sheet trays with lids — a film wiped with a paper towel, not a pool. Nothing on top of the balls. Room temperature **{roomMin} min**, set by how far the dough you actually hit is from DDT.`,
-    values: [`Room time: {roomMin} min (final dough {finalDoughTemp} °F)`],
+    values: [`Room time: {roomMin} min (final dough {finalDoughTemp} °F against DDT {ddt} °F)`],
     detail: `**Oil, not flour.**
 
 Flour is hygroscopic. It pulls water out of the dough surface and hydrates into paste. Over 24–36 hours in a fridge — a drying environment even under a lid — you get the worst of both: patches of gluey paste where the flour hydrated, and a dry skin everywhere else. That skin resists opening and tears at the cornicione instead of stretching.
