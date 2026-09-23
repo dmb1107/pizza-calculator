@@ -59,8 +59,17 @@ def table(c,marker):
             break
         raw.append([x.strip() for x in l[1:-1].split('|')])
     return {'headers':raw[0],'rows':raw[2:]} if len(raw)>=3 else None
+# The field markers §8.2 uses. Mirrored in tests/steps.test.ts.
+KNOWN_MARKERS=[r'phase', r'summary', r'summary \(retarded\)', r'summary \(classic\)', r'values',
+    r'timer', r'speed', r'watchFor', r'concepts', r'detail', r'troubleshoot', r'repeatsPerMix',
+    r'shown only when', r'detail, shown only when `[^`]+`', r'warning, shown when `[^`]+`']
 steps=[]
 for c in body.split('\n#### ')[1:]:
+    # A step ends at the next section heading as well as the next step. Without
+    # this, mix-8 swallowed all of 8.2a (a ### section between mix-8 and bulk-1)
+    # - harmless while fields were first-match, but a generic condition parser
+    # would read any marker 8.2a quotes as mix-8's own.
+    c=c.split('\n### ',1)[0]
     h=re.search(r'^`([a-z0-9-]+)` — (.+)$', c, re.M)
     if not h: continue
     ph=field(c,'phase'); rm=field(c,'repeatsPerMix')
@@ -75,7 +84,20 @@ for c in body.split('\n#### ')[1:]:
        'troubleshoot':table(c,'**troubleshoot:**'),
        'repeatsPerMix':ph=='mix','suppressOnFinal':bool(rm and 'suppress' in rm.lower()),
        'shownWhen':sw.group(1) if sw else None}
-    for cond in ['nMix > 1','nBiga > 1']:
+    # Every **marker:** line must be one this grammar knows. A marker nothing
+    # parses is prose that silently never renders - see the note below.
+    for mk in re.findall(r'^\*\*([^*\n]+?):\*\*', c, re.M):
+        if not any(re.fullmatch(k, mk) for k in KNOWN_MARKERS):
+            raise SystemExit('%s: unknown field marker **%s:** - teach the generator AND tests/steps.test.ts' % (h.group(1), mk))
+    # Conditional detail blocks, matched GENERICALLY. This used to loop over a
+    # hard-coded ['nMix > 1','nBiga > 1'], so bulk-2's openDiameterCapped block
+    # was dropped - and the test parser shared the list, so the verbatim check
+    # passed. Which conditions are valid is decided where they are resolved
+    # (detailConditionHolds), not here.
+    conds=re.findall(r'^\*\*detail, shown only when `([^`]+)`:\*\*$', c, re.M)
+    if len(conds)>1:
+        raise SystemExit('%s: %d conditional detail blocks, but a Step holds one' % (h.group(1), len(conds)))
+    for cond in conds:
         b=bq(c,'**detail, shown only when `%s`:**'%cond)
         if b: s['detailWhen']={'condition':cond,'detail':b}
     m=re.search(r'^\*\*warning, shown when `([^`]+)`:\*\*$', c, re.M)

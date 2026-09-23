@@ -68,6 +68,11 @@ export const C = {
   FLOUR_CAP_55: 1610,         // g, at 55-59% hydration (biga)
   MAX_RUN_MIN: 20,            // continuous. Read by the profile assertion in §5 and bound into mix-6/mix-7 prose
 
+  // Oven and pie geometry (§4.9)
+  TREAD_MAX_DIAMETER_IN: 12,       // Gozney Tread stone capacity
+  TARGET_THICKNESS_FACTOR: 0.083,  // oz/in², classic Neapolitan band
+  G_PER_OZ: 28.3495,
+
   // Speed
   RPM_INTERCEPT: 47.4,        // RPM = 47.4 + 2.526 * dial%   (measured: 5% = 60 RPM)
   RPM_SLOPE: 2.526,
@@ -304,7 +309,7 @@ Room temperature moves it **3.2 °F** across a 62–78 °F kitchen and **4.8 °F
 
 The engine was never wrong: `probeTargetF` has always taken `T_room`. The defect was every prose table presenting the room-70 row as though it were the whole answer. A baker in a 62 °F kitchen reading `DDT − 3.2` aims **1.6 °F low** at 6 balls — Phase C's entire authority, spent in the wrong direction. The flat rule it replaced was 2.4 °F low in the same kitchen, so the replacement improved things by much less than its table implied.
 
-Phase C's entire correction authority is about −1.5 to +2.0 °F, so a 1.2 °F error in the target consumes most of the budget before the user starts, and in the wrong direction.
+Phase C's entire correction authority is about −1.5 to +1.9 °F at 6 balls, so a 1.2 °F error in the target consumes most of the budget before the user starts, and in the wrong direction.
 
 **12 and 6 have the same mix size but different gaps** — 3.36 against 3.16 — because the gap also carries `0.2 × (DDT − T_room)` and `DDT` is 74 at 12 balls against 75 at 6. Mix size sets the friction term; total balls sets `DDT`. Both are needed.
 
@@ -453,6 +458,49 @@ Show cumulative clock times for each stage plus a total elapsed figure. Flag whe
 
 ---
 
+### 4.9 Opening diameter and thickness factor
+
+Thickness factor is ball weight over pie area. Aim at `TARGET_THICKNESS_FACTOR` and let the diameter follow — unless the oven caps it:
+
+```
+ballOz              = ballWeightG / G_PER_OZ
+diameterUncappedIn  = 2 × sqrt(ballOz / (π × TARGET_THICKNESS_FACTOR))
+openDiameterIn      = min(diameterUncappedIn, TREAD_MAX_DIAMETER_IN)
+openDiameterCapped  = diameterUncappedIn > TREAD_MAX_DIAMETER_IN
+thicknessFactor     = ballOz / (π × (openDiameterIn / 2)²)
+```
+
+| Ball | Uncapped diameter | Open to | Thickness factor |
+|---:|---:|---:|---:|
+| 240 g | 11.4 in | 11.4 in | 0.083 |
+| 265 g | 12.0 in | 12.0 in | 0.083 |
+| 270 g | 12.1 in | **12.0 in** ← capped | 0.084 |
+| 300 g | 12.7 in | **12.0 in** ← capped | 0.094 |
+
+**The cap binds above 266.1 g** — so the default 265 g ball is, to within a gram, the weight that fills the Tread at the target thickness. That is not a coincidence worth leaning on as a design claim, but it is why 265 g reads so naturally against a 12-inch stone.
+
+Display the diameter to one decimal and the thickness factor to three, each rounded once from the unrounded value. `openDiameterCapped` is a new `shownWhen` condition for `bulk-2`; add it to the closed set.
+
+⚠️ **This replaces a sentence that stated 11.5–12 inches and 0.083 beside a `{ballWeight}` token that runs 240–300 g** — the weight moved with the input and the geometry didn't. At 300 g it claimed 0.083 when the true figure is 0.094, and hitting 0.083 would take a 12.7-inch pie, past the ceiling the same sentence cited. It was loose even at 265 g: 11.5 inches gives 0.090, not 0.083.
+
+### 4.10 Tokens added in this revision
+
+All are per-mix and computed at the user's inputs; none is a literal.
+
+| Token | Value |
+|---|---|
+| `{frictionRemainingF}` | `0.33 × FF × Ct/TOT` — the friction still to come after the probe |
+| `{restExchangeF}` | `|0.2 × (DDT − T_room)|` — how far the rest moves the dough toward room temperature |
+| `{probeGapF}` | `DDT − probeTargetF`, so it matches the summary line exactly |
+| `{phaseAPercent}` / `{phaseBPercent}` | `PHASE_A_FRACTION × 100` and its complement. **No scope suffix** — they are ratios, and the `PerMix` / `PerBiga` rule is about masses |
+| `{bowlMassG}` | the bowl-mass input |
+| `{openDiameterIn}`, `{openDiameterUncappedIn}`, `{thicknessFactor}` | §4.9 |
+| `{targetThicknessFactor}`, `{treadMaxDiameterIn}` | the constants, bound rather than typed |
+
+**`{frictionRemainingF}` and `{restExchangeF}` are displayed independently and may not visibly add to `{probeGapF}`** — rounding each once can leave a 0.1 °F mismatch. That is correct. Do not force the displayed parts to sum; that would mean rounding twice.
+
+The identity they satisfy before rounding: `probeGapF = frictionRemainingF − 0.2 × (DDT − T_room)`. The rest term is signed there and shown unsigned in prose, because the prose says *toward room temperature* and lets the direction follow from the kitchen.
+
 ## 5. Test vectors
 
 Assert against these exactly (tolerance ±0.1 g, ±0.1 °F). Generated from a verified reference implementation.
@@ -551,12 +599,12 @@ Retarded-biga schedule, `MIN_BALLS = 3`, balls 3–24, ball weight 240–300 g, 
 
 | | Value | Corner |
 |---|---:|---|
-| Minimum required water | **53.2 °F** | 9 × 270 g, biga 60, room 84 |
+| Minimum required water | **53.2 °F** | 19 × 257 g (two 2495 g mixes), biga 60, room 84 |
 | Maximum required water | **108.7 °F** | 3 × 240 g, biga 45, room 60 |
 | Minimum at the 265 g default | **53.3 °F** | 9 × 265 g, biga 60, room 84 |
 | Maximum at the 265 g default | **106.6 °F** | 3 × 265 g, biga 45, room 60 |
 
-⚠️ **The cold end moved from 51.2 to 53.2 when weights went per-mix**, and the reason is worth understanding rather than just recording. The coldest requirement comes from the *largest* thermal system, and per-mix weights cap that at mixer capacity — the biggest single mix in the permitted range is 9 × 270 g (2483 g). A 24-ball batch no longer sits against one bowl as 6500 g of dough; it is three 8-ball mixes.
+⚠️ **The cold end moved from 51.2 to 53.2 when weights went per-mix**, and the reason is worth understanding rather than just recording. The coldest requirement comes from the *largest* thermal system, and per-mix weights cap that at mixer capacity — the largest per-mix dough in the permitted range is **19 × 257 g, run as two 2495 g mixes** — larger than the biggest unsplit batch, 9 × 270 g at 2483 g, which comes second at 53.224 °F. A 24-ball batch no longer sits against one bowl as 6500 g of dough; it is three 8-ball mixes. Same configuration and same reason as the bowl-share floor in §4.2: both extrema live at the largest per-mix dough, and a split batch reaches closer to the 2500 g cap than any unsplit one.
 
 Per-batch maxima at 265 g: 3 → 106.6 · 5 → 98.7 · 6 → 96.8 · 7 → 92.1 · 9 → 90.3 · **12 → 93.4** · **18 → 90.3** · 24 → 91.1.
 
@@ -737,7 +785,7 @@ interface Step {
 
 Store step content in a separate `steps.ts` (or `steps.md` parsed at build time) so prose edits don't touch component code.
 
-⚠️ **No numeric table in §8 may restate an engine output.** The `mix-4` step carried a hand-written probe table that was corrected in §4.6 and never in the step — so for eight rounds the app rendered `DDT − 3.6 / 3.7` for 12 and 18 balls while computing 3.4 / 3.5, and every test passed, because the verbatim check compares prose against prose and nothing compares prose against the engine. If a step needs a number the engine produces, **bind it as a token**. If it needs to explain how a number moves, **state the rule as a constant** (`0.2 °F per °F of room`). A static table of computed values is a copy, and copies drift.
+⚠️ **No literal in §8 may restate an engine output — in a table, a sentence, or anywhere else.** An earlier version of this rule said *table*, and the violation it was written against promptly survived as a sentence in the same step. Every rule here written against a form has missed the next form. The `mix-4` step carried a hand-written probe table that was corrected in §4.6 and never in the step — so for eight rounds the app rendered `DDT − 3.6 / 3.7` for 12 and 18 balls while computing 3.4 / 3.5, and every test passed, because the verbatim check compares prose against prose and nothing compares prose against the engine. If a step needs a number the engine produces, **bind it as a token**. If it needs to explain how a number moves, **state the rule as a constant** (`0.2 °F per °F of room`). A static table of computed values is a copy, and copies drift.
 
 ⚠️ **Every `{token}` is a bare identifier. No expressions, ever.** An earlier draft of §8.2 wrote `{mixIndex + 1}` and a ternary building the biga-count suffix, which forced a choice between widening the token parser and building an expression evaluator in prose. Neither should have been necessary: those are `{nextMixIndex}` and `{bigaCountSuffix}`, computed in `bindTokens` where the rest of the values live.
 
@@ -858,7 +906,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 >
 > Skip the hour and the calculator will ask you for water hot enough that a tap can't supply it. That isn't the calculator being awkward; it is the arithmetic telling you the biga is too cold to make this dough at the temperature you asked for.
 >
-> **Leave it in the mixer bowl.** The bowl is 965 g of stainless and it is part of the thermal system — the hour warms both together, which is the whole point. Taking the biga out to temper on the counter warms the biga and leaves the bowl behind, which is the opposite of what you want.
+> **Leave it in the mixer bowl.** The bowl is {bowlMassG} g of stainless and it is part of the thermal system — the hour warms both together, which is the whole point. Taking the biga out to temper on the counter warms the biga and leaves the bowl behind, which is the opposite of what you want.
 
 ---
 
@@ -885,7 +933,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 #### `mix-2` — Phase A, breakdown
 **phase:** mix
-**summary:** Add **{phaseAWaterPerMix} g** of water (60%) with the mixer **off**, then run at **15% / 85 RPM** for 3–4 min until the biga pieces disappear into a rough shaggy mass.
+**summary:** Add **{phaseAWaterPerMix} g** of water ({phaseAPercent}%) with the mixer **off**, then run at **15% / 85 RPM** for 3–4 min until the biga pieces disappear into a rough shaggy mass.
 **values:** Phase A water: {phaseAWaterPerMix} g — weigh it, don't estimate
 **speed:** 15% / 85 RPM, 3–4 min
 
@@ -903,7 +951,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 #### `mix-3` — Phase B, salt and bassinage
 **phase:** mix
-**summary:** Add {saltPerMix} g salt. Then **{phaseBWaterPerMix} g** (the remaining 40%) in **3 additions**, each fully absorbed before the next. **20% / 98 RPM**, 5–6 min.
+**summary:** Add {saltPerMix} g salt. Then **{phaseBWaterPerMix} g** (the remaining {phaseBPercent}%) in **3 additions**, each fully absorbed before the next. **20% / 98 RPM**, 5–6 min.
 **speed:** 20% / 98 RPM, 5–6 min
 **values:** Salt: {saltPerMix} g · Phase B water: {phaseBWaterPerMix} g
 
@@ -924,13 +972,13 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 **detail:**
 > **Why below DDT and not at it.** By the end of Phase B you have absorbed roughly two thirds of the total friction — Phases A and B are long, and the hydration exotherm has already fired.
 >
-> Still to come, **stated the way the probe will read it** — dough and bowl equilibrated, at 6 balls in a 70 °F kitchen: Phase C **+3.4 °F**, Phase D **+0.8 °F**, minus **1.0 °F** given back to the room during the 10-minute rest. Net **+3.2 °F.**
+> Still to come, **stated the way the probe will read it** — dough and bowl equilibrated, for your batch in your kitchen: Phases C and D will add about **{frictionRemainingF} °F**, and the 10-minute rest will move the dough **{restExchangeF} °F** toward room temperature. That is why the target above sits **{probeGapF} °F** below DDT.
 >
 > **There is no fixed "so many degrees low" rule — and your kitchen matters more than your batch size.** That last term, the heat exchanged with the room during the rest, is the one that moves: the rest gives heat back to a cold room and takes it from a warm one.
 >
 > - **Every degree your kitchen is below 70 °F moves the target 0.2 °F up toward DDT.** A 62 °F kitchen is 1.6 °F closer.
 > - **Every degree above 70 moves it 0.2 °F down.**
-> - **Batch size matters much less.** From 3 balls to 9 it shifts the target by under a degree; a 62 °F kitchen against a 78 °F one shifts it by more than three.
+> - **Batch size matters much less.** A 62 °F kitchen against a 78 °F one shifts the target by more than three degrees; going from 3 balls to 9 shifts it by a fraction of that.
 >
 > That is why the target above is computed from the room temperature you entered, and why it is worth measuring the room rather than assuming it. Nothing else in this step moves the number as much.
 >
@@ -938,7 +986,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 >
 > **Probe target = DDT − 0.33 × FF × Ct/(Ct + C_bowl) + 0.2 × (DDT − T_room)**
 >
-> Remaining friction is diluted by the mixer bowl's thermal mass, and the rest sheds heat in proportion to the dough-to-room gap. At FF 14 in a 70 °F room: 3 balls 72.2 °F, 6 balls 71.8 °F, 9 balls 70.5 °F.
+> Remaining friction is diluted by the mixer bowl's thermal mass, and the rest exchanges heat in proportion to the dough-to-room gap.
 
 **troubleshoot:**
 | Probe reads | Do |
@@ -959,7 +1007,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 **detail:**
 > **Phase C has limited authority over temperature, and this is the important part.**
 >
-> At 6 balls, cutting it to 2 minutes saves only **1.5 °F** and stretching it to 5.5 minutes adds only **2.0 °F**. That's the entire usable range, and it is narrower at 3 balls (−1.3 / +1.8) and slightly wider at 9 (−1.5 / +2.0).
+> At 6 balls, cutting it to 2 minutes saves only **1.5 °F** and stretching it to 5.5 minutes adds only **1.9 °F**. That's the entire usable range, and it is narrower at 3 balls (−1.3 / +1.8) and slightly wider at 9 (−1.5 / +2.0).
 >
 > Outside that window you are trading gluten development for temperature and losing both. **An under-mixed dough at exactly the right temperature is worse than a properly developed one running 2 °F warm.** Temperature misses get fixed upstream in the water calculation, not downstream by mangling the mix.
 >
@@ -1107,7 +1155,10 @@ A bare token on a per-mix or per-biga step is then a **visible** error rather th
 **detail:**
 > The rest between pre-rounding and final balling lets the gluten relax so you can get a tight ball without fighting it. Balling a tense dough tears the surface, and a torn surface doesn't hold gas.
 >
-> At {ballWeight} g you're opening to roughly 11.5–12 inches — a thickness factor of about 0.083 oz/in², squarely in the classic Neapolitan band. For a fatter cornicione against the Tread's 12" ceiling, open to 11 inches instead.
+> At {ballWeight} g, open to about **{openDiameterIn} inches** — a thickness factor of {thicknessFactor} oz/in², squarely in the classic Neapolitan band. For a fatter cornicione, open an inch smaller.
+
+**detail, shown only when `openDiameterCapped`:**
+> **At this ball weight the oven sets the size, not the dough.** The Tread takes a pizza up to {treadMaxDiameterIn} inches, and a {ballWeight} g ball would need {openDiameterUncappedIn} inches to reach the usual thickness. So it will run a little thicker — {thicknessFactor} oz/in² rather than {targetThicknessFactor}. That is a real difference in the bake: more dough per square inch means a softer, breadier centre and a slightly longer time on the stone.
 
 ---
 
@@ -1240,11 +1291,11 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 >
 > **Two bowl effects, and both matter — but for different reasons.** Its *mass* is the larger one: friction energy heats whatever is in the bowl, and the bowl is part of "whatever." At a 3-ball mix it absorbs 18% of the mixer's work; at a 9-ball mix, 6.8%.
 >
-> Its *temperature* looks negligible and isn't, because there are two coefficients and it is easy to quote the wrong one. What a bowl error costs the **dough** is `C_bowl/(Ct + C_bowl)` — 0.10 °F per 1 °F at 6 balls, 0.18 at 3 — so a 3 °F misestimate costs 0.3 °F. Small. But what it moves in the **water target** is `C_bowl/Cw`, three times larger because water is only 30% of the system: 0.66 °F per °F at a 3-ball mix, 0.33 at 6, 0.22 at 9. The water target is the number you act on, which is why the bowl is worth a five-second measurement even though the dough barely notices.
+> Its *temperature* looks negligible and isn't, because there are two coefficients and it is easy to quote the wrong one. What a bowl error costs the **dough** is `C_bowl/(Ct + C_bowl)` — 0.10 °F per 1 °F at 6 balls, 0.18 at 3 — so a 3 °F misestimate costs 0.3 °F at 6 balls. Small. But what it moves in the **water target** is `C_bowl/Cw`, about three times larger because water is under a third of the system: 0.66 °F per °F at a 3-ball mix, 0.33 at 6, 0.22 at 9. The water target is the number you act on, which is why the bowl is worth a five-second measurement even though the dough barely notices.
 >
 > **This is why the formula is not scale-independent.** The bowl is fixed mass while the dough scales, so the weights shift with batch size. It also explains why the bowl can't just be folded into FF — the same FF of 14 would appear as 11.5 °F in a 3-ball mix and 13.0 °F in a 9-ball one, drifting for no physical reason.
 >
-> **The scale that matters is the mix, not the batch.** A 12-ball batch runs as two 6-ball mixes, and the bowl faces one of them at a time — so it is a 6-ball thermal system twice over, not a 12-ball one. Computing it as a 12-ball system halves the bowl's apparent share and lands the water target 2.6 °F low.
+> **The scale that matters is the mix, not the batch.** A 12-ball batch runs as two 6-ball mixes, and the bowl faces one of them at a time — so it is a 6-ball thermal system twice over, not a 12-ball one. Computing it as a 12-ball system halves the bowl's apparent share and lands the water target low — by between 2 and 5 °F, most at the cold end of the envelope where the water is already hottest.
 >
 > **The same fixed mass is why small mixes ask for hot water.** At 3 balls the bowl is 18% of the system and only the water can lift it, so the requirement runs to about 107 °F where a 9-ball mix asks for 90 °F. Below 3 balls it leaves the range a tap can reach entirely, which is why 3 is the smallest supported batch. Note this tracks the **mix**: a 12-ball batch is two 6-ball mixes, so it wants *hotter* water than a 9-ball batch does.
 >

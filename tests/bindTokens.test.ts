@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { calculate, type CalculatorInputs } from '../src/lib/engine';
 import { bindTokens, tokenValues, unboundTokens, type ScheduleTokens } from '../src/lib/bindTokens';
+import { C } from '../src/lib/constants';
+import { formatTempF } from '../src/lib/format';
 import { CONCEPTS } from '../src/content/concepts';
 import { STEPS } from '../src/content/steps';
 
@@ -221,5 +223,65 @@ describe('step summaries bind to real numbers', () => {
   it('fills mix-4 with the probe target', () => {
     const step = STEPS.find((s) => s.id === 'mix-4');
     expect(bindTokens(step?.summary ?? '', values)).toContain('71.8 °F');
+  });
+});
+
+describe('§4.10 tokens', () => {
+  it('prints {probeGapF} as exactly the printed DDT minus the printed target', () => {
+    // §4.10: "so it matches the summary exactly". Swept, because a rounding
+    // tie is where a gap rounded on its own could disagree with the difference.
+    for (const balls of [3, 6, 9, 12, 18]) {
+      for (let room = 60; room <= 84; room += 0.5) {
+        for (const ff of [10, 12, 14, 14.04, 16]) {
+          const inputs = { ...INPUTS, balls, roomTempF: room, flourTempF: room, frictionFactorF: ff };
+          const v = tokenValues(calculate(inputs), SCHEDULE);
+          const printed = Number(v.ddt) - Number(v.probeTarget);
+          expect(Number(v.probeGapF), `${balls} balls, room ${room}, FF ${ff}`).toBeCloseTo(printed, 9);
+        }
+      }
+    }
+  });
+
+  it('prints the parts rounded once each', () => {
+    const r = calculate({ ...INPUTS, roomTempF: 62, flourTempF: 62 });
+    const v = tokenValues(r, SCHEDULE);
+    expect(v.frictionRemainingF).toBe(formatTempF(r.probe.frictionRemainingF));
+    expect(v.restExchangeF).toBe(formatTempF(r.probe.restExchangeF));
+  });
+
+  it('prints the split from PHASE_A_FRACTION, with no scope', () => {
+    // To one decimal, independently of floating point: 0.57 × 100 is 56.999…
+    const pct = (f: number) => String(Math.round(f * 1000) / 10);
+    expect(values.phaseAPercent).toBe(pct(C.PHASE_A_FRACTION));
+    expect(values.phaseBPercent).toBe(pct(1 - C.PHASE_A_FRACTION));
+  });
+
+  it('prints the bowl the user entered, not the default', () => {
+    expect(tokenValues(calculate({ ...INPUTS, bowlMassG: 1100 }), SCHEDULE).bowlMassG).toBe('1100');
+  });
+});
+
+/**
+ * Rendering edges reported in FINDINGS-18. Both are the spec's prose working as
+ * specified and reading wrongly; the fix is the spec author's to word. Pinned
+ * so a fix — or an engine change that moves the edge — shows up here.
+ */
+describe('rendering edges reported in FINDINGS-18', () => {
+  it('at 267 g the cap binds, but both comparisons it prints look equal', () => {
+    const r = calculate({ ...INPUTS, ballWeightG: 267 });
+    const v = tokenValues(r, SCHEDULE);
+    expect(r.opening.openDiameterCapped).toBe(true);
+    // "…up to 12 inches, and a 267 g ball would need 12.0 inches…"
+    expect([v.treadMaxDiameterIn, v.openDiameterUncappedIn]).toEqual(['12', '12.0']);
+    // "…a little thicker — 0.083 oz/in² rather than 0.083."
+    expect([v.thicknessFactor, v.targetThicknessFactor]).toEqual(['0.083', '0.083']);
+  });
+
+  it('the probe gap prints negative — "sits −0.3 °F below DDT" — in a cold kitchen at a low FF', () => {
+    const v = tokenValues(
+      calculate({ ...INPUTS, balls: 3, roomTempF: 60, flourTempF: 60, frictionFactorF: 10 }),
+      SCHEDULE,
+    );
+    expect(v.probeGapF).toBe('-0.3');
   });
 });

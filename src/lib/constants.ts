@@ -64,6 +64,15 @@ const BASE = {
    */
   PHASE_C_MAX_MIN: 5.5,
 
+  // Oven and pie geometry — §4.9. Bound into `bulk-2`'s prose as tokens rather
+  // than typed there; that sentence previously stated 11.5–12 inches and 0.083
+  // beside a `{ballWeight}` that runs 240–300 g, and only the weight moved.
+  /** Gozney Tread stone capacity, inches. */
+  TREAD_MAX_DIAMETER_IN: 12,
+  /** oz/in², the classic Neapolitan band. §4.9 aims at it and lets diameter follow. */
+  TARGET_THICKNESS_FACTOR: 0.083,
+  G_PER_OZ: 28.3495,
+
   // Speed
   RPM_INTERCEPT: 47.4, // RPM = 47.4 + 2.526 * dial%   (measured: 5% = 60 RPM)
   RPM_SLOPE: 2.526,

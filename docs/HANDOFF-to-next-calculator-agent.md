@@ -99,6 +99,13 @@ purpose** — one writes, one independently re-derives, so a parser bug surfaces
 a mismatch rather than as both agreeing on garbage. **If you change one, change
 the other.**
 
+⚠️ **That only works where the two copies differ.** In MESSAGE-18 both matched
+conditional blocks from the same hard-coded condition list, so a whole block of
+new prose was dropped by both and the verbatim test passed 42/42. Both now
+refuse any `**marker:**` they don't know — so when the generator stops with
+*unknown field marker*, teach **both** files the new grammar, then decide where
+its condition is resolved.
+
 ---
 
 ## 5. What has actually gone wrong

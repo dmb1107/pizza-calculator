@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { expandSteps } from '../src/lib/stepInstances';
+import { DETAIL_CONDITION_NAMES, detailConditionHolds, expandSteps } from '../src/lib/stepInstances';
 import { STEPS } from '../src/content/steps';
 import type { Schedule } from '../src/state/types';
 
@@ -219,5 +219,42 @@ describe('§8.2a expansion', () => {
     // this pins the schedule gating itself.
     expect(expandSteps(1, 'retarded').map((i) => i.key)).toContain('biga-6');
     expect(expandSteps(1, 'classic').map((i) => i.key)).not.toContain('biga-6');
+  });
+});
+
+describe('§8.2 conditional detail conditions', () => {
+  const ctx = { nMix: 1, nBiga: 1, openDiameterCapped: false };
+
+  it('is exactly the closed set — openDiameterCapped added, nothing else', () => {
+    expect([...DETAIL_CONDITION_NAMES].sort()).toEqual(['nBiga > 1', 'nMix > 1', 'openDiameterCapped']);
+  });
+
+  it('throws on anything outside it', () => {
+    for (const bad of ['nMix > 2', 'openDiameterCaped', "schedule === 'retarded'", '']) {
+      expect(() => detailConditionHolds(bad, ctx), JSON.stringify(bad)).toThrow(/unknown detail condition/);
+    }
+  });
+
+  it('reads each condition from its own input', () => {
+    // The ternary this replaced answered anything but `nMix > 1` with the
+    // biga-split test, so a split biga would have shown the capped block.
+    expect(detailConditionHolds('openDiameterCapped', { ...ctx, nBiga: 2 })).toBe(false);
+    expect(detailConditionHolds('openDiameterCapped', { ...ctx, openDiameterCapped: true })).toBe(true);
+    expect(detailConditionHolds('nBiga > 1', { ...ctx, openDiameterCapped: true })).toBe(false);
+    expect(detailConditionHolds('nMix > 1', { ...ctx, nMix: 2 })).toBe(true);
+  });
+
+  it('covers every conditional block the content carries', () => {
+    const used = STEPS.flatMap((s) => (s.detailWhen ? [s.detailWhen.condition] : []));
+    expect(used.filter((c) => !DETAIL_CONDITION_NAMES.includes(c))).toEqual([]);
+    expect(used).toContain('openDiameterCapped');
+  });
+
+  it('keeps it out of shownWhen, which gates whole steps', () => {
+    // MESSAGE-18 called it a shownWhen condition, but §8.2 writes it as a
+    // conditional DETAIL block inside bulk-2. Were it a step-level condition,
+    // the whole divide-and-ball step would vanish below 267 g.
+    const step = { ...STEPS[0]!, shownWhen: 'openDiameterCapped' as never };
+    expect(() => expandSteps(1, 'retarded', [step])).toThrow(/unknown shownWhen/);
   });
 });

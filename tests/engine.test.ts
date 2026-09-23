@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { C, bowlHeatCapacity } from '../src/lib/constants';
+import { C, bowlHeatCapacity, defaultDdtF } from '../src/lib/constants';
+import { formatInches, formatThicknessFactor } from '../src/lib/format';
 import {
   calculate,
   computeCapacity,
   computeFinalTempF,
   computeFormula,
+  computeOpening,
+  computeProbeParts,
   computeProbeTargetF,
   mixStaggerH,
   observedRate,
@@ -1138,5 +1141,93 @@ describe('§4.2 the two biga sensitivities are different quantities', () => {
     expect(sens(9, 265).bowlShare).toBeCloseTo(0.068, 3);
     expect(sens(9, 270).bowlShare).toBeCloseTo(0.0668, 3);
     expect(sens(19, 257, 2).bowlShare).toBeCloseTo(0.0665, 3);
+  });
+});
+
+describe('§4.9 opening diameter and thickness factor', () => {
+  it('reproduces the §4.9 table, each figure rounded once', () => {
+    const rows = [
+      { g: 240, uncapped: '11.4', open: '11.4', tf: '0.083', capped: false },
+      { g: 265, uncapped: '12.0', open: '12.0', tf: '0.083', capped: false },
+      { g: 270, uncapped: '12.1', open: '12.0', tf: '0.084', capped: true },
+      { g: 300, uncapped: '12.7', open: '12.0', tf: '0.094', capped: true },
+    ];
+    for (const r of rows) {
+      const o = computeOpening(r.g);
+      expect(formatInches(o.diameterUncappedIn), `${r.g} g uncapped`).toBe(r.uncapped);
+      expect(formatInches(o.openDiameterIn), `${r.g} g open`).toBe(r.open);
+      expect(formatThicknessFactor(o.thicknessFactor), `${r.g} g thickness`).toBe(r.tf);
+      expect(o.openDiameterCapped, `${r.g} g capped`).toBe(r.capped);
+    }
+  });
+
+  it('starts capping above 266.1 g — the first whole gram is 267', () => {
+    // §4.9: "the default 265 g ball is, to within a gram, the weight that
+    // fills the Tread at the target thickness".
+    const threshold = C.TARGET_THICKNESS_FACTOR * Math.PI * (C.TREAD_MAX_DIAMETER_IN / 2) ** 2 * C.G_PER_OZ;
+    expect(threshold).toBeCloseTo(266.12, 2);
+    expect(computeOpening(266).openDiameterCapped).toBe(false);
+    expect(computeOpening(267).openDiameterCapped).toBe(true);
+  });
+
+  it('hits the target thickness exactly wherever the cap does not bind', () => {
+    for (let g = 240; g <= 266; g++) {
+      expect(computeOpening(g).thicknessFactor, `${g} g`).toBeCloseTo(C.TARGET_THICKNESS_FACTOR, 12);
+    }
+  });
+
+  it('never opens past the stone, and only thickens once capped', () => {
+    for (let g = 240; g <= 300; g++) {
+      const o = computeOpening(g);
+      expect(o.openDiameterIn, `${g} g`).toBeLessThanOrEqual(C.TREAD_MAX_DIAMETER_IN);
+      if (o.openDiameterCapped) expect(o.thicknessFactor, `${g} g`).toBeGreaterThan(C.TARGET_THICKNESS_FACTOR);
+    }
+  });
+});
+
+describe('§4.10 the probe target in parts', () => {
+  const at = (balls: number, roomTempF: number, frictionFactorF = 14) => {
+    const f = computeFormula({ balls, ballWeightG: 265 });
+    const thermal = computeThermal(f, C.DEFAULT_BOWL_MASS_G, computeCapacity(f).nMix);
+    return { parts: computeProbeParts({ ddtF: defaultDdtF(balls), frictionFactorF, roomTempF, thermal }), thermal };
+  };
+
+  it('satisfies the §4.10 identity before rounding', () => {
+    for (const balls of [3, 6, 9, 12, 18]) {
+      for (const room of [60, 62, 70, 78, 84]) {
+        const { parts } = at(balls, room);
+        expect(parts.gapF, `${balls} balls, room ${room}`).toBeCloseTo(parts.frictionRemainingF - parts.restSignedF, 12);
+        expect(parts.targetF).toBeCloseTo(defaultDdtF(balls) - parts.gapF, 12);
+      }
+    }
+  });
+
+  it('is what computeProbeTargetF returns — one formula, not two copies', () => {
+    const { parts, thermal } = at(6, 62);
+    expect(computeProbeTargetF({ ddtF: 75, frictionFactorF: 14, roomTempF: 62, thermal })).toBe(parts.targetF);
+  });
+
+  it('still carries §4.6’s coefficients: 0.33 of FF after dilution, 0.2 per °F of room', () => {
+    const { parts, thermal } = at(6, 70);
+    expect(parts.frictionRemainingF).toBeCloseTo(0.33 * 14 * (thermal.cTotal / thermal.cSystem), 12);
+    expect(parts.restSignedF).toBeCloseTo(0.2 * (75 - 70), 12);
+  });
+
+  it('shows the rest unsigned, whichever way the kitchen pulls', () => {
+    // Prose says "toward room temperature" and lets the direction follow.
+    expect(at(6, 62).parts.restSignedF).toBeGreaterThan(0); // cold kitchen: the rest cools
+    expect(at(6, 84).parts.restSignedF).toBeLessThan(0); // warm kitchen: the rest warms
+    for (const room of [62, 84]) {
+      const { parts } = at(6, room);
+      expect(parts.restExchangeF).toBe(Math.abs(parts.restSignedF));
+    }
+  });
+
+  it('keeps the gap positive everywhere in the §5 envelope at FF 14', () => {
+    // Outside it the gap can go negative — see the rendering edge pinned in
+    // bindTokens.test.ts and FINDINGS-18.
+    for (let balls = C.MIN_BALLS; balls <= 24; balls++) {
+      for (const room of [60, 84]) expect(at(balls, room).parts.gapF, `${balls} balls, room ${room}`).toBeGreaterThan(0);
+    }
   });
 });

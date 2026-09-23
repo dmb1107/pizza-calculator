@@ -6,7 +6,7 @@
  * the one piece of step logic nothing could assert against.
  */
 
-import { STEPS, type ShownWhen, type Step } from '../content/steps';
+import { STEPS, type DetailCondition, type ShownWhen, type Step } from '../content/steps';
 import type { Schedule } from '../state/types';
 
 /**
@@ -19,6 +19,37 @@ const SHOWN_WHEN: Record<ShownWhen, Schedule> = {
   "schedule === 'retarded'": 'retarded',
   "schedule === 'classic'": 'classic',
 };
+
+/**
+ * §8.2's conditional DETAIL blocks — a block inside a step, where `shownWhen`
+ * gates the whole step. Resolved by lookup; an unknown condition throws.
+ *
+ * ⚠️ This used to be an inline ternary in `StepList` that read anything other
+ * than `nMix > 1` as `nBiga > 1`, so a third condition would have silently
+ * borrowed the biga-split test. And the generator and the test parser matched
+ * conditions from the same hard-coded list, so a block with a new one was
+ * dropped by both and the verbatim check still passed — which is what
+ * happened to `bulk-2`'s `openDiameterCapped` block before this was fixed.
+ */
+export interface DetailConditionContext {
+  nMix: number;
+  nBiga: number;
+  openDiameterCapped: boolean;
+}
+
+const DETAIL_CONDITIONS: Record<DetailCondition, (ctx: DetailConditionContext) => boolean> = {
+  'nMix > 1': (ctx) => ctx.nMix > 1,
+  'nBiga > 1': (ctx) => ctx.nBiga > 1,
+  openDiameterCapped: (ctx) => ctx.openDiameterCapped,
+};
+
+export const DETAIL_CONDITION_NAMES = Object.keys(DETAIL_CONDITIONS) as readonly DetailCondition[];
+
+export function detailConditionHolds(condition: string, ctx: DetailConditionContext): boolean {
+  const test = DETAIL_CONDITIONS[condition as DetailCondition];
+  if (!test) throw new Error(`unknown detail condition: ${condition}`);
+  return test(ctx);
+}
 
 function showsOn(step: Step, schedule: Schedule): boolean {
   if (!step.shownWhen) return true;

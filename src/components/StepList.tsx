@@ -5,9 +5,15 @@ import { StepTimer } from './StepTimer';
 import { BOUNDS } from '../state/defaults';
 import { formatTempF } from '../lib/format';
 import { parseTimerLabel } from '../lib/timers';
-import { PHASE_LABELS, type Phase, type Step, type StepTable } from '../content/steps';
+import {
+  PHASE_LABELS,
+  type DetailCondition,
+  type Phase,
+  type Step,
+  type StepTable,
+} from '../content/steps';
 import { bindTokens, tokenValues } from '../lib/bindTokens';
-import { expandSteps } from '../lib/stepInstances';
+import { detailConditionHolds, expandSteps } from '../lib/stepInstances';
 import type { AppState } from '../state/useAppState';
 
 /**
@@ -73,7 +79,7 @@ function StepRow({
   values: string[];
   bind: (text: string) => string;
   /** Whether a `detailWhen` condition holds for the current batch. */
-  conditionHolds?: (condition: 'nMix > 1' | 'nBiga > 1') => boolean;
+  conditionHolds?: (condition: DetailCondition) => boolean;
   /** Whether the step-level warning applies. §8.2 bulk-1. */
   showWarning?: boolean;
   checked: boolean;
@@ -398,8 +404,12 @@ export function StepList({
                     summary={bindHere(raw)}
                     values={(step.values ?? []).map(bindHere)}
                     bind={bindHere}
-                    conditionHolds={(condition: 'nMix > 1' | 'nBiga > 1') =>
-                      condition === 'nMix > 1' ? nMix > 1 : nBiga > 1
+                    conditionHolds={(condition) =>
+                      detailConditionHolds(condition, {
+                        nMix,
+                        nBiga,
+                        openDiameterCapped: state.result.opening.openDiameterCapped,
+                      })
                     }
                     showWarning={state.result.staggerUncentredMin > 2}
                     checked={checkedSteps.has(key)}

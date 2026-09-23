@@ -193,23 +193,14 @@ const CLAIMS: readonly Claim[] = [
   },
   { at: 'concept:no-creep-speed', restates: 'rpmForDial(5)', text: `**${rpm(5)} RPM is the floor.**`, covers: [`${rpm(5)} RPM`] },
 
-  // --- the Phase A / B split ----------------------------------------------
-  // Grams are bound from PHASE_A_FRACTION; these percentages are not. Open
-  // item 2 says the split may change after a clean repeat — if it does, this
-  // fails rather than the step pouring the new grams under the old label.
-  { at: 'mix-2.summary', restates: 'PHASE_A_FRACTION', text: `of water (${fx(C.PHASE_A_FRACTION * 100, 0)}%)`, covers: [`${fx(C.PHASE_A_FRACTION * 100, 0)}%`] },
-  { at: 'mix-3.summary', restates: '1 − PHASE_A_FRACTION', text: `(the remaining ${fx((1 - C.PHASE_A_FRACTION) * 100, 0)}%)`, covers: [`${fx((1 - C.PHASE_A_FRACTION) * 100, 0)}%`] },
-
   // --- mix-4: the probe ----------------------------------------------------
   {
+    // The worked example is `{frictionRemainingF}` / `{restExchangeF}` /
+    // `{probeGapF}` since MESSAGE-18 — only the rest's length is still typed.
     at: 'mix-4.detail',
-    restates: 'phase rises and probe gap at 6 balls, room 70, FF 14, DDT 75',
-    text:
-      `at 6 balls in a 70 °F kitchen: Phase C **+${fx(observedRate(30, thermalAt(6)) * PHASE_C_MIN, 1)} °F**, ` +
-      `Phase D **+${fx(observedRate(20, thermalAt(6)) * mid(speedOf('mix-7').minutes), 1)} °F**, ` +
-      `minus **${fx(0.2 * (defaultDdtF(6) - 70), 1)} °F** given back to the room during the ` +
-      `${step('mix-6').timerMinutes}-minute rest. Net **+${fx(defaultDdtF(6) - probeAt(6, 70), 1)} °F.**`,
-    covers: ['6 balls', '70 °F', '3.4 °F', '0.8 °F', '1.0 °F', '10-minute', '3.2 °F'],
+    restates: "the rest's length, from mix-6's timer",
+    text: `the ${step('mix-6').timerMinutes}-minute rest will move the dough`,
+    covers: ['10-minute'],
   },
   {
     at: 'mix-4.detail',
@@ -220,11 +211,18 @@ const CLAIMS: readonly Claim[] = [
   { at: 'mix-4.detail', restates: 'the same slope, warm side', text: `above 70 moves it ${fx(probeAt(6, 70) - probeAt(6, 71), 1)} °F down.`, covers: ['70', '0.2 °F'] },
   {
     at: 'mix-4.detail',
-    restates: 'batch moves the gap < 1 °F (3→9 balls, room 70); a 62–78 °F kitchen moves it > 3',
+    restates: 'a 62–78 °F kitchen moves the target > 3 °F; 3→9 balls moves it a fraction of that at every FF the input allows (0–40)',
     holds: () => {
-      const gap = (b: number, room: number) => defaultDdtF(b) - probeAt(b, room);
-      return Math.abs(gap(9, 70) - gap(3, 70)) < 1 && probeAt(6, 62) - probeAt(6, 78) > 3;
+      const roomShift = probeAt(6, 62) - probeAt(6, 78);
+      const batchShift = (ff: number) => {
+        const target = (b: number) =>
+          computeProbeTargetF({ ddtF: defaultDdtF(b), frictionFactorF: ff, roomTempF: 70, thermal: thermalAt(b) });
+        return Math.abs(target(3) - target(9));
+      };
+      const ffs = Array.from({ length: 41 }, (_, i) => i * (BOUNDS.frictionFactorF.max / 40));
+      return roomShift > 3 && ffs.every((ff) => batchShift(ff) < roomShift);
     },
+    text: 'A 62 °F kitchen against a 78 °F one shifts the target by more than three degrees; going from 3 balls to 9 shifts it by a fraction of that',
     covers: ['3 balls', '9', '62 °F', '78 °F'],
   },
   {
@@ -241,12 +239,6 @@ const CLAIMS: readonly Claim[] = [
     covers: ['0.33 ×', '0.2 ×'],
   },
   {
-    at: 'mix-4.detail',
-    restates: 'absolute probe targets at FF 14, room 70, default DDT (75 / 75 / 74)',
-    text: `At FF 14 in a 70 °F room: 3 balls ${fx(probeAt(3, 70), 1)} °F, 6 balls ${fx(probeAt(6, 70), 1)} °F, 9 balls ${fx(probeAt(9, 70), 1)} °F.`,
-    covers: ['14', '70 °F', '3 balls', '72.2 °F', '6 balls', '71.8 °F', '9 balls', '70.5 °F'],
-  },
-  {
     at: 'mix-4.troubleshoot',
     restates: 'PHASE_C_MAX_MIN, as the top of the extend range',
     text: `Extend Phase C to 4.5–${C.PHASE_C_MAX_MIN} min`,
@@ -260,11 +252,7 @@ const CLAIMS: readonly Claim[] = [
     text:
       `At 6 balls, cutting it to 2 minutes saves only **${fx(observedRate(30, thermalAt(6)) * (PHASE_C_MIN - 2), 1)} °F** ` +
       `and stretching it to ${C.PHASE_C_MAX_MIN} minutes adds only **${fx(observedRate(30, thermalAt(6)) * (C.PHASE_C_MAX_MIN - PHASE_C_MIN), 1)} °F**`,
-    knownWrong: {
-      reads: 'stretching it to 5.5 minutes adds only **2.0 °F**',
-      see: 'FINDINGS-17 §3: 0.9735 °F/min × 2.0 min = 1.947, which is 1.9 — and the next sentence needs it below 2.0 for "slightly wider at 9 (+2.0)" to be true',
-    },
-    covers: ['6 balls', '2 minutes', '1.5 °F', `${C.PHASE_C_MAX_MIN} minutes`, '2.0 °F', '1.9 °F'],
+    covers: ['6 balls', '2 minutes', '1.5 °F', `${C.PHASE_C_MAX_MIN} minutes`, '1.9 °F'],
   },
   {
     at: 'mix-5.detail',
@@ -313,7 +301,6 @@ const CLAIMS: readonly Claim[] = [
     text: `${fx(bigaSensitivity(6, 'tracking'), 1)} °F at a 6-ball mix, ${fx(bigaSensitivity(3, 'tracking'), 1)} °F at a 3-ball one`,
     covers: ['1.9 °F', '6-ball', '2.3 °F', '3-ball'],
   },
-  { at: 'biga-6.detail', restates: 'DEFAULT_BOWL_MASS_G — see FINDINGS-17: the bowl mass is a user input', text: `The bowl is ${C.DEFAULT_BOWL_MASS_G} g of stainless`, covers: [`${C.DEFAULT_BOWL_MASS_G} g`] },
   {
     at: 'mix-1.detail',
     restates: 'C_bowl/Cw at 3 balls',
@@ -439,9 +426,19 @@ const CLAIMS: readonly Claim[] = [
   },
   {
     at: 'concept:thermal-model',
-    restates: 'Cw/TOT — the 6-ball value, unindexed (27–31% across 3–9); see FINDINGS-17',
-    text: `water is only ${fx((thermalAt(6).cFreshWater / thermalAt(6).cSystem) * 100, 0)}% of the system`,
-    covers: ['30%'],
+    restates: 'Cw/TOT stays under 1/3 at every mix the envelope allows (27–31% across 3–9 balls)',
+    holds: () => {
+      let max = 0;
+      for (let balls = C.MIN_BALLS; balls <= BOUNDS.balls.max; balls++) {
+        for (let w = BOUNDS.ballWeightG.min; w <= BOUNDS.ballWeightG.max; w++) {
+          const t = thermalAt(balls, w);
+          max = Math.max(max, t.cFreshWater / t.cSystem);
+        }
+      }
+      return max < 1 / 3;
+    },
+    text: 'water is under a third of the system',
+    covers: [],
   },
   {
     at: 'concept:thermal-model',
@@ -457,14 +454,31 @@ const CLAIMS: readonly Claim[] = [
   },
   {
     at: 'concept:thermal-model',
-    restates: '12 balls as one 12-ball system vs two 6-ball mixes — at DEFAULT temperatures only (2.3–4.8 across the envelope); see FINDINGS-17',
-    text: (() => {
-      const f = computeFormula({ balls: 12, ballWeightG: 265 });
-      const t = { ddtF: 74, frictionFactorF: 14, bigaTempF: 58, flourTempF: 70, roomTempF: 70 };
-      const gap = computeWaterTempF(t, computeThermal(f, C.DEFAULT_BOWL_MASS_G, 2)) - computeWaterTempF(t, computeThermal(f, C.DEFAULT_BOWL_MASS_G, 1));
-      return `lands the water target ${fx(gap, 1)} °F low`;
-    })(),
-    covers: ['2.6 °F'],
+    restates: '12 balls computed as one system instead of two mixes, across the §5 envelope (every ball weight, biga 45–60, room 60–84)',
+    holds: () => {
+      let lo = Infinity;
+      let hi = -Infinity;
+      for (let w = BOUNDS.ballWeightG.min; w <= BOUNDS.ballWeightG.max; w++) {
+        const f = computeFormula({ balls: 12, ballWeightG: w });
+        for (const bigaTempF of [45, 60]) {
+          for (const roomTempF of [60, 84]) {
+            // Linear in both temperatures, so the corners bound the envelope.
+            const t = { ddtF: defaultDdtF(12), frictionFactorF: 14, bigaTempF, flourTempF: roomTempF, roomTempF };
+            const low =
+              computeWaterTempF(t, computeThermal(f, C.DEFAULT_BOWL_MASS_G, 2)) -
+              computeWaterTempF(t, computeThermal(f, C.DEFAULT_BOWL_MASS_G, 1));
+            lo = Math.min(lo, low);
+            hi = Math.max(hi, low);
+          }
+        }
+      }
+      return lo >= 2 && hi <= 5;
+    },
+    knownWrong: {
+      reads: 'by between 2 and 5 °F',
+      see: 'FINDINGS-18: 2.03–5.26 across the envelope; 5.26 at 240 g, biga 45, room 60. "2 and 5" holds at 265 g (2.30–4.76)',
+    },
+    covers: ['2', '5 °F'],
   },
   {
     at: 'concept:thermal-model',
@@ -528,11 +542,6 @@ const CLAIMS: readonly Claim[] = [
  * Literals that are NOT a computed value, grouped by what they are instead.
  * Every entry here was read in context and judged; that is the point of the
  * list, and why it is written out rather than generated.
- *
- * ⚠️ `bulk-2`'s entries are the one place a figure computed from an INPUT sits
- * beside the token for that input — see FINDINGS-17 §2. Listed here because the
- * engine has no thickness-factor model to check them against, not because they
- * are fine.
  */
 const FIXED: Record<Loc, readonly string[]> = {
   // Procedure: biga — the hand-mix, the published 61–65 °F band, the ripeness cue.
@@ -577,8 +586,6 @@ const FIXED: Record<Loc, readonly string[]> = {
   'bulk-1.timerLabel': ['45–60 min'],
   'bulk-2.summary': ['10–15 min'],
   'bulk-2.timerLabel': ['10–15 min'],
-  // ⚠️ Thickness factor at 265 g, beside {ballWeight}. Wrong at 300 g.
-  'bulk-2.detail': ['11.5–12 inches', '0.083', '12', '11 inches'],
   'bulk-3.detail': ['24–36 hours'],
   'bulk-4.summary': ['38–40 °F', '4 hours'],
   // A cooling time is a claim about a 265 g ball specifically, so the weight
@@ -614,20 +621,26 @@ describe('§8.1 every literal that restates a computed value matches the engine'
   it.each(CLAIMS.map((c) => [`${c.at}: ${c.restates}`, c] as const))('%s', (_, c) => {
     const text = CONTENT.get(c.at);
     expect(text, `${c.at} does not exist`).toBeDefined();
-    if (c.holds) expect(c.holds(), `${c.at}: ${c.restates}`).toBe(true);
-    if (c.text === undefined) return;
 
     if (c.knownWrong) {
+      // Pinned both ways: fails when the prose is corrected, and fails when the
+      // engine moves so the claim would hold after all.
       expect(text, `${c.at} no longer reads as pinned — if corrected, delete knownWrong`).toContain(c.knownWrong.reads);
-      expect(text, `${c.at} now agrees with the engine — delete knownWrong (${c.knownWrong.see})`).not.toContain(c.text);
+      if (c.holds) expect(c.holds(), `${c.at} now holds — delete knownWrong (${c.knownWrong.see})`).toBe(false);
+      if (c.text !== undefined) {
+        expect(text, `${c.at} now agrees with the engine — delete knownWrong (${c.knownWrong.see})`).not.toContain(c.text);
+      }
       return;
     }
-    expect(text, `${c.at} should read "${c.text}" — the engine and the prose disagree, or the prose moved`).toContain(c.text);
+    if (c.holds) expect(c.holds(), `${c.at}: ${c.restates}`).toBe(true);
+    if (c.text !== undefined) {
+      expect(text, `${c.at} should read "${c.text}" — the engine and the prose disagree, or the prose moved`).toContain(c.text);
+    }
   });
 
   it('pins exactly one known discrepancy', () => {
     // So that adding a second is a decision, not an accident.
-    expect(CLAIMS.filter((c) => c.knownWrong).map((c) => c.at)).toEqual(['mix-5.detail']);
+    expect(CLAIMS.filter((c) => c.knownWrong).map((c) => c.at)).toEqual(['concept:thermal-model']);
   });
 });
 

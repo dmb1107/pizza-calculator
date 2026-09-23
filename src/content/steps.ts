@@ -29,9 +29,16 @@ export interface StepTable {
 }
 
 /** A detail block rendered only when its condition holds. §8.2. */
+/**
+ * §8.2 `**detail, shown only when `<condition>`:**`. A closed set, resolved by
+ * `detailConditionHolds` and never evaluated — the same reasoning as `ShownWhen`.
+ * `openDiameterCapped` is §4.9's, for `bulk-2`.
+ */
+export type DetailCondition = 'nMix > 1' | 'nBiga > 1' | 'openDiameterCapped';
+
 export interface ConditionalDetail {
-  /** Literally `nMix > 1` or `nBiga > 1`, as written in the spec. */
-  condition: 'nMix > 1' | 'nBiga > 1';
+  /** Literally as written in the spec. */
+  condition: DetailCondition;
   /** Markdown, appended after `detail` when the condition is met. */
   detail: string;
 }
@@ -202,7 +209,7 @@ To make this objective rather than a judgment call: fill a small straight-sided 
 
 Skip the hour and the calculator will ask you for water hot enough that a tap can't supply it. That isn't the calculator being awkward; it is the arithmetic telling you the biga is too cold to make this dough at the temperature you asked for.
 
-**Leave it in the mixer bowl.** The bowl is 965 g of stainless and it is part of the thermal system — the hour warms both together, which is the whole point. Taking the biga out to temper on the counter warms the biga and leaves the bowl behind, which is the opposite of what you want.`,
+**Leave it in the mixer bowl.** The bowl is {bowlMassG} g of stainless and it is part of the thermal system — the hour warms both together, which is the whole point. Taking the biga out to temper on the counter warms the biga and leaves the bowl behind, which is the opposite of what you want.`,
   },
   {
     id: "mix-1",
@@ -229,7 +236,7 @@ Split the tempered biga into {nMix} equal portions by weight, {bigaMassPerMix} g
     id: "mix-2",
     phase: "mix",
     title: `Phase A, breakdown`,
-    summary: `Add **{phaseAWaterPerMix} g** of water (60%) with the mixer **off**, then run at **15% / 85 RPM** for 3–4 min until the biga pieces disappear into a rough shaggy mass.`,
+    summary: `Add **{phaseAWaterPerMix} g** of water ({phaseAPercent}%) with the mixer **off**, then run at **15% / 85 RPM** for 3–4 min until the biga pieces disappear into a rough shaggy mass.`,
     values: [`Phase A water: {phaseAWaterPerMix} g — weigh it, don't estimate`],
     speed: { dial: 15, rpm: 85, minutes: [3, 4], label: `15% / 85 RPM, 3–4 min` },
     detail: `**Highest-torque phase of the whole session.**
@@ -246,7 +253,7 @@ If motor protection engages, stop, rest 5 minutes, and resume one step lower. Lo
     id: "mix-3",
     phase: "mix",
     title: `Phase B, salt and bassinage`,
-    summary: `Add {saltPerMix} g salt. Then **{phaseBWaterPerMix} g** (the remaining 40%) in **3 additions**, each fully absorbed before the next. **20% / 98 RPM**, 5–6 min.`,
+    summary: `Add {saltPerMix} g salt. Then **{phaseBWaterPerMix} g** (the remaining {phaseBPercent}%) in **3 additions**, each fully absorbed before the next. **20% / 98 RPM**, 5–6 min.`,
     values: [`Salt: {saltPerMix} g`, `Phase B water: {phaseBWaterPerMix} g`],
     speed: { dial: 20, rpm: 98, minutes: [5, 6], label: `20% / 98 RPM, 5–6 min` },
     detail: `**Salt goes in here — never in the biga**, where it would suppress the yeast you just spent 20 hours propagating.
@@ -264,13 +271,13 @@ At 2.8% the salt is at the upper end of the Neapolitan range of 2.5–3.0%. That
     values: [`Probe target: {probeTarget} °F`, `DDT: {ddt} °F`],
     detail: `**Why below DDT and not at it.** By the end of Phase B you have absorbed roughly two thirds of the total friction — Phases A and B are long, and the hydration exotherm has already fired.
 
-Still to come, **stated the way the probe will read it** — dough and bowl equilibrated, at 6 balls in a 70 °F kitchen: Phase C **+3.4 °F**, Phase D **+0.8 °F**, minus **1.0 °F** given back to the room during the 10-minute rest. Net **+3.2 °F.**
+Still to come, **stated the way the probe will read it** — dough and bowl equilibrated, for your batch in your kitchen: Phases C and D will add about **{frictionRemainingF} °F**, and the 10-minute rest will move the dough **{restExchangeF} °F** toward room temperature. That is why the target above sits **{probeGapF} °F** below DDT.
 
 **There is no fixed "so many degrees low" rule — and your kitchen matters more than your batch size.** That last term, the heat exchanged with the room during the rest, is the one that moves: the rest gives heat back to a cold room and takes it from a warm one.
 
 - **Every degree your kitchen is below 70 °F moves the target 0.2 °F up toward DDT.** A 62 °F kitchen is 1.6 °F closer.
 - **Every degree above 70 moves it 0.2 °F down.**
-- **Batch size matters much less.** From 3 balls to 9 it shifts the target by under a degree; a 62 °F kitchen against a 78 °F one shifts it by more than three.
+- **Batch size matters much less.** A 62 °F kitchen against a 78 °F one shifts the target by more than three degrees; going from 3 balls to 9 shifts it by a fraction of that.
 
 That is why the target above is computed from the room temperature you entered, and why it is worth measuring the room rather than assuming it. Nothing else in this step moves the number as much.
 
@@ -278,7 +285,7 @@ The general form:
 
 **Probe target = DDT − 0.33 × FF × Ct/(Ct + C_bowl) + 0.2 × (DDT − T_room)**
 
-Remaining friction is diluted by the mixer bowl's thermal mass, and the rest sheds heat in proportion to the dough-to-room gap. At FF 14 in a 70 °F room: 3 balls 72.2 °F, 6 balls 71.8 °F, 9 balls 70.5 °F.`,
+Remaining friction is diluted by the mixer bowl's thermal mass, and the rest exchanges heat in proportion to the dough-to-room gap.`,
     troubleshoot: {
       headers: ["Probe reads", "Do"],
       rows: [
@@ -299,7 +306,7 @@ Remaining friction is diluted by the mixer bowl's thermal mass, and the rest she
     speed: { dial: 30, rpm: 123, minutes: [3, 4], label: `30% / 123 RPM, 3–4 min` },
     detail: `**Phase C has limited authority over temperature, and this is the important part.**
 
-At 6 balls, cutting it to 2 minutes saves only **1.5 °F** and stretching it to 5.5 minutes adds only **2.0 °F**. That's the entire usable range, and it is narrower at 3 balls (−1.3 / +1.8) and slightly wider at 9 (−1.5 / +2.0).
+At 6 balls, cutting it to 2 minutes saves only **1.5 °F** and stretching it to 5.5 minutes adds only **1.9 °F**. That's the entire usable range, and it is narrower at 3 balls (−1.3 / +1.8) and slightly wider at 9 (−1.5 / +2.0).
 
 Outside that window you are trading gluten development for temperature and losing both. **An under-mixed dough at exactly the right temperature is worse than a properly developed one running 2 °F warm.** Temperature misses get fixed upstream in the water calculation, not downstream by mangling the mix.
 
@@ -389,7 +396,11 @@ Read that carefully before you judge a result. If the batch comes out slightly o
     timerMinutes: [10, 15],
     detail: `The rest between pre-rounding and final balling lets the gluten relax so you can get a tight ball without fighting it. Balling a tense dough tears the surface, and a torn surface doesn't hold gas.
 
-At {ballWeight} g you're opening to roughly 11.5–12 inches — a thickness factor of about 0.083 oz/in², squarely in the classic Neapolitan band. For a fatter cornicione against the Tread's 12" ceiling, open to 11 inches instead.`,
+At {ballWeight} g, open to about **{openDiameterIn} inches** — a thickness factor of {thicknessFactor} oz/in², squarely in the classic Neapolitan band. For a fatter cornicione, open an inch smaller.`,
+    detailWhen: {
+      condition: "openDiameterCapped",
+      detail: `**At this ball weight the oven sets the size, not the dough.** The Tread takes a pizza up to {treadMaxDiameterIn} inches, and a {ballWeight} g ball would need {openDiameterUncappedIn} inches to reach the usual thickness. So it will run a little thicker — {thicknessFactor} oz/in² rather than {targetThicknessFactor}. That is a real difference in the bake: more dough per square inch means a softer, breadier centre and a slightly longer time on the stone.`,
+    },
   },
   {
     id: "bulk-3",

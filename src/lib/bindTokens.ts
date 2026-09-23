@@ -10,7 +10,14 @@
  */
 
 import { C } from './constants';
-import { formatAdy, formatGrams, formatTempF } from './format';
+import {
+  formatAdy,
+  formatGrams,
+  formatInches,
+  formatPercentNumber,
+  formatTempF,
+  formatThicknessFactor,
+} from './format';
 import { mixStaggerH, observedRate, type CalculatorResult } from './engine';
 
 /** Trim trailing zeros: 1.5 stays 1.5, 2.0 becomes 2, 265 stays 265. */
@@ -62,6 +69,28 @@ export function tokenValues(
     probeTarget: formatTempF(result.probeTargetF),
     ddt: formatTempF(result.ddtF),
     /**
+     * §4.10 — `mix-4`'s worked example, bound where it used to be typed at 6
+     * balls in a 70 °F kitchen. Each is rounded once, so the two parts may
+     * not visibly sum to the gap by 0.1; §4.10 says that is correct. The gap
+     * is signed and can go negative outside §5's envelope — see FINDINGS-18.
+     */
+    frictionRemainingF: formatTempF(result.probe.frictionRemainingF),
+    restExchangeF: formatTempF(result.probe.restExchangeF),
+    probeGapF: formatTempF(result.probe.gapF),
+    /**
+     * §4.10. The split as a bare number — the prose writes the `%`. No scope
+     * suffix: `PerMix` / `PerBiga` is a rule about masses, and a ratio has no
+     * scope. These were literals beside grams bound from the same constant.
+     */
+    phaseAPercent: formatPercentNumber(C.PHASE_A_FRACTION),
+    phaseBPercent: formatPercentNumber(1 - C.PHASE_A_FRACTION),
+
+    // §4.9 — `bulk-2`. Rounded once each from the unrounded values.
+    openDiameterIn: formatInches(result.opening.openDiameterIn),
+    openDiameterUncappedIn: formatInches(result.opening.diameterUncappedIn),
+    thicknessFactor: formatThicknessFactor(result.opening.thicknessFactor),
+    targetThicknessFactor: formatThicknessFactor(C.TARGET_THICKNESS_FACTOR),
+    /**
      * §4.6. Phase C's rate AS A THERMOMETER READS IT — the dough-only 1.08
      * °F/min times `Ct/TOT`. "About 1 °F per minute" is only true at 6 balls
      * and up; at 3 it is 0.89. Routed through `observedRate` so this and the
@@ -111,10 +140,13 @@ export function tokenValues(
      * the two drift apart.
      */
     maxRunMin: trim(C.MAX_RUN_MIN),
+    treadMaxDiameterIn: trim(C.TREAD_MAX_DIAMETER_IN),
 
     // Inputs — trimmed, since the prose supplies the unit.
     balls: String(inputs.balls),
     ballWeight: trim(inputs.ballWeightG),
+    // `biga-6` stated 965 g, the default, whatever the user had measured.
+    bowlMassG: trim(inputs.bowlMassG ?? C.DEFAULT_BOWL_MASS_G),
     coldFerment: trim(schedule.coldFermentH),
     bigaFridge: trim(schedule.bigaFridgeH),
     bigaRoomOnly: trim(schedule.bigaRoomOnlyH),

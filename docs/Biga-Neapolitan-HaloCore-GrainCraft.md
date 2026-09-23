@@ -270,9 +270,9 @@ Two separate effects, and only one of them is significant:
 | 6 balls | 0.10 |
 | 9 balls | 0.07 |
 
-At 6 balls, being 3 °F off on the bowl costs 0.3 °F in the dough; a 20 °F cold bowl versus a room-temp one costs 2.0 °F. Both figures come from the same coefficient — quote it rather than either endpoint.
+At 6 balls, being 3 °F off on the bowl costs 0.3 °F in the dough (0.54 at 3 balls); a 20 °F cold bowl versus a room-temp one costs 2.0 °F. Both figures come from the same coefficient — quote it rather than either endpoint.
 
-**But how much the bowl *moves the answer* is a different question from how much a misjudgement costs.** "How wrong is my dough if I misjudge the bowl" is `C_bowl / (Ct + C_bowl)`. "How much does the water target shift per degree of bowl" is `C_bowl / Cw`, which is three times larger because water is only 30% of the system:
+**But how much the bowl *moves the answer* is a different question from how much a misjudgement costs.** "How wrong is my dough if I misjudge the bowl" is `C_bowl / (Ct + C_bowl)`. "How much does the water target shift per degree of bowl" is `C_bowl / Cw`, which is about three times larger because water is under a third of the system (27% at a 3-ball mix, 31% at 9):
 
 | Batch | °F of dough per °F of bowl | °F of water per °F of bowl |
 |---|---:|---:|
@@ -535,7 +535,7 @@ The 0.33 assumes nominal phase durations. Run Phase A or B long and more of the 
 | **1–2 °F low** | Extend Phase C to 4.5–5.5 min |
 | **More than 2 °F off** | Accept the miss — fix the water temperature next batch |
 
-**Phase C has limited authority, and this is the important part.** At 6 balls, cutting it to 2 min saves only **1.5 °F** and stretching it to 5.5 min adds only **2.0 °F** — and it is narrower at 3 balls (−1.3 / +1.8), wider at 9 (−1.5 / +2.0). Outside that window you are trading gluten development for temperature and losing both — an under-mixed dough at the right temperature is worse than a properly developed one that is 2 °F warm. Temperature misses get fixed upstream in the water calculation, not downstream by mangling the mix.
+**Phase C has limited authority, and this is the important part.** At 6 balls, cutting it to 2 min saves only **1.5 °F** and stretching it to 5.5 min adds only **1.9 °F** — and it is narrower at 3 balls (−1.3 / +1.8), slightly wider at 9 (−1.5 / +2.0). Outside that window you are trading gluten development for temperature and losing both — an under-mixed dough at the right temperature is worse than a properly developed one that is 2 °F warm. Temperature misses get fixed upstream in the water calculation, not downstream by mangling the mix.
 
 **Friction per minute at each speed**, if you need to correct in a different phase: 15% ≈ 0.75 °F/min · 20% ≈ 0.86 °F/min · 30% ≈ 1.08 °F/min. **These are dough-only.** What a thermometer shows is those numbers × `Ct/(Ct + C_bowl)` — 0.82 at 3 balls, 0.90 at 6, 0.93 at 9. At 30% that works out to an observed 0.89 / 0.97 / 1.01 °F per minute, which is where the "about a degree a minute" rule of thumb comes from.
 
@@ -753,7 +753,7 @@ FINAL  A      15%/85   3-4 min   breakdown, 60% of water (PhA above)
   general: DDT - 0.33 x FF x Ct/(Ct+C_bowl) + 0.2 x (DDT - Troom)
        C      30%/123  3-4 min   develop
               OBSERVED rate 0.89 F/min (3bl) 0.97 (6bl) 1.01 (9bl)
-              authority only -1.5 to +2.0 F @6bl. Bigger miss -> fix water.
+              authority only -1.5 to +1.9 F @6bl. Bigger miss -> fix water.
        rest    0%      10 min
        D      20%/98   45-60 s   finish
 NEVER above 40%.  20 min continuous max.

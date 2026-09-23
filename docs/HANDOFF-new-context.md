@@ -15,7 +15,7 @@ Read this, then the two attached documents. Everything below is context that isn
 
 **Keep them in sync.** Every change to one usually needs the other.
 
-**Every delta message through `MESSAGE-13-replies` has been sent, applied and confirmed** (369 tests green at last report). They are historical; their content is folded into the spec and the recipe, which are the only two documents that need reading. `MESSAGE-17-replies.md` is the current outstanding one.
+**Every delta message through `MESSAGE-13-replies` has been sent, applied and confirmed** (369 tests green at last report). They are historical; their content is folded into the spec and the recipe, which are the only two documents that need reading. `MESSAGE-18-replies.md` is the current outstanding one.
 
 The numbered messages are a correspondence log, not instructions — read them only to trace why a decision was made.
 
@@ -47,7 +47,7 @@ The numbered messages are a correspondence log, not instructions — read them o
 
 **The mixer bowl had to be added to the thermal model.** Omitting it made the water-temperature output 5 °F wrong. This killed the old scale-independent `3.00 ×` shortcut — everything now computes from component masses.
 
-**Website is mid-build.** `MESSAGE-13-replies.md` was the last change sent and is applied; the agent is on Task 8's UI (the backward timeline itself is built). **The deploy has hung in `actions/deploy-pages` on every push since the ice removal**, so the live site is still the pre-MESSAGE-4 build — batch-total thermal weights, a flat `DDT − 4`, `ADY 0.0038`, no hot-end warning. Nothing since MESSAGE-4 is live.
+**Website is mid-build.** `MESSAGE-13-replies.md` was the last change sent and is applied; the agent is on Task 8's UI (the backward timeline itself is built). **The site deploys on every push to `main` and has done since 1 September.** An earlier version of this handoff said the deploy had hung since the ice removal and that nothing since MESSAGE-4 was live — **that was never true.** The only failures were two runs on 27 August. The claim started in the calculator agent's notes, was stale when written, and was repeated here for six rounds without anyone checking the Actions history. Consequences worth knowing: fixes reached the live site as they landed, **and so did the bugs** — the step-ordering bug was live 1–14 September (`nMix ≥ 2` only, so no calibration bake could hit it), and the `mix-4` step showed stale 12/18-ball probe values until MESSAGE-17.
 
 **A second round of cross-checking found six more issues**, all now fixed in both documents (MESSAGE-4 has the full list): the ADY constant disagreed between the two docs; the `DDT − 4` probe shorthand was 1.2 °F wrong at 3 balls; dough-only friction figures were being quoted as if a thermometer would show them; the documented water span topped out near 90 °F when the true maximum is 106.6 °F at 3 balls; the biga-temperature default was unsourced at 64 °F; and two "800–900 °F" references survived in the recipe.
 
@@ -110,13 +110,14 @@ The question to ask while typing a number is **"does this move?"** — and if it
 | ADY at 0.0038 in the spec while the recipe's tables used 0.00375 | **0.00375, derived** from the published 1% fresh dose |
 | Flat "probe at DDT − 4" | **Room-temperature dependent first, batch size second.** 0.2 °F toward DDT per °F the room is below 70 — a constant. At a 70 °F room: DDT − 2.8 / 3.2 / 3.5 at 3 / 6 / 9 balls. §4.6 |
 | Indexing a variable on its minor axis | The probe target was re-tabulated by **batch size** (moves it 0.7 °F) while holding **room** fixed (moves it 4.8). Correct at room 70, 1.6 °F wrong in a 62 °F kitchen. Ask which axis moves a figure most before choosing what to index it by |
+| Repeating a status claim without checking it | **The deploy was never broken.** Six rounds of "nothing since MESSAGE-4 is live" — and troubleshooting advice for it — rested on one stale note nobody verified. A status claim is a figure too: check it before restating it |
 | Static numeric tables in §8 step content | **Bind a token or state a constant rule.** The `mix-4` step's probe table was fixed in §4.6 and never in the step — the app rendered the stale values for eight rounds while every test passed, because nothing compares prose to the engine |
 | Quoting 0.75/0.86/1.08 °F/min (**by dial: 15/20/30**) against a thermometer | Those are **dough-only.** Multiply by `Ct/(Ct + C_bowl)`, which is **by balls per mix**: 0.82 / 0.90 / 0.93 at 3/6/9. At dial 30 that gives an observed **0.89 / 0.97 / 1.01**. ⚠️ Two different indices — don't read the triples as answering each other. §4.6 |
 | "Required water spans 52–90 °F" | **53–109 °F.** Hottest at *small mixes*, not small batches, and not monotonic — 12 balls (two 6-ball mixes) wants hotter water than 9 |
 | Biga-temp default of 64 °F | **58 °F**, the one measured value. Most leveraged input in the model |
 | "The bowl matters for its mass, not its temperature" | Half right. `C_bowl/TOT` (dough) is small; `C_bowl/Cw` (water) is 3× larger — 0.66 °F per °F at 3 balls. **Measure the bowl** |
 | `T_bowl = T_biga` treated as settled | Holds through fermentation, **breaks at tearing** — biga gained 5 °F, bowl didn't. Bake 1's Phase C rate climb is the evidence |
-| Thermal weights from batch totals | **Per-mix.** A 12-ball batch is a 6-ball system twice; the bowl faces one mix at a time. Batch totals land the water 2.6 °F low at 12 balls |
+| Thermal weights from batch totals | **Per-mix.** A 12-ball batch is a 6-ball system twice; the bowl faces one mix at a time. At 12 balls batch totals land the water **2.3–4.8 °F low depending on the temperatures** (2.6 at defaults) — most at the cold end, where the water is already hottest |
 | One water temperature per batch | **One per mix** when `nMix > 1` — mix 2's bowl is warm from mix 1 |
 | Bowl-share / dilution tables keyed on batch size | **Keyed on balls per mix.** 12 balls reads the 6 row, 18 reads the 9. The floor is set by the 2500 g mixer cap (~6.6%), not by any row — 6.8% is the 9 × 265 g mix |
 | Split-batch overhead 28.4 h | **28.12 h.** The stagger correction shortens a real stage, so it comes back out. 28.42 is `nMix = 3` |

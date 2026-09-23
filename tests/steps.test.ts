@@ -86,18 +86,48 @@ function conditionalWarning(chunk: string): { condition: string; text: string } 
   return text ? { condition: m[1] as string, text } : undefined;
 }
 
-/** §8.2's conditional detail blocks, e.g. "detail, shown only when `nMix > 1`". */
-function conditionalDetail(chunk: string): { condition: string; detail: string } | undefined {
-  for (const condition of ['nMix > 1', 'nBiga > 1']) {
-    const detail = blockquote(chunk, `**detail, shown only when \`${condition}\`:**`);
-    if (detail) return { condition, detail };
-  }
-  return undefined;
+/**
+ * §8.2's conditional detail blocks, e.g. "detail, shown only when `nMix > 1`".
+ *
+ * ⚠️ Matched GENERICALLY. This used to try a hard-coded ['nMix > 1', 'nBiga > 1']
+ * — the same list the generator used — so `bulk-2`'s `openDiameterCapped` block
+ * was dropped by both and this file still passed 42/42. Which conditions are
+ * valid is decided where they are resolved (`detailConditionHolds`), and
+ * asserted in stepInstances.test.ts.
+ */
+function conditionalDetails(chunk: string): { condition: string; detail: string }[] {
+  return [...chunk.matchAll(/^\*\*detail, shown only when `([^`]+)`:\*\*$/gm)].map((m) => ({
+    condition: m[1] as string,
+    detail: blockquote(chunk, m[0]) ?? '',
+  }));
 }
+
+/** §8.2's field markers. Mirrors KNOWN_MARKERS in scripts/generate-content.py. */
+const KNOWN_MARKERS = [
+  /^phase$/,
+  /^summary$/,
+  /^summary \((retarded|classic)\)$/,
+  /^values$/,
+  /^timer$/,
+  /^speed$/,
+  /^watchFor$/,
+  /^concepts$/,
+  /^detail$/,
+  /^troubleshoot$/,
+  /^repeatsPerMix$/,
+  /^shown only when$/,
+  /^detail, shown only when `[^`]+`$/,
+  /^warning, shown when `[^`]+`$/,
+];
+
+const markersIn = (chunk: string) => [...chunk.matchAll(/^\*\*([^*\n]+?):\*\*/gm)].map((m) => m[1] as string);
 
 const specSteps = SPEC.slice(SPEC.indexOf('### 8.2 Steps'), SPEC.indexOf('### 8.3 Concepts'))
   .split(/\n#### /)
   .slice(1)
+  // A step ends at the next ### section as well as the next step: `mix-8`
+  // otherwise swallows all of §8.2a, which sits between it and `bulk-1`.
+  .map((chunk) => chunk.split(/\n### /)[0] as string)
   // §8.2 carries prose subheadings too, e.g. the scope-naming rule. A chunk is
   // a step only if it opens with the `id` — title form.
   .filter((chunk) => /^`([a-z0-9-]+)` — (.+)$/m.test(chunk))
@@ -119,7 +149,9 @@ const specSteps = SPEC.slice(SPEC.indexOf('### 8.2 Steps'), SPEC.indexOf('### 8.
       watchFor: field(chunk, 'watchFor'),
       concepts: field(chunk, 'concepts'),
       detail: blockquote(chunk, '**detail:**'),
-      detailWhen: conditionalDetail(chunk),
+      detailWhen: conditionalDetails(chunk)[0],
+      conditionalBlocks: conditionalDetails(chunk).length,
+      markers: markersIn(chunk),
       warningWhen: conditionalWarning(chunk),
       troubleshoot: table(chunk, '**troubleshoot:**'),
       // §8.2a marks the WHOLE mix phase as repeating, in prose rather than
@@ -148,6 +180,28 @@ const specSteps = SPEC.slice(SPEC.indexOf('### 8.2 Steps'), SPEC.indexOf('### 8.
 const SPEC_IDS_UNIQUE = new Set(specSteps.map((s) => s.id)).size === specSteps.length;
 
 describe('§8.2 steps are reproduced verbatim', () => {
+  it('understands every field marker in §8.2', () => {
+    // A marker neither parser knows is prose that silently never renders —
+    // the failure that dropped bulk-2's capped block. New grammar has to be
+    // taught to BOTH parsers before it can pass.
+    const unknown = specSteps.flatMap((s) =>
+      s.markers.filter((m) => !KNOWN_MARKERS.some((k) => k.test(m))).map((m) => `${s.id}: **${m}:**`),
+    );
+    expect(unknown).toEqual([]);
+  });
+
+  it('gives no step more than one conditional detail block', () => {
+    // `Step.detailWhen` holds one; a second would overwrite the first.
+    expect(specSteps.filter((s) => s.conditionalBlocks > 1).map((s) => s.id)).toEqual([]);
+  });
+
+  it('carries every conditional detail block the spec writes', () => {
+    // Counted from the raw §8.2 text, not from either parser.
+    const raw = SPEC.slice(SPEC.indexOf('### 8.2 Steps'), SPEC.indexOf('### 8.3 Concepts'));
+    const written = [...raw.matchAll(/^\*\*detail, shown only when `[^`]+`:\*\*$/gm)].length;
+    expect(STEPS.filter((s) => s.detailWhen).length).toBe(written);
+  });
+
   it('gives every step in the spec a unique id', () => {
     const seen = new Map<string, number>();
     for (const s of specSteps) seen.set(s.id, (seen.get(s.id) ?? 0) + 1);

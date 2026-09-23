@@ -55,7 +55,8 @@ question:
 | `MESSAGE-14-replies.md` | Two biga sensitivities, both correct: `Cb/Cw` held, `(Cb + C_bowl)/Cw` tracking |
 | `MESSAGE-15-replies.md`, `-16-` | Handoff-only: figures in summary tables drift because they are transcribed |
 | `MESSAGE-17-replies.md` | Probe gap moves with room far more than batch; no §8 literal may restate an engine output |
-| `FINDINGS-12` … `FINDINGS-17` | Replies to the above. 17 carries the §8 literal audit |
+| `MESSAGE-18-replies.md` | §4.9 thickness factor and `openDiameterCapped`; §4.10 probe tokens; all eight FINDINGS-17 items |
+| `FINDINGS-12` … `FINDINGS-18` | Replies to the above. 17 carries the §8 literal audit; 18 the parser gap that dropped a whole block |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** How the correspondence works, what has gone wrong, and the deploy situation |
 
 ## Rules that matter more than usual here
@@ -154,6 +155,16 @@ The generator and the test parser implement the same grammar twice **on
 purpose**: the generator writes the content, the test independently re-derives
 it, so a parser bug surfaces as a mismatch rather than as both agreeing on
 garbage. If you change one, change the other.
+
+**Two copies only protect you where they differ.** Both parsers used to match
+conditional blocks from the same hard-coded list of conditions, so `bulk-2`'s
+`openDiameterCapped` block was dropped by both and the verbatim test passed.
+They now match markers generically, end each step at the next `###` section
+(`mix-8` used to swallow all of §8.2a), and **refuse any `**marker:**` neither
+knows** (`KNOWN_MARKERS`, in both files). New spec grammar fails the build
+until both parsers are taught it — that is the point. Which *conditions* are
+valid is decided where they are resolved: `detailConditionHolds` for blocks
+inside a step, `shownWhen` for whole steps. Both are closed sets that throw.
 
 **Every number in §8 is either checked against the engine or classified.**
 `tests/steps.test.ts` compares prose to prose, so a stale literal passes it —

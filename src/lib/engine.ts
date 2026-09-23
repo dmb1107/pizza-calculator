@@ -373,7 +373,28 @@ export function computeCapacity(f: Formula): Capacity {
  *
  * At FF 14 in a 70 °F room: 3 balls 72.2 · 6 balls 71.8 · 9 balls 70.5.
  */
-export function computeProbeTargetF({
+export interface ProbeParts {
+  /** `0.33 × FF × Ct/TOT` — friction still to come after the probe, as a probe reads it. */
+  frictionRemainingF: number;
+  /** `0.2 × (DDT − T_room)`, signed: positive when the rest cools the dough. */
+  restSignedF: number;
+  /** §4.10 `{restExchangeF}` — the same, unsigned. Prose says "toward room temperature". */
+  restExchangeF: number;
+  /** `DDT − target`. §4.10 `{probeGapF}`; signed, and negative when the target is ABOVE DDT. */
+  gapF: number;
+  targetF: number;
+}
+
+/**
+ * §4.6 decomposed, per §4.10. The ONE place the probe's 0.33 and 0.2 live —
+ * `computeProbeTargetF` is built from this, so the parts the step prints and the
+ * target the summary prints cannot come from two copies of the formula.
+ *
+ * Identity, before rounding: `gapF = frictionRemainingF − restSignedF`. The
+ * parts are displayed rounded once each and may not visibly sum by 0.1; §4.10
+ * says that is correct, since forcing them to add would mean rounding twice.
+ */
+export function computeProbeParts({
   ddtF,
   frictionFactorF,
   roomTempF,
@@ -383,12 +404,55 @@ export function computeProbeTargetF({
   frictionFactorF: number;
   roomTempF: number;
   thermal: Thermal;
-}): number {
-  return (
-    ddtF -
-    0.33 * frictionFactorF * (thermal.cTotal / thermal.cSystem) +
-    0.2 * (ddtF - roomTempF)
-  );
+}): ProbeParts {
+  const frictionRemainingF = 0.33 * frictionFactorF * (thermal.cTotal / thermal.cSystem);
+  const restSignedF = 0.2 * (ddtF - roomTempF);
+  const gapF = frictionRemainingF - restSignedF;
+  return {
+    frictionRemainingF,
+    restSignedF,
+    restExchangeF: Math.abs(restSignedF),
+    gapF,
+    targetF: ddtF - gapF,
+  };
+}
+
+export function computeProbeTargetF(args: Parameters<typeof computeProbeParts>[0]): number {
+  return computeProbeParts(args).targetF;
+}
+
+// ---------------------------------------------------------------------------
+// §4.9 Opening diameter and thickness factor
+// ---------------------------------------------------------------------------
+
+export interface Opening {
+  ballOz: number;
+  /** The diameter that would hit `TARGET_THICKNESS_FACTOR` with no oven limit. */
+  diameterUncappedIn: number;
+  /** What to actually open to: the above, capped at the Tread's stone. */
+  openDiameterIn: number;
+  /**
+   * §4.9 `openDiameterCapped`. Evaluated on UNROUNDED values, as specified —
+   * which means it is true at 267 g, where both comparisons `bulk-2` prints
+   * still display as equal. See FINDINGS-18.
+   */
+  openDiameterCapped: boolean;
+  /** oz/in² at `openDiameterIn` — the target, unless the cap binds. */
+  thicknessFactor: number;
+}
+
+/** §4.9. Aim at the target thickness and let the diameter follow, unless the oven caps it. */
+export function computeOpening(ballWeightG: number): Opening {
+  const ballOz = ballWeightG / C.G_PER_OZ;
+  const diameterUncappedIn = 2 * Math.sqrt(ballOz / (Math.PI * C.TARGET_THICKNESS_FACTOR));
+  const openDiameterIn = Math.min(diameterUncappedIn, C.TREAD_MAX_DIAMETER_IN);
+  return {
+    ballOz,
+    diameterUncappedIn,
+    openDiameterIn,
+    openDiameterCapped: diameterUncappedIn > C.TREAD_MAX_DIAMETER_IN,
+    thicknessFactor: ballOz / (Math.PI * (openDiameterIn / 2) ** 2),
+  };
 }
 
 /**
@@ -666,6 +730,10 @@ export interface CalculatorResult {
   mixes: MixTarget[];
   capacity: Capacity;
   probeTargetF: number;
+  /** §4.10. The target's parts, per mix at the user's inputs. `probeTargetF === probe.targetF`. */
+  probe: ProbeParts;
+  /** §4.9. Opening diameter and thickness factor for the entered ball weight. */
+  opening: Opening;
   /** §4.8 room-temperature minutes before the fridge. */
   roomMinutes: number;
   /** True when roomMinutes came from DDT rather than a measurement. */
@@ -730,6 +798,12 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
   const effectiveFinalTempF = inputs.finalDoughTempF ?? ddtF;
   const roomMinutes = computeRoomMinutes({ finalDoughTempF: effectiveFinalTempF, ddtF });
   const uncentred = staggerUncentredMin(roomMinutes, capacity.nMix);
+  const probe = computeProbeParts({
+    ddtF,
+    frictionFactorF: inputs.frictionFactorF,
+    roomTempF: inputs.roomTempF,
+    thermal,
+  });
 
   return {
     inputs,
@@ -739,12 +813,9 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
     waterTempF,
     mixes,
     capacity,
-    probeTargetF: computeProbeTargetF({
-      ddtF,
-      frictionFactorF: inputs.frictionFactorF,
-      roomTempF: inputs.roomTempF,
-      thermal,
-    }),
+    probeTargetF: probe.targetF,
+    probe,
+    opening: computeOpening(inputs.ballWeightG),
     roomMinutes,
     roomMinutesIsPlanned,
     staggerUncentredMin: uncentred,
