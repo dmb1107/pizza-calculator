@@ -18,10 +18,12 @@ you can check instead (§7).
 - **The correspondence is settled through MESSAGE-24.** FINDINGS-24 went back,
   and neither side owes the other anything. **There is no MESSAGE-22.** A stray
   draft by that number arrived before MESSAGE-21, was superseded by it, and has
-  been deleted. Their next message will be **25**; your reply is FINDINGS-25.
+  been deleted.
 - **Tasks 0–7 are done:** engine, state, cards, forward timeline, steps,
   concepts, timers. The plan's status line names the last message applied.
-- **The §2 hint fix is done but not yet reported. Next comes Task 8.**
+- **FINDINGS-25 then went unprompted**, reporting the §2 fix and asking one
+  clause of §6. Their reply's number is theirs to pick; number yours to match.
+  **Next comes Task 8.**
 - **After Task 8:**
   - Task 9 — reference drawer and About.
   - Task 10 — only the phone-in-the-kitchen check remains, and that's Dave's.
@@ -32,10 +34,11 @@ you can check instead (§7).
 
 ## 2. Open — start here
 
-### Fixed, not yet reported: the biga-temperature hint's basis — owed in FINDINGS-25
+### Fixed and reported in FINDINGS-25: the biga-temperature hint's basis
 
-Fixed on 23 September, after this handoff was written. **FINDINGS-25 must
-report it**; there's no spec change, since it was our UI copy, not §8.
+Fixed on 23 September, after this handoff was written, and reported
+unprompted in FINDINGS-25. No spec change is needed, since it was our UI copy,
+not §8.
 
 - **What was wrong.** The mix-1 biga hint always quoted the tracking
   coefficient `(Cb + C_bowl)/Cw`, even once the bowl was measured, when the
