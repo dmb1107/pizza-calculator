@@ -289,7 +289,20 @@ At FF 14 in a 70 °F room: **3 balls 72.2 · 6 balls 71.8 · 9 balls 70.5 · 12 
 | Balls | 3 | 6 | 9 | 12 | 18 |
 |---|---:|---:|---:|---:|---:|
 | Balls per mix | 3 | 6 | 9 | **6** | **9** |
-| Probe target | DDT − 2.79 | DDT − 3.16 | DDT − 3.51 | DDT − 3.36 | DDT − 3.51 |
+| Probe target, **room 70, FF 14** | DDT − 2.79 | DDT − 3.16 | DDT − 3.51 | DDT − 3.36 | DDT − 3.51 |
+
+⚠️ **This table is indexed on the minor axis.** It was introduced to replace the flat `DDT − 4` and correctly showed the gap is not constant — but it varies far more with **room temperature** than with batch size, and the table held room fixed at 70 without saying so in the table itself:
+
+| Gap, FF 14 | room 62 | 66 | 70 | 74 | 78 |
+|---|---:|---:|---:|---:|---:|
+| 3 balls | 1.19 | 1.99 | 2.79 | 3.59 | 4.39 |
+| 6 balls | 1.56 | 2.36 | 3.16 | 3.96 | 4.76 |
+| 9 / 18 balls | 1.91 | 2.71 | 3.51 | 4.31 | 5.11 |
+| 12 balls | 1.76 | 2.56 | 3.36 | 4.16 | 4.96 |
+
+Room temperature moves it **3.2 °F** across a 62–78 °F kitchen and **4.8 °F** across the supported 60–84 range; batch size moves it **0.72 °F** from 3 to 9 balls. **The slope is exactly 0.2 °F of gap per °F of room, at every batch size** — it is the `0.2 × (DDT − T_room)` term, and it is a constant, which makes it the one thing about this target safe to state as a rule.
+
+The engine was never wrong: `probeTargetF` has always taken `T_room`. The defect was every prose table presenting the room-70 row as though it were the whole answer. A baker in a 62 °F kitchen reading `DDT − 3.2` aims **1.6 °F low** at 6 balls — Phase C's entire authority, spent in the wrong direction. The flat rule it replaced was 2.4 °F low in the same kitchen, so the replacement improved things by much less than its table implied.
 
 Phase C's entire correction authority is about −1.5 to +2.0 °F, so a 1.2 °F error in the target consumes most of the budget before the user starts, and in the wrong direction.
 
@@ -724,6 +737,8 @@ interface Step {
 
 Store step content in a separate `steps.ts` (or `steps.md` parsed at build time) so prose edits don't touch component code.
 
+⚠️ **No numeric table in §8 may restate an engine output.** The `mix-4` step carried a hand-written probe table that was corrected in §4.6 and never in the step — so for eight rounds the app rendered `DDT − 3.6 / 3.7` for 12 and 18 balls while computing 3.4 / 3.5, and every test passed, because the verbatim check compares prose against prose and nothing compares prose against the engine. If a step needs a number the engine produces, **bind it as a token**. If it needs to explain how a number moves, **state the rule as a constant** (`0.2 °F per °F of room`). A static table of computed values is a copy, and copies drift.
+
 ⚠️ **Every `{token}` is a bare identifier. No expressions, ever.** An earlier draft of §8.2 wrote `{mixIndex + 1}` and a ternary building the biga-count suffix, which forced a choice between widening the token parser and building an expression evaluator in prose. Neither should have been necessary: those are `{nextMixIndex}` and `{bigaCountSuffix}`, computed in `bindTokens` where the rest of the values live.
 
 §8 prose is edited often and by design. Anything evaluated there becomes a code-execution surface that grows by accretion, one convenient expression at a time. Keep the unknown-token guard so a typo fails loudly, and keep the parser strict enough that an expression is a **parse error** rather than something that quietly works.
@@ -909,13 +924,15 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 **detail:**
 > **Why below DDT and not at it.** By the end of Phase B you have absorbed roughly two thirds of the total friction — Phases A and B are long, and the hydration exotherm has already fired.
 >
-> Still to come, **stated the way the probe will read it** — dough and bowl equilibrated, at 6 balls: Phase C **+3.4 °F**, Phase D **+0.8 °F**, minus **1.0 °F** given back to the room during the 10-minute rest. Net **+3.2 °F.**
+> Still to come, **stated the way the probe will read it** — dough and bowl equilibrated, at 6 balls in a 70 °F kitchen: Phase C **+3.4 °F**, Phase D **+0.8 °F**, minus **1.0 °F** given back to the room during the 10-minute rest. Net **+3.2 °F.**
 >
-> **There is no flat "four degrees low" rule.** The gap shrinks as the batch gets smaller, because a small batch has proportionally more bowl to heat:
+> **There is no fixed "so many degrees low" rule — and your kitchen matters more than your batch size.** That last term, the heat exchanged with the room during the rest, is the one that moves: the rest gives heat back to a cold room and takes it from a warm one.
 >
-> | Balls | 3 | 6 | 9 | 12 | 18 |
-> |---|---:|---:|---:|---:|---:|
-> | Probe target | DDT − 2.8 | DDT − 3.2 | DDT − 3.5 | DDT − 3.6 | DDT − 3.7 |
+> - **Every degree your kitchen is below 70 °F moves the target 0.2 °F up toward DDT.** A 62 °F kitchen is 1.6 °F closer.
+> - **Every degree above 70 moves it 0.2 °F down.**
+> - **Batch size matters much less.** From 3 balls to 9 it shifts the target by under a degree; a 62 °F kitchen against a 78 °F one shifts it by more than three.
+>
+> That is why the target above is computed from the room temperature you entered, and why it is worth measuring the room rather than assuming it. Nothing else in this step moves the number as much.
 >
 > The general form:
 >

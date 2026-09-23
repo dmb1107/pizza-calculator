@@ -13,20 +13,22 @@ repeatedly gone wrong.
 ## 1. Where it stands
 
 **Tasks 0–7 are done and verified** — engine, state, cards, forward timeline,
-steps, concepts, timers. 345 tests green, typecheck clean, production build
-clean. `IMPLEMENTATION-PLAN.md` has the task-by-task detail and its status line
-is kept current; read it before starting.
+steps, concepts, timers. `npm test`, `npm run typecheck` and `npm run build` are
+all clean; run them rather than trusting a count written here, which is exactly
+the kind of transcribed figure that drifts. `IMPLEMENTATION-PLAN.md` has the
+task-by-task detail and its status line names the last message applied; read it
+before starting.
 
 **Task 8 (backward timeline) is next**, and it is unblocked. `solveBigaStart` in
 `src/lib/timeline.ts` is already written and tested — the arithmetic exists, the
 UI doesn't. §4.7's durations have now survived two rounds without moving, which
 was the thing that kept blocking it.
 
-Then Task 9 (reference drawer + About), Task 10 (deploy), Task 11 (bake log,
-phase 2 — the payoff is regressing `FF = a + b × (room − 70)` per batch size
-after 8–10 logged bakes).
+Then Task 9 (reference drawer + About), Task 10 (deploy — two of its three
+boxes are verified, see §6), Task 11 (bake log, phase 2 — the payoff is
+regressing `FF = a + b × (room − 70)` per batch size after 8–10 logged bakes).
 
-**⚠️ Nothing since MESSAGE-4 is deployed.** See §6.
+**The live site tracks `main`.** Every push deploys. See §6.
 
 ---
 
@@ -137,25 +139,37 @@ Keep adding them; the counterpart asked for it explicitly.
 
 ---
 
-## 6. ⚠️ The deploy is broken, and it isn't the code
+## 6. The deploy works — and this section used to say it didn't
 
-**Every push since the ice removal has failed to deploy.** The build job passes
-and uploads the artifact; `actions/deploy-pages` then sits in `updating_pages`
-for ten minutes and times out, cancelling the deployment. Six-plus consecutive
-runs, same failure.
+**Every push since 1 September has deployed.** The only failed runs in the
+Actions history are two on 27 August. The build job passes, `deploy-pages`
+finishes in seconds, and the site at
+`https://dmb1107.github.io/pizza-calculator/` serves what `main` builds.
 
-Pages is configured correctly — `build_type: workflow`, `status: built`. The
-site at `https://dmb1107.github.io/pizza-calculator/` is serving the
-**pre-MESSAGE-4 build**: batch-total thermal weights, `DDT − 4`, ADY 0.0038, no
-hot-end warning, no `MIN_BALLS`, none of the split-batch machinery.
+Verified end to end on 23 September: the live `index.html` references the same
+bundle hash a local `npm run build` produces, and the served bundle contains
+MESSAGE-13's `biga-6` content.
 
-Nothing has been diagnosed beyond "GitHub's Pages backend hangs". Worth checking
-their status page, or simply retrying — it may have recovered. **Do not change
-the workflow or the Pages source to chase it**; both were verified correct when
-the first deploy succeeded, and the source was already fixed once (it had been
-set to deploy-from-branch, which served the dev `index.html`).
+⚠️ **An earlier version of this section said every push since the ice removal
+had hung**, and five rounds of pushes were held back on the strength of it. It
+was already stale when it was written — the commit that added it deployed
+successfully. Two consequences worth knowing:
 
-The one upside: the ordering bug above never reached anyone.
+- **The step-ordering bug was live from 1 to 14 September**, not "never reached
+  anyone". It only affects `nMix ≥ 2` (10+ balls), and bakes 1–3 are 3, 6 and 9
+  balls, so no calibration bake could have hit it.
+- **Check deploy state rather than reading about it.** `gh run list` shows the
+  history in one line per run; to confirm the site itself, compare the
+  `assets/index-*.js` name in the live `index.html` with the one `npm run build`
+  prints. A status in a document is a transcription like any other.
+
+**Do not change the workflow or the Pages source.** Both are correct: Pages is
+`build_type: workflow`, and the source was already fixed once (it had been set
+to deploy-from-branch, which served the dev `index.html`).
+
+Two runner notices appear in the logs and need nothing yet: `deploy-pages@v4` is
+forced from Node 20 onto Node 24, and `ubuntu-latest` moves to Ubuntu 26 from
+19 October 2026. Worth a look if a deploy fails after that date.
 
 ---
 

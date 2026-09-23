@@ -264,13 +264,15 @@ At 2.8% the salt is at the upper end of the Neapolitan range of 2.5–3.0%. That
     values: [`Probe target: {probeTarget} °F`, `DDT: {ddt} °F`],
     detail: `**Why below DDT and not at it.** By the end of Phase B you have absorbed roughly two thirds of the total friction — Phases A and B are long, and the hydration exotherm has already fired.
 
-Still to come, **stated the way the probe will read it** — dough and bowl equilibrated, at 6 balls: Phase C **+3.4 °F**, Phase D **+0.8 °F**, minus **1.0 °F** given back to the room during the 10-minute rest. Net **+3.2 °F.**
+Still to come, **stated the way the probe will read it** — dough and bowl equilibrated, at 6 balls in a 70 °F kitchen: Phase C **+3.4 °F**, Phase D **+0.8 °F**, minus **1.0 °F** given back to the room during the 10-minute rest. Net **+3.2 °F.**
 
-**There is no flat "four degrees low" rule.** The gap shrinks as the batch gets smaller, because a small batch has proportionally more bowl to heat:
+**There is no fixed "so many degrees low" rule — and your kitchen matters more than your batch size.** That last term, the heat exchanged with the room during the rest, is the one that moves: the rest gives heat back to a cold room and takes it from a warm one.
 
-| Balls | 3 | 6 | 9 | 12 | 18 |
-|---|---:|---:|---:|---:|---:|
-| Probe target | DDT − 2.8 | DDT − 3.2 | DDT − 3.5 | DDT − 3.6 | DDT − 3.7 |
+- **Every degree your kitchen is below 70 °F moves the target 0.2 °F up toward DDT.** A 62 °F kitchen is 1.6 °F closer.
+- **Every degree above 70 moves it 0.2 °F down.**
+- **Batch size matters much less.** From 3 balls to 9 it shifts the target by under a degree; a 62 °F kitchen against a 78 °F one shifts it by more than three.
+
+That is why the target above is computed from the room temperature you entered, and why it is worth measuring the room rather than assuming it. Nothing else in this step moves the number as much.
 
 The general form:
 

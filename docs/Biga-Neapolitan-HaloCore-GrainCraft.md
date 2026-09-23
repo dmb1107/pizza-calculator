@@ -497,16 +497,22 @@ Have everything weighed before you start, and the water already blended to tempe
 
 **Why below DDT and not at it.** At the end of Phase B you have absorbed roughly two thirds of the total friction — Phases A and B are long, and the hydration exotherm has already fired.
 
-Still to come, **stated as the probe will read it** (dough and bowl equilibrated, 6 balls): Phase C **+3.4 °F**, Phase D **+0.8 °F**, minus **1.0 °F** given back to the room during the 10-minute rest. Net **+3.2 °F.**
+Still to come, **stated as the probe will read it** (dough and bowl equilibrated, 6 balls, **70 °F kitchen**): Phase C **+3.4 °F**, Phase D **+0.8 °F**, minus **1.0 °F** given back to the room during the 10-minute rest. Net **+3.2 °F.**
 
-⚠️ **There is no flat "DDT − 4" rule, and earlier drafts were wrong to give one.** The gap shrinks with batch size, because a small batch has proportionally more bowl to heat:
+⚠️ **There is no fixed "DDT − something" rule — and your kitchen matters more than your batch size.** The last term is heat exchanged with the room during the rest, and it moves with the room: a cold kitchen takes more heat back, a warm one gives some. So the target depends mostly on room temperature and only a little on batch size:
 
-| Balls | 3 | 6 | 9 | 12 | 18 |
+| How far below DDT to probe (FF 14) | room 62 °F | 66 | **70** | 74 | 78 |
 |---|---:|---:|---:|---:|---:|
-| Balls per mix | 3 | 6 | 9 | **6** | **9** |
-| Probe target | **DDT − 2.8** | **DDT − 3.2** | **DDT − 3.5** | **DDT − 3.4** | **DDT − 3.5** |
+| 3 balls | 1.2 | 2.0 | **2.8** | 3.6 | 4.4 |
+| 6 balls | 1.6 | 2.4 | **3.2** | 4.0 | 4.8 |
+| 9 or 18 balls | 1.9 | 2.7 | **3.5** | 4.3 | 5.1 |
+| 12 balls | 1.8 | 2.6 | **3.4** | 4.2 | 5.0 |
 
-18 balls is two 9-ball mixes, so its target is identical to the 9-ball one — that equality is a useful check on any calculation claiming to be per-mix. 12 and 6 share a mix size but differ slightly because DDT is 74 at 12 balls and 75 at 6.
+**Read across before you read down.** Moving from a 62 °F to a 78 °F kitchen shifts the target 3.2 °F. Moving from 3 balls to 9 shifts it 0.7. **The rule that holds everywhere: 0.2 °F closer to DDT for every degree your kitchen is below 70, and 0.2 °F further for every degree above.**
+
+⚠️ **Earlier drafts printed only the 70 °F column**, as `DDT − 2.8 / 3.2 / 3.5` by batch size, without saying it assumed a 70 °F room. In a 62 °F kitchen that aims 1.6 °F too low at 6 balls — the whole of Phase C's correction range, wrong way round. Measure the room.
+
+18 balls is two 9-ball mixes, so its row is identical to the 9-ball one — a useful check on any calculation claiming to be per-mix. 12 and 6 share a mix size but differ slightly because DDT is 74 at 12 balls and 75 at 6.
 
 The old rule was 1.2 °F off at 3 balls — a third of Phase C's entire correction budget, spent in the wrong direction before you started. It came from taking the dough-only friction rates and reading them as if they were what a thermometer shows.
 
@@ -740,8 +746,10 @@ RPM = 47.4 + 2.526 x dial%   [MEASURED: 5% = 60 RPM]
 
 FINAL  A      15%/85   3-4 min   breakdown, 60% of water (PhA above)
        B      20%/98   5-6 min   salt + remaining 40% in 3 adds (PhB above)
-       PROBE  3bl DDT-2.8 (72.2) / 6bl DDT-3.2 (71.8) / 9bl DDT-3.5 (70.5)
-              THE OLD "DDT - 4" RULE IS DEAD - 1.2 F wrong at 3 balls.
+       PROBE  at a 70 F ROOM: 3bl DDT-2.8 / 6bl DDT-3.2 / 9bl DDT-3.5
+              ROOM MATTERS MORE THAN BATCH: +0.2 toward DDT per F below 70.
+              62 F kitchen, 6bl = DDT-1.6 (not 3.2). MEASURE THE ROOM.
+              THE OLD "DDT - 4" RULE IS DEAD.
   general: DDT - 0.33 x FF x Ct/(Ct+C_bowl) + 0.2 x (DDT - Troom)
        C      30%/123  3-4 min   develop
               OBSERVED rate 0.89 F/min (3bl) 0.97 (6bl) 1.01 (9bl)

@@ -199,13 +199,20 @@ export const THERMAL_WEIGHTS = { biga: 0.5311, flour: 0.1306, water: 0.3331, sal
  *
  * ⚠️ The minimum moved from 51.2 to 53.2 when the weights went per-mix, and the
  * reason is worth holding onto: the coldest requirement comes from the LARGEST
- * thermal system, and per-mix weights cap that at mixer capacity. The biggest
- * single mix in the permitted range is 9 × 270 g — a 24-ball batch is three
- * 8-ball mixes, not one 6500 g monster.
+ * thermal system, and per-mix weights cap that at mixer capacity. A 24-ball
+ * batch is three 8-ball mixes, not one 6500 g monster.
+ *
+ * ⚠️ The largest single mix is a SPLIT one: 19 × 257 g runs as two 2495 g
+ * mixes, against 9 × 270 g's 2483 g. The true minimum therefore sits at
+ * 19 × 257 g (53.210 °F) rather than 9 × 270 g (53.224 °F) — immaterial at
+ * the published precision, but this comment and §5 both named the wrong
+ * corner, and the sweep could not see the right one because 257 g was never
+ * sampled. It is now.
  */
 export const WATER_REACHABILITY = {
   balls: { min: 3, max: 24 },
-  ballG: [240, 265, 270, 300],
+  // 257 because 19 x 257 g is the largest per-mix dough in the envelope — see above.
+  ballG: [240, 257, 265, 270, 300],
   bigaF: { min: 45, max: 60 },
   roomF: { min: 60, max: 84 },
   /** Across the whole permitted envelope. */

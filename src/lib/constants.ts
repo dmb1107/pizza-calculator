@@ -82,8 +82,12 @@ const BASE = {
   /**
    * §4.4. Below this the target is colder than fridge water reaches, which is
    * the one and only case where ice gets mentioned. On the retarded-biga
-   * schedule the model never asks for it: the required water spans 51.7-90.6 °F
-   * across every batch size and kitchen temperature.
+   * schedule the model never asks for it anywhere in the supported envelope.
+   *
+   * The envelope's actual span is deliberately NOT restated here. It lives in
+   * §5 and is asserted by `WATER_REACHABILITY` in tests/vectors.ts; this
+   * comment used to carry 51.7-90.6 °F, the pre-per-mix figure from a sweep
+   * that never went below ~9 balls, for several rounds after §5 corrected it.
    */
   WATER_MIN_F: 38,
 

@@ -15,7 +15,7 @@ Read this, then the two attached documents. Everything below is context that isn
 
 **Keep them in sync.** Every change to one usually needs the other.
 
-**Every delta message through `MESSAGE-13-replies` has been sent, applied and confirmed** (369 tests green at last report). They are historical; their content is folded into the spec and the recipe, which are the only two documents that need reading. `MESSAGE-16-replies.md` is the current outstanding one.
+**Every delta message through `MESSAGE-13-replies` has been sent, applied and confirmed** (369 tests green at last report). They are historical; their content is folded into the spec and the recipe, which are the only two documents that need reading. `MESSAGE-17-replies.md` is the current outstanding one.
 
 The numbered messages are a correspondence log, not instructions — read them only to trace why a decision was made.
 
@@ -92,7 +92,9 @@ The numbered messages are a correspondence log, not instructions — read them o
 
 ⚠️ **These rows are lessons, not sources.** Where a figure appears here it is illustrative; the spec and the recipe are authoritative for every number. **If a figure in this table disagrees with them, this table is the bug** — four rows have already drifted this way, each by restating a conclusion that later moved. Prefer the lesson in the right-hand column over the number attached to it.
 
-⚠️ **Never put a figure here that needs an operand to interpret.** Three of the four drifts were in rows whose left column names the exact error the right column then commits, and the mechanism is compression: a row that says *"don't quote X, quote Y"* has to shorten Y, and shortening drops the thing Y is multiplied by or indexed on. A figure earns a place in this table only if it is **self-contained** — the correction itself (`0.375%, derived`), or a value with its index stated inline (`0.66 °F per °F at a 3-ball mix`). Anything that is a factor, a ratio, or one term of a product goes in as the **operation plus a section pointer**, never as a bare number.
+⚠️ **Never put a figure here that is not constant over the supported range.** If it moves with mix size, batch size, room temperature, schedule or speed, it goes in with the point it was evaluated at stated inline — or as the operation plus a section pointer. A figure that needs an **operand** is the common case of this and looks unfinished. A figure that needs an **index** reads as finished, and therefore survives an audit: `5 °F error` passed a check written for operands and was one point on a hyperbola.
+
+The question to ask while typing a number is **"does this move?"** — and if it does, **"along which axis most?"** The probe row below survived four rounds indexed on batch size, which moves it 0.7 °F, while holding room temperature fixed, which moves it 4.8.
 
 | Error | Correction |
 |---|---|
@@ -101,12 +103,14 @@ The numbered messages are a correspondence log, not instructions — read them o
 | Mixing the biga in the spiral mixer | **Hand-mix always.** A hook builds gluten, which is exactly wrong |
 | Flouring the proofing trays | **Oil.** Flour is hygroscopic and skins the dough |
 | Recommending 800–850 °F stone | **750 gauge, full flame** |
-| Bowl-free thermal model | 5 °F error; bowl is required |
-| "120–135 min room temp" for a 73.5 °F dough | **105 min** — I'd double-counted the cooldown deficit |
+| Bowl-free thermal model | Bowl is required. Error is `C_bowl(DDT − T_bowl)/Cw` — **inversely proportional to mix size**: 5.6 °F at 6 balls on bake 1, 11.2 at 3, 3.7 at 9 |
+| "120–135 min room temp" for a 73.5 °F dough | **105 min at DDT 75** — I'd double-counted the cooldown deficit |
 | "Bowl contributes more than the fresh flour" | Only true below ~5 balls |
 | Ice calculations | **Removed.** Output a water temperature; Dave blends fridge and tap by hand |
 | ADY at 0.0038 in the spec while the recipe's tables used 0.00375 | **0.00375, derived** from the published 1% fresh dose |
-| Flat "probe at DDT − 4" | **Batch-size dependent:** DDT − 2.8 / 3.2 / 3.5 at 3 / 6 / 9 balls |
+| Flat "probe at DDT − 4" | **Room-temperature dependent first, batch size second.** 0.2 °F toward DDT per °F the room is below 70 — a constant. At a 70 °F room: DDT − 2.8 / 3.2 / 3.5 at 3 / 6 / 9 balls. §4.6 |
+| Indexing a variable on its minor axis | The probe target was re-tabulated by **batch size** (moves it 0.7 °F) while holding **room** fixed (moves it 4.8). Correct at room 70, 1.6 °F wrong in a 62 °F kitchen. Ask which axis moves a figure most before choosing what to index it by |
+| Static numeric tables in §8 step content | **Bind a token or state a constant rule.** The `mix-4` step's probe table was fixed in §4.6 and never in the step — the app rendered the stale values for eight rounds while every test passed, because nothing compares prose to the engine |
 | Quoting 0.75/0.86/1.08 °F/min (**by dial: 15/20/30**) against a thermometer | Those are **dough-only.** Multiply by `Ct/(Ct + C_bowl)`, which is **by balls per mix**: 0.82 / 0.90 / 0.93 at 3/6/9. At dial 30 that gives an observed **0.89 / 0.97 / 1.01**. ⚠️ Two different indices — don't read the triples as answering each other. §4.6 |
 | "Required water spans 52–90 °F" | **53–109 °F.** Hottest at *small mixes*, not small batches, and not monotonic — 12 balls (two 6-ball mixes) wants hotter water than 9 |
 | Biga-temp default of 64 °F | **58 °F**, the one measured value. Most leveraged input in the model |

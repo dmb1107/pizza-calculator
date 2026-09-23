@@ -5,7 +5,7 @@ Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
 **Status:** Tasks 0–7 complete, on the bowl-aware thermal model with **per-mix
-weights**, the ice calculation removed, and **MESSAGE-16 applied**. Task 8
+weights**, the ice calculation removed, and **MESSAGE-17 applied**. Task 8
 (backward timeline) next — §4.7's durations have stopped moving, so it is now
 safe to solve against them.
 
@@ -601,8 +601,12 @@ markdown, inline. A test pins `watchFor` as markdown so it can't regress.
 
 ## Task 10 — Deploy
 
-- [ ] Push to GitHub, enable Pages (Settings → Pages → Source: GitHub Actions).
-- [ ] Confirm the workflow runs and assets resolve under the subpath.
+- [x] Push to GitHub, enable Pages (Settings → Pages → Source: GitHub Actions).
+  Deploying on every push since 1 September; the only failures were two runs on
+  27 August.
+- [x] Confirm the workflow runs and assets resolve under the subpath. Verified
+  23 September: the live `index.html` names the same bundle hash as a local
+  build, and the served bundle carries MESSAGE-13's content.
 - [ ] Check on an actual phone, in a kitchen, at arm's length.
 
 ---

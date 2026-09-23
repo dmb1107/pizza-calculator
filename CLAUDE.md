@@ -50,6 +50,12 @@ question:
 | `FINDINGS-10-to-recipe-agent.md` | Settled by MESSAGE-11 |
 | `MESSAGE-11-replies.md` | Three wall-clock bases, not two; the boundary rule is template-scoped; `stagger` stays on the planning basis |
 | `FINDINGS-11-to-recipe-agent.md` | Nothing open. Records the expansion-order bug their §2 exposed |
+| `MESSAGE-12-replies.md` | Golden sequences for §4.7 stages and §8.2a instances — order is the meaning |
+| `MESSAGE-13-replies.md` | `biga-6` (the temper had no step), `shownWhen`, the stage/step mapping check |
+| `MESSAGE-14-replies.md` | Two biga sensitivities, both correct: `Cb/Cw` held, `(Cb + C_bowl)/Cw` tracking |
+| `MESSAGE-15-replies.md`, `-16-` | Handoff-only: figures in summary tables drift because they are transcribed |
+| `MESSAGE-17-replies.md` | Probe gap moves with room far more than batch; no §8 literal may restate an engine output |
+| `FINDINGS-12` … `FINDINGS-17` | Replies to the above. 17 carries the §8 literal audit |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** How the correspondence works, what has gone wrong, and the deploy situation |
 
 ## Rules that matter more than usual here
@@ -149,6 +155,19 @@ purpose**: the generator writes the content, the test independently re-derives
 it, so a parser bug surfaces as a mismatch rather than as both agreeing on
 garbage. If you change one, change the other.
 
+**Every number in §8 is either checked against the engine or classified.**
+`tests/steps.test.ts` compares prose to prose, so a stale literal passes it —
+`mix-4` rendered `DDT − 3.6 / 3.7` for eight rounds that way.
+`tests/contentLiterals.test.ts` closes that: `CLAIMS` rebuilds every literal
+that restates a computed value from the engine and requires it verbatim;
+`FIXED` lists every other literal with the reason it isn't computed. **When the
+spec's §8 changes, expect this suite to fail on the new numbers** — that is the
+reproduce-before-adopting step, made mandatory. Reproduce each one and add a
+claim, or classify it with a reason. Never widen `FIXED` just to go green: a
+computed value filed as fixed is the defect this exists to catch. A known
+disagreement the spec author must fix gets `knownWrong`, which is pinned both
+ways.
+
 **Do not shorten the prose in spec §8.** The step `detail` blocks are the point
 of the app, not decoration on it. They are the reasoning that makes the recipe
 worth following rather than obeying. Use them verbatim: don't summarize, don't
@@ -161,7 +180,8 @@ UI, that's what the disclosure is for — collapse it, don't cut it.
 **Thermal weights are per-mix, never batch totals.** §4.2 — `C_bowl` is one
 bowl and the bowl faces one mix at a time, so a 12-ball batch is a 6-ball
 thermal system twice over. Feeding batch totals in put the water 2.6 °F low at
-12 balls. `computeThermal` takes `nMix`, which is why `calculate` computes
+12 balls at default temperatures — and up to 4.8 °F at the hot corner (biga 45,
+room 60), because the error scales with the temperatures, not the batch. `computeThermal` takes `nMix`, which is why `calculate` computes
 capacity *before* thermal. Two consequences that catch tests out: nothing is
 monotonic in total balls any more (12 wants hotter water than 9), and
 `probeTargetF` must be asserted on per-mix ball count.
@@ -185,7 +205,8 @@ fridge-cold and tap water by hand, measuring as they pour. Ice bought precision
 that wasn't needed and cost reliability that was: it depended on every gram
 melting before the temperature reading, and a miss there poisons the measured
 FF. The only surviving mention is the sub-38 °F warning, which on the
-retarded-biga schedule never fires — the required water bottoms out at 51.7 °F.
+retarded-biga schedule never fires — across the supported envelope the required
+water bottoms out at 53.2 °F (§5, asserted by `WATER_REACHABILITY`).
 
 **`C_BIGA` is derived, never hardcoded**, so it follows if `BIGA_HYDRATION`
 changes. Same principle for the thermal weights — compute them from component
@@ -298,8 +319,9 @@ Follow spec §12. Task list and status: [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATIO
 which is kept current — check its status line first.
 
 Tasks 0–7 are done (engine, state, cards, forward timeline, steps, concepts,
-timers). Remaining: backward timeline, reference drawer and About, Pages
-deploy, bake log.
+timers). Remaining: backward timeline, reference drawer and About, the phone
+check that finishes the deploy task, bake log. **Pages deploys on every push**
+and has since 1 September — check `gh run list` rather than any written status.
 
 **Verify §5 before changing any formula**, including the bake-1 regression. §12
 names the two places this goes wrong silently: the `C_bowl` term and the
