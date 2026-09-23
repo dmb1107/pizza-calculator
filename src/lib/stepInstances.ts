@@ -9,6 +9,7 @@
 import { STEPS, type DetailCondition, type ShownWhen, type Step } from '../content/steps';
 import type { Schedule } from '../state/types';
 import type { CalculatorResult } from './engine';
+import { C } from './constants';
 
 /**
  * §8.2's `shown only when` conditions, resolved by lookup rather than by
@@ -49,8 +50,9 @@ const DETAIL_CONDITIONS: Record<DetailCondition, (ctx: DetailConditionContext) =
  *
  * §4.9: "a condition that triggers prose must be decided on the values the
  * prose will print." So `thickerThanDefault` reads the very string `bulk-2`
- * prints — the block shows exactly when that number is at least 1, and a
- * condition and its sentence cannot disagree about rounding.
+ * prints — the block shows exactly when that number reaches
+ * `THICKER_NOTE_MIN_PERCENT`, and a condition and its sentence cannot disagree
+ * about rounding.
  */
 export function detailConditionContext(
   result: CalculatorResult,
@@ -59,7 +61,7 @@ export function detailConditionContext(
   return {
     nMix: result.capacity.nMix,
     nBiga: result.capacity.nBiga,
-    thickerThanDefault: Number(tokens.thicknessPercentOver) >= 1,
+    thickerThanDefault: Number(tokens.thicknessPercentOver) >= C.THICKER_NOTE_MIN_PERCENT,
   };
 }
 

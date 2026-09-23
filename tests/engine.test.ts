@@ -406,8 +406,20 @@ describe('§4.2 dough-only thermal weights', () => {
 });
 
 describe('§4.8 shaped rise time', () => {
-  it.each(ROOM_MINUTES)('$finalTempF degF gives $roomMin min', ({ finalTempF, roomMin }) => {
-    expect(Math.round(computeRoomMinutes({ finalDoughTempF: finalTempF, ddtF: 75 }))).toBe(roomMin);
+  it.each(ROOM_MINUTES)('DDT $ddtF, $finalTempF degF gives $roomMin min', ({ ddtF, finalTempF, roomMin }) => {
+    expect(Math.round(computeRoomMinutes({ finalDoughTempF: finalTempF, ddtF }))).toBe(roomMin);
+  });
+
+  it('depends only on the offset from DDT', () => {
+    // The property the DDT 74 rows pin. A 74 °F dough is ON TARGET at 9 balls
+    // (DDT 74) and gets 90 min — read off a table keyed on dough temperature,
+    // which assumed DDT 75, it got 100.
+    for (let offset = -8; offset <= 6; offset += 0.5) {
+      const at = (ddtF: number) => computeRoomMinutes({ finalDoughTempF: ddtF + offset, ddtF });
+      expect(at(74), `offset ${offset}`).toBeCloseTo(at(75), 9);
+    }
+    expect(Math.round(computeRoomMinutes({ finalDoughTempF: 74, ddtF: 74 }))).toBe(90);
+    expect(Math.round(computeRoomMinutes({ finalDoughTempF: 74, ddtF: 75 }))).toBe(100);
   });
 
   it('returns exactly the base 90 min at DDT', () => {

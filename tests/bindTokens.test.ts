@@ -295,25 +295,29 @@ describe('§4.10 tokens', () => {
  * block fired on 12.02 > 12 and printed "12.0 inches" and "0.083 rather than
  * 0.083". Now it reads the number it prints.
  */
-describe('§4.9 the capped block shows exactly when its printed number is at least 1', () => {
+describe('§4.9 the capped block shows exactly when its printed number reaches THICKER_NOTE_MIN_PERCENT', () => {
   const at = (ballWeightG: number) => {
     const r = calculate({ ...INPUTS, ballWeightG });
     const v = tokenValues(r, SCHEDULE);
     return { printed: v.thicknessPercentOver, shows: detailConditionContext(r, v).thickerThanDefault };
   };
 
-  it('stays hidden where it would print 0%, and shows from 1%', () => {
+  it('stays hidden below 10%, as printed, and shows from it', () => {
+    // 10 is Dave's call (MESSAGE-21): where the thickness is noticeable in the
+    // bake. Before it the block fired from 1%, a floor against printing "0%".
     expect(at(240)).toEqual({ printed: '0', shows: false });
     expect(at(265)).toEqual({ printed: '0', shows: false });
-    expect(at(266)).toEqual({ printed: '0', shows: false }); // capped by 0.02 in, correctly hidden
-    expect(at(267)).toEqual({ printed: '1', shows: true });
+    expect(at(266)).toEqual({ printed: '0', shows: false }); // capped by 0.02 in
+    expect(at(267)).toEqual({ printed: '1', shows: false }); // capped, and below the note
+    expect(at(290)).toEqual({ printed: '9', shows: false }); // 9.43% raw
+    expect(at(291)).toEqual({ printed: '10', shows: true }); // 9.81% raw — the printed value decides
     expect(at(300)).toEqual({ printed: '13', shows: true });
   });
 
   it('never disagrees with its own sentence anywhere in the input range', () => {
     for (let g = 240; g <= 300; g++) {
       const { printed, shows } = at(g);
-      expect(shows, `${g} g prints ${printed}%`).toBe(Number(printed) >= 1);
+      expect(shows, `${g} g prints ${printed}%`).toBe(Number(printed) >= C.THICKER_NOTE_MIN_PERCENT);
     }
   });
 });

@@ -40,8 +40,10 @@ export interface ScheduleAdjustments {
   /**
    * Balls at room temperature, hours. **Computed, not chosen** — §4.8 derives
    * it from the measured final dough temperature. This replaced a fixed 1.5 h
-   * with a 1–2 h range, which the model now overshoots at both ends: 71 min for
-   * a warm dough, 144 min for a cold one.
+   * with a 1–2 h range, which the model overshoots at both ends: under an hour
+   * from about 3.3 °F over DDT, over two from about 2.9 °F under, clamped to
+   * 45–180 min. It depends only on the offset from DDT, never on the dough
+   * temperature alone.
    */
   ballRoomTempH: number;
   /**

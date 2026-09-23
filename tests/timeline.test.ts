@@ -126,8 +126,9 @@ describe('§4.7 stage durations', () => {
     });
 
     it('spans exactly 25.6–30.8 h across the full input ranges', () => {
-      // The extremes use the shaped-rise CLAMP bounds, not the 71–144 min the
-      // model reaches at realistic dough temperatures. Both ends are tight.
+      // The extremes use the shaped-rise CLAMP bounds (45 and 180 min), not the
+      // 71–144 min of the §4.8 table, which spans only +2 to −5 °F from DDT.
+      // Both ends are tight.
       const lowest: ScheduleAdjustments = {
         bigaFridgeH: 18, bigaRoomOnlyH: 16, ballRoomTempH: 45 / 60, nMix: 1, coldFermentH: 24, temperH: 2,
       };

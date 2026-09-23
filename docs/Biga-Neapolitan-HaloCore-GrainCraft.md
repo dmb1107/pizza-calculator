@@ -226,7 +226,9 @@ It isn't just about speed. That range produces the **right ratio of lactic to ac
 
 **75 °F** for **3–6 balls** · **74 °F** for **7 or more**
 
-A 65% biga delivers a large, already-active yeast population into the final mix, and this dough goes straight into the fridge. Every degree of starting temperature buys extra uncontrolled fermentation during the hours it takes the mass to cool, so the target sits at the cool end of the 73–77 °F Neapolitan band. Bigger batches cool slower, hence the extra degree down at 7 and above.
+A 65% biga delivers a large, already-active yeast population into the final mix, so warmth is expensive. The room-temperature rise after balling is built around this target — at exactly DDT the balls get 90 minutes, and a warmer or cooler dough gets less or more — so a miss at the mixer is partly corrected before the fridge. What isn't corrected is the cooldown: a warmer ball spends longer above 50 °F once it goes in, and that is fermentation nothing in the schedule budgets for. Bigger batches cool slower in the shared bulk tub, hence the extra degree down at 7 and above.
+
+⚠️ Earlier drafts said this dough "goes straight into the fridge" — it doesn't; there are about 2½ hours at room temperature first — and that 75 °F sits "at the cool end of the 73–77 °F Neapolitan band". **No source defines a Neapolitan DDT band.** DDT follows the fermentation schedule, not the pizza style: bakers cold-fermenting pizza from the start often mix much cooler, and commercial walk-in practice runs warmer. 75/74 are this recipe's validated values; they need no external band to justify them.
 
 ### The water temperature formula
 
@@ -551,16 +553,18 @@ The 0.33 assumes nominal phase durations. Run Phase A or B long and more of the 
    *Oil, not flour — see the note below.*
    **Adjust the room-temperature time to your actual dough temperature** (see below) rather than using a flat 90 min.
 
-| Final dough | Room time |
-|---:|---:|
-| 77 °F | 71 min |
-| 76 °F | 80 min |
-| **75 °F (on target)** | **90 min** |
-| 74 °F | 100 min |
-| 73 °F | 110 min |
-| 72 °F | 121 min |
-| 71 °F | 133 min |
-| 70 °F | 144 min |
+| Final dough vs DDT | Room time | at DDT 75 | at DDT 74 |
+|---:|---:|---:|---:|
+| 2 °F above | 71 min | 77 °F | 76 °F |
+| 1 °F above | 80 min | 76 °F | 75 °F |
+| **on target** | **90 min** | **75 °F** | **74 °F** |
+| 1 °F below | 100 min | 74 °F | 73 °F |
+| 2 °F below | 110 min | 73 °F | 72 °F |
+| 3 °F below | 121 min | 72 °F | 71 °F |
+| 4 °F below | 133 min | 71 °F | 70 °F |
+| 5 °F below | 144 min | 70 °F | 69 °F |
+
+**Read the first column, not a thermometer reading on its own.** The rise depends only on how far the dough landed from DDT, so this table holds at both DDTs. Earlier drafts keyed it on dough temperature alone, which silently assumed DDT 75 — at a 7+ ball batch (DDT 74) every row was one step off, and a 74 °F dough on a 9-ball bake would have been given 100 minutes instead of 90.
 
 `R' = (90 + 150)/f − 150` where `f = 2^((T_actual − DDT)/17)`. The 150 is the cooldown's equivalent fermentation at DDT — a cooler dough loses ground both on the counter *and* on the way down to 40 °F, and this compensates for both. Clamp to 45–180 min.
 
@@ -761,7 +765,9 @@ FRICTION RATES 0.75/0.86/1.08 F-min @15/20/30% ARE DOUGH-ONLY.
   To compare against a thermometer, x Ct/(Ct+C_bowl): 0.82/0.90/0.93 at 3/6/9.
 
 BULK 45-60 min (no folds) -> ball -> RT per final dough temp -> fridge (unstacked)
-  75F=90min  74F=100  73F=110  72F=121  71F=133  70F=144   (76F=80, 77F=71)
+  BY OFFSET FROM DDT (holds at 75 AND 74):
+  on target=90min  -1F=100  -2F=110  -3F=121  -4F=133  -5F=144   (+1F=80, +2F=71)
+  9 balls = DDT 74, so a 74 F dough is ON TARGET = 90 min, not 100.
 TEMPER 2-3 h to 60-65 F core.
 BAKE gauge 750 F, FULL FLAME, 60-90 s, turn every 15-20 s. Do not push to 800+.
 ```

@@ -74,6 +74,17 @@ const BASE = {
    * the default ball on the full stone, it, `G_PER_OZ` and π all cancel.
    */
   TREAD_MAX_DIAMETER_IN: 12,
+  /**
+   * §4.9. The capped `bulk-2` note shows from this many percent thicker than
+   * the default ball, compared against the PRINTED percentage.
+   *
+   * ⚠️ Provenance: **Dave's judgment** of where the extra thickness is
+   * noticeable in the bake (MESSAGE-21). Not a published figure — a user's own
+   * baking experience is a legitimate source for a threshold like this, and it
+   * is labelled as his so it can't read as a standard. Below it, a heavier ball
+   * is still capped at 12 inches and simply isn't worth a note.
+   */
+  THICKER_NOTE_MIN_PERCENT: 10,
 
   // Speed
   RPM_INTERCEPT: 47.4, // RPM = 47.4 + 2.526 * dial%   (measured: 5% = 60 RPM)

@@ -172,15 +172,30 @@ export const PROBE_GAP_VECTORS: readonly { balls: number; belowDdt: number }[] =
 ];
 
 /** §4.8 shaped rise time, at DDT 75. */
-export const ROOM_MINUTES: readonly { finalTempF: number; roomMin: number }[] = [
-  { finalTempF: 77, roomMin: 71 },
-  { finalTempF: 76, roomMin: 80 },
-  { finalTempF: 75, roomMin: 90 },
-  { finalTempF: 74, roomMin: 100 },
-  { finalTempF: 73, roomMin: 110 },
-  { finalTempF: 72, roomMin: 121 },
-  { finalTempF: 71, roomMin: 133 },
-  { finalTempF: 70, roomMin: 144 },
+/**
+ * §4.8 / §5 shaped rise. **`roomMin` depends only on `T_actual − DDT`**, so
+ * every row carries its DDT. This vector used to be keyed on dough temperature
+ * alone with DDT 75 assumed by the test — the shape that put every table one
+ * row off at 7+ balls, where DDT is 74 (MESSAGE-21). §5's two DDT 74 rows are
+ * marked; the rest is §4.8's offset table at both DDTs.
+ */
+export const ROOM_MINUTES: readonly { ddtF: number; finalTempF: number; roomMin: number }[] = [
+  { ddtF: 75, finalTempF: 77, roomMin: 71 },
+  { ddtF: 75, finalTempF: 76, roomMin: 80 },
+  { ddtF: 75, finalTempF: 75, roomMin: 90 },
+  { ddtF: 75, finalTempF: 74, roomMin: 100 },
+  { ddtF: 75, finalTempF: 73, roomMin: 110 },
+  { ddtF: 75, finalTempF: 72, roomMin: 121 },
+  { ddtF: 75, finalTempF: 71, roomMin: 133 },
+  { ddtF: 75, finalTempF: 70, roomMin: 144 },
+  { ddtF: 74, finalTempF: 76, roomMin: 71 },
+  { ddtF: 74, finalTempF: 75, roomMin: 80 },
+  { ddtF: 74, finalTempF: 74, roomMin: 90 }, // §5
+  { ddtF: 74, finalTempF: 73, roomMin: 100 },
+  { ddtF: 74, finalTempF: 72, roomMin: 110 }, // §5
+  { ddtF: 74, finalTempF: 71, roomMin: 121 },
+  { ddtF: 74, finalTempF: 70, roomMin: 133 },
+  { ddtF: 74, finalTempF: 69, roomMin: 144 },
 ];
 
 /**

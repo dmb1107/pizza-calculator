@@ -399,7 +399,7 @@ Read that carefully before you judge a result. If the batch comes out slightly o
 At {ballWeight} g, open to about **{openDiameterIn} inches** — the same thickness a {defaultBallG} g ball gives on the full {treadMaxDiameterIn}-inch stone. For a fatter cornicione, open an inch smaller.`,
     detailWhen: {
       condition: "thickerThanDefault",
-      detail: `**At this ball weight the oven sets the size, not the dough.** The Tread takes a pizza up to {treadMaxDiameterIn} inches, so a {ballWeight} g ball can't spread any thinner than that allows — it will run about **{thicknessPercentOver}% thicker** than a {defaultBallG} g ball on the same stone. Extra dough per square inch pushes the bake toward a softer, breadier centre and a little more time on the stone — how much you'll notice depends on how far over you are.`,
+      detail: `**At this ball weight the oven sets the size, not the dough.** The Tread takes a pizza up to {treadMaxDiameterIn} inches, so a {ballWeight} g ball can't spread any thinner than that allows. It will run about **{thicknessPercentOver}% thicker** than a {defaultBallG} g ball on the same stone — enough to notice. Expect a softer, breadier centre and a little more time on the stone.`,
     },
   },
   {
@@ -436,7 +436,7 @@ Oil is a barrier rather than an absorbent: it stops the dough bonding to the met
     timerLabel: `{coldFerment} h`,
     detail: `A 265 g ball takes **3–4 hours to reach 40 °F**, and that entire window is warm fermentation you didn't budget for. Stacked trays can double it — the trays in the middle of a stack are insulated by the ones above and below.
 
-This is also why DDT sits at the cool end of the Neapolitan band. Every degree of starting temperature extends the time spent above 50 °F while the mass cools.`,
+This is also why a warmer dough isn't free. Every degree of starting temperature extends the time spent above 50 °F while the mass cools.`,
   },
   {
     id: "bake-1",

@@ -15,7 +15,7 @@ Read this, then the two attached documents. Everything below is context that isn
 
 **Keep them in sync.** Every change to one usually needs the other.
 
-**Every delta message through `MESSAGE-13-replies` has been sent, applied and confirmed** (369 tests green at last report). They are historical; their content is folded into the spec and the recipe, which are the only two documents that need reading. `MESSAGE-20-replies.md` is the current outstanding one.
+**Every delta message through `MESSAGE-13-replies` has been sent, applied and confirmed** (369 tests green at last report). They are historical; their content is folded into the spec and the recipe, which are the only two documents that need reading. `MESSAGE-21-replies.md` is the current outstanding one.
 
 The numbered messages are a correspondence log, not instructions — read them only to trace why a decision was made.
 
@@ -113,7 +113,10 @@ The question to ask while typing a number is **"does this move?"** — and if it
 | A thickness target called "the classic Neapolitan band" | **Unsourced.** 0.083 was 265 g on a 12-inch stone, rounded. No authoritative Neapolitan thickness factor exists; the reference is now the default ball on the full stone, and the constant is gone |
 | Presenting a derived identity as a finding | "265 g fills the stone at the target to within a gram" was circular — the target had been defined from 265 g. **Before calling something a coincidence, check it isn't a definition** |
 | Rewriting a section with anchored edits at each end | **Anchors replace what they match and keep everything between.** §4.9 got a new top and a new bottom while the retracted table and the circular claim survived in the middle. Rewrite a section header-to-header, then sweep every document for the retracted figures |
-| Fixing the copy you're looking at | The unsourced thickness claim was fixed twice in the spec and never in the recipe — **where it originated**. When a figure is wrong, find where it was first written, not only where it was noticed |
+| Tabulating a difference against one of its terms | The shaped rise depends on `T_actual − DDT`, and every table keyed it on `T_actual`, silently assuming DDT 75 — **one row off at every 9-ball bake**. The probe gap had the same shape. Key a table on the variable the formula actually takes |
+| Worded claims the gate can't see | **The gate checks arithmetic, not sourcing.** A claim with no digit passes by construction — "the cool end of the Neapolitan band" was unsourced *and* misframed (DDT follows the schedule, not the style). Sourcing stays a human read, and the dangerous claims are the ones phrased without numbers |
+| Fixing the copy you're looking at | The unsourced thickness claim was fixed twice in the spec and never in the recipe — **where it originated** — and a fourth copy was live in component copy that no document sweep could reach. Find where a figure was first written **and every place it was copied to**, which takes both a document sweep and a code grep |
+| When to show the "thicker than default" note | **From 10%, Dave's call** from experience — `THICKER_NOTE_MIN_PERCENT`. Earlier it fired from 1%, which was only a floor against printing "0%". A user's judgment is a legitimate source; label it as theirs rather than as a standard |
 | Deciding when to show prose on unrounded values | **Decide display on displayed values.** A block that fires on 12.02 > 12 then prints "12.0 rather than 12.0" |
 | Repeating a status claim without checking it | **The deploy was never broken.** Six rounds of "nothing since MESSAGE-4 is live" — and troubleshooting advice for it — rested on one stale note nobody verified. A status claim is a figure too: check it before restating it |
 | Static numeric tables in §8 step content | **Bind a token or state a constant rule.** The `mix-4` step's probe table was fixed in §4.6 and never in the step — the app rendered the stale values for eight rounds while every test passed, because nothing compares prose to the engine |

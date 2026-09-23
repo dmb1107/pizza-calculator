@@ -70,6 +70,7 @@ export const C = {
 
   // Oven geometry (§4.9). Thickness is referenced to DEFAULT_BALL_G on the full stone.
   TREAD_MAX_DIAMETER_IN: 12,       // Gozney Tread stone capacity
+  THICKER_NOTE_MIN_PERCENT: 10,    // Dave's call: the thickness difference he notices in the bake. Not a published figure
 
   // Speed
   RPM_INTERCEPT: 47.4,        // RPM = 47.4 + 2.526 * dial%   (measured: 5% = 60 RPM)
@@ -382,16 +383,20 @@ roomMin = clamp((BASE_ROOM_MIN + COOLDOWN_EQUIV_MIN) / f − COOLDOWN_EQUIV_MIN,
 
 A cool dough loses ground on the counter *and* on the way down to 40 °F; `COOLDOWN_EQUIV_MIN` compensates for the second.
 
-| Final dough | Room time |
+**`roomMin` depends only on `T_actual − DDT`**, so key every table and label on the offset, never on the dough temperature alone:
+
+| Final dough vs DDT | Room time |
 |---:|---:|
-| 77 °F | 71 min |
-| 76 °F | 80 min |
-| **75 °F** | **90 min** |
-| 74 °F | 100 min |
-| 73 °F | 110 min |
-| 72 °F | 121 min |
-| 71 °F | 133 min |
-| 70 °F | 144 min |
+| +2 °F | 71 min |
+| +1 °F | 80 min |
+| **on target** | **90 min** |
+| −1 °F | 100 min |
+| −2 °F | 110 min |
+| −3 °F | 121 min |
+| −4 °F | 133 min |
+| −5 °F | 144 min |
+
+⚠️ **An earlier version keyed this on dough temperature (77 °F → 71 min, 75 °F → 90 min…), which silently assumed DDT 75.** At 7+ balls DDT is 74 and every row is one step off — a 74 °F dough is *on target* and gets 90 minutes, not 100. Nothing computed was wrong, because the engine has always taken `DDT`; the defect was in every table that dropped it. Same shape as the probe gap in §4.6: a figure that depends on a difference, tabulated against one of its terms.
 
 **Planning mode:** before mixing there is no measurement, so default `T_actual = DDT`, giving exactly 90 min. When the user enters a real final dough temperature, recompute and shift every downstream stage.
 
@@ -463,7 +468,7 @@ Show cumulative clock times for each stage plus a total elapsed figure. Flag whe
 ```
 openDiameterIn       = TREAD_MAX_DIAMETER_IN × min(1, sqrt(ballWeightG / DEFAULT_BALL_G))
 thicknessPercentOver = max(0, ballWeightG / DEFAULT_BALL_G − 1) × 100
-thickerThanDefault   = Number(printed {thicknessPercentOver}) ≥ 1
+thickerThanDefault   = Number(printed {thicknessPercentOver}) ≥ THICKER_NOTE_MIN_PERCENT
 ```
 
 | Ball | Open to | Thicker than 265 g on the same stone |
@@ -471,10 +476,13 @@ thickerThanDefault   = Number(printed {thicknessPercentOver}) ≥ 1
 | 240 g | 11.4 in | — |
 | 265 g | 12.0 in | — |
 | 266 g | 12.0 in | 0% — block hidden |
-| 267 g | 12.0 in | 1% — block shows |
-| 300 g | 12.0 in | 13% |
+| 290 g | 12.0 in | 9% — block hidden |
+| 291 g | 12.0 in | **10%** — block shows |
+| 300 g | 12.0 in | **13%** |
 
-The cap binds for **any** ball over 265 g — at 266 g the uncapped diameter is 12.02 inches. The block stays hidden there because the difference prints as 0%. Display the diameter to one decimal.
+The cap binds for **any** ball over 265 g — at 266 g the uncapped diameter is 12.02 inches — but the block appears only from **10%**, so for 291–300 g. That threshold is Dave's judgment of where the extra thickness is noticeable in the bake, not a published figure; below it, a heavier ball is still capped at 12 inches and simply isn't worth a note. Display the diameter to one decimal.
+
+The threshold is compared against the **printed** percentage, as before, so the block can never announce a figure below its own threshold: 290 g (9.43%, prints 9) stays hidden, 291 g (9.81%, prints 10) shows "about 10% thicker".
 
 **`thickerThanDefault` is a detail-block condition, not a `shownWhen` condition.** `shownWhen` gates whole steps; this governs a block inside `bulk-2`. The detail-block set is exactly `nMix > 1`, `nBiga > 1`, `thickerThanDefault`.
 
@@ -583,12 +591,16 @@ Same FF, different apparent rise **by mix size**. Useful as a sanity check:
 
 ### Shaped rise time
 
-| T_actual | roomMin |
-|---:|---:|
-| 77 | 71 |
-| 75 | 90 |
-| 73 | 110 |
-| 70 | 144 |
+| DDT | T_actual | Offset | roomMin |
+|---:|---:|---:|---:|
+| 75 | 77 | +2 | 71 |
+| 75 | 75 | 0 | 90 |
+| 75 | 73 | −2 | 110 |
+| 75 | 70 | −5 | 144 |
+| **74** | **74** | **0** | **90** |
+| **74** | **72** | **−2** | **110** |
+
+The two DDT 74 rows are the ones that matter: they pin that the rise follows the offset, and would fail if anything reintroduced a dough-temperature key.
 
 ### Water temperature reachability
 
@@ -1157,7 +1169,7 @@ A bare token on a per-mix or per-biga step is then a **visible** error rather th
 > At {ballWeight} g, open to about **{openDiameterIn} inches** — the same thickness a {defaultBallG} g ball gives on the full {treadMaxDiameterIn}-inch stone. For a fatter cornicione, open an inch smaller.
 
 **detail, shown only when `thickerThanDefault`:**
-> **At this ball weight the oven sets the size, not the dough.** The Tread takes a pizza up to {treadMaxDiameterIn} inches, so a {ballWeight} g ball can't spread any thinner than that allows — it will run about **{thicknessPercentOver}% thicker** than a {defaultBallG} g ball on the same stone. Extra dough per square inch pushes the bake toward a softer, breadier centre and a little more time on the stone — how much you'll notice depends on how far over you are.
+> **At this ball weight the oven sets the size, not the dough.** The Tread takes a pizza up to {treadMaxDiameterIn} inches, so a {ballWeight} g ball can't spread any thinner than that allows. It will run about **{thicknessPercentOver}% thicker** than a {defaultBallG} g ball on the same stone — enough to notice. Expect a softer, breadier centre and a little more time on the stone.
 
 ---
 
@@ -1197,7 +1209,7 @@ A bare token on a per-mix or per-biga step is then a **visible** error rather th
 **detail:**
 > A 265 g ball takes **3–4 hours to reach 40 °F**, and that entire window is warm fermentation you didn't budget for. Stacked trays can double it — the trays in the middle of a stack are insulated by the ones above and below.
 >
-> This is also why DDT sits at the cool end of the Neapolitan band. Every degree of starting temperature extends the time spent above 50 °F while the mass cools.
+> This is also why a warmer dough isn't free. Every degree of starting temperature extends the time spent above 50 °F while the mass cools.
 
 ---
 

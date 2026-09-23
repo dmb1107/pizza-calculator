@@ -480,8 +480,10 @@ export function observedRate(
  * computed from the final dough temperature actually measured.
  *
  * This REPLACES the old fixed 1.5 h `ballRoomTemp` stage — it does not sit
- * alongside it. The model reaches 71 min for a warm dough and 144 min for a
- * cold one, so the old 1–2 h range was wrong at both ends.
+ * alongside it. It drops under an hour from about 3.3 °F over DDT and passes
+ * two hours from about 2.9 °F under, clamped to 45–180 min, so the old 1–2 h
+ * range was wrong at both ends. It depends only on `T_actual − DDT`: key any
+ * table of it on the offset, never on the dough temperature alone (MESSAGE-21).
  *
  * `COOLDOWN_EQUIV_MIN` is the cooldown's equivalent fermentation at DDT: a cool
  * dough loses ground on the counter AND on the way down to 40 °F, and this
