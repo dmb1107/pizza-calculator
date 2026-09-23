@@ -8,6 +8,7 @@
 
 import { STEPS, type DetailCondition, type ShownWhen, type Step } from '../content/steps';
 import type { Schedule } from '../state/types';
+import type { CalculatorResult } from './engine';
 
 /**
  * §8.2's `shown only when` conditions, resolved by lookup rather than by
@@ -34,14 +35,33 @@ const SHOWN_WHEN: Record<ShownWhen, Schedule> = {
 export interface DetailConditionContext {
   nMix: number;
   nBiga: number;
-  openDiameterCapped: boolean;
+  thickerThanDefault: boolean;
 }
 
 const DETAIL_CONDITIONS: Record<DetailCondition, (ctx: DetailConditionContext) => boolean> = {
   'nMix > 1': (ctx) => ctx.nMix > 1,
   'nBiga > 1': (ctx) => ctx.nBiga > 1,
-  openDiameterCapped: (ctx) => ctx.openDiameterCapped,
+  thickerThanDefault: (ctx) => ctx.thickerThanDefault,
 };
+
+/**
+ * The context the conditions read, built from the result and the PRINTED tokens.
+ *
+ * §4.9: "a condition that triggers prose must be decided on the values the
+ * prose will print." So `thickerThanDefault` reads the very string `bulk-2`
+ * prints — the block shows exactly when that number is at least 1, and a
+ * condition and its sentence cannot disagree about rounding.
+ */
+export function detailConditionContext(
+  result: CalculatorResult,
+  tokens: Readonly<Record<string, string>>,
+): DetailConditionContext {
+  return {
+    nMix: result.capacity.nMix,
+    nBiga: result.capacity.nBiga,
+    thickerThanDefault: Number(tokens.thicknessPercentOver) >= 1,
+  };
+}
 
 export const DETAIL_CONDITION_NAMES = Object.keys(DETAIL_CONDITIONS) as readonly DetailCondition[];
 

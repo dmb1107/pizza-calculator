@@ -15,7 +15,7 @@ Read this, then the two attached documents. Everything below is context that isn
 
 **Keep them in sync.** Every change to one usually needs the other.
 
-**Every delta message through `MESSAGE-13-replies` has been sent, applied and confirmed** (369 tests green at last report). They are historical; their content is folded into the spec and the recipe, which are the only two documents that need reading. `MESSAGE-18-replies.md` is the current outstanding one.
+**Every delta message through `MESSAGE-13-replies` has been sent, applied and confirmed** (369 tests green at last report). They are historical; their content is folded into the spec and the recipe, which are the only two documents that need reading. `MESSAGE-19-replies.md` is the current outstanding one.
 
 The numbered messages are a correspondence log, not instructions — read them only to trace why a decision was made.
 
@@ -109,7 +109,10 @@ The question to ask while typing a number is **"does this move?"** — and if it
 | Ice calculations | **Removed.** Output a water temperature; Dave blends fridge and tap by hand |
 | ADY at 0.0038 in the spec while the recipe's tables used 0.00375 | **0.00375, derived** from the published 1% fresh dose |
 | Flat "probe at DDT − 4" | **Room-temperature dependent first, batch size second.** 0.2 °F toward DDT per °F the room is below 70 — a constant. At a 70 °F room: DDT − 2.8 / 3.2 / 3.5 at 3 / 6 / 9 balls. §4.6 |
-| Indexing a variable on its minor axis | The probe target was re-tabulated by **batch size** (moves it 0.7 °F) while holding **room** fixed (moves it 4.8). Correct at room 70, 1.6 °F wrong in a 62 °F kitchen. Ask which axis moves a figure most before choosing what to index it by |
+| Indexing a variable on its minor axis | The probe **gap below DDT** was re-tabulated by **batch size** (moves it 0.7 °F) while holding **room** fixed (moves it 4.8). The gap and the target are different quantities: the target also moves with the DDT band, so 3→9 balls shifts the target 1.7 °F. Correct at room 70, 1.6 °F wrong in a 62 °F kitchen. Ask which axis moves a figure most before choosing what to index it by |
+| A thickness target called "the classic Neapolitan band" | **Unsourced.** 0.083 was 265 g on a 12-inch stone, rounded. No authoritative Neapolitan thickness factor exists; the reference is now the default ball on the full stone, and the constant is gone |
+| Presenting a derived identity as a finding | "265 g fills the stone at the target to within a gram" was circular — the target had been defined from 265 g. **Before calling something a coincidence, check it isn't a definition** |
+| Deciding when to show prose on unrounded values | **Decide display on displayed values.** A block that fires on 12.02 > 12 then prints "12.0 rather than 12.0" |
 | Repeating a status claim without checking it | **The deploy was never broken.** Six rounds of "nothing since MESSAGE-4 is live" — and troubleshooting advice for it — rested on one stale note nobody verified. A status claim is a figure too: check it before restating it |
 | Static numeric tables in §8 step content | **Bind a token or state a constant rule.** The `mix-4` step's probe table was fixed in §4.6 and never in the step — the app rendered the stale values for eight rounds while every test passed, because nothing compares prose to the engine |
 | Quoting 0.75/0.86/1.08 °F/min (**by dial: 15/20/30**) against a thermometer | Those are **dough-only.** Multiply by `Ct/(Ct + C_bowl)`, which is **by balls per mix**: 0.82 / 0.90 / 0.93 at 3/6/9. At dial 30 that gives an observed **0.89 / 0.97 / 1.01**. ⚠️ Two different indices — don't read the triples as answering each other. §4.6 |
@@ -117,7 +120,7 @@ The question to ask while typing a number is **"does this move?"** — and if it
 | Biga-temp default of 64 °F | **58 °F**, the one measured value. Most leveraged input in the model |
 | "The bowl matters for its mass, not its temperature" | Half right. `C_bowl/TOT` (dough) is small; `C_bowl/Cw` (water) is 3× larger — 0.66 °F per °F at 3 balls. **Measure the bowl** |
 | `T_bowl = T_biga` treated as settled | Holds through fermentation, **breaks at tearing** — biga gained 5 °F, bowl didn't. Bake 1's Phase C rate climb is the evidence |
-| Thermal weights from batch totals | **Per-mix.** A 12-ball batch is a 6-ball system twice; the bowl faces one mix at a time. At 12 balls batch totals land the water **2.3–4.8 °F low depending on the temperatures** (2.6 at defaults) — most at the cold end, where the water is already hottest |
+| Thermal weights from batch totals | **Per-mix.** A 12-ball batch is a 6-ball system twice; the bowl faces one mix at a time. At 12 balls batch totals land the water **2.0–5.3 °F low across the envelope** (2.6 at defaults). Ball weight is the axis that takes it past 5 — a range quoted at 265 g only stops at 4.8 |
 | One water temperature per batch | **One per mix** when `nMix > 1` — mix 2's bowl is warm from mix 1 |
 | Bowl-share / dilution tables keyed on batch size | **Keyed on balls per mix.** 12 balls reads the 6 row, 18 reads the 9. The floor is set by the 2500 g mixer cap (~6.6%), not by any row — 6.8% is the 9 × 265 g mix |
 | Split-batch overhead 28.4 h | **28.12 h.** The stagger correction shortens a real stage, so it comes back out. 28.42 is `nMix = 3` |

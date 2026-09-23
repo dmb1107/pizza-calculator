@@ -68,10 +68,8 @@ export const C = {
   FLOUR_CAP_55: 1610,         // g, at 55-59% hydration (biga)
   MAX_RUN_MIN: 20,            // continuous. Read by the profile assertion in §5 and bound into mix-6/mix-7 prose
 
-  // Oven and pie geometry (§4.9)
+  // Oven geometry (§4.9). Thickness is referenced to DEFAULT_BALL_G on the full stone.
   TREAD_MAX_DIAMETER_IN: 12,       // Gozney Tread stone capacity
-  TARGET_THICKNESS_FACTOR: 0.083,  // oz/in², classic Neapolitan band
-  G_PER_OZ: 28.3495,
 
   // Speed
   RPM_INTERCEPT: 47.4,        // RPM = 47.4 + 2.526 * dial%   (measured: 5% = 60 RPM)
@@ -458,17 +456,31 @@ Show cumulative clock times for each stage plus a total elapsed figure. Flag whe
 
 ---
 
-### 4.9 Opening diameter and thickness factor
+### 4.9 Opening diameter
 
-Thickness factor is ball weight over pie area. Aim at `TARGET_THICKNESS_FACTOR` and let the diameter follow — unless the oven caps it:
+**The reference is the default ball on the full stone** — 265 g on 12 inches. Hold that thickness and the diameter scales with the square root of the weight ratio, capped by the oven:
 
 ```
-ballOz              = ballWeightG / G_PER_OZ
-diameterUncappedIn  = 2 × sqrt(ballOz / (π × TARGET_THICKNESS_FACTOR))
-openDiameterIn      = min(diameterUncappedIn, TREAD_MAX_DIAMETER_IN)
-openDiameterCapped  = diameterUncappedIn > TREAD_MAX_DIAMETER_IN
-thicknessFactor     = ballOz / (π × (openDiameterIn / 2)²)
+openDiameterIn       = TREAD_MAX_DIAMETER_IN × min(1, sqrt(ballWeightG / DEFAULT_BALL_G))
+thicknessPercentOver = max(0, ballWeightG / DEFAULT_BALL_G − 1) × 100
+thickerThanDefault   = round(thicknessPercentOver) ≥ 1        // on the DISPLAYED value
 ```
+
+| Ball | Open to | Thicker than default |
+|---:|---:|---:|
+| 240 g | 11.4 in | — |
+| 265 g | 12.0 in | — |
+| 266 g | 12.0 in | 0% — block hidden |
+| 267 g | 12.0 in | **1%** — block shows |
+| 300 g | 12.0 in | **13%** |
+
+⚠️ **This replaces a thickness-factor model that rested on an unsourced constant.** The previous revision defined `TARGET_THICKNESS_FACTOR = 0.083` as "the classic Neapolitan band". It was not sourced: it was 265 g on a 12-inch stone (0.08265) rounded up. No authoritative published Neapolitan thickness factor exists — AVPN specifies ball weight and maximum diameter, not thickness factor — and the informal figures in circulation run about 0.08–0.09, with home-oven variants higher. So "squarely in the classic Neapolitan band" was a claim with nothing behind it, and at 300 g (0.094) it was false against even the informal figures.
+
+The previous revision also stated as a finding that the default 265 g ball "fills the Tread at the target thickness to within a gram". **That was circular** — the target had been defined from the 265 g ball. The gram was the rounding of 0.08265 to 0.083.
+
+Stating the reference honestly as *the default ball on the full stone* removes the constant entirely: thickness factor, `G_PER_OZ` and π all cancel, and the geometry reduces to a square-root scaling. **Remove `TARGET_THICKNESS_FACTOR` and `G_PER_OZ`**; nothing reads them now.
+
+⚠️ **The block's condition is evaluated on the displayed percentage, not the unrounded one.** A condition that triggers prose must be decided on the values the prose will print — otherwise, as at 267 g under the previous rule, the block appears to announce a difference its own numbers show as zero. The computation stays unrounded; only the display decision uses the rounded value. `thickerThanDefault` replaces `openDiameterCapped`, which was also inaccurately named: at 266 g the diameter *is* capped, by 0.02 inches, and the block correctly stays hidden.
 
 | Ball | Uncapped diameter | Open to | Thickness factor |
 |---:|---:|---:|---:|
@@ -479,9 +491,9 @@ thicknessFactor     = ballOz / (π × (openDiameterIn / 2)²)
 
 **The cap binds above 266.1 g** — so the default 265 g ball is, to within a gram, the weight that fills the Tread at the target thickness. That is not a coincidence worth leaning on as a design claim, but it is why 265 g reads so naturally against a 12-inch stone.
 
-Display the diameter to one decimal and the thickness factor to three, each rounded once from the unrounded value. `openDiameterCapped` is a new `shownWhen` condition for `bulk-2`; add it to the closed set.
+Display the diameter to one decimal.
 
-⚠️ **This replaces a sentence that stated 11.5–12 inches and 0.083 beside a `{ballWeight}` token that runs 240–300 g** — the weight moved with the input and the geometry didn't. At 300 g it claimed 0.083 when the true figure is 0.094, and hitting 0.083 would take a 12.7-inch pie, past the ceiling the same sentence cited. It was loose even at 265 g: 11.5 inches gives 0.090, not 0.083.
+⚠️ **`thickerThanDefault` is a detail-block condition, not a `shownWhen` condition.** The previous revision of this section called it a `shownWhen` condition, which is wrong: `shownWhen` gates whole steps, and used there it would make the entire divide-and-ball step vanish for any ball under 267 g. It governs a conditional detail block inside `bulk-2`, the same grammar as `nMix > 1`. The detail-block set is therefore exactly `nMix > 1`, `nBiga > 1`, `thickerThanDefault`.
 
 ### 4.10 Tokens added in this revision
 
@@ -491,15 +503,15 @@ All are per-mix and computed at the user's inputs; none is a literal.
 |---|---|
 | `{frictionRemainingF}` | `0.33 × FF × Ct/TOT` — the friction still to come after the probe |
 | `{restExchangeF}` | `|0.2 × (DDT − T_room)|` — how far the rest moves the dough toward room temperature |
-| `{probeGapF}` | `DDT − probeTargetF`, so it matches the summary line exactly |
+| `{probeGapPhrase}` | `"1.6 °F below DDT"` / `"0.3 °F above DDT"` / `"right at DDT"` — the magnitude of `DDT − probeTargetF`, with the direction in words. The number must equal \|printed DDT − printed target\| exactly |
 | `{phaseAPercent}` / `{phaseBPercent}` | `PHASE_A_FRACTION × 100` and its complement. **No scope suffix** — they are ratios, and the `PerMix` / `PerBiga` rule is about masses |
 | `{bowlMassG}` | the bowl-mass input |
-| `{openDiameterIn}`, `{openDiameterUncappedIn}`, `{thicknessFactor}` | §4.9 |
-| `{targetThicknessFactor}`, `{treadMaxDiameterIn}` | the constants, bound rather than typed |
+| `{openDiameterIn}`, `{thicknessPercentOver}` | §4.9 |
+| `{defaultBallG}`, `{treadMaxDiameterIn}` | the constants, bound rather than typed |
 
-**`{frictionRemainingF}` and `{restExchangeF}` are displayed independently and may not visibly add to `{probeGapF}`** — rounding each once can leave a 0.1 °F mismatch. That is correct. Do not force the displayed parts to sum; that would mean rounding twice.
+**`{frictionRemainingF}` and `{restExchangeF}` are displayed independently and may not visibly add to the gap in `{probeGapPhrase}`** — rounding each once can leave a 0.1 °F mismatch. That is correct. Do not force the displayed parts to sum; that would mean rounding twice.
 
-The identity they satisfy before rounding: `probeGapF = frictionRemainingF − 0.2 × (DDT − T_room)`. The rest term is signed there and shown unsigned in prose, because the prose says *toward room temperature* and lets the direction follow from the kitchen.
+The identity they satisfy before rounding: `gap = frictionRemainingF − 0.2 × (DDT − T_room)`. The rest term is signed there and shown unsigned in prose, because the prose says *toward room temperature* and lets the direction follow from the kitchen. **The gap gets the same treatment, for the same reason: it goes negative.** At 3 balls and DDT 75 it crosses zero below FF 11.1 in a 60 °F room, and bake 2 is a 3-ball bake that measures FF. A signed number read aloud as "sits −0.3 °F below DDT" is nonsense; the phrase token carries the direction in words, and the step's heading no longer assumes *below*.
 
 ## 5. Test vectors
 
@@ -970,9 +982,9 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 **values:** Probe target: {probeTarget} °F · DDT: {ddt} °F
 
 **detail:**
-> **Why below DDT and not at it.** By the end of Phase B you have absorbed roughly two thirds of the total friction — Phases A and B are long, and the hydration exotherm has already fired.
+> **Why not at DDT.** By the end of Phase B you have absorbed roughly two thirds of the total friction — Phases A and B are long, and the hydration exotherm has already fired.
 >
-> Still to come, **stated the way the probe will read it** — dough and bowl equilibrated, for your batch in your kitchen: Phases C and D will add about **{frictionRemainingF} °F**, and the 10-minute rest will move the dough **{restExchangeF} °F** toward room temperature. That is why the target above sits **{probeGapF} °F** below DDT.
+> Still to come, **stated the way the probe will read it** — dough and bowl equilibrated, for your batch in your kitchen: Phases C and D will add about **{frictionRemainingF} °F**, and the 10-minute rest will move the dough **{restExchangeF} °F** toward room temperature. That is why the target above sits **{probeGapPhrase}**.
 >
 > **There is no fixed "so many degrees low" rule — and your kitchen matters more than your batch size.** That last term, the heat exchanged with the room during the rest, is the one that moves: the rest gives heat back to a cold room and takes it from a warm one.
 >
@@ -1155,10 +1167,10 @@ A bare token on a per-mix or per-biga step is then a **visible** error rather th
 **detail:**
 > The rest between pre-rounding and final balling lets the gluten relax so you can get a tight ball without fighting it. Balling a tense dough tears the surface, and a torn surface doesn't hold gas.
 >
-> At {ballWeight} g, open to about **{openDiameterIn} inches** — a thickness factor of {thicknessFactor} oz/in², squarely in the classic Neapolitan band. For a fatter cornicione, open an inch smaller.
+> At {ballWeight} g, open to about **{openDiameterIn} inches** — the same thickness a {defaultBallG} g ball gives on the full {treadMaxDiameterIn}-inch stone. For a fatter cornicione, open an inch smaller.
 
-**detail, shown only when `openDiameterCapped`:**
-> **At this ball weight the oven sets the size, not the dough.** The Tread takes a pizza up to {treadMaxDiameterIn} inches, and a {ballWeight} g ball would need {openDiameterUncappedIn} inches to reach the usual thickness. So it will run a little thicker — {thicknessFactor} oz/in² rather than {targetThicknessFactor}. That is a real difference in the bake: more dough per square inch means a softer, breadier centre and a slightly longer time on the stone.
+**detail, shown only when `thickerThanDefault`:**
+> **At this ball weight the oven sets the size, not the dough.** The Tread takes a pizza up to {treadMaxDiameterIn} inches, so a {ballWeight} g ball can't spread any thinner than that allows — it will run about **{thicknessPercentOver}% thicker** than a {defaultBallG} g ball on the same stone. More dough per square inch means a softer, breadier centre and a slightly longer time on the stone.
 
 ---
 
@@ -1295,7 +1307,7 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 >
 > **This is why the formula is not scale-independent.** The bowl is fixed mass while the dough scales, so the weights shift with batch size. It also explains why the bowl can't just be folded into FF — the same FF of 14 would appear as 11.5 °F in a 3-ball mix and 13.0 °F in a 9-ball one, drifting for no physical reason.
 >
-> **The scale that matters is the mix, not the batch.** A 12-ball batch runs as two 6-ball mixes, and the bowl faces one of them at a time — so it is a 6-ball thermal system twice over, not a 12-ball one. Computing it as a 12-ball system halves the bowl's apparent share and lands the water target low — by between 2 and 5 °F, most at the cold end of the envelope where the water is already hottest.
+> **The scale that matters is the mix, not the batch.** A 12-ball batch runs as two 6-ball mixes, and the bowl faces one of them at a time — so it is a 6-ball thermal system twice over, not a 12-ball one. Computing it as a 12-ball system halves the bowl's apparent share and lands the water target low — by between 2 and 5½ °F, most at the cold end of the envelope where the water is already hottest.
 >
 > **The same fixed mass is why small mixes ask for hot water.** At 3 balls the bowl is 18% of the system and only the water can lift it, so the requirement runs to about 107 °F where a 9-ball mix asks for 90 °F. Below 3 balls it leaves the range a tap can reach entirely, which is why 3 is the smallest supported batch. Note this tracks the **mix**: a 12-ball batch is two 6-ball mixes, so it wants *hotter* water than a 9-ball batch does.
 >

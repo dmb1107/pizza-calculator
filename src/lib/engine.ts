@@ -426,32 +426,27 @@ export function computeProbeTargetF(args: Parameters<typeof computeProbeParts>[0
 // ---------------------------------------------------------------------------
 
 export interface Opening {
-  ballOz: number;
-  /** The diameter that would hit `TARGET_THICKNESS_FACTOR` with no oven limit. */
-  diameterUncappedIn: number;
-  /** What to actually open to: the above, capped at the Tread's stone. */
+  /** What to open to: the default ball's thickness, capped at the stone. */
   openDiameterIn: number;
   /**
-   * §4.9 `openDiameterCapped`. Evaluated on UNROUNDED values, as specified —
-   * which means it is true at 267 g, where both comparisons `bulk-2` prints
-   * still display as equal. See FINDINGS-18.
+   * How much thicker than the default ball on the full stone, in percent —
+   * zero until the cap binds. Unrounded. Whether `bulk-2`'s block shows is
+   * decided on the PRINTED value (`thickerThanDefault` in stepInstances.ts),
+   * never on this: a block that fires on 12.02 > 12 prints "12.0 rather than 12".
    */
-  openDiameterCapped: boolean;
-  /** oz/in² at `openDiameterIn` — the target, unless the cap binds. */
-  thicknessFactor: number;
+  thicknessPercentOver: number;
 }
 
-/** §4.9. Aim at the target thickness and let the diameter follow, unless the oven caps it. */
+/**
+ * §4.9. The reference is the default ball on the full stone. Holding that
+ * thickness, diameter scales with the square root of the weight ratio, and
+ * the oven caps it — past which the pizza runs thicker instead.
+ */
 export function computeOpening(ballWeightG: number): Opening {
-  const ballOz = ballWeightG / C.G_PER_OZ;
-  const diameterUncappedIn = 2 * Math.sqrt(ballOz / (Math.PI * C.TARGET_THICKNESS_FACTOR));
-  const openDiameterIn = Math.min(diameterUncappedIn, C.TREAD_MAX_DIAMETER_IN);
+  const ratio = ballWeightG / C.DEFAULT_BALL_G;
   return {
-    ballOz,
-    diameterUncappedIn,
-    openDiameterIn,
-    openDiameterCapped: diameterUncappedIn > C.TREAD_MAX_DIAMETER_IN,
-    thicknessFactor: ballOz / (Math.PI * (openDiameterIn / 2) ** 2),
+    openDiameterIn: C.TREAD_MAX_DIAMETER_IN * Math.min(1, Math.sqrt(ratio)),
+    thicknessPercentOver: Math.max(0, ratio - 1) * 100,
   };
 }
 

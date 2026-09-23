@@ -32,9 +32,9 @@ export interface StepTable {
 /**
  * §8.2 `**detail, shown only when `<condition>`:**`. A closed set, resolved by
  * `detailConditionHolds` and never evaluated — the same reasoning as `ShownWhen`.
- * `openDiameterCapped` is §4.9's, for `bulk-2`.
+ * `thickerThanDefault` is §4.9's, for `bulk-2`, decided on the printed percentage.
  */
-export type DetailCondition = 'nMix > 1' | 'nBiga > 1' | 'openDiameterCapped';
+export type DetailCondition = 'nMix > 1' | 'nBiga > 1' | 'thickerThanDefault';
 
 export interface ConditionalDetail {
   /** Literally as written in the spec. */
@@ -269,9 +269,9 @@ At 2.8% the salt is at the upper end of the Neapolitan range of 2.5–3.0%. That
     title: `Probe the temperature`,
     summary: `Stop and probe. **Target {probeTarget} °F.** You are not aiming at DDT yet.`,
     values: [`Probe target: {probeTarget} °F`, `DDT: {ddt} °F`],
-    detail: `**Why below DDT and not at it.** By the end of Phase B you have absorbed roughly two thirds of the total friction — Phases A and B are long, and the hydration exotherm has already fired.
+    detail: `**Why not at DDT.** By the end of Phase B you have absorbed roughly two thirds of the total friction — Phases A and B are long, and the hydration exotherm has already fired.
 
-Still to come, **stated the way the probe will read it** — dough and bowl equilibrated, for your batch in your kitchen: Phases C and D will add about **{frictionRemainingF} °F**, and the 10-minute rest will move the dough **{restExchangeF} °F** toward room temperature. That is why the target above sits **{probeGapF} °F** below DDT.
+Still to come, **stated the way the probe will read it** — dough and bowl equilibrated, for your batch in your kitchen: Phases C and D will add about **{frictionRemainingF} °F**, and the 10-minute rest will move the dough **{restExchangeF} °F** toward room temperature. That is why the target above sits **{probeGapPhrase}**.
 
 **There is no fixed "so many degrees low" rule — and your kitchen matters more than your batch size.** That last term, the heat exchanged with the room during the rest, is the one that moves: the rest gives heat back to a cold room and takes it from a warm one.
 
@@ -396,10 +396,10 @@ Read that carefully before you judge a result. If the batch comes out slightly o
     timerMinutes: [10, 15],
     detail: `The rest between pre-rounding and final balling lets the gluten relax so you can get a tight ball without fighting it. Balling a tense dough tears the surface, and a torn surface doesn't hold gas.
 
-At {ballWeight} g, open to about **{openDiameterIn} inches** — a thickness factor of {thicknessFactor} oz/in², squarely in the classic Neapolitan band. For a fatter cornicione, open an inch smaller.`,
+At {ballWeight} g, open to about **{openDiameterIn} inches** — the same thickness a {defaultBallG} g ball gives on the full {treadMaxDiameterIn}-inch stone. For a fatter cornicione, open an inch smaller.`,
     detailWhen: {
-      condition: "openDiameterCapped",
-      detail: `**At this ball weight the oven sets the size, not the dough.** The Tread takes a pizza up to {treadMaxDiameterIn} inches, and a {ballWeight} g ball would need {openDiameterUncappedIn} inches to reach the usual thickness. So it will run a little thicker — {thicknessFactor} oz/in² rather than {targetThicknessFactor}. That is a real difference in the bake: more dough per square inch means a softer, breadier centre and a slightly longer time on the stone.`,
+      condition: "thickerThanDefault",
+      detail: `**At this ball weight the oven sets the size, not the dough.** The Tread takes a pizza up to {treadMaxDiameterIn} inches, so a {ballWeight} g ball can't spread any thinner than that allows — it will run about **{thicknessPercentOver}% thicker** than a {defaultBallG} g ball on the same stone. More dough per square inch means a softer, breadier centre and a slightly longer time on the stone.`,
     },
   },
   {

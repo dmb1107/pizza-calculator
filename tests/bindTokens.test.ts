@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { calculate, type CalculatorInputs } from '../src/lib/engine';
 import { bindTokens, tokenValues, unboundTokens, type ScheduleTokens } from '../src/lib/bindTokens';
 import { C } from '../src/lib/constants';
+import { detailConditionContext } from '../src/lib/stepInstances';
 import { formatTempF } from '../src/lib/format';
 import { CONCEPTS } from '../src/content/concepts';
 import { STEPS } from '../src/content/steps';
@@ -227,16 +228,43 @@ describe('step summaries bind to real numbers', () => {
 });
 
 describe('§4.10 tokens', () => {
-  it('prints {probeGapF} as exactly the printed DDT minus the printed target', () => {
-    // §4.10: "so it matches the summary exactly". Swept, because a rounding
-    // tie is where a gap rounded on its own could disagree with the difference.
+  /** The three §4.10 cases, at inputs a baker can enter. */
+  const phraseAt = (over: Partial<CalculatorInputs>) =>
+    tokenValues(calculate({ ...INPUTS, ...over }), SCHEDULE).probeGapPhrase;
+
+  it('says below, above, or right at DDT — never a signed number', () => {
+    // 6 balls, 70 °F room, FF 14: the usual case.
+    expect(phraseAt({})).toBe('3.2 °F below DDT');
+    // 3 balls, 60 °F room, FF 10: the rest cools the dough more than Phases C
+    // and D warm it, so the target sits ABOVE DDT. Bake 2 is a 3-ball bake
+    // that measures FF, in a kitchen that could be this cold.
+    expect(phraseAt({ balls: 3, roomTempF: 60, flourTempF: 60, frictionFactorF: 10 })).toBe('0.3 °F above DDT');
+    // Same kitchen at FF 11.1: the gap is +0.006, so the printed target is
+    // 75.0 against a printed DDT of 75.0 — and the sentence must not say
+    // "0.0 °F below".
+    expect(phraseAt({ balls: 3, roomTempF: 60, flourTempF: 60, frictionFactorF: 11.1 })).toBe('right at DDT');
+    // And from the other side of zero: at FF 11.0 the gap is −0.02.
+    expect(phraseAt({ balls: 3, roomTempF: 60, flourTempF: 60, frictionFactorF: 11 })).toBe('right at DDT');
+  });
+
+  it('prints the magnitude of the printed DDT minus the printed target, exactly', () => {
+    // §4.10: "The number must equal |printed DDT − printed target| exactly."
+    // Swept across the directions and the zero crossing.
     for (const balls of [3, 6, 9, 12, 18]) {
       for (let room = 60; room <= 84; room += 0.5) {
-        for (const ff of [10, 12, 14, 14.04, 16]) {
+        for (const ff of [8, 10, 11, 11.1, 12, 14, 14.04, 16]) {
           const inputs = { ...INPUTS, balls, roomTempF: room, flourTempF: room, frictionFactorF: ff };
           const v = tokenValues(calculate(inputs), SCHEDULE);
           const printed = Number(v.ddt) - Number(v.probeTarget);
-          expect(Number(v.probeGapF), `${balls} balls, room ${room}, FF ${ff}`).toBeCloseTo(printed, 9);
+          const at = `${balls} balls, room ${room}, FF ${ff}`;
+          if (Math.abs(printed) < 0.05) {
+            expect(v.probeGapPhrase, at).toBe('right at DDT');
+          } else {
+            const m = /^(\d+\.\d) °F (below|above) DDT$/.exec(v.probeGapPhrase ?? '');
+            expect(m, `${at}: ${v.probeGapPhrase}`).not.toBeNull();
+            expect(Number(m![1]), at).toBeCloseTo(Math.abs(printed), 9);
+            expect(m![2], at).toBe(printed > 0 ? 'below' : 'above');
+          }
         }
       }
     }
@@ -262,26 +290,30 @@ describe('§4.10 tokens', () => {
 });
 
 /**
- * Rendering edges reported in FINDINGS-18. Both are the spec's prose working as
- * specified and reading wrongly; the fix is the spec author's to word. Pinned
- * so a fix — or an engine change that moves the edge — shows up here.
+ * §4.9: "a condition that triggers prose must be decided on the values the
+ * prose will print." These replace the FINDINGS-18 pins: at 267 g the old
+ * block fired on 12.02 > 12 and printed "12.0 inches" and "0.083 rather than
+ * 0.083". Now it reads the number it prints.
  */
-describe('rendering edges reported in FINDINGS-18', () => {
-  it('at 267 g the cap binds, but both comparisons it prints look equal', () => {
-    const r = calculate({ ...INPUTS, ballWeightG: 267 });
+describe('§4.9 the capped block shows exactly when its printed number is at least 1', () => {
+  const at = (ballWeightG: number) => {
+    const r = calculate({ ...INPUTS, ballWeightG });
     const v = tokenValues(r, SCHEDULE);
-    expect(r.opening.openDiameterCapped).toBe(true);
-    // "…up to 12 inches, and a 267 g ball would need 12.0 inches…"
-    expect([v.treadMaxDiameterIn, v.openDiameterUncappedIn]).toEqual(['12', '12.0']);
-    // "…a little thicker — 0.083 oz/in² rather than 0.083."
-    expect([v.thicknessFactor, v.targetThicknessFactor]).toEqual(['0.083', '0.083']);
+    return { printed: v.thicknessPercentOver, shows: detailConditionContext(r, v).thickerThanDefault };
+  };
+
+  it('stays hidden where it would print 0%, and shows from 1%', () => {
+    expect(at(240)).toEqual({ printed: '0', shows: false });
+    expect(at(265)).toEqual({ printed: '0', shows: false });
+    expect(at(266)).toEqual({ printed: '0', shows: false }); // capped by 0.02 in, correctly hidden
+    expect(at(267)).toEqual({ printed: '1', shows: true });
+    expect(at(300)).toEqual({ printed: '13', shows: true });
   });
 
-  it('the probe gap prints negative — "sits −0.3 °F below DDT" — in a cold kitchen at a low FF', () => {
-    const v = tokenValues(
-      calculate({ ...INPUTS, balls: 3, roomTempF: 60, flourTempF: 60, frictionFactorF: 10 }),
-      SCHEDULE,
-    );
-    expect(v.probeGapF).toBe('-0.3');
+  it('never disagrees with its own sentence anywhere in the input range', () => {
+    for (let g = 240; g <= 300; g++) {
+      const { printed, shows } = at(g);
+      expect(shows, `${g} g prints ${printed}%`).toBe(Number(printed) >= 1);
+    }
   });
 });

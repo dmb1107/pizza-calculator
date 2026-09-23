@@ -22,13 +22,30 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
+/** Code with comments removed: a comment that NAMES a constant does not read it. */
+function stripComments(source: string): string {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    // Only a `//` at line start or after whitespace, so `https://` survives.
+    .replace(/(^|\s)\/\/.*$/gm, '$1');
+}
+
 /**
  * Everything that could read a constant: the app, the constants module itself
  * (several are inputs to a derivation or to a helper), and the suite.
  */
 const ALL_READERS = [...sourceFiles('src'), ...sourceFiles('tests')]
-  .map((f) => readFileSync(f, 'utf8'))
+  .map((f) => stripComments(readFileSync(f, 'utf8')))
   .join('\n');
+
+/**
+ * Reads of a constant: `C.NAME` anywhere, and `BASE.NAME` in the derivations
+ * inside constants.ts. A declaration is `NAME:` or a shorthand, so it matches
+ * neither — an orphan is simply zero reads.
+ */
+function readsOf(key: string, code = ALL_READERS): number {
+  return (code.match(new RegExp(`\\b(?:C|BASE)\\.${key}\\b`, 'g')) ?? []).length;
+}
 
 describe('every constant has a consumer', () => {
   /**
@@ -43,12 +60,18 @@ describe('every constant has a consumer', () => {
    * *nothing at all*.
    */
   it('finds a reader for each one', () => {
-    const orphans = Object.keys(C).filter((key) => {
-      const uses = ALL_READERS.split(key).length - 1;
-      // One occurrence is its own declaration in constants.ts.
-      return uses <= 1;
-    });
+    const orphans = Object.keys(C).filter((key) => readsOf(key) === 0);
     expect(orphans, 'constants nothing reads').toEqual([]);
+  });
+
+  it('does not count a comment that names a constant as a reader', () => {
+    // It used to count every textual mention, so the comment in constants.ts
+    // recording the REMOVAL of TARGET_THICKNESS_FACTOR and G_PER_OZ was enough
+    // to make both look read had they been put back. MESSAGE-19 asked this
+    // check to confirm nothing wanted them; as written it could not have.
+    expect(readsOf('X', stripComments('// C.X was removed\n/* see C.X */ const y = 1;'))).toBe(0);
+    expect(readsOf('X', stripComments('const y = C.X; // it is read here'))).toBe(1);
+    expect(readsOf('X', stripComments("const url = 'https://e.g'; f(BASE.X);"))).toBe(1);
   });
 });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { C, bowlHeatCapacity, defaultDdtF } from '../src/lib/constants';
-import { formatInches, formatThicknessFactor } from '../src/lib/format';
+import { formatInches, formatWhole } from '../src/lib/format';
 import {
   calculate,
   computeCapacity,
@@ -1144,43 +1144,54 @@ describe('§4.2 the two biga sensitivities are different quantities', () => {
   });
 });
 
-describe('§4.9 opening diameter and thickness factor', () => {
-  it('reproduces the §4.9 table, each figure rounded once', () => {
+describe('§4.9 opening diameter', () => {
+  it('reproduces the §4.9 table', () => {
+    // Ball → open to, and how much thicker than the default ball on the full
+    // stone. Whether the block SHOWS is decided on the printed percentage —
+    // that half of the table is in bindTokens.test.ts.
     const rows = [
-      { g: 240, uncapped: '11.4', open: '11.4', tf: '0.083', capped: false },
-      { g: 265, uncapped: '12.0', open: '12.0', tf: '0.083', capped: false },
-      { g: 270, uncapped: '12.1', open: '12.0', tf: '0.084', capped: true },
-      { g: 300, uncapped: '12.7', open: '12.0', tf: '0.094', capped: true },
+      { g: 240, open: '11.4', over: '0' },
+      { g: 265, open: '12.0', over: '0' },
+      { g: 266, open: '12.0', over: '0' },
+      { g: 267, open: '12.0', over: '1' },
+      { g: 300, open: '12.0', over: '13' },
     ];
     for (const r of rows) {
       const o = computeOpening(r.g);
-      expect(formatInches(o.diameterUncappedIn), `${r.g} g uncapped`).toBe(r.uncapped);
       expect(formatInches(o.openDiameterIn), `${r.g} g open`).toBe(r.open);
-      expect(formatThicknessFactor(o.thicknessFactor), `${r.g} g thickness`).toBe(r.tf);
-      expect(o.openDiameterCapped, `${r.g} g capped`).toBe(r.capped);
+      expect(formatWhole(o.thicknessPercentOver), `${r.g} g thicker`).toBe(r.over);
     }
   });
 
-  it('starts capping above 266.1 g — the first whole gram is 267', () => {
-    // §4.9: "the default 265 g ball is, to within a gram, the weight that
-    // fills the Tread at the target thickness".
-    const threshold = C.TARGET_THICKNESS_FACTOR * Math.PI * (C.TREAD_MAX_DIAMETER_IN / 2) ** 2 * C.G_PER_OZ;
-    expect(threshold).toBeCloseTo(266.12, 2);
-    expect(computeOpening(266).openDiameterCapped).toBe(false);
-    expect(computeOpening(267).openDiameterCapped).toBe(true);
-  });
-
-  it('hits the target thickness exactly wherever the cap does not bind', () => {
-    for (let g = 240; g <= 266; g++) {
-      expect(computeOpening(g).thicknessFactor, `${g} g`).toBeCloseTo(C.TARGET_THICKNESS_FACTOR, 12);
+  it('references the default ball on the full stone, and nothing else', () => {
+    // No thickness factor, no ounces, no π: stated as the default ball on the
+    // full stone, they cancel. What's left is a square-root scaling.
+    const o = computeOpening(C.DEFAULT_BALL_G);
+    expect(o.openDiameterIn).toBe(C.TREAD_MAX_DIAMETER_IN);
+    expect(o.thicknessPercentOver).toBe(0);
+    for (let g = 240; g < C.DEFAULT_BALL_G; g++) {
+      expect(computeOpening(g).openDiameterIn, `${g} g`).toBeCloseTo(
+        C.TREAD_MAX_DIAMETER_IN * Math.sqrt(g / C.DEFAULT_BALL_G),
+        12,
+      );
     }
   });
 
-  it('never opens past the stone, and only thickens once capped', () => {
+  it('caps from the first gram above the default — 266 g is capped by 0.02 in', () => {
+    // §4.9: at 266 g "the diameter *is* capped, by 0.02 inches, and the block
+    // correctly stays hidden" — capped is not the same as visibly thicker.
+    const uncapped266 = C.TREAD_MAX_DIAMETER_IN * Math.sqrt(266 / C.DEFAULT_BALL_G);
+    expect(uncapped266 - C.TREAD_MAX_DIAMETER_IN).toBeCloseTo(0.0226, 4);
+    expect(computeOpening(266).openDiameterIn).toBe(C.TREAD_MAX_DIAMETER_IN);
+    expect(computeOpening(266).thicknessPercentOver).toBeGreaterThan(0);
+  });
+
+  it('never opens past the stone, and thickens exactly with weight once capped', () => {
     for (let g = 240; g <= 300; g++) {
       const o = computeOpening(g);
       expect(o.openDiameterIn, `${g} g`).toBeLessThanOrEqual(C.TREAD_MAX_DIAMETER_IN);
-      if (o.openDiameterCapped) expect(o.thicknessFactor, `${g} g`).toBeGreaterThan(C.TARGET_THICKNESS_FACTOR);
+      // Same stone, same area: thickness goes as weight.
+      if (g > C.DEFAULT_BALL_G) expect(o.thicknessPercentOver).toBeCloseTo((g / C.DEFAULT_BALL_G - 1) * 100, 12);
     }
   });
 });

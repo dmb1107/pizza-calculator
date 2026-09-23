@@ -472,13 +472,13 @@ const CLAIMS: readonly Claim[] = [
           }
         }
       }
-      return lo >= 2 && hi <= 5;
+      // 2.03–5.26: the 5.26 is at 240 g, biga 45, room 60. The prose said "2
+      // and 5" until MESSAGE-19 — its corners were all at 265 g, and ball
+      // weight is the axis that takes it past 5.
+      return lo >= 2 && hi <= 5.5;
     },
-    knownWrong: {
-      reads: 'by between 2 and 5 °F',
-      see: 'FINDINGS-18: 2.03–5.26 across the envelope; 5.26 at 240 g, biga 45, room 60. "2 and 5" holds at 265 g (2.30–4.76)',
-    },
-    covers: ['2', '5 °F'],
+    text: 'by between 2 and 5½ °F',
+    covers: ['2', '5'],
   },
   {
     at: 'concept:thermal-model',
@@ -638,9 +638,10 @@ describe('§8.1 every literal that restates a computed value matches the engine'
     }
   });
 
-  it('pins exactly one known discrepancy', () => {
-    // So that adding a second is a decision, not an accident.
-    expect(CLAIMS.filter((c) => c.knownWrong).map((c) => c.at)).toEqual(['concept:thermal-model']);
+  it('pins no known discrepancy at present', () => {
+    // Both pins so far came off when the spec was corrected: mix-5's 2.0 in
+    // MESSAGE-18, "between 2 and 5" in MESSAGE-19. Adding one is a decision.
+    expect(CLAIMS.filter((c) => c.knownWrong).map((c) => c.at)).toEqual([]);
   });
 });
 

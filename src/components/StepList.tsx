@@ -13,7 +13,7 @@ import {
   type StepTable,
 } from '../content/steps';
 import { bindTokens, tokenValues } from '../lib/bindTokens';
-import { detailConditionHolds, expandSteps } from '../lib/stepInstances';
+import { detailConditionContext, detailConditionHolds, expandSteps } from '../lib/stepInstances';
 import type { AppState } from '../state/useAppState';
 
 /**
@@ -298,7 +298,6 @@ export function StepList({
     nowMs,
   } = state;
   const nMix = state.result.capacity.nMix;
-  const nBiga = state.result.capacity.nBiga;
 
   /**
    * §8.2a. Expand the repeating steps to one instance per mix.
@@ -405,11 +404,7 @@ export function StepList({
                     values={(step.values ?? []).map(bindHere)}
                     bind={bindHere}
                     conditionHolds={(condition) =>
-                      detailConditionHolds(condition, {
-                        nMix,
-                        nBiga,
-                        openDiameterCapped: state.result.opening.openDiameterCapped,
-                      })
+                      detailConditionHolds(condition, detailConditionContext(state.result, tokens))
                     }
                     showWarning={state.result.staggerUncentredMin > 2}
                     checked={checkedSteps.has(key)}

@@ -15,8 +15,9 @@ import {
   formatGrams,
   formatInches,
   formatPercentNumber,
+  formatProbeGapPhrase,
   formatTempF,
-  formatThicknessFactor,
+  formatWhole,
 } from './format';
 import { mixStaggerH, observedRate, type CalculatorResult } from './engine';
 
@@ -72,11 +73,11 @@ export function tokenValues(
      * §4.10 — `mix-4`'s worked example, bound where it used to be typed at 6
      * balls in a 70 °F kitchen. Each is rounded once, so the two parts may
      * not visibly sum to the gap by 0.1; §4.10 says that is correct. The gap
-     * is signed and can go negative outside §5's envelope — see FINDINGS-18.
+     * itself is a phrase, because it goes negative outside §5's envelope.
      */
     frictionRemainingF: formatTempF(result.probe.frictionRemainingF),
     restExchangeF: formatTempF(result.probe.restExchangeF),
-    probeGapF: formatTempF(result.probe.gapF),
+    probeGapPhrase: formatProbeGapPhrase(result.ddtF, result.probeTargetF),
     /**
      * §4.10. The split as a bare number — the prose writes the `%`. No scope
      * suffix: `PerMix` / `PerBiga` is a rule about masses, and a ratio has no
@@ -86,10 +87,11 @@ export function tokenValues(
     phaseBPercent: formatPercentNumber(1 - C.PHASE_A_FRACTION),
 
     // §4.9 — `bulk-2`. Rounded once each from the unrounded values.
+    // `thickerThanDefault` is decided on the printed percentage, so this token
+    // is also what decides whether the capped block shows.
     openDiameterIn: formatInches(result.opening.openDiameterIn),
-    openDiameterUncappedIn: formatInches(result.opening.diameterUncappedIn),
-    thicknessFactor: formatThicknessFactor(result.opening.thicknessFactor),
-    targetThicknessFactor: formatThicknessFactor(C.TARGET_THICKNESS_FACTOR),
+    thicknessPercentOver: formatWhole(result.opening.thicknessPercentOver),
+    defaultBallG: trim(C.DEFAULT_BALL_G),
     /**
      * §4.6. Phase C's rate AS A THERMOMETER READS IT — the dough-only 1.08
      * °F/min times `Ct/TOT`. "About 1 °F per minute" is only true at 6 balls

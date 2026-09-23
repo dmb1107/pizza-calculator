@@ -43,9 +43,28 @@ export function formatInches(inches: number): string {
   return roundTo(inches, 1).toFixed(1);
 }
 
-/** §4.9. Thickness factor in oz/in², 3 decimals, rounded once. */
-export function formatThicknessFactor(ozPerSqIn: number): string {
-  return roundTo(ozPerSqIn, 3).toFixed(3);
+/** A whole number, e.g. §4.9's percentage — the prose supplies the `%`. */
+export function formatWhole(value: number): string {
+  return roundTo(value, 0).toFixed(0);
+}
+
+/**
+ * §4.10 `{probeGapPhrase}`: "1.6 °F below DDT" / "0.3 °F above DDT" /
+ * "right at DDT".
+ *
+ * ⚠️ Computed FROM the printed DDT and the printed target, which §4.10 requires
+ * ("must equal |printed DDT − printed target| exactly"). Rounding the gap on its
+ * own agrees everywhere a sweep reaches but not by construction — at a rounding
+ * tie it would print 3.2 beside a 75.0 and a 71.9. This is the one place where
+ * working from displayed values is the specification rather than the error.
+ * Direction goes in words because the gap goes negative in a cold kitchen at a
+ * low FF, and "sits −0.3 °F below DDT" is nonsense.
+ */
+export function formatProbeGapPhrase(ddtF: number, targetF: number): string {
+  const printedGap = roundTo(ddtF, 1) - roundTo(targetF, 1);
+  const shown = formatTempF(Math.abs(printedGap));
+  if (shown === '0.0') return 'right at DDT';
+  return `${shown} °F ${printedGap > 0 ? 'below' : 'above'} DDT`;
 }
 
 /**

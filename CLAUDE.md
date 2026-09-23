@@ -56,7 +56,8 @@ question:
 | `MESSAGE-15-replies.md`, `-16-` | Handoff-only: figures in summary tables drift because they are transcribed |
 | `MESSAGE-17-replies.md` | Probe gap moves with room far more than batch; no §8 literal may restate an engine output |
 | `MESSAGE-18-replies.md` | §4.9 thickness factor and `openDiameterCapped`; §4.10 probe tokens; all eight FINDINGS-17 items |
-| `FINDINGS-12` … `FINDINGS-18` | Replies to the above. 17 carries the §8 literal audit; 18 the parser gap that dropped a whole block |
+| `MESSAGE-19-replies.md` | §4.9 re-referenced to the default ball on the full stone (the 0.083 thickness target had no source); `{probeGapPhrase}`; display conditions decided on printed values |
+| `FINDINGS-12` … `FINDINGS-19` | Replies to the above. 17 carries the §8 literal audit; 18 the parser gap that dropped a whole block |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** How the correspondence works, what has gone wrong, and the deploy situation |
 
 ## Rules that matter more than usual here
@@ -111,7 +112,10 @@ quote a rendered number**; one without them cost a round of correspondence.
 `APP_DEFAULT_FLOUR_OFFSET_F`. Three of those got that treatment only after a
 literal went wrong — a hardcoded value is correct today and silently wrong the
 first time the formula moves. `tests/constants.test.ts` recomputes each from its
-inputs, and separately asserts every constant has a reader.
+inputs, and separately asserts every constant has a reader — **a code read**
+(`C.X`, or `BASE.X` in the derivations), with comments stripped. It used to
+count any mention, so the comment recording a constant's removal made the
+constant look read if it came back.
 
 **The continuous-run boundary is `mix-6`, pinned by id.** The general rule — "a
 pause with a speed step still ahead of it" — is **template-scoped and does not

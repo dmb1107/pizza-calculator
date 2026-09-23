@@ -508,7 +508,7 @@ Still to come, **stated as the probe will read it** (dough and bowl equilibrated
 | 9 or 18 balls | 1.9 | 2.7 | **3.5** | 4.3 | 5.1 |
 | 12 balls | 1.8 | 2.6 | **3.4** | 4.2 | 5.0 |
 
-**Read across before you read down.** Moving from a 62 °F to a 78 °F kitchen shifts the target 3.2 °F. Moving from 3 balls to 9 shifts it 0.7. **The rule that holds everywhere: 0.2 °F closer to DDT for every degree your kitchen is below 70, and 0.2 °F further for every degree above.**
+**Read across before you read down.** Moving from a 62 °F to a 78 °F kitchen changes how far below DDT to probe by 3.2 °F. Moving from 3 balls to 9 changes it by 0.7. (The *target* itself moves 1.7 from 3 balls to 9, because DDT also steps from 75 to 74 at 7 balls — which is why this table gives the gap below DDT, not the target.) **The rule that holds everywhere: 0.2 °F closer to DDT for every degree your kitchen is below 70, and 0.2 °F further for every degree above.**
 
 ⚠️ **Earlier drafts printed only the 70 °F column**, as `DDT − 2.8 / 3.2 / 3.5` by batch size, without saying it assumed a 70 °F room. In a 62 °F kitchen that aims 1.6 °F too low at 6 balls — the whole of Phase C's correction range, wrong way round. Measure the room.
 
