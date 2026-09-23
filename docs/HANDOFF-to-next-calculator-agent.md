@@ -8,22 +8,24 @@ the spec, and you push back when the numbers don't hold.
 carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
-Written 23 September 2026, after MESSAGE-24. Don't trust any status here that
-you can check instead (§7).
+Written 23 September 2026, after MESSAGE-24; §1, §2, §4 and §6 updated after
+MESSAGE-25 the same day. Don't trust any status here that you can check
+instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is settled through MESSAGE-24.** FINDINGS-24 went back,
-  and neither side owes the other anything. **There is no MESSAGE-22.** A stray
+- **The correspondence is applied through MESSAGE-25.** FINDINGS-25 went
+  unprompted (the biga-hint fix); MESSAGE-25 replied to it and carried a
+  round of its own; **FINDINGS-26** replies to that. The numbering stepped
+  because 25 went first: their next message may be 26, and your reply takes
+  whatever number keeps the pair together. **There is no MESSAGE-22.** A stray
   draft by that number arrived before MESSAGE-21, was superseded by it, and has
   been deleted.
 - **Tasks 0–7 are done:** engine, state, cards, forward timeline, steps,
   concepts, timers. The plan's status line names the last message applied.
-- **FINDINGS-25 then went unprompted**, reporting the §2 fix and asking one
-  clause of §6. Their reply's number is theirs to pick; number yours to match.
-  **Next comes Task 8.**
+- **Next comes Task 8.**
 - **After Task 8:**
   - Task 9 — reference drawer and About.
   - Task 10 — only the phone-in-the-kitchen check remains, and that's Dave's.
@@ -34,42 +36,22 @@ you can check instead (§7).
 
 ## 2. Open — start here
 
-### Fixed and reported in FINDINGS-25: the biga-temperature hint's basis
+### Settled, for the record: two MESSAGE-25 changes that touch state
 
-Fixed on 23 September, after this handoff was written, and reported
-unprompted in FINDINGS-25. No spec change is needed, since it was our UI copy,
-not §8.
+- **The FF map is keyed on balls per mix** (`ballsPerMix` in the engine), not
+  total balls. 12 balls reads the 6 entry; 13 balls is 6.5 and matches only
+  6.5. Keys are stored exact, so 20/3 stays 20/3 and only the label rounds.
+  Ball weight can move a batch between entries: 9 balls is one mix at 265 g
+  and two 4.5-ball mixes at 280 g.
+- **A stored copy of the old seed** (`6: 14.04`, dated 2026-08-21) is replaced
+  with 14.03 on load. Anything else stored is kept under its key. Old
+  batch-size keys up to 9 mean the same thing at the default ball weight;
+  split-batch keys (12, 18) name mix sizes that can't occur and are never read.
+- **The bowl hint prints `cSystem/Cw`** ("3.3 times" at 6 balls) instead of
+  "more than three times". The worded claim rested on `Ct/Cw` = 3.0023, which
+  MESSAGE-25 showed a 72% hydration takes to 2.90.
 
-- **What was wrong.** The mix-1 biga hint always quoted the tracking
-  coefficient `(Cb + C_bowl)/Cw`, even once the bowl was measured, when the
-  right one is the held `Cb/Cw` (§4.2's two bases). Its example, "a 6 °F guess
-  is 11 °F of water and 3.5 °F of dough", was the 6-ball tracking case typed
-  in, and the ratio was computed and `toFixed`-rounded inside `panels.tsx`.
-- **What changed.** `calculate` reports `bowlTracksBiga` per mix. It's true only
-  for the `cold` state with the bowl unmeasured. `bigaReadingCost` and
-  `bowlReadingCost` in `engine.ts` compute the figures, and
-  `formatCoefficient` in `format.ts` rounds them. Conditions: 265 g balls,
-  965 g bowl, 6 °F error. Tracking reads 2.25 / 1.92 / 1.81 °F of water per °F
-  at 3 / 6 / 9 balls. Held reads 1.595 at every size, with 2.6–3.0 °F of dough.
-  At the defaults, the rendered hint goes from 1.9 / 11.5 / 3.5 to
-  1.6 / 9.6 / 2.9 when a bowl reading is entered. Checked in the browser.
-- **The test that pins it** perturbs the biga through `calculate` in each bowl
-  state. It fails with the flag forced to `true`, the old behaviour.
-- **The bowl hint** now reads "more than three times". `cSystem/Cw` is
-  3.2–3.7, and it stays above 3 for any bowl mass, since `cTotal/Cw` alone is
-  3.00. A test sweeps it.
-- **The copy check** now reads the literal parts of template literals. **It had
-  a second blind spot**, found by putting the old string back and watching it
-  pass: a whole string was excused if it contained *any* classified phrase, and
-  the typed "11 °F … 3.5 °F" shared a fragment with the classified "5 °F"
-  tearing sentence. Now a classified phrase excuses only itself. The widening
-  also surfaced "a 9-ball batch runs hotter than a 3-ball" in the FF hint, which
-  was never visible before. It's classified as §6's "FF grows with batch size".
-- **For the counterpart:** spec §6's biga row, "a 6 °F miss here moves the
-  required water 11.5 °F and the finished dough 3.5 °F", is the tracking basis
-  at 6 balls. It's correct for the field's default state, but it doesn't say so,
-  and §6 asks for the sensitivity inline without saying which basis applies once
-  the bowl is measured. Worth one clause from them.
+The biga-hint fix itself is in FINDINGS-25, and MESSAGE-25 confirmed it.
 
 ### Small debt: rounding outside `format.ts`
 
@@ -151,12 +133,13 @@ didn't change. Sometimes a one-line instruction comes with it.
 | Suite | Guards | Why it exists |
 |---|---|---|
 | `steps.test.ts` | §8 prose verbatim. The generator and this file parse the same grammar independently. Both refuse unknown `**marker:**` lines, a raw count of conditional markers is taken from the spec itself, and each step ends at the next `###` | Two parsers sharing one condition list dropped `bulk-2`'s capped block, and 42/42 still passed. `mix-8` used to swallow §8.2a |
-| `contentLiterals.test.ts` | Every number in §8 either rebuilt from the engine (`CLAIMS`) or classified (`FIXED`); `knownWrong` pins a disagreement both ways; numeric component copy classified too | `mix-4` showed stale probe values for eight rounds while prose-vs-prose passed. **It checks numbers, not sources:** a worded claim passes by construction |
+| `contentLiterals.test.ts` | Every number in §8 either rebuilt from the engine (`CLAIMS`) or classified (`FIXED`); `knownWrong` pins a disagreement both ways; numeric component copy classified too, **including template-literal text**, and a classified phrase excuses only itself. A counterfactual can still be a claim: `computeThermal` at `nMix` 1 *is* the batch-total model | `mix-4` showed stale probe values for eight rounds while prose-vs-prose passed. The biga hint's typed figures hid inside a template literal, then behind a classified phrase in the same string. **It checks numbers, not sources:** a worded claim passes by construction |
 | `constants.test.ts` | Derived constants recomputed from their inputs; every constant has a **code** read (`C.X` / `BASE.X`, comments stripped) | `divideBall = 0.33`, `ADY 0.0038`. The reader check once counted the comment recording a constant's removal as a read |
 | `stepInstances.test.ts` | Golden step sequences per schedule at `nMix` 1–3. Closed condition sets: detail blocks (`nMix > 1`, `nBiga > 1`, `thickerThanDefault`) and `shownWhen`; both throw on unknown | The expansion repeated templates instead of mixes: same count, same labels, wrong procedure. A component ternary read any unknown condition as `nBiga > 1` |
 | `stageSteps.test.ts` | Every timeline stage has a step rendered on its schedule, and every step maps to a stage | `bigaTemper` had a duration and a clock time but no step |
-| `engine.test.ts` | §5 vectors and the bake-1 regression. Per-mix thermal weights. Water reachability sweep (samples 257 g for the true corner). Shaped rise **keyed by DDT**. The two biga bases, measured off `computeWaterTempF`. §4.9, §4.10 | Every rise table was keyed on dough temperature, silently assuming DDT 75 — including this suite's own vector |
+| `engine.test.ts` | §5 vectors and the bake-1 regression, **held to printed precision (0.005)**, not `TOL`. Per-mix thermal weights. The panel hints' bases, measured by perturbing `calculate`. Water reachability sweep (samples 257 g for the true corner). Shaped rise **keyed by DDT**. The two biga bases, measured off `computeWaterTempF`. §4.9, §4.10 | Every rise table was keyed on dough temperature, silently assuming DDT 75 — including this suite's own vector. At `TOL.degF` = 0.1 the bake-1 pin couldn't tell 67.97 from 68.00 |
 | `bindTokens.test.ts` | No unbound or unused token. `{probeGapPhrase}` at below / above / right at DDT. The thicker note decided on its **printed** value | A condition decided on unrounded values printed "12.0 rather than 12" |
+| `state.test.ts` | URL and storage round-trips. The FF map keyed through `ballsPerMix`, exact-match at 6.5, the old seed replaced on load and nothing else | The map was keyed on total balls, so a 12-ball bake would have filed FF under a size no mix has |
 | `timeline.test.ts` | §4.7 durations, the stage sequence on both schedules, daylight saving | A wrong order sums to the right total |
 
 The principle underneath all of them: **a check is only independent on the axis
@@ -196,7 +179,12 @@ The long form is the errors table in their `HANDOFF-new-context.md`. The shapes:
 - **A difference tabulated against one of its terms:** the probe gap indexed by
   batch size, the shaped rise indexed by dough temperature.
 - **Two bases in one sentence:** 1.59 against 1.92 for the biga. It came back
-  in the panel hint, and was fixed on 23 September (§2).
+  in the panel hint, and was fixed on 23 September (FINDINGS-25).
+- **A worded claim resting on a thin margin:** "more than three times" held
+  because `Ct/Cw` is 3.0023. A formula change a few points away breaks it, and
+  no gate sees words. Print the computed figure instead.
+- **A tolerance wider than the change:** `TOL.degF` = 0.1 passed both 67.97 and
+  68.00. When a pin moves by less than its tolerance, the test never saw it.
 - **Verifying a list by its contents when order is the meaning:** the step
   expansion.
 - **Logic in a component:** the expansion, the condition resolver, the
