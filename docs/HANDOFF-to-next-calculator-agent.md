@@ -8,29 +8,30 @@ the spec, and you push back when the numbers don't hold.
 carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
-Written 23 September 2026, after MESSAGE-24; §1, §2, §4 and §6 updated after
-MESSAGE-25 the same day. Don't trust any status here that you can check
-instead (§7).
+Written 23 September 2026, after MESSAGE-24, and kept current through
+MESSAGE-28 and Task 9 (24 September). Don't trust any status here that you can
+check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-26.** FINDINGS-25 went
-  unprompted, so the numbering stepped. It now pairs: MESSAGE-26 answered
-  FINDINGS-26, and **FINDINGS-27** answers MESSAGE-26. Their next is 27. **There is no MESSAGE-22.** A stray
-  draft by that number arrived before MESSAGE-21, was superseded by it, and has
-  been deleted.
+- **The correspondence is applied through MESSAGE-28**, and nothing is owed
+  either way. FINDINGS-29 answers it, and their next would be 29. No
+  `knownWrong` pin is live.
+- **Numbering, since it has stepped twice.** FINDINGS-25 went unprompted, so
+  the pairs now share a number: MESSAGE-N answers FINDINGS-N, and
+  FINDINGS-(N+1) answers MESSAGE-N. **There is no MESSAGE-22** (a stray draft,
+  superseded by 21 and deleted) and **no MESSAGE-27** (FINDINGS-27 needed no
+  reply).
 - **Tasks 0–9 are done:** engine, state, cards, both timeline modes, steps,
   concepts, timers, reference and About drawers. The plan's status line names
   the last message applied.
-- **FINDINGS-28 went unprompted** after Task 9: §9's 80% row (250 RPM against
-  249.48 on the measured line, pinned `knownWrong`), implementer voice
-  rendered from §9, and Task 8's probe-card figure. Their reply is MESSAGE-28.
 - **What's left:**
   - Task 10 — only the phone-in-the-kitchen check remains, and that's Dave's.
   - Task 11 — the bake log. Its `ff_measured` is `solveFrictionFactorF`, never
-    `final − predicted_mix` (§10); file it under the bake's balls per mix.
+    `final − predicted_mix` (§10); file it under the bake's balls per mix;
+    one row per mix on a split batch (§10, MESSAGE-28).
 - **Every push to `main` deploys** to https://dmb1107.github.io/pizza-calculator/.
 
 ---
