@@ -68,6 +68,8 @@ question:
 | `MESSAGE-26.md` | Pairs with FINDINGS-26: the 96.3 °F split-batch ceiling, §4.2's closed form for the batch-total error, and two of our errors (a round-twice in reading scratch output; a tie's reason asserted unchecked) |
 | `FINDINGS-27-to-recipe-agent.md` | Reply to MESSAGE-26. From here FINDINGS-N and MESSAGE-N pair up |
 | `FINDINGS-28-to-recipe-agent.md` | Unprompted, after Task 9: §9's 80% row is 250 RPM against 249.48 on the measured line (`knownWrong`); implementer voice in rendered §9/§11 |
+| `MESSAGE-28.md` | 80% is 249, a slip. The RPM line is derived from two anchors, 60 at 5% (measured) and 300 at 100% (Ooni's published), not rounded constants. **There is no MESSAGE-27** |
+| `FINDINGS-29-to-recipe-agent.md` | Reply to MESSAGE-28 |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -118,9 +120,11 @@ quote a rendered number**; one without them cost a round of correspondence.
 
 **Anything derivable from the formula constants is derived, never written down.**
 `C_BIGA`, `ADY_OF_BIGA_FLOUR`, `DIVIDE_BALL_H` (20/60, not 0.33),
-`FRESH_FLOUR_FRACTION`, `FRESH_WATER_FRACTION` and
-`APP_DEFAULT_FLOUR_OFFSET_F`. Three of those got that treatment only after a
-literal went wrong — a hardcoded value is correct today and silently wrong the
+`FRESH_FLOUR_FRACTION`, `FRESH_WATER_FRACTION`,
+`APP_DEFAULT_FLOUR_OFFSET_F`, and the RPM line — `RPM_SLOPE` and
+`RPM_INTERCEPT` from the two anchors `RPM_AT_5_PCT` (measured) and
+`RPM_AT_100_PCT` (Ooni's published maximum). Four of those got that treatment
+only after a literal went wrong — a hardcoded value is correct today and silently wrong the
 first time the formula moves. `tests/constants.test.ts` recomputes each from its
 inputs, and separately asserts every constant has a reader — **a code read**
 (`C.X`, or `BASE.X` in the derivations), with comments stripped. It used to

@@ -72,9 +72,9 @@ export const C = {
   TREAD_MAX_DIAMETER_IN: 12,       // Gozney Tread stone capacity
   THICKER_NOTE_MIN_PERCENT: 10,    // Dave's call: the thickness difference he notices in the bake. Not a published figure
 
-  // Speed
-  RPM_INTERCEPT: 47.4,        // RPM = 47.4 + 2.526 * dial%   (measured: 5% = 60 RPM)
-  RPM_SLOPE: 2.526,
+  // Speed. Two anchors, one measured and one published; the line through them is DERIVED (below).
+  RPM_AT_5_PCT: 60,           // MEASURED: 20 hook revolutions in 20 s at 5% (first-bake calibration)
+  RPM_AT_100_PCT: 300,        // Ooni's published maximum at 100%
 
   // Friction rate by dial %, °F per minute of run time
   FRICTION_RATE: { 15: 0.75, 20: 0.86, 30: 1.08 },
@@ -100,6 +100,13 @@ export const C = {
 ```ts
 const cBiga = (1/(1+C.BIGA_HYDRATION))*C.C_FLOUR + (C.BIGA_HYDRATION/(1+C.BIGA_HYDRATION))*C.C_WATER;
 ```
+
+**The RPM line must be derived from its two anchors**, not hardcoded as a rounded intercept and slope:
+```ts
+const rpmSlope = (C.RPM_AT_100_PCT - C.RPM_AT_5_PCT) / (100 - 5);   // 2.5263…
+const rpmIntercept = C.RPM_AT_5_PCT - 5 * rpmSlope;                  // 47.368…
+```
+It assumes the 20 dial levels are evenly spaced; only the 5% end has been measured. ⚠️ **Was `RPM_INTERCEPT: 47.4, RPM_SLOPE: 2.526`** — the same line rounded in the constants file, which put the measured point itself at 60.03. No displayed RPM changes: every table row rounds to the same whole number either way. Prose still prints the line as `RPM = 47.4 + 2.526 × dial%`.
 
 **`ADY_OF_BIGA_FLOUR` must be derived the same way**, for the same reason — the sourced number is the fresh-yeast dose, not the ADY figure:
 ```ts
@@ -1369,7 +1376,7 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 > This is why an unstable kitchen is a real problem rather than a timing nuisance, and why the fridge-retarded schedule exists — it trades a little of that acid character for a temperature that actually holds.
 
 **`no-creep-speed`** — *The mixer has no slow speed*
-> Measured: **5% on the dial = 60 RPM**, and `RPM = 47.4 + 2.526 × dial%`. Ooni's published help-center chart claiming 5% = 15 RPM is wrong — the dial maps across a *usable band*, not from zero. The Halo Pro works the same way.
+> Measured: **5% on the dial = 60 RPM**. With Ooni's published 300 RPM at 100%, that gives `RPM = 47.4 + 2.526 × dial%`. Ooni's published help-center chart claiming 5% = 15 RPM is wrong — the dial maps across a *usable band*, not from zero. The Halo Pro works the same way.
 >
 > The practical consequence: **60 RPM is the floor.** You cannot gently fold liquid in. Add water and flour with the mixer off, then bring the dial up, or you'll throw flour out of the bowl and sling bassinage water off the hook.
 
@@ -1391,7 +1398,7 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 Put these on a secondary page or in a drawer — needed occasionally, not every session.
 
 ### Mixer speed
-`RPM = 47.4 + 2.526 × dial%` — measured, 5% = 60 RPM. Ooni's published help-center chart claiming 5% = 15 RPM is **wrong**; don't reproduce it.
+`RPM = 47.4 + 2.526 × dial%`, the line through a measured 60 RPM at 5% and Ooni's published 300 RPM at 100%. Ooni's help-center chart, which puts 5% at 15 RPM, is **wrong** — use this line instead.
 
 | Dial | RPM | Used for |
 |---:|---:|---|
@@ -1400,7 +1407,7 @@ Put these on a secondary page or in a drawer — needed occasionally, not every 
 | 20% | 98 | Phase B, Phase D |
 | 30% | 123 | Phase C development |
 | 40% | 148 | hard ceiling for this dough |
-| 80% | 250 | Ooni max recommended at 66%+ hydration |
+| 80% | 249 | Ooni max recommended at 66%+ hydration |
 
 ### Friction rate
 **Dough-only** (matching FF): 0.75 °F/min at 15% · 0.86 at 20% · 1.08 at 30%

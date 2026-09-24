@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { C } from '../src/lib/constants';
+import { C, rpmForDial } from '../src/lib/constants';
 import { BATCH_VECTORS, THERMAL_WEIGHTS, TOL } from './vectors';
 
 /**
@@ -129,7 +129,7 @@ describe('constants', () => {
   });
 
   it('maps 5% dial to the measured 60 RPM', () => {
-    within(C.RPM_INTERCEPT + C.RPM_SLOPE * 5, 60, 0.05, '5% dial RPM');
+    within(rpmForDial(5), 60, 1e-9, '5% dial RPM');
   });
 
   it('has dough-only thermal weights summing to 1', () => {

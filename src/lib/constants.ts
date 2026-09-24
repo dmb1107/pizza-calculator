@@ -86,9 +86,10 @@ const BASE = {
    */
   THICKER_NOTE_MIN_PERCENT: 10,
 
-  // Speed
-  RPM_INTERCEPT: 47.4, // RPM = 47.4 + 2.526 * dial%   (measured: 5% = 60 RPM)
-  RPM_SLOPE: 2.526,
+  // Speed. Two anchors, one measured and one published; the line through them
+  // is DERIVED below (MESSAGE-28).
+  RPM_AT_5_PCT: 60, // MEASURED: 20 hook revolutions in 20 s at 5% (first-bake calibration)
+  RPM_AT_100_PCT: 300, // Ooni's published maximum at 100%
 
   // Friction rate by dial %, °F per minute of run time
   FRICTION_RATE: { 15: 0.75, 20: 0.86, 30: 1.08 },
@@ -224,8 +225,24 @@ const FRESH_WATER_FRACTION = BASE.HYDRATION - BASE.BIGA_FRACTION * BASE.BIGA_HYD
 const APP_DEFAULT_FLOUR_OFFSET_F =
   (FRESH_FLOUR_FRACTION * BASE.C_FLOUR) / (FRESH_WATER_FRACTION * BASE.C_WATER);
 
+/**
+ * §3. The dial-to-RPM line through its two anchors: 2.5263… RPM per dial %,
+ * from 47.368… at zero. It assumes the 20 dial levels are evenly spaced; only
+ * the 5% end is measured.
+ *
+ * DERIVED, not hardcoded. It was `RPM_INTERCEPT: 47.4, RPM_SLOPE: 2.526` — the
+ * same line rounded in this file, which put the measured point itself at
+ * 60.03. No displayed RPM moved when it was derived (25% is the closest call,
+ * 110.53 against 110.55); prose prints the line as `47.4 + 2.526 × dial%`,
+ * which is display rounding of these.
+ */
+const RPM_SLOPE = (BASE.RPM_AT_100_PCT - BASE.RPM_AT_5_PCT) / (100 - 5);
+const RPM_INTERCEPT = BASE.RPM_AT_5_PCT - 5 * RPM_SLOPE;
+
 export const C = {
   ...BASE,
+  RPM_SLOPE,
+  RPM_INTERCEPT,
   C_BIGA,
   ADY_OF_BIGA_FLOUR,
   IDY_OF_BIGA_FLOUR,
@@ -252,7 +269,10 @@ export function defaultDdtF(balls: number): number {
   return balls <= 6 ? 75 : 74;
 }
 
-/** Measured dial-to-RPM mapping. Spec §9 — Ooni's published 5% = 15 RPM chart is wrong. */
+/**
+ * Dial to RPM, on the line through the measured 5% and Ooni's published 100%.
+ * Spec §9 — Ooni's help-center chart, which puts 5% at 15 RPM, is wrong.
+ */
 export function rpmForDial(dialPercent: number): number {
   return C.RPM_INTERCEPT + C.RPM_SLOPE * dialPercent;
 }

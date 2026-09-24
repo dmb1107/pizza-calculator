@@ -100,13 +100,15 @@ The 3-ball **final dough** is 812.5 g, above the 500 g minimum but near it; expe
 
 ## 4. Mixer reference
 
-### Speed → RPM — MEASURED AND CONFIRMED
+### Speed → RPM — measured at 5%, published at 100%
 
 **Counted 20 hook revolutions in 20 s at 5% → 60 RPM.**
 
 That settles it. The **Ooni help-center chart in the project files is wrong** — it claims a straight 3 × % line (5% = 15 RPM), which would have put 5% at 5 revolutions in 20 s. The press spec is correct: **60–300 RPM across 20 levels.**
 
 > ### **RPM = 47.4 + 2.526 × dial%**
+
+The line runs through the two anchors: the measured 60 RPM at 5%, and Ooni's published 300 RPM at 100%. Only the bottom end is measured; the rows between assume the 20 levels are evenly spaced.
 
 | Level | Dial | RPM | Used for |
 |---:|---:|---:|---|
@@ -119,7 +121,7 @@ That settles it. The **Ooni help-center chart in the project files is wrong** �
 | 7 | 35% | 136 | |
 | 8 | **40%** | **148** | hard ceiling for this dough |
 | 10 | 50% | 174 | |
-| 16 | 80% | 250 | Ooni max recommended @ 66%+ hyd |
+| 16 | 80% | 249 | Ooni max recommended @ 66%+ hyd |
 | 20 | 100% | 300 | never with dough |
 
 Each 5% step = **12.6 RPM**. Note the intercept: the dial maps across a *usable band*, not from zero. The Halo Pro works the same way (`RPM ≈ 45 + 3 × %`, from Ooni's own Pro recipes) — same design logic, different band. That cross-check corroborates the measurement.
@@ -759,7 +761,7 @@ DDT  =  75 F (3-6 balls) / 74 F (7+)
 PROBE = DDT - 0.33 x FF x Ct/(Ct+C_bowl) + 0.2 x (DDT - Troom)
         3bl 72.2 / 6bl 71.8 / 9bl 70.5   (FF 14, room 70)
 
-RPM = 47.4 + 2.526 x dial%   [MEASURED: 5% = 60 RPM]
+RPM = 47.4 + 2.526 x dial%   [MEASURED 5% = 60; OONI 100% = 300]
   15% = 85    20% = 98    30% = 123    40% = 148 (ceiling)
   60 RPM is the FLOOR - add water with mixer OFF, then dial up.
 

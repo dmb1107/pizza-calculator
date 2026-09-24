@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { C } from '../src/lib/constants';
+import { C, rpmForDial } from '../src/lib/constants';
 import { STEPS, type Step } from '../src/content/steps';
 import { expandSteps } from '../src/lib/stepInstances';
 
@@ -55,7 +55,7 @@ describe('every constant has a consumer', () => {
    * that found a silently vanished spec block.
    *
    * "Consumer" is deliberately generous: `HYDRATION` is read only by the
-   * `FRESH_WATER_FRACTION` derivation and `RPM_SLOPE` only by `rpmForDial`,
+   * `FRESH_WATER_FRACTION` derivation and `RPM_AT_100_PCT` only by the RPM line's,
    * and both are load-bearing. What this catches is a constant read by
    * *nothing at all*.
    */
@@ -77,10 +77,11 @@ describe('every constant has a consumer', () => {
 
 describe('derived constants are derived', () => {
   /**
-   * Four constants are computed from others rather than written down, because
-   * a literal is correct today and silently wrong the first time the formula
-   * moves. Three of them got that treatment only after going wrong: the yeast
-   * dose, `divideBall`, and the flour offset.
+   * These are computed from others rather than written down, because a
+   * literal is correct today and silently wrong the first time the formula
+   * moves. Four got that treatment only after going wrong: the yeast dose,
+   * `divideBall`, the flour offset, and the RPM line (rounded in this file,
+   * so the measured 5% point read 60.03 — MESSAGE-28).
    */
   it('recomputes each one from its inputs', () => {
     expect(C.C_BIGA).toBeCloseTo(
@@ -101,6 +102,14 @@ describe('derived constants are derived', () => {
       (C.FRESH_FLOUR_FRACTION * C.C_FLOUR) / (C.FRESH_WATER_FRACTION * C.C_WATER),
       12,
     );
+    expect(C.RPM_SLOPE).toBeCloseTo((C.RPM_AT_100_PCT - C.RPM_AT_5_PCT) / 95, 12);
+    expect(C.RPM_INTERCEPT).toBeCloseTo(C.RPM_AT_5_PCT - 5 * C.RPM_SLOPE, 12);
+  });
+
+  it('puts the RPM line exactly through both anchors', () => {
+    // The rounded constants missed the measured point by 0.03 RPM.
+    expect(rpmForDial(5)).toBeCloseTo(C.RPM_AT_5_PCT, 12);
+    expect(rpmForDial(100)).toBeCloseTo(C.RPM_AT_100_PCT, 12);
   });
 
   it('keeps DOUGH_YIELD consistent with hydration and salt', () => {

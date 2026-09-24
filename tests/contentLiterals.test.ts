@@ -196,9 +196,12 @@ const CLAIMS: readonly Claim[] = [
   { at: 'mix-7.detail', restates: 'rpmForDial(40), the ceiling', text: `Never above 40% / ${rpm(40)} RPM`, covers: ['40%', `${rpm(40)} RPM`] },
   {
     at: 'concept:no-creep-speed',
-    restates: 'RPM_INTERCEPT, RPM_SLOPE, rpmForDial(5)',
-    text: `5% on the dial = ${rpm(5)} RPM**, and \`RPM = ${C.RPM_INTERCEPT} + ${C.RPM_SLOPE} × dial%\``,
-    covers: ['5%', `${rpm(5)} RPM`, String(C.RPM_INTERCEPT), `${C.RPM_SLOPE} ×`],
+    restates: 'the two anchors, RPM_AT_5_PCT and RPM_AT_100_PCT, and the derived line printed to display precision',
+    holds: () => rpmForDial(5) === C.RPM_AT_5_PCT && rpmForDial(100) === C.RPM_AT_100_PCT,
+    text:
+      `5% on the dial = ${C.RPM_AT_5_PCT} RPM**. With Ooni's published ${C.RPM_AT_100_PCT} RPM at 100%, ` +
+      `that gives \`RPM = ${fx(C.RPM_INTERCEPT, 1)} + ${fx(C.RPM_SLOPE, 3)} × dial%\``,
+    covers: ['5%', `${C.RPM_AT_5_PCT} RPM`, `${C.RPM_AT_100_PCT} RPM`, '100%', fx(C.RPM_INTERCEPT, 1), `${fx(C.RPM_SLOPE, 3)} ×`],
   },
   { at: 'concept:no-creep-speed', restates: 'rpmForDial(5)', text: `**${rpm(5)} RPM is the floor.**`, covers: [`${rpm(5)} RPM`] },
 
@@ -566,9 +569,17 @@ const CLAIMS: readonly Claim[] = [
   // --- §9 reference tables (Task 9) --------------------------------------------
   {
     at: 'reference:mixer-speed',
-    restates: 'the measured RPM line, C.RPM_INTERCEPT and C.RPM_SLOPE, and its 5% point',
-    text: `\`RPM = ${C.RPM_INTERCEPT} + ${C.RPM_SLOPE} × dial%\` — measured, 5% = ${rpm(5)} RPM`,
-    covers: ['47.4', '2.526 ×', '5%', '60 RPM', '60'],
+    restates: 'the derived RPM line at display precision, through its two anchors',
+    text:
+      `\`RPM = ${fx(C.RPM_INTERCEPT, 1)} + ${fx(C.RPM_SLOPE, 3)} × dial%\`, the line through a measured ` +
+      `${C.RPM_AT_5_PCT} RPM at 5% and Ooni's published ${C.RPM_AT_100_PCT} RPM at 100%`,
+    covers: ['47.4', '2.526 ×', '60 RPM', '5%', '300 RPM', '100%'],
+  },
+  {
+    at: 'reference:mixer-speed',
+    restates: 'the 5% floor, on the line',
+    text: `| 5% | ${rpm(5)} | floor — no slower setting exists |`,
+    covers: ['60'],
   },
   // Each row's dial is the one the step for that phase actually runs at, so
   // the table and the step list cannot drift apart.
@@ -603,10 +614,10 @@ const CLAIMS: readonly Claim[] = [
   },
   {
     at: 'reference:mixer-speed',
-    restates: '80% on the measured line: 47.4 + 2.526 × 80 = 249.48',
-    text: `| 80% | ${rpm(80)} |`,
-    knownWrong: { reads: '| 80% | 250 |', see: 'FINDINGS-28 — the other five rows sit on the line' },
-    covers: ['80%', '250'],
+    // Read 250 until MESSAGE-28 — a rounding slip (Ooni's own chart says 240).
+    restates: '80% on the line: 249.47',
+    text: `| 80% | ${rpm(80)} | Ooni max recommended at 66%+ hydration |`,
+    covers: ['80%', '249'],
   },
   {
     at: 'reference:friction-rate',
@@ -806,11 +817,11 @@ describe('§8.1 every literal that restates a computed value matches the engine'
     }
   });
 
-  it('pins exactly the known discrepancies, and no others', () => {
-    // Both earlier pins came off when the spec was corrected: mix-5's 2.0 in
-    // MESSAGE-18, "between 2 and 5" in MESSAGE-19. Adding one is a decision.
-    // Task 9: §9's 80% row reads 250 RPM; the measured line gives 249.48.
-    expect(CLAIMS.filter((c) => c.knownWrong).map((c) => c.at)).toEqual(['reference:mixer-speed']);
+  it('pins no known discrepancy at present', () => {
+    // All three pins so far came off when the spec was corrected: mix-5's 2.0
+    // in MESSAGE-18, "between 2 and 5" in MESSAGE-19, §9's 80% = 250 RPM in
+    // MESSAGE-28. Adding one is a decision.
+    expect(CLAIMS.filter((c) => c.knownWrong).map((c) => c.at)).toEqual([]);
   });
 });
 

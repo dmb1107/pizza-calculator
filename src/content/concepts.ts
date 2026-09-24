@@ -135,7 +135,7 @@ This is why an unstable kitchen is a real problem rather than a timing nuisance,
   {
     id: "no-creep-speed",
     title: "The mixer has no slow speed",
-    body: `Measured: **5% on the dial = 60 RPM**, and \`RPM = 47.4 + 2.526 × dial%\`. Ooni's published help-center chart claiming 5% = 15 RPM is wrong — the dial maps across a *usable band*, not from zero. The Halo Pro works the same way.
+    body: `Measured: **5% on the dial = 60 RPM**. With Ooni's published 300 RPM at 100%, that gives \`RPM = 47.4 + 2.526 × dial%\`. Ooni's published help-center chart claiming 5% = 15 RPM is wrong — the dial maps across a *usable band*, not from zero. The Halo Pro works the same way.
 
 The practical consequence: **60 RPM is the floor.** You cannot gently fold liquid in. Add water and flour with the mixer off, then bring the dial up, or you'll throw flour out of the bowl and sling bassinage water off the hook.`,
   },

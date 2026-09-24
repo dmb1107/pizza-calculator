@@ -5,7 +5,7 @@ Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
 **Status:** Tasks 0–9 complete, on the bowl-aware thermal model with **per-mix
-weights**, the ice calculation removed, and **MESSAGE-26 applied**. Left: the
+weights**, the ice calculation removed, and **MESSAGE-28 applied**. Left: the
 phone-in-the-kitchen check (Task 10, Dave's) and the bake log (Task 11).
 
 ---
@@ -618,8 +618,9 @@ markdown, inline. A test pins `watchFor` as markdown so it can't regress.
 - [x] Every §9 figure claimed against the engine: each RPM row on the measured
       line, each phase's dial from the step that runs it, the 40% ceiling from
       `mix-7`, the observed factors, the water span swept over the §5
-      envelope. **§9's 80% row reads 250 RPM; the line gives 249.48** —
-      `knownWrong`, reported in FINDINGS-28.
+      envelope. §9's 80% row read 250 RPM against 249.48 on the line —
+      pinned `knownWrong`, reported in FINDINGS-28, corrected to 249 in
+      MESSAGE-28, pin removed.
 - [x] **Ooni's 5% = 15 RPM chart is not reproduced** — only quoted, as §9 does,
       to reject it.
 - [x] About drawer with the §11 sources. The intro's instruction sentence ("Link

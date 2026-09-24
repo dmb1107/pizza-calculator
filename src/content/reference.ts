@@ -26,7 +26,7 @@ export const REFERENCE: readonly ReferenceSection[] = [
   {
     id: "mixer-speed",
     title: "Mixer speed",
-    body: `\`RPM = 47.4 + 2.526 × dial%\` — measured, 5% = 60 RPM. Ooni's published help-center chart claiming 5% = 15 RPM is **wrong**; don't reproduce it.
+    body: `\`RPM = 47.4 + 2.526 × dial%\`, the line through a measured 60 RPM at 5% and Ooni's published 300 RPM at 100%. Ooni's help-center chart, which puts 5% at 15 RPM, is **wrong** — use this line instead.
 
 | Dial | RPM | Used for |
 |---:|---:|---|
@@ -35,7 +35,7 @@ export const REFERENCE: readonly ReferenceSection[] = [
 | 20% | 98 | Phase B, Phase D |
 | 30% | 123 | Phase C development |
 | 40% | 148 | hard ceiling for this dough |
-| 80% | 250 | Ooni max recommended at 66%+ hydration |`,
+| 80% | 249 | Ooni max recommended at 66%+ hydration |`,
   },
   {
     id: "friction-rate",
