@@ -15,7 +15,7 @@
 
 import { C } from './constants';
 import { MIX_H, clampRise, mixStaggerH } from './engine';
-import type { Schedule } from '../state/types';
+import type { Schedule, TimelineMode } from '../state/types';
 
 export type StageKey =
   | 'bigaRoomTemp'
@@ -181,6 +181,17 @@ export interface Timeline {
 
 const HOUR_MS = 3_600_000;
 
+/**
+ * A stage's length in whole milliseconds. `Date` truncates fractional
+ * milliseconds, so accumulating `hours × HOUR_MS` directly let a backward solve
+ * land 1 ms before the requested bake whenever a duration wasn't a whole number
+ * of minutes (a measured rise is 80.41 min) — and the clock then printed the
+ * minute before. Both directions go through this, so they are exact inverses.
+ */
+function stageMs(hours: number): number {
+  return Math.round(hours * HOUR_MS);
+}
+
 /** Between midnight and 06:00, local time. */
 export function isUnsocialHour(at: Date): boolean {
   const h = at.getHours();
@@ -211,7 +222,7 @@ export function buildTimeline({
     if (durationH <= 0) continue;
 
     const startsAt = new Date(cursor);
-    cursor += durationH * HOUR_MS;
+    cursor += stageMs(durationH);
     const endsAt = new Date(cursor);
 
     stages.push({
@@ -241,7 +252,10 @@ export function buildTimeline({
 /**
  * Backward mode (§4.7): when to mix the biga to bake at a given time.
  *
- * Exposed here because it is the same arithmetic; the UI for it is Task 8.
+ * ⚠️ This is a sum, and a sum can't see order — it returns the right start for
+ * a mis-ordered schedule. The stage times in between come from `buildTimeline`
+ * walking `STAGE_ORDER`, which `timeline.test.ts` pins to hand-written clock
+ * times on both schedules (MESSAGE-12).
  */
 export function solveBigaStart({
   bakeAt,
@@ -253,8 +267,111 @@ export function solveBigaStart({
   adjustments: ScheduleAdjustments;
 }): Date {
   const durations = stageDurations(schedule, adjustments);
-  const totalH = STAGE_ORDER.reduce((sum, key) => sum + Math.max(0, durations[key]), 0);
-  return new Date(bakeAt.getTime() - totalH * HOUR_MS);
+  const totalMs = STAGE_ORDER.reduce((sum, key) => sum + (durations[key] > 0 ? stageMs(durations[key]) : 0), 0);
+  return new Date(bakeAt.getTime() - totalMs);
+}
+
+/**
+ * §4.7's two modes. Forward holds the biga start and lets the bake fall where
+ * it falls; backward holds the bake and solves the start. Either way the stage
+ * times come from the same forward walk, so the modes differ only in which end
+ * stays put when a duration changes.
+ */
+export function timelineFor({
+  mode,
+  bigaStartAt,
+  bakeAt,
+  schedule,
+  adjustments,
+  now,
+}: {
+  mode: TimelineMode;
+  bigaStartAt: Date;
+  /** Backward mode's anchor. Null falls back to forward — there is nothing to hold. */
+  bakeAt: Date | null;
+  schedule: Schedule;
+  adjustments: ScheduleAdjustments;
+  now?: Date;
+}): Timeline {
+  const startAt =
+    mode === 'backward' && bakeAt ? solveBigaStart({ bakeAt, schedule, adjustments }) : bigaStartAt;
+  return buildTimeline({ startAt, schedule, adjustments, now });
+}
+
+/** A run of anchor times, on one day, that keeps every required action out of 00:00–06:00. */
+export interface ClockWindow {
+  from: Date;
+  /** Inclusive: the last quarter hour that still works. */
+  to: Date;
+}
+
+/**
+ * §4.7: "flag when a stage lands between midnight and 6 AM". This is the other
+ * half — which start times (forward) or bake times (backward) avoid it, for the
+ * durations in hand. Scanned at quarter hours across `day`, so a boundary is
+ * reported on the safe side.
+ *
+ * Computed because it moves: at the default 24 h cold ferment the retarded
+ * schedule's window is 9:00 AM–8:00 PM, the classic one's 2:00 PM–11:45 PM,
+ * and 12 h classic has two. The card used to print "9 a.m. and 8 p.m." for all
+ * of them.
+ *
+ * No window can run through midnight: the anchor is itself an action — the
+ * biga going in, or the bake — so 00:00–05:45 never works. An empty array
+ * means no time on this day does.
+ */
+export function socialWindows({
+  mode,
+  day,
+  schedule,
+  adjustments,
+}: {
+  mode: TimelineMode;
+  day: Date;
+  schedule: Schedule;
+  adjustments: ScheduleAdjustments;
+}): ClockWindow[] {
+  const QUARTERS = 96;
+  const at = (q: number) => new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, q * 15);
+  const works = Array.from({ length: QUARTERS }, (_, q) => {
+    const anchor = at(q);
+    const t = timelineFor({ mode, bigaStartAt: anchor, bakeAt: anchor, schedule, adjustments });
+    return !t.hasUnsocialHours;
+  });
+  const windows: ClockWindow[] = [];
+  let runStart: number | null = null;
+  for (let q = 0; q <= QUARTERS; q++) {
+    const ok = q < QUARTERS && works[q]!;
+    if (ok && runStart === null) runStart = q;
+    if (!ok && runStart !== null) {
+      windows.push({ from: at(runStart), to: at(q - 1) });
+      runStart = null;
+    }
+  }
+  return windows;
+}
+
+/** "9:00 AM" — a time of day with no weekday, for window boundaries. */
+export function formatTimeOfDay(at: Date): string {
+  return at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+
+/**
+ * The sentence under the overnight notice. The windows come from
+ * `socialWindows`; this only words them.
+ */
+export function socialWindowPhrase(windows: ClockWindow[], mode: TimelineMode): string {
+  const subject = mode === 'forward' ? 'Starting the biga' : 'Baking';
+  const noun = mode === 'forward' ? 'start' : 'bake';
+  if (windows.length === 0) {
+    return `With these durations no ${noun} time keeps every step out of the small hours.`;
+  }
+  const spans = windows.map(({ from, to }) =>
+    from.getTime() === to.getTime()
+      ? `at ${formatTimeOfDay(from)}`
+      : `between ${formatTimeOfDay(from)} and ${formatTimeOfDay(to)}`,
+  );
+  return `${subject} ${spans.join(' or ')} keeps every step out of the small hours.`;
 }
 
 /** "2 h", "20 min", "1 h 30 min". */

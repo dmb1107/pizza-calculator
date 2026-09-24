@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { C } from '../src/lib/constants';
-import { mixStaggerH } from '../src/lib/engine';
+import { computeRoomMinutes, mixStaggerH } from '../src/lib/engine';
 import {
   buildTimeline,
   formatDuration,
   fromDatetimeLocal,
   isUnsocialHour,
   roundToNextQuarterHour,
+  socialWindowPhrase,
+  socialWindows,
   solveBigaStart,
   stageDurations,
+  timelineFor,
   toDatetimeLocal,
   type ScheduleAdjustments,
 } from '../src/lib/timeline';
@@ -557,6 +560,195 @@ describe('backward mode', () => {
       const forward = buildTimeline({ startAt, schedule, adjustments: DEFAULTS });
       expect(forward.bakeAt.getTime(), schedule).toBe(bakeAt.getTime());
     }
+  });
+
+  /**
+   * §4.7 / MESSAGE-12: the backward timeline is where order becomes timestamps,
+   * and a sum can't see order. So these are clock times written out by hand
+   * from the §4.7 table — not derived from `STAGE_ORDER` or `stageDurations` —
+   * for a bake at Sat 3 Oct 2026, 18:00 (no daylight-saving change nearby).
+   * Swapping `coldFerment` and `ballRoomTemp` leaves the start and the bake
+   * right and fails every row between them.
+   */
+  const local = (d: number, h: number, m: number, s = 0) => new Date(2026, 9, d, h, m, s).getTime();
+  const BAKE = new Date(2026, 9, 3, 18, 0);
+  const golden = (schedule: Schedule, a: ScheduleAdjustments) =>
+    timelineFor({ mode: 'backward', bigaStartAt: new Date(0), bakeAt: BAKE, schedule, adjustments: a }).stages.map(
+      (st) => [st.key, st.startsAt.getTime()] as const,
+    );
+
+  it('puts every retarded stage at its hand-computed time (51 h 50 min back)', () => {
+    expect(golden('retarded', DEFAULTS)).toEqual([
+      ['bigaRoomTemp', local(1, 14, 10)], // Thu
+      ['bigaFridge', local(1, 16, 10)], //   + 2 h
+      ['bigaTemper', local(2, 11, 10)], //   + 19 h, Fri
+      ['mix', local(2, 12, 10)], //          + 1 h
+      ['bulkRest', local(2, 12, 40)], //     + 30 min
+      ['divideBall', local(2, 13, 40)], //   + 1 h
+      ['ballRoomTemp', local(2, 14, 0)], //  + 20 min
+      ['coldFerment', local(2, 15, 30)], //  + 90 min
+      ['temper', local(3, 15, 30)], //       + 24 h, Sat; + 2.5 h = 18:00
+    ]);
+  });
+
+  it('puts every classic stage at its hand-computed time (45 h 50 min back)', () => {
+    expect(golden('classic', DEFAULTS)).toEqual([
+      ['bigaRoomOnly', local(1, 20, 10)], // Thu
+      ['mix', local(2, 12, 10)], //          + 16 h
+      ['bulkRest', local(2, 12, 40)],
+      ['divideBall', local(2, 13, 40)],
+      ['ballRoomTemp', local(2, 14, 0)],
+      ['coldFerment', local(2, 15, 30)],
+      ['temper', local(3, 15, 30)],
+    ]);
+  });
+
+  it('carries a split batch’s longer mix and shorter rise to the second', () => {
+    // nMix 2: mix 65 min, rise 90 − 17.5 = 72.5 min. 52 h 7.5 min back.
+    expect(golden('retarded', { ...DEFAULTS, nMix: 2 })).toEqual([
+      ['bigaRoomTemp', local(1, 13, 52, 30)],
+      ['bigaFridge', local(1, 15, 52, 30)],
+      ['bigaTemper', local(2, 10, 52, 30)],
+      ['mix', local(2, 11, 52, 30)],
+      ['bulkRest', local(2, 12, 57, 30)],
+      ['divideBall', local(2, 13, 57, 30)],
+      ['ballRoomTemp', local(2, 14, 17, 30)],
+      ['coldFerment', local(2, 15, 30)],
+      ['temper', local(3, 15, 30)],
+    ]);
+  });
+
+  it('lands exactly on the bake when a duration is not a whole minute', () => {
+    // A measured rise is 80.41 min, not 80. Summing hours x 3.6e6 left the
+    // bake 1 ms early in 288 of these 648 cases, and the clock then printed
+    // the minute before (6:55 PM for 6:56).
+    for (const T of [70, 72.3, 73.1, 74.6, 75.7, 76.9]) {
+      for (const nMix of [1, 2, 3]) {
+        for (const schedule of ['retarded', 'classic'] as const) {
+          for (let min = 0; min < 60; min += 7) {
+            const adjustments = { ...DEFAULTS, nMix, ballRoomTempH: computeRoomMinutes({ finalDoughTempF: T, ddtF: 74 }) / 60 };
+            const bakeAt = new Date(2026, 9, 3, 18, min);
+            const t = timelineFor({ mode: 'backward', bigaStartAt: new Date(0), bakeAt, schedule, adjustments });
+            expect(t.bakeAt.getTime(), `${T} °F, nMix ${nMix}, ${schedule}, :${min}`).toBe(bakeAt.getTime());
+          }
+        }
+      }
+    }
+  });
+
+  it('counts back in real hours across the end of daylight saving', () => {
+    // Clocks go back at 02:00 on Sun 1 Nov 2026. 51 h 50 min before 18:00 EST
+    // is 15:10 EDT on Fri 30 Oct — calendar arithmetic would say 14:10.
+    const t = timelineFor({
+      mode: 'backward',
+      bigaStartAt: new Date(0),
+      bakeAt: new Date(2026, 10, 1, 18, 0),
+      schedule: 'retarded',
+      adjustments: DEFAULTS,
+    });
+    expect(t.startsAt.getTime()).toBe(new Date(2026, 9, 30, 15, 10).getTime());
+    expect((t.bakeAt.getTime() - t.startsAt.getTime()) / HOUR_MS).toBeCloseTo(51 + 50 / 60, 9);
+  });
+
+  it('holds the start going forward and the bake going backward', () => {
+    const start = new Date(2026, 9, 1, 14, 10);
+    const longer = { ...DEFAULTS, coldFermentH: 30 };
+    const fwd = timelineFor({ mode: 'forward', bigaStartAt: start, bakeAt: BAKE, schedule: 'retarded', adjustments: longer });
+    const back = timelineFor({ mode: 'backward', bigaStartAt: start, bakeAt: BAKE, schedule: 'retarded', adjustments: longer });
+    expect(fwd.startsAt.getTime()).toBe(start.getTime());
+    expect(fwd.bakeAt.getTime()).toBe(BAKE.getTime() + 6 * HOUR_MS);
+    expect(back.bakeAt.getTime()).toBe(BAKE.getTime());
+    expect(back.startsAt.getTime()).toBe(start.getTime() - 6 * HOUR_MS);
+  });
+
+  it('falls back to forward when there is no bake time to hold', () => {
+    const start = new Date(2026, 9, 1, 14, 10);
+    const t = timelineFor({ mode: 'backward', bigaStartAt: start, bakeAt: null, schedule: 'retarded', adjustments: DEFAULTS });
+    expect(t.startsAt.getTime()).toBe(start.getTime());
+  });
+
+  it('shows the same schedule either way when one end is fed to the other', () => {
+    // What switching modes does: nothing may move at the moment of the switch.
+    const start = new Date(2026, 9, 1, 14, 17, 23);
+    const a = { ...DEFAULTS, nMix: 2, ballRoomTempH: 80.41 / 60 };
+    const fwd = timelineFor({ mode: 'forward', bigaStartAt: start, bakeAt: null, schedule: 'retarded', adjustments: a });
+    const back = timelineFor({ mode: 'backward', bigaStartAt: new Date(0), bakeAt: fwd.bakeAt, schedule: 'retarded', adjustments: a });
+    expect(back.stages.map((st) => st.startsAt.getTime())).toEqual(fwd.stages.map((st) => st.startsAt.getTime()));
+  });
+});
+
+describe('§4.7 windows that keep every step out of the small hours', () => {
+  const DAY = new Date(2026, 9, 5);
+  const q = (h: number, m = 0) => new Date(2026, 9, 5, h, m).getTime();
+  const spans = (mode: 'forward' | 'backward', schedule: Schedule, a: ScheduleAdjustments) =>
+    socialWindows({ mode, day: DAY, schedule, adjustments: a }).map((w) => [w.from.getTime(), w.to.getTime()]);
+
+  it('gives 9:00 AM–8:00 PM for a retarded start at 24 h — the one case the old copy was right', () => {
+    expect(spans('forward', 'retarded', DEFAULTS)).toEqual([[q(9), q(20)]]);
+  });
+
+  it('gives 2:00 PM–11:45 PM for a classic start at 24 h, where 9 a.m. is itself overnight', () => {
+    expect(spans('forward', 'classic', DEFAULTS)).toEqual([[q(14), q(23, 45)]]);
+  });
+
+  it('moves with the cold ferment', () => {
+    expect(spans('forward', 'retarded', { ...DEFAULTS, coldFermentH: 6 })).toEqual([[q(9), q(14)]]);
+    expect(spans('forward', 'retarded', { ...DEFAULTS, coldFermentH: 12 })).toEqual([[q(16, 45), q(21, 45)]]);
+  });
+
+  it('can be two windows', () => {
+    expect(spans('forward', 'classic', { ...DEFAULTS, coldFermentH: 12 })).toEqual([
+      [q(14), q(14)],
+      [q(22, 45), q(23, 45)],
+    ]);
+  });
+
+  it('gives bake times in backward mode', () => {
+    // The forward window shifted by 51 h 50 min, rounded inward to quarters.
+    expect(spans('backward', 'retarded', DEFAULTS)).toEqual([[q(13), q(23, 45)]]);
+  });
+
+  it('matches a brute-force scan exactly', () => {
+    // Independent of the grouping: every quarter in a window works, every
+    // quarter outside fails.
+    for (const mode of ['forward', 'backward'] as const) {
+      for (const schedule of ['retarded', 'classic'] as const) {
+        for (let cold = 6; cold <= 36; cold += 1) {
+          for (const temperH of [2, 2.5, 3]) {
+            const a = { ...DEFAULTS, coldFermentH: cold, temperH };
+            const windows = socialWindows({ mode, day: DAY, schedule, adjustments: a });
+            const inWindow = new Set<number>();
+            for (const w of windows) {
+              for (let t = w.from.getTime(); t <= w.to.getTime(); t += 15 * 60_000) inWindow.add(new Date(t).getHours() * 60 + new Date(t).getMinutes());
+            }
+            for (let i = 0; i < 96; i++) {
+              const at = new Date(2026, 9, 5, 0, i * 15);
+              const ok = !timelineFor({ mode, bigaStartAt: at, bakeAt: at, schedule, adjustments: a }).hasUnsocialHours;
+              expect(inWindow.has(i * 15), `${mode} ${schedule} ${cold} h, temper ${temperH}, ${i * 15} min`).toBe(ok);
+            }
+          }
+        }
+      }
+    }
+  });
+
+  it('never works with the anchor itself in the small hours, so no window crosses midnight', () => {
+    // The anchor is an action — the biga going in, or the bake.
+    for (const mode of ['forward', 'backward'] as const) {
+      for (const schedule of ['retarded', 'classic'] as const) {
+        for (let i = 0; i < 24; i++) {
+          const at = new Date(2026, 9, 5, 0, i * 15);
+          expect(timelineFor({ mode, bigaStartAt: at, bakeAt: at, schedule, adjustments: DEFAULTS }).hasUnsocialHours).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('words one window, two, a single quarter, and none', () => {
+    const w = (h1: number, m1: number, h2: number, m2: number) => ({ from: new Date(q(h1, m1)), to: new Date(q(h2, m2)) });
+    expect(socialWindowPhrase([w(9, 0, 20, 0)], 'forward')).toMatch(/^Starting the biga between 9:00\sAM and 8:00\sPM keeps every step out of the small hours\.$/);
+    expect(socialWindowPhrase([w(14, 0, 14, 0), w(22, 45, 23, 45)], 'backward')).toMatch(/^Baking at 2:00\sPM or between 10:45\sPM and 11:45\sPM keeps/);
+    expect(socialWindowPhrase([], 'backward')).toBe('With these durations no bake time keeps every step out of the small hours.');
   });
 });
 

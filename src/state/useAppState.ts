@@ -10,8 +10,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ballsPerMix, calculate, type CalculatorResult } from '../lib/engine';
 import { defaultDdtF } from '../lib/constants';
 import {
-  buildTimeline,
   roundToNextQuarterHour,
+  socialWindows,
+  timelineFor,
+  type ClockWindow,
   type ScheduleAdjustments,
   type Timeline,
 } from '../lib/timeline';
@@ -27,7 +29,7 @@ import {
 } from './storage';
 import { decodeInputs, encodeInputs } from './url';
 import { tokenValues } from '../lib/bindTokens';
-import type { Calibration, EffectiveFriction, Inputs, PanelPrefs, Persisted } from './types';
+import type { Calibration, EffectiveFriction, Inputs, PanelPrefs, Persisted, TimelineMode } from './types';
 
 function currentSearch(): string {
   return typeof window === 'undefined' ? '' : window.location.search;
@@ -94,12 +96,27 @@ export interface AppState {
     temperH: number;
   };
 
-  /** When the biga goes in. t = 0 for the timeline. */
+  /** Forward mode's anchor: when the biga goes in. In backward mode read `timeline.startsAt`. */
   bigaStartAt: Date;
   setBigaStartAt: (at: Date) => void;
-  /** Reset the start to now, for when a session actually begins. */
+  /**
+   * The biga is going in now. Always lands in forward mode: once it has gone
+   * in, the start is a fact, and a measured dough temperature should move the
+   * bake rather than rewrite the start.
+   */
   startNow: () => void;
+  /** §4.7: which end is held. */
+  timelineMode: TimelineMode;
+  /** Switches mode without moving anything: the held end is taken from the schedule as shown. */
+  setTimelineMode: (mode: TimelineMode) => void;
+  /** Backward mode's anchor. Null until backward mode is first used. */
+  bakeAt: Date | null;
+  setBakeAt: (at: Date) => void;
   timeline: Timeline;
+  /** Anchor times on the anchor's own day that keep every step out of 00:00–06:00. */
+  daylightWindows: ClockWindow[];
+  /** The clock time-based UI reads from. */
+  now: Date;
 
   result: CalculatorResult;
   /** Absolute link reproducing the current inputs. */
@@ -129,6 +146,11 @@ export function useAppState(): AppState {
     // starts from now, since that is when you are standing at the counter.
     return stored ? new Date(stored) : roundToNextQuarterHour(new Date());
   });
+
+  const [timelineMode, setTimelineModeRaw] = useState<TimelineMode>(initial.persisted.timelineMode);
+  const [bakeAt, setBakeAt] = useState<Date | null>(() =>
+    initial.persisted.bakeAtIso ? new Date(initial.persisted.bakeAtIso) : null,
+  );
 
   const [checkedSteps, setCheckedSteps] = useState<Set<string>>(
     () => new Set(initial.persisted.checkedSteps),
@@ -167,6 +189,8 @@ export function useAppState(): AppState {
       calibration,
       panels,
       bigaStartAtIso: bigaStartAt.toISOString(),
+      timelineMode,
+      bakeAtIso: bakeAt ? bakeAt.toISOString() : '',
       checkedSteps: [...checkedSteps],
       bowlMassG: inputs.bowlMassG,
       timers,
@@ -178,6 +202,8 @@ export function useAppState(): AppState {
     panels,
     inputs.bowlMassG,
     bigaStartAt,
+    timelineMode,
+    bakeAt,
     checkedSteps,
     timers,
   ]);
@@ -286,11 +312,36 @@ export function useAppState(): AppState {
   );
 
   const timeline = useMemo(
-    () => buildTimeline({ startAt: bigaStartAt, schedule: inputs.schedule, adjustments, now }),
-    [bigaStartAt, inputs.schedule, adjustments, now],
+    () =>
+      timelineFor({ mode: timelineMode, bigaStartAt, bakeAt, schedule: inputs.schedule, adjustments, now }),
+    [timelineMode, bigaStartAt, bakeAt, inputs.schedule, adjustments, now],
   );
 
-  const startNow = useCallback(() => setBigaStartAt(roundToNextQuarterHour(new Date())), []);
+  // Keyed on the anchor's calendar day, not the instant, so dragging the time
+  // within a day doesn't rescan.
+  const anchor = timelineMode === 'backward' ? timeline.bakeAt : timeline.startsAt;
+  const anchorDay = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate()).getTime();
+  const daylightWindows = useMemo(
+    () => socialWindows({ mode: timelineMode, day: new Date(anchorDay), schedule: inputs.schedule, adjustments }),
+    [timelineMode, anchorDay, inputs.schedule, adjustments],
+  );
+
+  const setTimelineMode = useCallback(
+    (mode: TimelineMode) => {
+      if (mode === timelineMode) return;
+      // Hand the other end over exactly as it is shown, so the switch itself
+      // moves nothing; only what happens next differs.
+      if (mode === 'backward') setBakeAt(timeline.bakeAt);
+      else setBigaStartAt(timeline.startsAt);
+      setTimelineModeRaw(mode);
+    },
+    [timelineMode, timeline.bakeAt, timeline.startsAt],
+  );
+
+  const startNow = useCallback(() => {
+    setBigaStartAt(roundToNextQuarterHour(new Date()));
+    setTimelineModeRaw('forward');
+  }, []);
 
   const toggleStep = useCallback((id: string) => {
     setCheckedSteps((prev) => {
@@ -375,6 +426,12 @@ export function useAppState(): AppState {
     scheduleTokens,
     bigaStartAt,
     setBigaStartAt,
+    timelineMode,
+    setTimelineMode,
+    bakeAt,
+    setBakeAt,
+    daylightWindows,
+    now,
     startNow,
     timeline,
     result,

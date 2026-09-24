@@ -4,10 +4,9 @@ Derived from [`docs/WEBSITE-SPEC-biga-calculator.md`](docs/WEBSITE-SPEC-biga-cal
 Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
-**Status:** Tasks 0–7 complete, on the bowl-aware thermal model with **per-mix
-weights**, the ice calculation removed, and **MESSAGE-26 applied**. Task 8
-(backward timeline) next — §4.7's durations have stopped moving, so it is now
-safe to solve against them.
+**Status:** Tasks 0–8 complete, on the bowl-aware thermal model with **per-mix
+weights**, the ice calculation removed, and **MESSAGE-26 applied**. Task 9
+(reference drawer and About) next.
 
 ---
 
@@ -592,9 +591,21 @@ markdown, inline. A test pins `watchFor` as markdown so it can't regress.
 
 ## Task 8 — Timeline backward mode
 
-- [ ] User gives a target bake time → solve for biga start.
-- [ ] Same overnight flagging. Per §4.7 this is the single most useful thing
-      backward mode solves.
+- [x] User gives a target bake time → solve for biga start. "Plan from" picks
+      which end is held (`timelineFor`); switching hands the other end over as
+      shown, so the switch moves nothing. "Start now" always lands in forward
+      mode — a biga that has gone in is a fact. A solved start already past is
+      called out.
+- [x] Every stage time pinned to hand-written clock times on both schedules
+      and at `nMix` 2 (MESSAGE-12: a sum can't see order). Swapping
+      `coldFerment` and `ballRoomTemp` fails all three.
+- [x] Stage lengths accumulate in whole milliseconds. Before, 288 of 648
+      realistic backward solves landed 1 ms early and printed the minute
+      before the requested bake.
+- [x] Same overnight flagging, plus the window that avoids it, computed for
+      the durations in hand (`socialWindows`). The card used to say "starting
+      between 9 a.m. and 8 p.m." for every schedule; that holds only for
+      retarded at 24 h.
 
 ---
 

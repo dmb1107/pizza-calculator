@@ -21,11 +21,11 @@ instead (§7).
   FINDINGS-26, and **FINDINGS-27** answers MESSAGE-26. Their next is 27. **There is no MESSAGE-22.** A stray
   draft by that number arrived before MESSAGE-21, was superseded by it, and has
   been deleted.
-- **Tasks 0–7 are done:** engine, state, cards, forward timeline, steps,
+- **Tasks 0–8 are done:** engine, state, cards, both timeline modes, steps,
   concepts, timers. The plan's status line names the last message applied.
-- **Next comes Task 8.**
-- **After Task 8:**
-  - Task 9 — reference drawer and About.
+- **Next comes Task 9** — reference drawer and About. §9's friction-rate table
+  must render through the literal gate (MESSAGE-25/26).
+- **After Task 9:**
   - Task 10 — only the phone-in-the-kitchen check remains, and that's Dave's.
   - Task 11 — the bake log.
 - **Every push to `main` deploys** to https://dmb1107.github.io/pizza-calculator/.
@@ -66,18 +66,19 @@ None of these changes a displayed value today, since whole minutes are whole
 minutes. But CLAUDE.md says all rounding lives in `format.ts`, and these are
 the exceptions it doesn't know about. Low priority.
 
-### Task 8 — the backward timeline
+### Task 8 — done; what it found
 
-The user gives a target bake time; the app solves for when to start the biga,
-with the same overnight flags. `solveBigaStart` in `src/lib/timeline.ts` already
-does the arithmetic. What's missing is the UI.
-
-⚠️ Read §4.7 and MESSAGE-12 first. **Backward mode is where stage order becomes
-timestamps.** A mis-ordered stage list still sums to the right total, so the
-start time comes out right while every stage time in between is wrong. That's
-why the stage sequence is asserted per schedule in `timeline.test.ts`, and why
-`stageSteps.test.ts` exists. When you build the UI, check the timestamps
-between the start and the bake, not just the start.
+- **Backward mode** holds the bake and solves the start; forward holds the
+  start. `timelineFor` in `timeline.ts` does it, so the hook only stores
+  anchors. Stage times are pinned to hand-written clocks — keep it that way if
+  §4.7 moves.
+- **Three typed figures in UI copy**, all invisible to the gate because they
+  were JSX text: the probe card's "about 3.7 °F to add" (wrong at every batch
+  size — 4.2 at 6 balls), the timeline's "9 a.m. and 8 p.m." window (true for
+  retarded at 24 h only), and "plus 2.2% for scrap". Fixed, and the gate now
+  reads the syntax tree. `recipeText.ts` had "65% · 70% · 2.8%" and a `?? 965`,
+  bound by hand. **Not yet reported to the recipe agent** — none is §8, but
+  the probe figure is theirs to know about.
 
 ---
 

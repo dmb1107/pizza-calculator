@@ -194,10 +194,15 @@ ways.
 
 **The same applies to UI copy.** The gate reads §8, so a figure typed into a
 component is invisible to it: the ball-weight hint said "265 g opens to about
-11.5–12 inches" for three rounds after §4.9 retracted it. Numeric strings in
-component copy attributes (`hint`, `label`, …) are classified in the same suite,
-and a computed figure there comes from the engine in a template literal. **The
-gate checks numbers, not sources** — a claim with no digit in it passes by
+11.5–12 inches" for three rounds after §4.9 retracted it. **All component copy
+is read from the syntax tree** (`parseAst`, which Vite exports; TypeScript 7
+has no JS API): JSX text, copy attributes, template text and strings in `{…}`
+children. Every numeric string there is classified in the same suite, and a
+computed figure comes from the engine through an interpolation. Each widening
+found live wrong copy — the probe card's "3.7 °F" and the timeline's "9 a.m.
+and 8 p.m." were JSX text. `src/lib/recipeText.ts` builds copy too and the gate
+doesn't read it; bind figures there by hand. **The gate checks numbers, not
+sources** — a claim with no digit in it passes by
 construction, so sourcing worded claims stays a human read.
 
 **Do not shorten the prose in spec §8.** The step `detail` blocks are the point
@@ -360,9 +365,9 @@ don't inline a `toFixed` somewhere else.
 Follow spec §12. Task list and status: [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md),
 which is kept current — check its status line first.
 
-Tasks 0–7 are done (engine, state, cards, forward timeline, steps, concepts,
-timers). Remaining: backward timeline, reference drawer and About, the phone
-check that finishes the deploy task, bake log. **Pages deploys on every push**
+Tasks 0–8 are done (engine, state, cards, both timeline modes, steps,
+concepts, timers). Remaining: reference drawer and About, the phone check that
+finishes the deploy task, bake log. **Pages deploys on every push**
 and has since 1 September — check `gh run list` rather than any written status.
 
 **Verify §5 before changing any formula**, including the bake-1 regression. §12

@@ -12,6 +12,12 @@ export type { BowlState };
 export type Schedule = 'retarded' | 'classic';
 
 /**
+ * §4.7. Forward: the user gives the biga start. Backward: the user gives the
+ * bake time and the start is solved.
+ */
+export type TimelineMode = 'forward' | 'backward';
+
+/**
  * Per-session inputs. These serialize to the URL so a setup can be shared or
  * survive a refresh (§2). Derived values never live here — they come from the
  * engine.
@@ -121,6 +127,10 @@ export interface Persisted {
    * timestamp in a shared link goes stale the moment it is sent.
    */
   bigaStartAtIso: string;
+  /** §4.7: which end of the schedule is held. Persisted with the times it holds. */
+  timelineMode: TimelineMode;
+  /** Backward mode's target bake time, ISO. Empty until backward mode is first used. */
+  bakeAtIso: string;
   /** Ids of steps ticked off. §7.5: "a checkbox that persists". */
   checkedSteps: string[];
   /** Weighed once, then never again. */

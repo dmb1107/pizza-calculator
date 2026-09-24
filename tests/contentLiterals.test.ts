@@ -16,6 +16,7 @@ import { BOUNDS } from '../src/state/defaults';
 import { BAKE_1 } from './vectors';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parseAst } from 'vite';
 
 /**
  * §8.1: *no literal in §8 content may restate an engine output unchecked.*
@@ -727,14 +728,18 @@ describe('§8.1 every numeric literal in §8 is classified', () => {
  * after §4.9 retracted that figure. It was found by hand, in MESSAGE-20's
  * sweep; this makes the next one fail instead.
  *
- * Scope: copy attributes in components — quoted strings, and every string
- * inside a `{…}` expression: the literal parts of template literals (at any
- * nesting) and quoted strings in their interpolations. A computed figure
- * belongs in an interpolation fed from the engine, and interpolations are
- * skipped, but the text AROUND them is typed. Template literals used to be
- * skipped wholesale on that theory, and the biga hint mixed both: a computed
- * coefficient beside "11 °F of water and 3.5 °F of finished dough" typed in,
- * wrong at every size but 6 balls and wrong at 6 once the bowl was measured.
+ * Scope: all copy in components, read from the syntax tree (`parseAst`, which
+ * Vite exports) — JSX text, copy attributes, and every string inside them or
+ * inside a `{…}` child: template-literal text at any nesting and quoted
+ * strings in interpolations. Interpolated code is skipped; the text around it
+ * is typed. Each widening found something:
+ *
+ * - quoted attributes only: the biga hint typed "11 °F … 3.5 °F" into a
+ *   template literal (FINDINGS-25);
+ * - attributes only: the probe card said Phases C and D add "about 3.7 °F",
+ *   wrong at every batch size, and the timeline said "starting between 9 a.m.
+ *   and 8 p.m. keeps every step in daylight", true only for the retarded
+ *   schedule at 24 h. Both were JSX text (Task 8).
  */
 describe('§8.1 numbers in component copy are classified too', () => {
   const COMPONENT_FIXED: Record<string, string> = {
@@ -742,77 +747,83 @@ describe('§8.1 numbers in component copy are classified too', () => {
     'put the water 5 °F wrong on the first bake': 'bake-1 history, with its condition stated',
     'handling gains about 5 °F that the bowl does not share':
       'bake-1 history: §6, 53 °F at pull and 58 °F after tearing — one observation, which §6 forbids turning into a constant',
+    'between midnight and 6 a.m.': 'the definition `isUnsocialHour` implements — §4.7 "between midnight and 6 AM"',
+    '750 °F, full flame, 60–90 s, turning every 15–20 s.': 'bake-2 procedure, the same figures FIXED under bake-2.summary',
+    'at mix 1': 'names mix 1 — an index, not a quantity',
   };
 
-  const COPY_ATTR = /\b(?:hint|label|title|placeholder|aria-label|alt|description|summary|caption)=/g;
+  /** Attributes that carry words a person reads. `className` and the like are not copy. */
+  const COPY_ATTRS = new Set([
+    'hint', 'label', 'title', 'placeholder', 'aria-label', 'alt', 'description', 'summary', 'caption', 'note', 'legend',
+  ]);
 
-  /**
-   * Every string literal inside a JSX expression starting at `src[start]`
-   * (the `{`): template-literal text segments and quoted strings, but not
-   * the code in `${…}`. A small lexer rather than a regex, because template
-   * literals nest — the bowl hint has one inside an interpolation inside
-   * another.
-   */
-  function expressionStrings(src: string, start: number): string[] {
+  type Node = { type: string; [key: string]: unknown };
+  const isNode = (v: unknown): v is Node => typeof v === 'object' && v !== null && typeof (v as Node).type === 'string';
+
+  /** Every piece of copy in one component file. */
+  function copyIn(src: string): string[] {
     const out: string[] = [];
-    let i = start;
-    const code = (): void => {
-      // At a `{`; consume through its matching `}`.
-      let depth = 0;
-      for (; i < src.length; i += 1) {
-        const ch = src[i];
-        if (ch === '{') depth += 1;
-        else if (ch === '}') {
-          depth -= 1;
-          if (depth === 0) { i += 1; return; }
-        } else if (ch === "'" || ch === '"') {
-          const end = src.indexOf(ch, i + 1);
-          out.push(src.slice(i + 1, end));
-          i = end;
-        } else if (ch === '`') {
-          template();
-          i -= 1;
+    const push = (text: string) => {
+      const t = text.replace(/\s+/g, ' ').trim();
+      if (t) out.push(t);
+    };
+    const visit = (node: unknown, copy: boolean): void => {
+      if (Array.isArray(node)) return node.forEach((n) => visit(n, copy));
+      if (!isNode(node)) return;
+      switch (node.type) {
+        case 'JSXText':
+          return push(node['value'] as string);
+        case 'JSXAttribute': {
+          const name = node['name'] as Node;
+          const attr = name.type === 'JSXIdentifier' ? (name['name'] as string) : '';
+          // Not copy: don't descend at all, so a className template is never read.
+          if (COPY_ATTRS.has(attr)) visit(node['value'], true);
+          return;
         }
+        case 'JSXElement':
+        case 'JSXFragment':
+          visit(node['openingElement'], false);
+          // A `{…}` child renders its strings: a ternary's two wordings, a
+          // template's text.
+          return (node['children'] as Node[]).forEach((c) =>
+            visit(c.type === 'JSXExpressionContainer' ? c['expression'] : c, c.type === 'JSXExpressionContainer'),
+          );
+        case 'Literal':
+          if (copy && typeof node['value'] === 'string') push(node['value']);
+          return;
+        case 'TemplateLiteral':
+          if (copy) for (const q of node['quasis'] as Node[]) push((q['value'] as { cooked: string }).cooked);
+          return visit(node['expressions'], copy);
       }
-      throw new Error(`unbalanced expression at ${start}`);
-    };
-    const template = (): void => {
-      // At a backtick; consume through its closing backtick.
-      let text = '';
-      for (i += 1; i < src.length; i += 1) {
-        const ch = src[i];
-        if (ch === '\\') { text += src[i + 1]; i += 1; }
-        else if (ch === '`') { out.push(text); i += 1; return; }
-        else if (ch === '$' && src[i + 1] === '{') {
-          out.push(text);
-          text = '';
-          i += 1;
-          code();
-          i -= 1;
-        } else text += ch;
+      for (const [key, value] of Object.entries(node)) {
+        if (key !== 'type' && (Array.isArray(value) || isNode(value))) visit(value, copy);
       }
-      throw new Error(`unterminated template at ${start}`);
     };
-    code();
+    visit(parseAst(src, { lang: 'tsx' }), false);
     return out;
   }
 
   const componentStrings = () =>
     readdirSync('src/components')
       .filter((f) => f.endsWith('.tsx'))
-      .flatMap((f) => {
-        const src = readFileSync(join('src/components', f), 'utf8');
-        // Attributes that carry words a person reads. `className` and the
-        // like are not copy, and guessing at class syntax is what not to do.
-        return [...src.matchAll(COPY_ATTR)].flatMap((m) => {
-          const at = m.index! + m[0].length;
-          if (src[at] === '"') return [src.slice(at + 1, src.indexOf('"', at + 1))];
-          if (src[at] === '{') return expressionStrings(src, at);
-          return [];
-        })
+      .flatMap((f) =>
+        copyIn(readFileSync(join('src/components', f), 'utf8'))
           .filter((text) => /\d/.test(text))
-          .map((text) => ({ f, text }));
-      });
+          .map((text) => ({ f, text })),
+      );
+
+  it('reads copy from every place it can hide', () => {
+    // The walker, checked against a fixture holding one figure in each place.
+    const found = copyIn(`
+      const a = <p hint="attr 1" className="x-2">jsx 3 {n} text</p>;
+      const b = <F label={\`tpl 4 \${n} tail 5\`} />;
+      const c = <p>{on ? 'ternary 6' : \`nested \${inner ? \`deep 7\` : 'q 8'}\`}</p>;
+    `).join(' | ');
+    for (const n of ['attr 1', 'jsx 3', 'text', 'tpl 4', 'tail 5', 'ternary 6', 'deep 7', 'q 8']) {
+      expect(found, n).toContain(n);
+    }
+    expect(found, 'className is not copy').not.toContain('x-2');
+  });
 
   it('leaves no numeric UI string unclassified', () => {
     // A classified phrase excuses itself, not the string around it. Matching

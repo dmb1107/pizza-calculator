@@ -6,6 +6,7 @@ import {
   type RunningTimer,
   type TimerSpec,
 } from '../lib/timers';
+import { formatTimeOfDay } from '../lib/timeline';
 
 /**
  * Per-step timer — WEBSITE-SPEC-biga-calculator.md §7.5.
@@ -166,7 +167,7 @@ export function StepTimer({
       <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
         {spec.isWindow
           ? `${describeSpec(spec)} — the second number is how long you have, not a deadline you missed.`
-          : `${describeSpec(spec)} from ${new Date(timer.startedAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`}
+          : `${describeSpec(spec)} from ${formatTimeOfDay(new Date(timer.startedAt))}`}
       </p>
     </div>
   );

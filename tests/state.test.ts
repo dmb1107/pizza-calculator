@@ -179,6 +179,8 @@ describe('localStorage persistence', () => {
       },
       panels: { batch: true, temperatures: true, calibration: false },
       bigaStartAtIso: '2026-08-21T13:00:00.000Z',
+      timelineMode: 'backward' as const,
+      bakeAtIso: '2026-08-23T22:00:00.000Z',
       checkedSteps: ['biga-1', 'biga-2'],
       bowlMassG: 1100,
       timers: [{ stepId: 'mix-6', startedAt: 1_700_000_000_000, minMinutes: 10, maxMinutes: 10 }],
@@ -223,6 +225,16 @@ describe('localStorage persistence', () => {
         expect(Number.isFinite(entry.ff)).toBe(true);
         expect(typeof entry.measuredAt).toBe('string');
       }
+    });
+
+    it('keeps backward mode only with a bake time to hold', () => {
+      const load = (extra: object) =>
+        loadPersisted(fakeStorage({ [STORAGE_KEY]: JSON.stringify(extra) }));
+      expect(load({ timelineMode: 'backward', bakeAtIso: '2026-10-03T22:00:00.000Z' }).timelineMode).toBe('backward');
+      expect(load({ timelineMode: 'backward' }).timelineMode).toBe('forward');
+      expect(load({ timelineMode: 'backward', bakeAtIso: 'Saturday' }).timelineMode).toBe('forward');
+      expect(load({ timelineMode: 'sideways', bakeAtIso: '2026-10-03T22:00:00.000Z' }).timelineMode).toBe('forward');
+      expect(load({}).timelineMode).toBe('forward');
     });
 
     it('drops corrupt friction entries but keeps the good ones', () => {

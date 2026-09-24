@@ -44,6 +44,8 @@ export const DEFAULT_PERSISTED: Persisted = {
   calibration: DEFAULT_CALIBRATION,
   panels: DEFAULT_PANELS,
   bigaStartAtIso: '',
+  timelineMode: 'forward',
+  bakeAtIso: '',
   checkedSteps: [],
   bowlMassG: DEFAULT_INPUTS.bowlMassG,
   timers: [],

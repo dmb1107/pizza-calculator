@@ -1,5 +1,6 @@
 import { CopyButton } from './CopyButton';
-import { formatAdy, formatGrams, formatTempF } from '../lib/format';
+import { C } from '../lib/constants';
+import { formatAdy, formatGrams, formatPercent, formatTempF } from '../lib/format';
 import { buildRecipeText } from '../lib/recipeText';
 import type { BowlState, CalculatorResult, Warning } from '../lib/engine';
 
@@ -83,7 +84,7 @@ export function IngredientsCard({ result }: { result: CalculatorResult }) {
 
       <p className="mt-4 border-t border-stone-200 pt-3 text-sm text-stone-600 tabular dark:border-stone-800 dark:text-stone-400">
         Total dough {formatGrams(formula.doughTotal)} g · {result.inputs.balls} ×{' '}
-        {formatGrams(result.inputs.ballWeightG)} g plus 2.2% for scrap
+        {formatGrams(result.inputs.ballWeightG)} g plus {formatPercent(C.OVERAGE - 1, 1)} for scrap
       </p>
     </Card>
   );
@@ -193,7 +194,7 @@ export function TargetsCard({ result }: { result: CalculatorResult }) {
       </div>
       <p className="mt-3 text-sm text-stone-600 dark:text-stone-400">
         You are not aiming at the final temperature when you probe — Phases C and D still have
-        about 3.7 °F to add.
+        about {formatTempF(result.probe.frictionRemainingF)} °F to add.
       </p>
     </Card>
   );

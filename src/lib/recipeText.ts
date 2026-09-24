@@ -7,7 +7,8 @@
  * figure without the temperatures it was computed from can't be reproduced.
  */
 
-import { formatAdy, formatGrams, formatGramsWhole, formatTempF } from './format';
+import { C } from './constants';
+import { formatAdy, formatGrams, formatGramsWhole, formatPercent, formatTempF } from './format';
 import { atMix, type CalculatorResult } from './engine';
 
 /** Pad a label so the numbers line up in a monospaced viewer. */
@@ -20,7 +21,9 @@ export function buildRecipeText(result: CalculatorResult): string {
   const lines: string[] = [];
 
   lines.push(`Biga Neapolitan — ${inputs.balls} × ${formatGrams(inputs.ballWeightG)} g`);
-  lines.push(`65% biga · 70% hydration · 2.8% salt · ${formatGrams(formula.doughTotal)} g total`);
+  lines.push(
+    `${formatPercent(C.BIGA_FRACTION)} biga · ${formatPercent(C.HYDRATION)} hydration · ${formatPercent(C.SALT, 1)} salt · ${formatGrams(formula.doughTotal)} g total`,
+  );
   lines.push('');
 
   lines.push('BIGA');
@@ -88,7 +91,7 @@ export function buildRecipeText(result: CalculatorResult): string {
     lines.push(row(`Bowl at mix${label}`, `${formatTempF(mix.bowlTempF)} °F (${mix.bowlState})`));
   }
   lines.push(row('Friction', `${formatTempF(inputs.frictionFactorF)} °F`));
-  lines.push(row('Bowl', `${formatGramsWhole(inputs.bowlMassG ?? 965)} g`));
+  lines.push(row('Bowl', `${formatGramsWhole(inputs.bowlMassG ?? C.DEFAULT_BOWL_MASS_G)} g`));
 
   return lines.join('\n');
 }

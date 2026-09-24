@@ -130,6 +130,16 @@ function parseIsoInstant(raw: unknown): string {
   return Number.isNaN(parsed.getTime()) ? '' : raw;
 }
 
+/**
+ * Backward mode only means something with a bake time to hold, so a mode
+ * without one degrades to forward rather than to a schedule anchored nowhere.
+ */
+function parseTimelineAnchor(mode: unknown, bakeAtRaw: unknown): Pick<Persisted, 'timelineMode' | 'bakeAtIso'> {
+  const bakeAtIso = parseIsoInstant(bakeAtRaw);
+  const timelineMode = mode === 'backward' && bakeAtIso !== '' ? 'backward' : 'forward';
+  return { timelineMode, bakeAtIso };
+}
+
 function parsePanels(raw: unknown): PanelPrefs {
   if (!isRecord(raw)) return DEFAULT_PANELS;
   const bool = (v: unknown, fallback: boolean) => (typeof v === 'boolean' ? v : fallback);
@@ -167,6 +177,7 @@ export function loadPersisted(storage: StorageLike | null): Persisted {
     },
     panels: parsePanels(parsed['panels']),
     bigaStartAtIso: parseIsoInstant(parsed['bigaStartAtIso']),
+    ...parseTimelineAnchor(parsed['timelineMode'], parsed['bakeAtIso']),
     checkedSteps: parseStringArray(parsed['checkedSteps']),
     bowlMassG: clampField('bowlMassG', finiteOr(parsed['bowlMassG'], DEFAULT_PERSISTED.bowlMassG)),
     timers: parseTimers(parsed['timers']),
