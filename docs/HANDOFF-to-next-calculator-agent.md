@@ -21,13 +21,16 @@ instead (§7).
   FINDINGS-26, and **FINDINGS-27** answers MESSAGE-26. Their next is 27. **There is no MESSAGE-22.** A stray
   draft by that number arrived before MESSAGE-21, was superseded by it, and has
   been deleted.
-- **Tasks 0–8 are done:** engine, state, cards, both timeline modes, steps,
-  concepts, timers. The plan's status line names the last message applied.
-- **Next comes Task 9** — reference drawer and About. §9's friction-rate table
-  must render through the literal gate (MESSAGE-25/26).
-- **After Task 9:**
+- **Tasks 0–9 are done:** engine, state, cards, both timeline modes, steps,
+  concepts, timers, reference and About drawers. The plan's status line names
+  the last message applied.
+- **FINDINGS-28 went unprompted** after Task 9: §9's 80% row (250 RPM against
+  249.48 on the measured line, pinned `knownWrong`), implementer voice
+  rendered from §9, and Task 8's probe-card figure. Their reply is MESSAGE-28.
+- **What's left:**
   - Task 10 — only the phone-in-the-kitchen check remains, and that's Dave's.
-  - Task 11 — the bake log.
+  - Task 11 — the bake log. Its `ff_measured` is `solveFrictionFactorF`, never
+    `final − predicted_mix` (§10); file it under the bake's balls per mix.
 - **Every push to `main` deploys** to https://dmb1107.github.io/pizza-calculator/.
 
 ---
@@ -77,8 +80,7 @@ the exceptions it doesn't know about. Low priority.
   size — 4.2 at 6 balls), the timeline's "9 a.m. and 8 p.m." window (true for
   retarded at 24 h only), and "plus 2.2% for scrap". Fixed, and the gate now
   reads the syntax tree. `recipeText.ts` had "65% · 70% · 2.8%" and a `?? 965`,
-  bound by hand. **Not yet reported to the recipe agent** — none is §8, but
-  the probe figure is theirs to know about.
+  bound by hand. Reported in FINDINGS-28 as a note, since none of it is §8.
 
 ---
 
