@@ -16,11 +16,9 @@ instead (§7).
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-25.** FINDINGS-25 went
-  unprompted (the biga-hint fix); MESSAGE-25 replied to it and carried a
-  round of its own; **FINDINGS-26** replies to that. The numbering stepped
-  because 25 went first: their next message may be 26, and your reply takes
-  whatever number keeps the pair together. **There is no MESSAGE-22.** A stray
+- **The correspondence is applied through MESSAGE-26.** FINDINGS-25 went
+  unprompted, so the numbering stepped. It now pairs: MESSAGE-26 answered
+  FINDINGS-26, and **FINDINGS-27** answers MESSAGE-26. Their next is 27. **There is no MESSAGE-22.** A stray
   draft by that number arrived before MESSAGE-21, was superseded by it, and has
   been deleted.
 - **Tasks 0–7 are done:** engine, state, cards, forward timeline, steps,
@@ -183,6 +181,12 @@ The long form is the errors table in their `HANDOFF-new-context.md`. The shapes:
 - **A worded claim resting on a thin margin:** "more than three times" held
   because `Ct/Cw` is 3.0023. A formula change a few points away breaks it, and
   no gate sees words. Print the computed figure instead.
+- **Rounding while reading your own scratch output.** `toFixed(1)` in a
+  scratch print turned 2437.47 into "2437.5", which then went into a finding
+  as "unrounded". Print scratch values with more digits than the claim needs.
+- **A reason asserted without checking it:** "the three tie because they share
+  a per-mix dough". They don't (1250.93 g against 1667.90 g); they share
+  `(nMix − 1) ÷ batch dough`. The number was checked and its explanation wasn't.
 - **A tolerance wider than the change:** `TOL.degF` = 0.1 passed both 67.97 and
   68.00. When a pin moves by less than its tolerance, the test never saw it.
 - **Verifying a list by its contents when order is the meaning:** the step
