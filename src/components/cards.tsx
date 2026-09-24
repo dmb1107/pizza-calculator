@@ -35,7 +35,7 @@ function Weight({ label, value, note }: { label: string; value: string; note?: s
       <span className="text-stone-600 dark:text-stone-400">{label}</span>
       <span className="text-right">
         <span className="text-2xl font-semibold tabular">{value}</span>
-        {note && <span className="block text-xs text-stone-500">{note}</span>}
+        {note && <span className="block text-sm text-stone-500">{note}</span>}
       </span>
     </div>
   );

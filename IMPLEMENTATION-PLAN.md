@@ -637,7 +637,15 @@ markdown, inline. A test pins `watchFor` as markdown so it can't regress.
 - [x] Confirm the workflow runs and assets resolve under the subpath. Verified
   23 September: the live `index.html` names the same bundle hash as a local
   build, and the served bundle carries MESSAGE-13's content.
-- [ ] Check on an actual phone, in a kitchen, at arm's length.
+- [x] Emulated phone audit of the live site, 24 September (375 px, touch,
+      light and dark, every panel and step open): no sideways scroll, no hover
+      dependence, no input under 16 px (so iOS won't zoom on focus). Fixed:
+      the step checkboxes were 24 px targets (now 48, pinned to the top of the
+      card — first attempt stretched to 381 px down the left edge); the Reset
+      button's arrival shifted every step 28 px; the timer note's arrival
+      shifted the tapped step 118 px; ingredient notes and slider labels
+      12 → 14 px.
+- [ ] Check on an actual phone, in a kitchen, at arm's length — Dave.
 
 ---
 

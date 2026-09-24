@@ -205,7 +205,7 @@ export function SliderField({
         onChange={(e) => onChange(Number(e.target.value))}
         className="mt-2 h-touch w-full accent-amber-700 dark:accent-amber-500"
       />
-      <div className="flex justify-between text-xs text-stone-500 tabular dark:text-stone-400">
+      <div className="flex justify-between text-sm text-stone-500 tabular dark:text-stone-400">
         <span>
           {min}
           {unit}
@@ -275,20 +275,18 @@ export function ToggleField({
   checked: boolean;
   onChange: (checked: boolean) => void;
 }) {
-  const id = useId();
+  // One label for the whole row, so the box, the gap and the words are all
+  // one touch target.
   return (
-    <div className="flex items-center gap-3">
+    <label className="flex min-h-touch cursor-pointer items-center gap-3 py-3 text-stone-800 dark:text-stone-200">
       <input
-        id={id}
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
         className="size-6 shrink-0 accent-amber-700 dark:accent-amber-500"
       />
-      <label htmlFor={id} className="min-h-touch flex-1 py-3 text-stone-800 dark:text-stone-200">
-        {label}
-      </label>
-    </div>
+      {label}
+    </label>
   );
 }
 

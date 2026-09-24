@@ -114,13 +114,21 @@ function StepRow({
       }`}
     >
       <div className="flex gap-3">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={onToggleChecked}
-          aria-label={`Mark "${step.title}"${label ? ` (${label})` : ''} done`}
-          className="mt-1 size-6 shrink-0 accent-amber-700 dark:accent-amber-500"
-        />
+        {/* The box is 24 px; the label around it is the 48 px touch target
+            (Task 10 — the most-tapped control, with floury fingers). The
+            negative margin keeps the layout where the bare box had it.
+            self-start: a flex item stretches by default, which made the
+            whole left edge of an expanded step — 381 px of it — a tap that
+            ticks the step, exactly where a thumb rests while scrolling. */}
+        <label className="-m-3 flex shrink-0 cursor-pointer self-start p-3">
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={onToggleChecked}
+            aria-label={`Mark "${step.title}"${label ? ` (${label})` : ''} done`}
+            className="mt-1 size-6 accent-amber-700 dark:accent-amber-500"
+          />
+        </label>
         <div className="min-w-0 flex-1">
           <h3
             className={`text-lg font-semibold ${checked ? 'text-stone-500 line-through dark:text-stone-500' : ''}`}
@@ -338,6 +346,7 @@ export function StepList({
         stepId={key}
         spec={spec}
         timer={timers.find((t) => t.stepId === key)}
+        note={timers[0]?.stepId === key ? timerNote : undefined}
         now={nowMs}
         onStart={() => startTimer(key, spec)}
         onStop={() => stopTimer(key)}
@@ -345,17 +354,26 @@ export function StepList({
     );
   };
 
-  const timerNote = timers.length > 0 && (
-    <p className="mb-3 rounded-lg border border-stone-300 bg-stone-50 p-3 text-sm text-stone-600 dark:border-stone-700 dark:bg-stone-800/50 dark:text-stone-400">
+  /**
+   * Shown inside the earliest-started running timer, not above the list: at
+   * the top it appeared with the first Start and pushed the step you had just
+   * tapped 118 px down the page (Task 10). Below the tap point, nothing the
+   * finger is on moves.
+   */
+  const timerNote = (
+    <>
       Timers read the clock, so they stay right if your phone locks or you
       reload. They can only sound while this page is open, though — for a long
       stage, set a phone alarm as well.
-    </p>
+    </>
   );
 
   return (
     <section>
-      <div className="mb-3 flex items-center justify-between gap-3">
+      {/* min-h-touch: the Reset button appears with the first tick. Without a
+          reserved height it pushed every step down 28 px at the moment of the
+          tap, moving the next checkbox out from under the finger. */}
+      <div className="mb-3 flex min-h-touch items-center justify-between gap-3">
         <h2 className="text-sm font-medium uppercase tracking-wide text-stone-500 dark:text-stone-400">
           Steps
         </h2>
@@ -374,8 +392,6 @@ export function StepList({
           )}
         </div>
       </div>
-
-      {timerNote}
 
       {phases.map((phase) => (
         <div key={phase} className="mb-5 last:mb-0">

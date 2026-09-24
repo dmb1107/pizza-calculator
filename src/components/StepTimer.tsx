@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import {
   describeSpec,
   formatCountdown,
@@ -67,6 +67,7 @@ export function StepTimer({
   now,
   onStart,
   onStop,
+  note,
 }: {
   stepId: string;
   spec: TimerSpec;
@@ -74,6 +75,8 @@ export function StepTimer({
   now: number;
   onStart: () => void;
   onStop: () => void;
+  /** Shown under a running timer's controls — growth below the tap point, never above it. */
+  note?: ReactNode;
 }) {
   const state = timer ? timerState(timer, now) : null;
   const phase = state?.phase;
@@ -169,6 +172,7 @@ export function StepTimer({
           ? `${describeSpec(spec)} — the second number is how long you have, not a deadline you missed.`
           : `${describeSpec(spec)} from ${formatTimeOfDay(new Date(timer.startedAt))}`}
       </p>
+      {note && <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">{note}</p>}
     </div>
   );
 }

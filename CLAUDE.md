@@ -360,6 +360,14 @@ don't inline a `toFixed` somewhere else.
   reason: the forward-mode date field beside "Now" pushed the page 15 px past a
   375 px phone from Task 4 until Task 9. **Check phone width in both timeline
   modes** — the Task 8 check ran in backward mode only and missed it.
+- **Nothing may appear above the point of a tap.** Content that shows up in
+  response to a tap goes at or below it: the Reset button pushed every step
+  28 px on the first tick, and the timer note pushed the tapped step 118 px on
+  Start, both moving the next target out from under a floury finger. Reserve
+  the space (`min-h-touch` on the Steps header) or render below (the note now
+  sits inside the running timer). **Touch targets are 48 px** (`min-h-touch`);
+  a small control gets a label around it, pinned with `self-start` so flex
+  stretch doesn't turn a whole card edge into the target.
 - **Number fields commit on blur, not on keystroke.** Clamping mid-type makes a
   bounded field unusable — typing "7" on the way to "70" would snap to the
   minimum. The stepper emits a delta rather than a computed value for the same
