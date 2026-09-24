@@ -4,9 +4,9 @@ Derived from [`docs/WEBSITE-SPEC-biga-calculator.md`](docs/WEBSITE-SPEC-biga-cal
 Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
-**Status:** Tasks 0–8 complete, on the bowl-aware thermal model with **per-mix
-weights**, the ice calculation removed, and **MESSAGE-26 applied**. Task 9
-(reference drawer and About) next.
+**Status:** Tasks 0–9 complete, on the bowl-aware thermal model with **per-mix
+weights**, the ice calculation removed, and **MESSAGE-26 applied**. Left: the
+phone-in-the-kitchen check (Task 10, Dave's) and the bake log (Task 11).
 
 ---
 
@@ -611,12 +611,20 @@ markdown, inline. A test pins `watchFor` as markdown so it can't regress.
 
 ## Task 9 — Reference drawer + About
 
-- [ ] §9 tables: mixer speed (`RPM = 47.4 + 2.526 × dial%`), friction rate,
-      ice per 100 g. Secondary page or drawer — needed occasionally, not every
-      session.
-- [ ] **Do not reproduce Ooni's published 5% = 15 RPM chart. It is wrong.**
-      The measured mapping is the one in `constants.ts`.
-- [ ] About page with the §11 source links.
+- [x] §9 tables — mixer speed, friction rate, water temperature (the ice table
+      went with the ice model) — in a drawer from the footer. Generated
+      verbatim into `src/content/reference.ts`; `steps.test.ts` re-derives them
+      with a second, differently shaped parser.
+- [x] Every §9 figure claimed against the engine: each RPM row on the measured
+      line, each phase's dial from the step that runs it, the 40% ceiling from
+      `mix-7`, the observed factors, the water span swept over the §5
+      envelope. **§9's 80% row reads 250 RPM; the line gives 249.48** —
+      `knownWrong`, reported in FINDINGS-28.
+- [x] **Ooni's 5% = 15 RPM chart is not reproduced** — only quoted, as §9 does,
+      to reject it.
+- [x] About drawer with the §11 sources. The intro's instruction sentence ("Link
+      these from an About page.") is removed by exact match; the generator
+      stops if it changes.
 
 ---
 

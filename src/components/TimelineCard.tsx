@@ -111,7 +111,7 @@ export function TimelineCard(s: AppState) {
                 const parsed = fromDatetimeLocal(e.target.value);
                 if (parsed) setBigaStartAt(parsed);
               }}
-              className="min-h-touch w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-lg tabular dark:border-stone-600 dark:bg-stone-950 dark:[color-scheme:dark]"
+              className="min-h-touch w-full min-w-0 rounded-lg border border-stone-300 bg-white px-3 py-2 text-lg tabular dark:border-stone-600 dark:bg-stone-950 dark:[color-scheme:dark]"
             />
             <button
               type="button"

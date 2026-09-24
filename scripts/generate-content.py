@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Regenerate src/content/steps.ts and concepts.ts from WEBSITE-SPEC §8.
+Regenerate src/content/steps.ts, concepts.ts and reference.ts from WEBSITE-SPEC
+§8, §9 and §11.
 
     python3 scripts/generate-content.py
 
@@ -197,3 +198,61 @@ for c in concepts:
 cout.append('];\n')
 open('src/content/concepts.ts', 'w').write(''.join(cout) + ctail)
 print("concepts: %d, %d chars" % (len(concepts), sum(len(c['body']) for c in concepts)))
+
+# --- §9 reference tables and §11 sources -------------------------------------
+#
+# §9's subsections render verbatim. The line above the first `###` ("Put these
+# on a secondary page or in a drawer") is an instruction to the implementer,
+# and is left out by structure rather than by editing.
+#
+# §11's intro mixes an instruction with content. The instruction sentence is
+# removed by exact match, and its absence is an error: if the spec rewords it,
+# this must be looked at again rather than silently rendering it to a baker.
+
+ABOUT_INSTRUCTION = 'Link these from an About page. '
+
+def slug(t): return re.sub(r'[^a-z0-9]+', '-', t.lower()).strip('-')
+
+rbody = spec[spec.index('## 9. Reference tables'):spec.index('## 10.')]
+sections = []
+cur = None
+for l in rbody.split('\n'):
+    if l.startswith('### '):
+        cur = {'id': slug(l[4:]), 'title': l[4:].strip(), 'body': []}
+        sections.append(cur)
+    elif l.strip() == '---':
+        cur = None
+    elif cur is not None:
+        cur['body'].append(l)
+for r in sections:
+    while r['body'] and r['body'][0].strip() == '': r['body'].pop(0)
+    while r['body'] and r['body'][-1].strip() == '': r['body'].pop()
+    r['body'] = '\n'.join(r['body'])
+
+sbody = spec[spec.index('## 11. Sources'):spec.index('## 12.')]
+slines = [l for l in sbody.split('\n')[1:]]
+intro = next(l for l in slines if l.strip() and not l.startswith('- '))
+if not intro.startswith(ABOUT_INSTRUCTION):
+    raise SystemExit('§11 intro no longer opens with %r — check what it says now' % ABOUT_INSTRUCTION)
+intro = intro[len(ABOUT_INSTRUCTION):]
+sources = []
+for l in slines:
+    if not l.startswith('- '): continue
+    m = re.match(r'^- \[(.+?)\]\((https?://[^)\s]+)\) — (.+)$', l)
+    if not m: raise SystemExit('unparsed §11 source line: %r' % l)
+    sources.append({'title': m.group(1), 'url': m.group(2), 'note': m.group(3)})
+
+rold = open('src/content/reference.ts').read()
+rhead = rold[:rold.index('export const REFERENCE')]
+rtail = rold[rold.index('// --- end generated ---'):]
+rout = [rhead, 'export const REFERENCE: readonly ReferenceSection[] = [\n']
+for r in sections:
+    rout.append('  {\n    id: %s,\n    title: %s,\n    body: `%s`,\n  },\n'
+                % (json.dumps(r['id']), json.dumps(r['title']), tpl(r['body'])))
+rout.append('];\n\nexport const ABOUT_INTRO = %s;\n\nexport const SOURCES: readonly Source[] = [\n' % json.dumps(intro))
+for x in sources:
+    rout.append('  {\n    title: %s,\n    url: %s,\n    note: %s,\n  },\n'
+                % (json.dumps(x['title'], ensure_ascii=False), json.dumps(x['url']), json.dumps(x['note'], ensure_ascii=False)))
+rout.append('];\n\n')
+open('src/content/reference.ts', 'w').write(''.join(rout) + rtail)
+print("reference: %s; sources: %d" % ([r['id'] for r in sections], len(sources)))

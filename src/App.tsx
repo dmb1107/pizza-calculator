@@ -1,23 +1,27 @@
 import { useEffect, useState } from 'react';
 import { ConceptDrawer } from './components/ConceptDrawer';
 import { CopyButton } from './components/CopyButton';
+import { AboutDrawer, ReferenceDrawer } from './components/ReferenceDrawers';
 import { StepList } from './components/StepList';
 import { IngredientsCard, TargetsCard, WarningsList, WaterCard } from './components/cards';
 import { BatchPanel, CalibrationPanel, TemperaturesPanel } from './components/panels';
 import { TimelineCard } from './components/TimelineCard';
 import { useAppState } from './state/useAppState';
+import { C } from './lib/constants';
+import { formatPercent } from './lib/format';
 
 /**
- * Tasks 2–6: the §6 input panels, the §7 output cards, the §4.7 timeline, the
- * §8.2 step list and the §8.3 concept drawer.
+ * The §6 input panels, the §7 output cards, the §4.7 timeline, the §8.2 step
+ * list, and three drawers: §8.3 concepts, §9 reference tables, §11 About.
  *
  * Warnings sit above the step list (§7.3) and are never inside a collapsed
- * panel. Timers are Task 7.
+ * panel.
  */
 export default function App() {
   const state = useAppState();
   const { result, shareUrl } = state;
   const [concept, setConcept] = useState<string | null>(null);
+  const [sheet, setSheet] = useState<'reference' | 'about' | null>(null);
 
   /**
    * Flag a finished timer in the tab title.
@@ -43,19 +47,23 @@ export default function App() {
             Biga Neapolitan Dough
           </h1>
           <p className="mt-1 text-stone-600 dark:text-stone-400">
-            65% biga · 70% hydration · Grain Craft 00 · Halo Core · Tread
+            {formatPercent(C.BIGA_FRACTION)} biga · {formatPercent(C.HYDRATION)} hydration · Grain Craft 00 ·
+            Halo Core · Tread
           </p>
         </div>
         <CopyButton text={shareUrl} label="Share setup" copiedLabel="Link copied" />
       </header>
 
-      <div className="grid gap-3">
+      {/* minmax(0, 1fr), not the implicit auto column: an auto track grows to
+          its widest card's min-content, and the timeline's date field plus
+          "Now" pushed the whole page 15 px past a 375 px phone. */}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-3">
         <BatchPanel {...state} />
         <TemperaturesPanel {...state} />
         <CalibrationPanel {...state} />
       </div>
 
-      <div className="mt-6 grid gap-3">
+      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-3">
         <WarningsList warnings={result.warnings} />
         <IngredientsCard result={result} />
         <WaterCard result={result} />
@@ -67,11 +75,26 @@ export default function App() {
         <StepList state={state} onOpenConcept={setConcept} />
       </div>
 
-      <p className="mt-6 rounded-xl border border-dashed border-stone-300 p-4 text-sm text-stone-500 dark:border-stone-700">
-        Step timers land in Task 7.
-      </p>
+      <footer className="mt-8 flex flex-wrap gap-3 border-t border-stone-200 pt-4 dark:border-stone-800">
+        <button
+          type="button"
+          onClick={() => setSheet('reference')}
+          className="min-h-touch rounded-lg border border-stone-300 px-4 font-medium active:bg-stone-100 dark:border-stone-600 dark:active:bg-stone-800"
+        >
+          Reference tables
+        </button>
+        <button
+          type="button"
+          onClick={() => setSheet('about')}
+          className="min-h-touch rounded-lg border border-stone-300 px-4 font-medium active:bg-stone-100 dark:border-stone-600 dark:active:bg-stone-800"
+        >
+          About &amp; sources
+        </button>
+      </footer>
 
       <ConceptDrawer id={concept} onClose={() => setConcept(null)} />
+      <ReferenceDrawer open={sheet === 'reference'} onClose={() => setSheet(null)} />
+      <AboutDrawer open={sheet === 'about'} onClose={() => setSheet(null)} />
     </div>
   );
 }

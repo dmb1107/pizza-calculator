@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { CONCEPTS } from '../src/content/concepts';
+import { ABOUT_INTRO, REFERENCE, SOURCES } from '../src/content/reference';
 import { STEPS } from '../src/content/steps';
 
 /**
@@ -317,6 +318,69 @@ describe('§8.3 concepts are reproduced verbatim', () => {
     const specChars = specConcepts.reduce((n, c) => n + c.body.length, 0);
     expect(CONCEPTS.reduce((n, c) => n + c.body.length, 0)).toBe(specChars);
     expect(specChars).toBeGreaterThan(9_000);
+  });
+});
+
+/**
+ * §9 and §11, re-derived a different way from the generator: split on the
+ * headings rather than walked line by line, so a grammar bug in either shows
+ * up as a mismatch.
+ */
+const specReference = (() => {
+  const section = SPEC.slice(SPEC.indexOf('## 9. Reference tables'), SPEC.indexOf('## 10.'));
+  // Everything before the first `###` is the instruction to the implementer.
+  const [, ...parts] = section.split(/^### /m);
+  return parts.map((part) => {
+    const newline = part.indexOf('\n');
+    const title = part.slice(0, newline).trim();
+    const body = part.slice(newline + 1).split(/^---$/m)[0]!.trim();
+    return { id: title.toLowerCase().replace(/[^a-z0-9]+/g, '-'), title, body };
+  });
+})();
+
+const specSources = (() => {
+  const section = SPEC.slice(SPEC.indexOf('## 11. Sources'), SPEC.indexOf('## 12.'));
+  const intro = section.split('\n\n')[1]!.trim();
+  const items = [...section.matchAll(/^- \[([^\]]+)\]\(([^)\s]+)\) — (.+)$/gm)].map((m) => ({
+    title: m[1]!,
+    url: m[2]!,
+    note: m[3]!,
+  }));
+  const bullets = section.split('\n').filter((l) => l.startsWith('- ')).length;
+  return { intro, items, bullets };
+})();
+
+describe('§9 reference tables are reproduced verbatim', () => {
+  it('has the three sections, in spec order', () => {
+    expect(REFERENCE.map((r) => r.id)).toEqual(specReference.map((r) => r.id));
+    expect(REFERENCE.map((r) => r.id)).toEqual(['mixer-speed', 'friction-rate', 'water-temperature']);
+  });
+
+  it.each(specReference.map((r) => [r.id, r] as const))('%s matches the spec', (id, spec) => {
+    const section = REFERENCE.find((r) => r.id === id);
+    expect(section?.title).toBe(spec.title);
+    expect(section?.body).toBe(spec.body);
+  });
+
+  it('leaves out only the implementer instruction above the first heading', () => {
+    expect(REFERENCE.map((r) => r.body).join('\n')).not.toContain('Put these on a secondary page');
+  });
+});
+
+describe('§11 sources are reproduced verbatim', () => {
+  it('parses every bullet — none dropped for an unexpected shape', () => {
+    expect(specSources.items).toHaveLength(specSources.bullets);
+    expect(SOURCES).toEqual(specSources.items);
+  });
+
+  it('keeps the intro but not its instruction to the implementer', () => {
+    // The generator removes "Link these from an About page." by exact match
+    // and fails if it is missing. What remains must be the rest, verbatim.
+    expect(specSources.intro).toBe(`Link these from an About page. ${ABOUT_INTRO}`);
+  });
+
+  it('links only over https', () => {
+    for (const s of SOURCES) expect(s.url, s.title).toMatch(/^https:\/\//);
   });
 });
 

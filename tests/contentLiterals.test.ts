@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { STEPS, type Step } from '../src/content/steps';
 import { CONCEPTS } from '../src/content/concepts';
+import { ABOUT_INTRO, REFERENCE, SOURCES } from '../src/content/reference';
 import { C, bowlHeatCapacity, defaultDdtF, rpmForDial } from '../src/lib/constants';
 import {
   computeCapacity,
@@ -9,11 +10,12 @@ import {
   computeRoomMinutes,
   computeThermal,
   computeWaterTempF,
+  ballsPerMix,
   observedRate,
 } from '../src/lib/engine';
 import { stageDurations } from '../src/lib/timeline';
 import { BOUNDS } from '../src/state/defaults';
-import { BAKE_1 } from './vectors';
+import { BAKE_1, WATER_REACHABILITY } from './vectors';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseAst } from 'vite';
@@ -51,7 +53,7 @@ import { parseAst } from 'vite';
 
 type Loc = string;
 
-/** Every rendered text field, keyed `step.field` or `concept:id`. */
+/** Every rendered text field, keyed `step.field`, `concept:id`, `reference:id` or `about`. */
 function contentByLocation(): Map<Loc, string> {
   const out = new Map<Loc, string>();
   const put = (loc: Loc, text: string | undefined) => {
@@ -69,6 +71,10 @@ function contentByLocation(): Map<Loc, string> {
     s.troubleshoot?.rows.forEach((row) => row.forEach((cell) => put(`${s.id}.troubleshoot`, cell)));
   }
   for (const c of CONCEPTS) put(`concept:${c.id}`, c.body);
+  // §9 and §11 render too (Task 9), so they answer to the same gate.
+  for (const r of REFERENCE) put(`reference:${r.id}`, r.body);
+  put('about', ABOUT_INTRO);
+  for (const src of SOURCES) put('about', `${src.title} — ${src.note}`);
   return out;
 }
 
@@ -556,6 +562,129 @@ const CLAIMS: readonly Claim[] = [
     covers: ['1 °F', '30%'],
   },
   { at: 'concept:friction-factor', restates: 'the 10-minute rest, from mix-6', text: `a ${step('mix-6').timerMinutes}-minute rest`, covers: ['10-minute'] },
+
+  // --- §9 reference tables (Task 9) --------------------------------------------
+  {
+    at: 'reference:mixer-speed',
+    restates: 'the measured RPM line, C.RPM_INTERCEPT and C.RPM_SLOPE, and its 5% point',
+    text: `\`RPM = ${C.RPM_INTERCEPT} + ${C.RPM_SLOPE} × dial%\` — measured, 5% = ${rpm(5)} RPM`,
+    covers: ['47.4', '2.526 ×', '5%', '60 RPM', '60'],
+  },
+  // Each row's dial is the one the step for that phase actually runs at, so
+  // the table and the step list cannot drift apart.
+  {
+    at: 'reference:mixer-speed',
+    restates: 'Phase A: mix-2’s dial, and its RPM',
+    text: `| ${speedOf('mix-2').dial}% | ${rpm(speedOf('mix-2').dial)} | Phase A breakdown |`,
+    covers: ['15%', '85'],
+  },
+  {
+    at: 'reference:mixer-speed',
+    restates: 'Phases B and D: mix-3’s and mix-7’s dial, which must be one setting, and its RPM',
+    holds: () => speedOf('mix-3').dial === speedOf('mix-7').dial,
+    text: `| ${speedOf('mix-3').dial}% | ${rpm(speedOf('mix-3').dial)} | Phase B, Phase D |`,
+    covers: ['20%', '98'],
+  },
+  {
+    at: 'reference:mixer-speed',
+    restates: 'Phase C: mix-5’s dial, and its RPM',
+    text: `| ${speedOf('mix-5').dial}% | ${rpm(speedOf('mix-5').dial)} | Phase C development |`,
+    covers: ['30%', '123'],
+  },
+  {
+    at: 'reference:mixer-speed',
+    restates: 'the ceiling mix-7 states ("Never above N% / R RPM"), with R on the measured line',
+    text: (() => {
+      const m = /Never above (\d+)% \/ (\d+) RPM/.exec(STEPS.find((s) => s.id === 'mix-7')?.detail ?? '');
+      const dial = Number(m?.[1]);
+      return m?.[2] === rpm(dial) ? `| ${dial}% | ${rpm(dial)} | hard ceiling for this dough |` : 'mix-7 ceiling off the RPM line';
+    })(),
+    covers: ['40%', '148'],
+  },
+  {
+    at: 'reference:mixer-speed',
+    restates: '80% on the measured line: 47.4 + 2.526 × 80 = 249.48',
+    text: `| 80% | ${rpm(80)} |`,
+    knownWrong: { reads: '| 80% | 250 |', see: 'FINDINGS-28 — the other five rows sit on the line' },
+    covers: ['80%', '250'],
+  },
+  {
+    at: 'reference:friction-rate',
+    restates: 'C.FRICTION_RATE, dough-only',
+    text: `${fx(C.FRICTION_RATE[15], 2)} °F/min at 15% · ${fx(C.FRICTION_RATE[20], 2)} at 20% · ${fx(C.FRICTION_RATE[30], 2)} at 30%`,
+    covers: ['0.75 °F', '15%', '0.86', '20%', '1.08', '30%'],
+  },
+  {
+    at: 'reference:friction-rate',
+    restates: 'Ct/TOT at 3 / 6 / 9 balls per mix',
+    text: `| Factor | ${fx(ctOverTot(3), 3)} | ${fx(ctOverTot(6), 3)} | ${fx(ctOverTot(9), 3)} |`,
+    covers: ['0.821', '0.901', '0.932'],
+  },
+  {
+    at: 'reference:friction-rate',
+    restates: 'observedRate(30) at 3 / 6 / 9 balls per mix',
+    text: `| At 30% | ${[3, 6, 9].map((b) => fx(observedRate(30, thermalAt(b)), 2)).join(' | ')} |`,
+    covers: ['0.89', '0.97', '1.01'],
+  },
+  {
+    at: 'reference:friction-rate',
+    restates: '12 balls is two 6-ball mixes and 18 is two 9-ball, at the default ball — and each reads its column exactly',
+    holds: () =>
+      ballsPerMix({ balls: 12, ballWeightG: C.DEFAULT_BALL_G }) === 6 &&
+      ballsPerMix({ balls: 18, ballWeightG: C.DEFAULT_BALL_G }) === 9 &&
+      ctOverTot(12) === ctOverTot(6) &&
+      ctOverTot(18) === ctOverTot(9),
+    text: 'A 12-ball batch runs as two 6-ball mixes and reads the 6 column; 18 balls reads the 9.',
+    covers: ['12-ball', '6-ball', '18 balls'],
+  },
+  {
+    at: 'reference:water-temperature',
+    restates: 'C.WATER_MIN_F, the cold warning’s threshold',
+    text: `Fridge water reaches ~${C.WATER_MIN_F} °F`,
+    covers: ['38 °F'],
+  },
+  ...(() => {
+    // The §5 envelope. Balls and ball weight are the input bounds; biga and
+    // room are WATER_REACHABILITY's. Water is linear in both temperatures,
+    // so their ends bound it.
+    const W = WATER_REACHABILITY;
+    let lo = Infinity, hi = -Infinity, lo265 = Infinity, hi265 = -Infinity, hiBalls = 0;
+    for (let balls = BOUNDS.balls.min; balls <= BOUNDS.balls.max; balls++) {
+      for (let w: number = BOUNDS.ballWeightG.min; w <= BOUNDS.ballWeightG.max; w++) {
+        for (const bigaTempF of [W.bigaF.min, W.bigaF.max]) {
+          for (const roomTempF of [W.roomF.min, W.roomF.max]) {
+            const f = computeFormula({ balls, ballWeightG: w });
+            const t = { ddtF: defaultDdtF(balls), frictionFactorF: C.DEFAULT_FF, bigaTempF, flourTempF: roomTempF, roomTempF };
+            const water = computeWaterTempF(t, computeThermal(f, C.DEFAULT_BOWL_MASS_G, computeCapacity(f).nMix));
+            lo = Math.min(lo, water);
+            if (water > hi) { hi = water; hiBalls = balls; }
+            if (w === C.DEFAULT_BALL_G) { lo265 = Math.min(lo265, water); hi265 = Math.max(hi265, water); }
+          }
+        }
+      }
+    }
+    return [
+      {
+        at: 'reference:water-temperature',
+        restates: 'the §5 envelope: input bounds for balls and weight, WATER_REACHABILITY for biga and room',
+        text: `(${BOUNDS.balls.min}–${BOUNDS.balls.max} balls, ${BOUNDS.ballWeightG.min}–${BOUNDS.ballWeightG.max} g, biga ${W.bigaF.min}–${W.bigaF.max} °F, room ${W.roomF.min}–${W.roomF.max} °F)`,
+        covers: ['3–24 balls', '240–300 g', '45–60 °F', '60–84 °F'],
+      },
+      {
+        at: 'reference:water-temperature',
+        restates: 'required water across that envelope and at the default ball (53.2–108.7, 53.3–106.6)',
+        text: `spans **${fx(lo, 0)}–${fx(hi, 0)} °F**, and **${fx(lo265, 0)}–${fx(hi265, 0)} °F** at the ${C.DEFAULT_BALL_G} g default`,
+        covers: ['53–109 °F', '53–107 °F', '265 g'],
+      },
+      {
+        at: 'reference:water-temperature',
+        restates: 'the hottest water is at the smallest mix',
+        holds: () => hiBalls === BOUNDS.balls.min,
+        text: 'hottest at *small mixes*, not small batches',
+        covers: [],
+      },
+    ] satisfies Claim[];
+  })(),
 ];
 
 // ---------------------------------------------------------------------------
@@ -643,6 +772,14 @@ const FIXED: Record<Loc, readonly string[]> = {
   // the biga-5 pull cue.
   'concept:giorilli-standard': ['61–65 °F', '16–18 °C', '100%', '16–18 h', '16–20 h', '16–20 °C', '18', '12–24 h', '44–45%', '50%', '00', '20%', '0.38%'],
   'concept:no-creep-speed': ['15 RPM'], // Ooni's published chart, which is wrong
+  // Ooni's wrong chart, quoted to reject it; Ooni's published guidance for
+  // doughs at 66%+ hydration (the same threshold as FLOUR_CAP_66).
+  'reference:mixer-speed': ['15 RPM', '66%'],
+  // Column keys: the table is indexed by balls per mix.
+  'reference:friction-rate': ['3', '6', '9'],
+  // §11: what each published source states — cited, not computed. Gozney's
+  // 61–64 °F is its own conversion of 16–18 °C; "100%" is in recipe titles.
+  about: ['1%', '12–24 h', '16–18 °C', '100%', '16–18 h', '61–64 °F', '44–45%', '16–20 h', '16–20 °C', '18', '45%', '50%'],
   'concept:burn-ring': ['1', '100 °C', '1–1.5 cm', '2'],
 };
 
@@ -669,10 +806,11 @@ describe('§8.1 every literal that restates a computed value matches the engine'
     }
   });
 
-  it('pins no known discrepancy at present', () => {
-    // Both pins so far came off when the spec was corrected: mix-5's 2.0 in
+  it('pins exactly the known discrepancies, and no others', () => {
+    // Both earlier pins came off when the spec was corrected: mix-5's 2.0 in
     // MESSAGE-18, "between 2 and 5" in MESSAGE-19. Adding one is a decision.
-    expect(CLAIMS.filter((c) => c.knownWrong).map((c) => c.at)).toEqual([]);
+    // Task 9: §9's 80% row reads 250 RPM; the measured line gives 249.48.
+    expect(CLAIMS.filter((c) => c.knownWrong).map((c) => c.at)).toEqual(['reference:mixer-speed']);
   });
 });
 
@@ -750,6 +888,7 @@ describe('§8.1 numbers in component copy are classified too', () => {
     'between midnight and 6 a.m.': 'the definition `isUnsocialHour` implements — §4.7 "between midnight and 6 AM"',
     '750 °F, full flame, 60–90 s, turning every 15–20 s.': 'bake-2 procedure, the same figures FIXED under bake-2.summary',
     'at mix 1': 'names mix 1 — an index, not a quantity',
+    'Grain Craft 00': 'the flour grade in the product name',
   };
 
   /** Attributes that carry words a person reads. `className` and the like are not copy. */
@@ -803,11 +942,13 @@ describe('§8.1 numbers in component copy are classified too', () => {
     return out;
   }
 
+  // Every .tsx under src — App.tsx renders copy too, and sat outside
+  // `src/components` with "65% biga · 70% hydration" typed in it.
   const componentStrings = () =>
-    readdirSync('src/components')
+    (readdirSync('src', { recursive: true }) as string[])
       .filter((f) => f.endsWith('.tsx'))
       .flatMap((f) =>
-        copyIn(readFileSync(join('src/components', f), 'utf8'))
+        copyIn(readFileSync(join('src', f), 'utf8'))
           .filter((text) => /\d/.test(text))
           .map((text) => ({ f, text })),
       );
