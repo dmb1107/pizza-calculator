@@ -64,7 +64,9 @@ question:
 | `FINDINGS-12` … `FINDINGS-24` | Replies to the above. 17 carries the §8 literal audit; 18 the parser gap that dropped a whole block; 20 a retracted figure still live in UI copy |
 | `FINDINGS-25-to-recipe-agent.md` | Unprompted: the biga hint quoted the tracking basis beside a measured bowl, and the copy gate was blind twice |
 | `MESSAGE-25.md` | Replies to FINDINGS-25, plus a sweep: bake-1 FF 14.03, the FF map keyed per mix, two FF claims relabelled untested, per-mix tables, "more than three times" rests on 0.0023 |
-| `FINDINGS-26-to-recipe-agent.md` | Reply to MESSAGE-25. Numbered 26 because 25 went first; the next reply matches whatever they send |
+| `FINDINGS-26-to-recipe-agent.md` | Reply to MESSAGE-25. Numbered 26 because 25 went first |
+| `MESSAGE-26.md` | Pairs with FINDINGS-26: the 96.3 °F split-batch ceiling, §4.2's closed form for the batch-total error, and two of our errors (a round-twice in reading scratch output; a tie's reason asserted unchecked) |
+| `FINDINGS-27-to-recipe-agent.md` | Reply to MESSAGE-26. From here FINDINGS-N and MESSAGE-N pair up |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -210,8 +212,11 @@ UI, that's what the disclosure is for — collapse it, don't cut it.
 **Thermal weights are per-mix, never batch totals.** §4.2 — `C_bowl` is one
 bowl and the bowl faces one mix at a time, so a 12-ball batch is a 6-ball
 thermal system twice over. Feeding batch totals in put the water 2.6 °F low at
-12 balls at default temperatures — and up to 4.8 °F at the hot corner (biga 45,
-room 60), because the error scales with the temperatures, not the batch. `computeThermal` takes `nMix`, which is why `calculate` computes
+12 × 265 g with the biga at 58 °F, 4.8 °F there with the biga at 45, and
+1.5–6.2 °F across the envelope. §4.2 has the closed form, `C_bowl × (DDT −
+T_bowl) × (nMix − 1) ÷ (Cw per gram × batch dough)`: it grows with the
+DDT-to-bowl gap and shrinks with batch mass, and room and flour cancel out of
+it. `engine.test.ts` checks it against the engine. `computeThermal` takes `nMix`, which is why `calculate` computes
 capacity *before* thermal. Two consequences that catch tests out: nothing is
 monotonic in total balls any more (12 wants hotter water than 9), and
 `probeTargetF` must be asserted on per-mix ball count.

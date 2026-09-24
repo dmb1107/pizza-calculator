@@ -485,7 +485,7 @@ const CLAIMS: readonly Claim[] = [
     return [
       {
         at: 'concept:thermal-model',
-        restates: 'batch-total model against per-mix, every split batch in the §5 envelope (1.497 at 19 x 257 g, 6.185 at 18 x 272 g)',
+        restates: 'batch-total model against per-mix, every split batch in the §5 envelope (1.497 at 19 x 257 g; 6.185 at 9 x 272 g, tied with 17 x 288 and 18 x 272)',
         text: `by ${fx(at70.lo, 1)} to ${fx(at70.hi, 1)} °F across the supported range`,
         covers: ['1.5', '6.2 °F'],
       },

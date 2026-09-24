@@ -149,7 +149,7 @@ Ct = Cb + Cf + Cw + Cs
 
 **FF is per-mix by definition** — it is the rise the mixer produces in the dough in the bowl, and 14.03 was measured on a single 6-ball mix. Using it against a whole 12-ball batch was the same category error.
 
-Effect of the fix, at the §5 vector conditions (biga and bowl 58 °F): **12 balls +2.6 °F of water, 18 balls +1.8 °F.** Across the supported envelope it runs from **1.5 °F** (19 × 257 g, biga 60 °F) to **6.2 °F** (18 × 272 g, biga 45 °F) — largest with the coldest biga, and independent of room and flour temperature. Every `nMix = 1` batch is unchanged.
+Effect of the fix, at the §5 vector conditions (biga and bowl 58 °F): **12 balls +2.6 °F of water, 18 balls +1.8 °F.** Across the supported envelope it runs from **1.5 °F** (19 × 257 g, biga 60 °F) to **6.2 °F** (9 × 272 g, biga 45 °F; tied exactly with 17 × 288 g and 18 × 272 g) — largest with the coldest biga, and independent of room and flour temperature. All three follow from the closed form: the gap is `C_bowl × (DDT − T_bowl) × (nMix − 1) ÷ (Cw per gram of dough × batch dough mass)`, because every other term in the water formula is scale-invariant. Room and flour temperature don't appear in it; `T_bowl` defaults to `T_biga`; and the three batches at the maximum share `(nMix − 1) ÷ batch dough mass` — 18 × 272 g is exactly twice 9 × 272 g, with one more mix. They do *not* share a per-mix dough (1251 g vs 1668 g). Every `nMix = 1` batch is unchanged.
 
 ```
 C_bowl = bowlMassG × 0.12          // 115.8 at the 965 g default
@@ -259,7 +259,7 @@ The user blends fridge-cold water with tap water by hand, measuring as they pour
 | **3** | **812 g** | **106.6 °F** at 265 g, 108.7 at 240 g — reachable from a hot tap |
 | 9 | 2437 g | **90.3 °F** at 265 g — the largest unsplit batch at the default ball |
 
-⚠️ **An earlier last row read "9+ — ≤ 91 °F". That holds only while the batch stays in one mix.** Above that the batch splits and the requirement follows the *mix*: 10 × 265 g runs as two 5-ball mixes and asks for **95.3 °F** (95.4 at 11 × 240 g). Nothing in the supported range exceeds the 3-ball figure, which is what the table exists to show.
+⚠️ **An earlier last row read "9+ — ≤ 91 °F". That holds only while the batch stays in one mix.** Above that the batch splits and the requirement follows the *mix*: 10 × 265 g runs as two 5-ball mixes and asks for **95.3 °F**. The highest any split batch asks for is **96.3 °F**, at 9 × 272 g — two 1251 g mixes, the smallest a split can make (10 × 245 g is within 0.01). Nothing in the supported range exceeds the 3-ball figure, which is what the table exists to show.
 
 With `MIN_BALLS = 3`, the 120 °F warning **does not fire anywhere** in the temperature grid at the default FF — it is a guard rail for a user-entered calibration FF or an out-of-band temperature, not something that should appear in normal use. If it starts firing routinely, that is a signal, not noise.
 
@@ -719,7 +719,7 @@ This was under-specified before and the gap was real: `mix-8` tells the user to 
 | Friction factor (°F) | number | 14.0 | **per mix size** (balls per mix). 6 is MEASURED (bake 1); others fall back |
 | DDT override (°F) | number | auto | auto = 75 (≤6 balls) / 74 (7+) |
 
-**Store friction factor per mix size.** Store a map of `ballsPerMix → measuredFF` in `localStorage`, select by the current batch's balls per mix (`balls / nMix`), fall back to 14.0. Badge the fallback "estimated"; show the recorded date when measured. **Exact match only** — a fractional mix size (13 balls → 6.5) falls back rather than interpolating. **Key on balls per mix, not total balls:** FF is per-mix by definition (§4.2), so a 12-ball batch — two 6-ball mixes — reads the 6 entry, and an FF solved on a 12-ball bake is filed under 6. Keying on total balls would send every split batch to the fallback and file split-batch measurements under a size the mixer never ran.
+**Store friction factor per mix size.** Store a map of `ballsPerMix → measuredFF` in `localStorage`, select by the current batch's balls per mix (`balls / nMix`), fall back to 14.0. Badge the fallback "estimated"; show the recorded date when measured. **Exact match only** — a fractional mix size (13 balls → 6.5) falls back rather than interpolating. **Key on balls per mix, not total balls:** FF is per-mix by definition (§4.2), so a 12-ball batch — two 6-ball mixes — reads the 6 entry, and an FF solved on a 12-ball bake is filed under 6. Keying on total balls would send every split batch to the fallback and file split-batch measurements under a size the mixer never ran. **Mix size depends on ball weight as well as ball count:** 9 balls is one 9-ball mix at 265 g but two 4.5-ball mixes at 280 g (2575 g, over the 2500 g cap). The key is a ball *count*, so a 6-ball mix of 300 g balls reads a value measured on 265 g balls. That's an accepted proxy while size dependence is itself untested; don't key on mass unless the bakes show FF moves with mix size.
 
 Seed it with `{6: {value: 14.03, date: '2026-08-21'}}` — keyed 6 balls per mix.
 

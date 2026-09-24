@@ -26,6 +26,14 @@ describe('recipe text', () => {
     }
   });
 
+  it('rounds the dough total once, never from displayed components', () => {
+    // MESSAGE-26 asked. At 9 x 272 g the components each round to one decimal
+    // and sum to 2501.7; the total itself is 2501.856 and prints 2501.9.
+    const out = text({ balls: 9, ballWeightG: 272 });
+    expect(out).toContain('2501.9 g total');
+    expect(out).not.toContain('2501.7');
+  });
+
   it('carries the water target', () => {
     // §5 six-ball vector.
     const out = text();

@@ -684,6 +684,42 @@ describe('§4.2 per-mix thermal weights', () => {
     within(calculate(vectorInputs(12, 265)).waterTempF - 62.1, 2.6, 0.15, '12-ball correction');
     within(calculate(vectorInputs(18, 265)).waterTempF - 61.3, 1.8, 0.15, '18-ball correction');
   });
+
+  it('matches §4.2\'s closed form for the batch-total error, across the envelope', () => {
+    // MESSAGE-26: every term but the bowl's is scale-invariant, so per-mix
+    // minus batch-total is C_bowl (DDT − T_bowl)(nMix − 1) / (Cw per gram of
+    // dough × batch dough). Derived from the heat capacities here, checked
+    // against two runs of the engine's water formula — so a bowl term wired
+    // differently in `computeWaterTempF` fails it. Room and flour are varied
+    // because the closed form says they cancel.
+    const cBowl = bowlHeatCapacity(C.DEFAULT_BOWL_MASS_G);
+    const gap = (balls: number, ballWeightG: number, bigaTempF: number, roomTempF: number) => {
+      const f = computeFormula({ balls, ballWeightG });
+      const nMix = computeCapacity(f).nMix;
+      const t = { ddtF: defaultDdtF(balls), frictionFactorF: 14, bigaTempF, flourTempF: roomTempF, roomTempF };
+      const engine =
+        computeWaterTempF(t, computeThermal(f, C.DEFAULT_BOWL_MASS_G, nMix)) -
+        computeWaterTempF(t, computeThermal(f, C.DEFAULT_BOWL_MASS_G, 1));
+      const cwPerGram = (f.freshWater * C.C_WATER) / f.doughTotal;
+      const closed = (cBowl * (t.ddtF - bigaTempF) * (nMix - 1)) / (cwPerGram * f.doughTotal);
+      return { engine, closed };
+    };
+    for (let balls = C.MIN_BALLS; balls <= 24; balls++) {
+      for (const w of [240, 257, 265, 272, 288, 300]) {
+        for (const [biga, room] of [[45, 60], [52, 72], [60, 84]] as const) {
+          const { engine, closed } = gap(balls, w, biga, room);
+          within(engine, closed, 1e-9, `${balls} x ${w} g, biga ${biga}, room ${room}`);
+        }
+      }
+    }
+    // The three-way tie at the maximum shares (nMix − 1) / batch dough, not a
+    // per-mix dough (1250.93 g against 1667.90 g) — FINDINGS-26 said otherwise.
+    const top = [[9, 272], [18, 272], [17, 288]].map(([b, w]) => gap(b!, w!, 45, 60).engine);
+    for (const v of top) within(v, 6.1852, 0.0001, 'the maximum');
+    within(top[0]! - top[1]!, 0, 1e-9, '9 x 272 = 18 x 272');
+    within(computeFormula({ balls: 9, ballWeightG: 272 }).doughTotal / 2, 1250.93, 0.005, 'per mix, 9 x 272 g');
+    within(computeFormula({ balls: 18, ballWeightG: 272 }).doughTotal / 3, 1667.9, 0.005, 'per mix, 18 x 272 g');
+  });
 });
 
 describe('§4.6 observed vs dough-only rates', () => {
