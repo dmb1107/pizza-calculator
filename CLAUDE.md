@@ -76,6 +76,8 @@ question:
 | `FINDINGS-31-to-recipe-agent.md` | Reply to MESSAGE-30. Nothing open. The near-limit ball list can't see the 5% (it holds from 94.03% to 98.11%); the printed-value edge is unreachable from the inputs |
 | `MESSAGE-31.md` | Unprompted, Dave's ask: ranges stay ranges. `biga-4b` (the fridge) split out of `biga-4`, per-track timers, `bake-1` 2–3 h, `bulk-3` timed, the planning point beside its range on the timeline (§7.4) |
 | `FINDINGS-32-to-recipe-agent.md` | Reply to MESSAGE-31. Two pins live: §8.2a's stale retarded counts, and `bulk-3`'s timer running long at split batches. The gate had read neither titles, new step fields nor the timeline's stage text |
+| `MESSAGE-32.md` | Both pins settled: `{ballRoomMin}`, the rise the timeline plans, for `bulk-3`; counts 20/28/36. `biga-4`'s classic summary reworded, `biga-4b` "Refrigerate the biga". Dave's timers on the four mixer phases; `speed` loses its minutes |
+| `FINDINGS-33-to-recipe-agent.md` | Reply to MESSAGE-32. Nothing open; two unpinned notes: at `nMix` 2 `bulk-3`'s block prints 90, 18 and 73 (17.5 rounds up), and the §4.10 ⚠️'s overrun is "up to" at the floor |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -391,8 +393,11 @@ don't inline a `toFixed` somewhere else.
   the knob with the bottom two missing**, the first segment just left of that
   gap (7–8 o'clock), filling clockwise to 4–5 o'clock; and **a half step is
   the next segment dimmed**, not half-filled. Then "1½ lit segments", then
-  "15% · 85 RPM · 3–4 min" smaller (`formatSpeedDetail`; the minutes because
-  no speed step has a timer chip). Never a setting number — a 2× misread at
+  "15% · 85 RPM" smaller (`formatSpeedDetail`). No minutes: since MESSAGE-32
+  each mixer phase has its own timer, and **the timer is the one source of a
+  phase's duration** — the `speed` field is dial and RPM only, and the
+  `MAX_RUN_MIN` profile reads `timerMinutes`. Phase D's is 45–60 s, which both
+  timer parsers read as 0.75–1 min. Never a setting number — a 2× misread at
   the 40% ceiling is 80%. §8 prose leads with the count too, and the gate
   rebuilds each count as dial ÷ 10 independently of the formatter.
 - **Ranges stay ranges** (§7.5, MESSAGE-31). Where the recipe gives a range,
@@ -404,6 +409,13 @@ don't inline a `toFixed` somewhere else.
   (`timerLabelRetarded`/`timerLabelClassic`); resolve through `timerLabelFor`
   and `summaryFor`, never in a component. §7.5's one exception: a classic plan
   below 16 h times the plan.
+- **Two ball-rise figures, and `bulk-3` prints the planned one** (MESSAGE-32).
+  `roomMinutes` / `{roomMin}` is one dough's rise; `ballRoomMinutes` /
+  `{ballRoomMin}` is what the timeline plans, less half the stagger and held
+  at 45 min (`plannedBallRiseH`, the one function both read). They differ only
+  at `nMix` > 1. Anything that tells the baker how long the balls sit —
+  `bulk-3`, copy-as-text, the final-temperature hint — prints the planned one.
+  Printing `{roomMin}` there ran every split batch 17.5–35 min long.
 - **Capacity messages are §7.3's words, decided in `src/lib/capacity.ts`**, not
   the engine: generated content bound through the token table, decided on the
   **printed** per-mix dough (a test pins 2374.96 g → "2375.0" → fires). The
