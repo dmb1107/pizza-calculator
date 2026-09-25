@@ -9,24 +9,20 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-29, Task 10's emulated audit and the speed indicator (25 September).
+MESSAGE-30, Task 10's emulated audit and the speed indicator (25 September).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-29** (unprompted: speed as
-  lit segments, bowl mass a constant, capacity messages). **FINDINGS-30**
-  answers it and went to the recipe agent on 25 September; expect
-  **MESSAGE-30** back. FINDINGS-30 §4 asks them to fix §7.5 to match the real
-  indicator (a ring of ten, bottom two of twelve positions missing, filling
-  clockwise from 7 o'clock; a half step *dimmed*, not half-filled). The app
-  already draws that, so if MESSAGE-30 only rewords §7.5, nothing renders
-  differently: §7.5 is instructions, not generated content. Confirm the
-  wording matches `SpeedIndicator` and reply. §5 of FINDINGS-30 lists three
-  choices they may overrule: minutes in the speed chip, warning severities,
-  and singular "½ lit segment". No `knownWrong` pin is live.
+- **The correspondence is applied through MESSAGE-30.** It recorded Dave's
+  indicator geometry in §7.5 (the app already drew it), kept all three of
+  FINDINGS-30's choices and wrote two into the spec: minutes in the speed
+  chip, and §7.3's severities. It also listed the near-limit ball counts
+  across 240–300 g. Nothing rendered differently. **FINDINGS-31** answers it
+  (25 September) with nothing open, so the next message, if one comes, is
+  unprompted. No `knownWrong` pin is live.
 - **Numbering, since it has stepped twice.** FINDINGS-25 went unprompted, so
   the pairs now share a number: MESSAGE-N answers FINDINGS-N, and
   FINDINGS-(N+1) answers MESSAGE-N. **There is no MESSAGE-22** (a stray draft,
@@ -176,7 +172,7 @@ true and what they need to change.
 | `bindTokens.test.ts` | No unbound or unused token. `{probeGapPhrase}` at below / above / right at DDT. The thicker note decided on its **printed** value | A condition decided on unrounded values printed "12.0 rather than 12" |
 | `state.test.ts` | URL and storage round-trips. The FF map keyed through `ballsPerMix`, exact-match at 6.5, the old seed replaced on load and nothing else | The map was keyed on total balls, so a 12-ball bake would have filed FF under a size no mix has |
 | `timeline.test.ts` | §4.7 durations, the stage sequence on both schedules, daylight saving. **Backward mode pinned to hand-written clock times** on both schedules and at `nMix` 2; exact landing on the bake across fractional durations; the overnight windows against a brute-force scan | A wrong order sums to the right total. Summing hours × 3.6e6 landed 1 ms early and printed the minute before |
-| `capacity.test.ts` | §7.3: which capacity message fires and when, its bound wording, the binding-limit guards (flour cap never first for a mix, always first for the biga), the below-minimum guard silent across the range, decisions on the **printed** per-mix dough. §7.5 segment states (lit / dim / off) | The spec says conditions are decided on displayed values; 2374.96 g prints 2375.0 and must fire |
+| `capacity.test.ts` | §7.3: which capacity message fires and when, its bound wording, the binding-limit guards (flour cap never first for a mix, always first for the biga), the below-minimum guard silent across the range, decisions on the **printed** per-mix dough, the near-limit ball list across 240–300 g. §7.5 segment states (lit / dim / off), and the chip's smaller line for every speed step | The spec says conditions are decided on displayed values; 2374.96 g prints 2375.0 and must fire. **The ball list can't see the 5%**: it holds for any threshold from 94.03% to 98.11%, so the edge test is what pins the threshold |
 | `recipeText.test.ts` | Copy-as-text, and the dough total rounded once (2501.9 at 9 × 272 g, never the 2501.7 its rounded parts sum to) | The gate doesn't read `recipeText.ts` |
 
 The principle underneath all of them: **a check is only independent on the axis
@@ -283,6 +279,18 @@ a deploy fails after that date.
   counterpart's §4.9 lesson, and it applies to our scripts too.
 - **Scratch tests** go in `tests/__scratch.test.ts`, and get deleted after. The
   scratchpad is wiped between sessions.
+
+**In a cloud session** (claude.ai/code)
+
+- The container is fresh: **`npm ci` first**, or every script fails on a
+  missing `vitest` or `tsc` types.
+- **There is no `gh`**; use the GitHub MCP tools (`actions_list` for the
+  deploy runs). The push goes to the session's `claude/*` branch, which
+  **doesn't deploy**; Pages builds once it reaches `main`.
+- **There is no browser pane.** Playwright is installed globally
+  (`/opt/node22/lib/node_modules/playwright`, Chromium under
+  `/opt/pw-browsers`). Serve `dist/` with `npx vite preview`, then read
+  `innerText` at a 375 × 812 touch viewport, as below.
 
 **The browser pane**
 

@@ -72,6 +72,8 @@ question:
 | `FINDINGS-29-to-recipe-agent.md` | Reply to MESSAGE-28 |
 | `MESSAGE-29.md` | Unprompted, Dave's three asks: speed shown as lit LED segments (§7.5), bowl mass a constant, and §7.3 *Capacity* messages that say when and how the batch splits |
 | `FINDINGS-30-to-recipe-agent.md` | Reply to MESSAGE-29, including Dave's indicator geometry (a ring of ten, half steps dimmed) and the §7.5 "half-filled" correction it needs |
+| `MESSAGE-30.md` | §7.5 records Dave's ring and draws the half step dimmed; the chip's minutes and §7.3's severities written into the spec; §7.3's near-limit list across 240–300 g. Nothing renders differently |
+| `FINDINGS-31-to-recipe-agent.md` | Reply to MESSAGE-30. Nothing open. The near-limit ball list can't see the 5% (it holds from 94.03% to 98.11%); the printed-value edge is unreachable from the inputs |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -381,13 +383,14 @@ don't inline a `toFixed` somewhere else.
   but the app always passes the constant.
 - **Speeds render as lit LED segments** (§7.5, MESSAGE-29): the Core has no
   number display. `SpeedIndicator` draws the real indicator as Dave describes
-  it (25 Sep): **twelve 30° positions round the knob with the bottom two
-  missing**, the first segment just left of that gap (7–8 o'clock), filling
-  clockwise to 4–5 o'clock; and **a half step is the next segment dimmed**,
-  not half-filled. Then "1½ lit segments", then
-  "15% · 85 RPM" smaller. Never a setting number — a 2× misread at the 40% ceiling is
-  80%. §8 prose leads with the count too, and the gate rebuilds each count as
-  dial ÷ 10 independently of the formatter.
+  it (25 Sep; §7.5 records it since MESSAGE-30): **twelve 30° positions round
+  the knob with the bottom two missing**, the first segment just left of that
+  gap (7–8 o'clock), filling clockwise to 4–5 o'clock; and **a half step is
+  the next segment dimmed**, not half-filled. Then "1½ lit segments", then
+  "15% · 85 RPM · 3–4 min" smaller (`formatSpeedDetail`; the minutes because
+  no speed step has a timer chip). Never a setting number — a 2× misread at
+  the 40% ceiling is 80%. §8 prose leads with the count too, and the gate
+  rebuilds each count as dial ÷ 10 independently of the formatter.
 - **Capacity messages are §7.3's words, decided in `src/lib/capacity.ts`**, not
   the engine: generated content bound through the token table, decided on the
   **printed** per-mix dough (a test pins 2374.96 g → "2375.0" → fires). The
