@@ -381,10 +381,11 @@ don't inline a `toFixed` somewhere else.
   is ignored. `computeThermal` still takes a mass so engine tests can vary it,
   but the app always passes the constant.
 - **Speeds render as lit LED segments** (§7.5, MESSAGE-29): the Core has no
-  number display. `SpeedIndicator` draws the real indicator as Dave's photo
-  shows it (25 Sep): **ten segments on a ring** round the knob, gap at the
-  lower left, filling clockwise from the lower-left end, and **a half step is
-  the next segment dimmed**, not half-filled. Then "1½ lit segments", then
+  number display. `SpeedIndicator` draws the real indicator as Dave describes
+  it (25 Sep): **twelve 30° positions round the knob with the bottom two
+  missing**, the first segment just left of that gap (7–8 o'clock), filling
+  clockwise to 4–5 o'clock; and **a half step is the next segment dimmed**,
+  not half-filled. Then "1½ lit segments", then
   "15% · 85 RPM" smaller. Never a setting number — a 2× misread at the 40% ceiling is
   80%. §8 prose leads with the count too, and the gate rebuilds each count as
   dial ÷ 10 independently of the formatter.

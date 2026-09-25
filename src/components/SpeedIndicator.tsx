@@ -8,18 +8,21 @@ import { formatLitSegments } from '../lib/format';
  * the chip leads with that ring, drawn, then the count in words, then the dial
  * and RPM, smaller.
  *
- * Drawn to match the real one (Dave's photo, 25 Sep 2026): ten segments on a
- * ring with a gap at the lower left, filling clockwise from the lower-left end,
- * bright segments on a dark panel around a metal knob. A half step is the next
- * segment DIMMED, not half-filled. Deliberately no setting number: a segment
+ * Drawn to match the real one (Dave, 25 Sep 2026): think of twelve 30°
+ * positions round the knob with the bottom two missing — a gap centred at
+ * 6 o'clock — and the first segment is the one just left of the gap (7–8
+ * o'clock), filling clockwise to the tenth at 4–5 o'clock. Bright segments on a
+ * dark panel around a metal knob. A half step is the next segment DIMMED, not
+ * half-filled. (A first reading of his photo put the gap at the lower left,
+ * one position counterclockwise of this; he corrected it.) Deliberately no setting number: a segment
  * count and a dial-click count differ by 2×, and at the 40% ceiling a 2×
  * misread is 80%.
  */
 
-/** Clock-face degrees (0 = 12 o'clock, clockwise) of segment 1's centre: about 8:30. */
-const FIRST_SEGMENT_DEG = 255;
-/** Centre to centre. Ten of them put the last at about 5:30, as in the photo. */
-const PITCH_DEG = 30;
+/** Clock-face degrees (0 = 12 o'clock, clockwise) of segment 1's centre: 7:30, just left of the gap. */
+const FIRST_SEGMENT_DEG = 225;
+/** One of twelve positions. Ten of them put the last at 4:30, leaving 5–7 o'clock empty. */
+const PITCH_DEG = 360 / 12;
 /** Each segment's own arc; the rest of the pitch is the gap between them. */
 const SEGMENT_DEG = 22;
 
