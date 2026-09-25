@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { C, indicatorForDial } from '../src/lib/constants';
+import { C, indicatorForDial, indicatorSegments } from '../src/lib/constants';
 import { calculate, computeCapacity, computeFormula, type CalculatorInputs } from '../src/lib/engine';
 import { tokenValues, type ScheduleTokens } from '../src/lib/bindTokens';
 import { capacityAlerts, splitHint, NEAR_LIMIT_FRACTION } from '../src/lib/capacity';
@@ -140,5 +140,18 @@ describe('§7.5 speed: what the indicator shows', () => {
     expect(ind).toEqual({ full, half, total: 10 });
     expect(formatSegmentCount(ind.full, ind.half)).toBe(count);
     expect(formatLitSegments(ind.full, ind.half)).toBe(words);
+  });
+
+  it.each([
+    [5, ['dim']],
+    [15, ['lit', 'dim']],
+    [20, ['lit', 'lit']],
+    [40, ['lit', 'lit', 'lit', 'lit']],
+  ] as const)('%i%% shows %j, then the rest off — a half step is the next segment dimmed', (dial, head) => {
+    // Dave, at the mixer: half segments are dimmed, not half-filled.
+    const segs = indicatorSegments(dial);
+    expect(segs).toHaveLength(10);
+    expect(segs.slice(0, head.length)).toEqual(head);
+    expect(segs.slice(head.length).every((s) => s === 'off')).toBe(true);
   });
 });

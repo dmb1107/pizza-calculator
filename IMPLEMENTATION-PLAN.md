@@ -645,9 +645,10 @@ markdown, inline. A test pins `watchFor` as markdown so it can't regress.
       button's arrival shifted every step 28 px; the timer note's arrival
       shifted the tapped step 118 px; ingredient notes and slider labels
       12 → 14 px.
-- [ ] Check on an actual phone, in a kitchen, at arm's length — Dave. Also
-      confirm the drawn speed indicator matches the Core's real one: it is
-      drawn as a straight row of ten, and MESSAGE-29 leaves row-or-ring open.
+- [x] The speed indicator's geometry, from Dave's photo (25 Sep): a ring of
+      ten round the knob, gap at the lower left, filling clockwise; half steps
+      dimmed. Redrawn to match.
+- [ ] Check on an actual phone, in a kitchen, at arm's length — Dave.
 
 ---
 

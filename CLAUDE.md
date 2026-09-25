@@ -72,6 +72,7 @@ question:
 | `FINDINGS-29-to-recipe-agent.md` | Reply to MESSAGE-28 |
 | `MESSAGE-29.md` | Unprompted, Dave's three asks: speed shown as lit LED segments (§7.5), bowl mass a constant, and §7.3 *Capacity* messages that say when and how the batch splits |
 | `FINDINGS-30-to-recipe-agent.md` | Reply to MESSAGE-29 |
+| `FINDINGS-31-to-recipe-agent.md` | Unprompted: Dave confirmed the indicator is a ring of ten, and a half step is dimmed — §7.5 says "half-filled" |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -380,9 +381,11 @@ don't inline a `toFixed` somewhere else.
   is ignored. `computeThermal` still takes a mass so engine tests can vary it,
   but the app always passes the constant.
 - **Speeds render as lit LED segments** (§7.5, MESSAGE-29): the Core has no
-  number display. `SpeedIndicator` draws ten segments (a row, until Dave
-  confirms the geometry at the mixer), then "1½ lit segments", then "15% ·
-  85 RPM" smaller. Never a setting number — a 2× misread at the 40% ceiling is
+  number display. `SpeedIndicator` draws the real indicator as Dave's photo
+  shows it (25 Sep): **ten segments on a ring** round the knob, gap at the
+  lower left, filling clockwise from the lower-left end, and **a half step is
+  the next segment dimmed**, not half-filled. Then "1½ lit segments", then
+  "15% · 85 RPM" smaller. Never a setting number — a 2× misread at the 40% ceiling is
   80%. §8 prose leads with the count too, and the gate rebuilds each count as
   dial ÷ 10 independently of the formatter.
 - **Capacity messages are §7.3's words, decided in `src/lib/capacity.ts`**, not

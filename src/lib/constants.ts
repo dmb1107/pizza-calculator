@@ -287,6 +287,19 @@ export function rpmForDial(dialPercent: number): number {
   return C.RPM_INTERCEPT + C.RPM_SLOPE * dialPercent;
 }
 
+/** One indicator segment as the Core shows it: lit, dimmed (the half step), or off. */
+export type SegmentState = 'lit' | 'dim' | 'off';
+
+/**
+ * §7.5, per segment in fill order. Dave, at the mixer (25 Sep 2026): a half
+ * step is the next segment DIMMED, not half of it filled — so 15% is one lit
+ * and one dim, and 5% is the first segment dim.
+ */
+export function indicatorSegments(dialPercent: number): SegmentState[] {
+  const { full, half, total } = indicatorForDial(dialPercent);
+  return Array.from({ length: total }, (_, i) => (i < full ? 'lit' : i === full && half ? 'dim' : 'off'));
+}
+
 /**
  * §7.5. What the Core's LED indicator shows at a dial percentage:
  * `floor(dial / INDICATOR_PCT_PER_SEGMENT)` full segments, one half-lit when
