@@ -195,8 +195,13 @@ describe('§7.5 a step\'s timer agrees with the stage it times', () => {
    * own stage schedules the baker twice. (Windows are checked above; `mix` is
    * several steps, none of which times the whole stage.)
    */
-  const mismatches = (schedule: Schedule, balls: number, bigaRoomOnlyH = DEFAULTS.bigaRoomOnlyH) => {
-    const r = calculate({ balls, ballWeightG: 265, roomTempF: 70, flourTempF: 70, bigaTempF: 58, frictionFactorF: 14 });
+  const mismatches = (
+    schedule: Schedule,
+    balls: number,
+    bigaRoomOnlyH = DEFAULTS.bigaRoomOnlyH,
+    finalDoughTempF?: number,
+  ) => {
+    const r = calculate({ balls, ballWeightG: 265, roomTempF: 70, flourTempF: 70, bigaTempF: 58, frictionFactorF: 14, finalDoughTempF });
     const plan = { ...DEFAULTS, bigaRoomOnlyH, ballRoomTempH: r.roomMinutes / 60, nMix: r.capacity.nMix };
     const durations = stageDurations(schedule, plan);
     const tokens = tokenValues(r, plan);
@@ -221,12 +226,23 @@ describe('§7.5 a step\'s timer agrees with the stage it times', () => {
     expect(mismatches('classic', 6, 13)).toEqual([]);
   });
 
-  it('pins bulk-3 running long at a split batch — reported in FINDINGS-32', () => {
-    // Known wrong, pinned both ways. {roomMin} is the unshortened rise, while
-    // §4.7 takes half the stagger off ballRoomTemp and bulk-1 tells the baker
-    // so. Room 70 °F, biga 58 °F, FF 14, final dough at DDT. When the spec
-    // decides which number bulk-3 times, this fails; replace it with [].
-    expect(mismatches('retarded', 12)).toEqual(['bulk-3: 90 min, ballRoomTemp 72.5 min']);
-    expect(mismatches('retarded', 24)).toEqual(['bulk-3: 90 min, ballRoomTemp 55 min']);
+  it('times bulk-3 for the rise the timeline plans at every split batch, and at the floor', () => {
+    // MESSAGE-32: {ballRoomMin}. Until then bulk-3 timed the unshortened
+    // {roomMin}: 90 min against 72.5 at nMix 2 and 55 at nMix 3. Room 70 °F,
+    // biga 58 °F, FF 14, final dough at DDT unless stated.
+    const at = (balls: number) =>
+      calculate({ balls, ballWeightG: 265, roomTempF: 70, flourTempF: 70, bigaTempF: 58, frictionFactorF: 14 }).ballRoomMinutes;
+    expect(at(6)).toBeCloseTo(90, 9);
+    expect(at(12)).toBeCloseTo(72.5, 9);
+    expect(at(24)).toBeCloseTo(55, 9);
+    expect(mismatches('retarded', 12)).toEqual([]);
+    expect(mismatches('classic', 18)).toEqual([]);
+    expect(mismatches('retarded', 24)).toEqual([]);
+    // 24 balls at a measured 76 °F (DDT 74): 71.2 min unshortened, 36.2 after
+    // the correction, held at the 45-minute floor. Asserted to BE at the floor,
+    // so this case can't quietly stop exercising it.
+    const floor = calculate({ balls: 24, ballWeightG: 265, roomTempF: 70, flourTempF: 70, bigaTempF: 58, frictionFactorF: 14, finalDoughTempF: 76 });
+    expect(floor.ballRoomMinutes).toBe(45);
+    expect(mismatches('retarded', 24, DEFAULTS.bigaRoomOnlyH, 76)).toEqual([]);
   });
 });

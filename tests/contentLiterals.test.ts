@@ -180,8 +180,18 @@ const segs = (dial: number) => {
 };
 const segWords = (dial: number) => `${segs(dial)} lit segment${dial / C.INDICATOR_PCT_PER_SEGMENT > 1 ? 's' : ''}`;
 
-/** Phase C's planned minutes: the midpoint of `mix-5`'s printed range. */
-const PHASE_C_MIN = mid(speedOf('mix-5').minutes);
+/**
+ * A step's fixed timer as [lo, hi] minutes. Since MESSAGE-32 the timer is the
+ * one source of a mixer phase's duration; the speed field carries none.
+ */
+const timerOf = (id: string): readonly [number, number] => {
+  const t = step(id).timerMinutes;
+  if (t === undefined) throw new Error(`${id} has no fixed timer`);
+  return Array.isArray(t) ? t : [t, t];
+};
+
+/** Phase C's planned minutes: the midpoint of `mix-5`'s timer. */
+const PHASE_C_MIN = mid(timerOf('mix-5'));
 
 // ---------------------------------------------------------------------------
 // 1. CLAIMS
@@ -221,22 +231,21 @@ const CLAIMS: readonly Claim[] = [
   // --- speeds: every "N% / R RPM" is RPM = 47.4 + 2.526 × N, and prose leads
   // with the lit segments N ÷ 10 (§7.5, MESSAGE-29) ----------------------------
   ...(['mix-2', 'mix-3', 'mix-5', 'mix-7'] as const).flatMap((id): Claim[] => {
-    const { dial, minutes } = speedOf(id);
+    const { dial } = speedOf(id);
     const pair = `${dial}% / ${rpm(dial)} RPM`;
-    const range = minutes[0] === minutes[1] ? `~${minutes[0]} min` : `${minutes[0]}–${minutes[1]} min`;
+    // The summary restates the timer: minutes, or seconds under a minute as
+    // the recipe writes Phase D.
+    const [lo, hi] = timerOf(id);
+    const range = hi <= 1 ? `${lo * 60}–${hi * 60} seconds` : `${lo}–${hi} min`;
     return [
-      { at: `${id}.speed`, restates: 'rpmForDial', text: `${pair}, ${range}`, covers: [`${dial}%`, `${rpm(dial)} RPM`, range.replace('~', '')] },
+      { at: `${id}.speed`, restates: 'rpmForDial', text: pair, covers: [`${dial}%`, `${rpm(dial)} RPM`] },
       {
         at: `${id}.summary`,
         restates: 'the speed field\'s dial as lit segments, then dial and rpmForDial',
         text: `**${segWords(dial)}** (${dial}%, ${rpm(dial)} RPM)`,
         covers: [String(Math.floor(dial / C.INDICATOR_PCT_PER_SEGMENT)), `${dial}%`, `${rpm(dial)} RPM`],
       },
-      // mix-7's summary says "45–60 seconds" where its speed field rounds to
-      // "~1 min"; that pair is procedure, classified in FIXED.
-      ...(minutes[0] === minutes[1]
-        ? []
-        : [{ at: `${id}.summary`, restates: 'the speed field\'s minutes', text: range, covers: [range] }]),
+      { at: `${id}.summary`, restates: 'the step\'s timer (MESSAGE-32)', text: range, covers: [range] },
     ];
   }),
   { at: 'mix-2.detail', restates: 'rpmForDial(5), the dial floor', text: `slowest setting is ${rpm(5)} RPM`, covers: [`${rpm(5)} RPM`] },
@@ -355,8 +364,8 @@ const CLAIMS: readonly Claim[] = [
   // --- mix-7: the run it sums from its own phases ---------------------------
   {
     at: 'mix-7.detail',
-    restates: 'A + B + C + D maxima from the speed fields',
-    text: `Total run time is about ${['mix-2', 'mix-3', 'mix-5', 'mix-7'].reduce((n, id) => n + speedOf(id).minutes[1], 0)} minutes`,
+    restates: 'A + B + C + D maxima from the timers',
+    text: `Total run time is about ${['mix-2', 'mix-3', 'mix-5', 'mix-7'].reduce((n, id) => n + timerOf(id)[1], 0)} minutes`,
     covers: ['15 minutes'],
   },
 
@@ -438,7 +447,12 @@ const CLAIMS: readonly Claim[] = [
     covers: ['2 hours'],
   },
   { at: 'biga-4.timerLabelRetarded', restates: '§4.7 bigaRoomTemp', text: `${BIGA_ROOM_H} h`, covers: ['2 h'] },
-  { at: 'biga-4.summaryClassic', restates: 'PLANNING_RANGE_H.bigaRoomOnly', text: `**${span('bigaRoomOnly')} hours** at`, covers: [`${span('bigaRoomOnly')} hours`] },
+  {
+    at: 'biga-4.summaryClassic',
+    restates: 'PLANNING_RANGE_H.bigaRoomOnly',
+    text: `The Giorilli window is **${span('bigaRoomOnly')} hours**`,
+    covers: [`${span('bigaRoomOnly')} hours`],
+  },
   { at: 'biga-4.timerLabelClassic', restates: 'PLANNING_RANGE_H.bigaRoomOnly', text: `${span('bigaRoomOnly')} h`, covers: [`${span('bigaRoomOnly')} h`] },
   {
     at: 'biga-4.detail',
@@ -451,6 +465,12 @@ const CLAIMS: readonly Claim[] = [
   { at: 'biga-4b.detail', restates: 'PLANNING_RANGE_H.bigaFridge', text: `${span('bigaFridge')} hours is the window`, covers: ['18–20 hours'] },
   { at: 'bulk-1.summary', restates: 'PLANNING_RANGE_H.bulkRest', text: `${span('bulkRest', 60)} min at room temperature`, covers: ['45–60 min'] },
   { at: 'bulk-1.timerLabel', restates: 'PLANNING_RANGE_H.bulkRest', text: `${span('bulkRest', 60)} min`, covers: ['45–60 min'] },
+  {
+    at: 'bulk-3.detailWhen',
+    restates: '§4.8 ROOM_MIN_CLAMP, the rise floor plannedBallRiseH holds',
+    text: `never goes below ${C.ROOM_MIN_CLAMP[0]} minutes`,
+    covers: [`${C.ROOM_MIN_CLAMP[0]} minutes`],
+  },
   { at: 'bake-1.summary', restates: 'PLANNING_RANGE_H.temper', text: `**${span('temper')} hours** before baking`, covers: ['2–3 hours'] },
   { at: 'bake-1.timerLabel', restates: 'PLANNING_RANGE_H.temper', text: `${span('temper')} h`, covers: ['2–3 h'] },
 
@@ -820,9 +840,14 @@ const FIXED: Record<Loc, readonly string[]> = {
   // The rest itself — the source the "10-minute rest" claims read.
   'mix-6.summary': ['10 minutes'],
   'mix-6.timerLabel': ['10 min'],
-  // Phase D by the clock, which the speed field rounds to "~1 min"; the
-  // DDT ±1 °F pass/fail gate.
-  'mix-7.summary': ['45–60 seconds'],
+  // The mixer phases' timers: the recipe's phase times, and since MESSAGE-32
+  // the one source of each phase's duration. Each summary is claimed against
+  // its timer above, and the MAX_RUN_MIN profile reads them.
+  'mix-2.timerLabel': ['3–4 min'],
+  'mix-3.timerLabel': ['5–6 min'],
+  'mix-5.timerLabel': ['3–4 min'],
+  'mix-7.timerLabel': ['45–60 s'],
+  // The DDT ±1 °F pass/fail gate.
   'mix-7.watchFor': ['1 °F'],
   'mix-8.detail': ['0 g', '60 g'], // illustrative residue
 

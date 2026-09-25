@@ -167,18 +167,20 @@ describe('§7.5 speed: what the indicator shows', () => {
 });
 
 describe('§7.5 speed: the chip\'s smaller line', () => {
-  it('reads "20% · 98 RPM · 5–6 min" for each speed step, the duration included', () => {
-    // §7.5 item 3 since MESSAGE-30: no speed step has a timer chip, so the
-    // minutes would otherwise appear only in the summary sentence.
+  it('reads "20% · 98 RPM", and every speed step carries its duration as a timer instead', () => {
+    // §7.5 item 3 since MESSAGE-32: each mixer phase has a timer, so the
+    // chip no longer repeats the minutes it carried from MESSAGE-30.
     const lines = STEPS.filter((s) => s.speed).map((s) => {
-      expect(s.timerLabel, s.id).toBeUndefined();
-      return [s.id, formatSpeedDetail(s.speed!.dial, s.speed!.rpm, s.speed!.minutes)];
+      expect(s.timerLabel, `${s.id} has a timer`).toBeDefined();
+      const line = formatSpeedDetail(s.speed!.dial, s.speed!.rpm);
+      expect(line, `${s.id}'s chip repeats its timer`).not.toContain(s.timerLabel!);
+      return [s.id, line, s.timerLabel];
     });
     expect(lines).toEqual([
-      ['mix-2', '15% · 85 RPM · 3–4 min'],
-      ['mix-3', '20% · 98 RPM · 5–6 min'],
-      ['mix-5', '30% · 123 RPM · 3–4 min'],
-      ['mix-7', '20% · 98 RPM · ~1 min'],
+      ['mix-2', '15% · 85 RPM', '3–4 min'],
+      ['mix-3', '20% · 98 RPM', '5–6 min'],
+      ['mix-5', '30% · 123 RPM', '3–4 min'],
+      ['mix-7', '20% · 98 RPM', '45–60 s'],
     ]);
   });
 });

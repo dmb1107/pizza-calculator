@@ -14,7 +14,7 @@
  */
 
 import { C } from './constants';
-import { MIX_H, clampRise, mixStaggerH } from './engine';
+import { MIX_H, plannedBallRiseH } from './engine';
 import type { Schedule, TimelineMode } from '../state/types';
 
 export type StageKey =
@@ -153,7 +153,6 @@ export const STAGE_INFO: Record<StageKey, { title: string; description: string }
 export function stageDurations(schedule: Schedule, a: ScheduleAdjustments): StageDurations {
   const retarded = schedule === 'retarded';
   const nMix = Math.max(1, a.nMix);
-  const stagger = mixStaggerH(nMix);
 
   return {
     bigaRoomTemp: retarded ? 2 : 0,
@@ -163,7 +162,7 @@ export function stageDurations(schedule: Schedule, a: ScheduleAdjustments): Stag
     mix: MIX_H * nMix + C.CHANGEOVER_H * (nMix - 1),
     bulkRest: 1,
     divideBall: C.DIVIDE_BALL_H,
-    ballRoomTemp: clampRise(a.ballRoomTempH - stagger / 2),
+    ballRoomTemp: plannedBallRiseH(a.ballRoomTempH * 60, nMix),
     coldFerment: a.coldFermentH,
     temper: a.temperH,
   };

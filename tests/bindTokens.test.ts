@@ -220,8 +220,9 @@ describe('step summaries bind to real numbers', () => {
   it('binds each biga stage\'s planning point beside its range', () => {
     // MESSAGE-31: the range leads and the planned point sits beside it.
     const step = (id: string) => STEPS.find((s) => s.id === id);
-    expect(bindTokens(step('biga-4')?.summaryClassic ?? '', values)).toContain(
-      '**16–18 hours** at 61–65 °F, covered so it can\'t dry out. The timeline plans 16 h.',
+    // MESSAGE-32: worded to hold at a plan outside the window too.
+    expect(bindTokens(step('biga-4')?.summaryClassic ?? '', values)).toBe(
+      'At 61–65 °F, covered so it can\'t dry out. The Giorilli window is **16–18 hours**; the timeline plans **16 h**.',
     );
     expect(bindTokens(step('biga-4b')?.summary ?? '', values)).toContain(
       'for **18–20 hours**. The timeline plans 19 h.',

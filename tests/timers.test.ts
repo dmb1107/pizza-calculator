@@ -11,6 +11,7 @@ import { calculate } from '../src/lib/engine';
 import { bindTokens, tokenValues } from '../src/lib/bindTokens';
 import { expandSteps, timerLabelFor } from '../src/lib/stepInstances';
 import { DEFAULT_INPUTS } from '../src/state/defaults';
+import { STEPS } from '../src/content/steps';
 
 /** Step timers — WEBSITE-SPEC-biga-calculator.md §7.5. */
 
@@ -25,6 +26,8 @@ describe('parsing timer labels', () => {
     ['24 h', 1440, 1440, false],
     ['2.5 h', 150, 150, false],
     ['2 h', 120, 120, false],
+    // MESSAGE-32: Phase D's timer, in seconds.
+    ['45–60 s', 0.75, 1, true],
   ] as const)('reads "%s"', (label, min, max, isWindow) => {
     expect(parseTimerLabel(label)).toEqual({ minMinutes: min, maxMinutes: max, isWindow });
   });
@@ -53,14 +56,31 @@ describe('parsing timer labels', () => {
         expect(parseTimerLabel(bound), `${key} on ${schedule}: "${bound}"`).not.toBeNull();
         return [key];
       });
-    // At nMix 2, so mix-8's changeover renders once.
+    // At nMix 2, so mix-8's changeover renders once. Every mixer phase is
+    // timed on both passes since MESSAGE-32.
+    const mixes = [
+      'mix-2#1', 'mix-3#1', 'mix-5#1', 'mix-6#1', 'mix-7#1', 'mix-8#1',
+      'mix-2#2', 'mix-3#2', 'mix-5#2', 'mix-6#2', 'mix-7#2',
+    ];
     expect(timed('retarded')).toEqual([
-      'biga-3', 'biga-4', 'biga-4b', 'biga-6', 'mix-6#1', 'mix-8#1', 'mix-6#2',
-      'bulk-1', 'bulk-2', 'bulk-3', 'bulk-4', 'bake-1',
+      'biga-3', 'biga-4', 'biga-4b', 'biga-6', ...mixes, 'bulk-1', 'bulk-2', 'bulk-3', 'bulk-4', 'bake-1',
     ]);
     expect(timed('classic')).toEqual([
-      'biga-3', 'biga-4', 'mix-6#1', 'mix-8#1', 'mix-6#2', 'bulk-1', 'bulk-2', 'bulk-3', 'bulk-4', 'bake-1',
+      'biga-3', 'biga-4', ...mixes, 'bulk-1', 'bulk-2', 'bulk-3', 'bulk-4', 'bake-1',
     ]);
+  });
+
+  it('parses each fixed label the same way the generator did', () => {
+    // Two parsers of one label: scripts/generate-content.py writes
+    // timerMinutes, parseTimerLabel reads the label at runtime. Seconds are
+    // where they could part (mix-7's 45–60 s is [0.75, 1]).
+    const fixed = STEPS.filter((s) => s.timerMinutes !== undefined);
+    expect(fixed.map((s) => s.id)).toEqual(['biga-3', 'mix-2', 'mix-3', 'mix-5', 'mix-6', 'mix-7', 'mix-8', 'bulk-1', 'bulk-2']);
+    for (const s of fixed) {
+      const [lo, hi] = Array.isArray(s.timerMinutes) ? s.timerMinutes : [s.timerMinutes, s.timerMinutes];
+      const spec = parseTimerLabel(s.timerLabel ?? '');
+      expect([spec?.minMinutes, spec?.maxMinutes], `${s.id} "${s.timerLabel}"`).toEqual([lo, hi]);
+    }
   });
 });
 
@@ -158,6 +178,8 @@ describe('formatting', () => {
     [{ minMinutes: 45, maxMinutes: 60, isWindow: true }, '45–60 min'],
     // Genuinely mixed units keep both sides.
     [{ minMinutes: 45, maxMinutes: 90, isWindow: true }, '45 min–1 h 30 min'],
+    // Under a minute reads in seconds, as the recipe writes Phase D.
+    [{ minMinutes: 0.75, maxMinutes: 1, isWindow: true }, '45–60 s'],
   ])('describes %o as %s', (spec, expected) => {
     expect(describeSpec(spec)).toBe(expected);
   });

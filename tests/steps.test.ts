@@ -270,7 +270,7 @@ describe('§8.2 steps are reproduced verbatim', () => {
     // first on each track and biga-4b times the fridge.
     const step = STEPS.find((s) => s.id === 'biga-4');
     expect(step?.summaryRetarded).toContain('**2 hours** at room temperature');
-    expect(step?.summaryClassic).toContain('**16–18 hours** at 61–65 °F');
+    expect(step?.summaryClassic).toContain('The Giorilli window is **16–18 hours**');
     expect(step?.timerLabelRetarded).toBe('2 h');
     expect(step?.timerLabelClassic).toBe('16–18 h');
     expect(step?.timerLabel).toBeUndefined();

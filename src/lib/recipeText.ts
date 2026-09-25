@@ -70,9 +70,11 @@ export function buildRecipeText(result: CalculatorResult): string {
   lines.push(
     row(
       'Room time',
-      `${Math.round(result.roomMinutes)} min` +
+      `${Math.round(result.ballRoomMinutes)} min` +
         // Both terms, paired on the line (MESSAGE-24): the rise depends only on
         // the dough's offset from DDT, and a DDT two lines up isn't paired.
+        // The planned rise, as bulk-3 prints it (MESSAGE-32), not roomMinutes:
+        // at a split batch the two differ by half the stagger.
         (result.roomMinutesIsPlanned
           ? ` (planned at DDT ${formatTempF(result.ddtF)} °F — recompute once you measure)`
           : ` (final dough ${formatTempF(result.effectiveFinalTempF)} °F against DDT ${formatTempF(result.ddtF)} °F)`),

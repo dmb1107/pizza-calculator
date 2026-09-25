@@ -196,6 +196,17 @@ describe('§5 the mix profile fits the mixer', () => {
     expect(templatePauses.length, 'two pauses share the shape').toBe(2);
   });
 
+  /**
+   * A phase's longest duration, from its timer. The speed field carried the
+   * minutes until MESSAGE-32; now the timer is the one source. A speed step
+   * without a timer throws rather than contributing nothing.
+   */
+  const phaseMaxMin = (s: Step) => {
+    const t = s.timerMinutes;
+    if (t === undefined) throw new Error(`${s.id} has a speed but no timer`);
+    return Array.isArray(t) ? t[1] : t;
+  };
+
   it('keeps A + B + C inside the continuous limit, with headroom', () => {
     // Derived from the step content rather than transcribed, so extending a
     // phase in §8.2 moves this sum automatically — which is the whole purpose.
@@ -204,9 +215,7 @@ describe('§5 the mix profile fits the mixer', () => {
       // Phase C's reachable ceiling is its §4.6 temperature authority (5.5 min),
       // not the 3–4 printed on the card. Assert against what a user can produce.
       const reachable =
-        step.speed.dial === 30
-          ? Math.max(step.speed.minutes[1], C.PHASE_C_MAX_MIN)
-          : step.speed.minutes[1];
+        step.speed.dial === 30 ? Math.max(phaseMaxMin(step), C.PHASE_C_MAX_MIN) : phaseMaxMin(step);
       return total + reachable;
     }, 0);
 
@@ -220,7 +229,7 @@ describe('§5 the mix profile fits the mixer', () => {
     // passes. Anything beyond that is the failure this assertion exists for.
     const aPlusB = MIX_STEPS.slice(0, restIndex)
       .filter((s) => s.speed && s.speed.dial !== 30)
-      .reduce((total, s) => total + s.speed!.minutes[1], 0);
+      .reduce((total, s) => total + phaseMaxMin(s), 0);
     expect(aPlusB + 10).toBeCloseTo(C.MAX_RUN_MIN, 6);
     expect(aPlusB + 10.5).toBeGreaterThan(C.MAX_RUN_MIN);
   });

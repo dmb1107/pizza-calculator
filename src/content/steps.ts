@@ -89,7 +89,8 @@ export interface Step {
    */
   timerLabelRetarded?: string;
   timerLabelClassic?: string;
-  speed?: { dial: number; rpm: number; minutes: [number, number]; label: string };
+  /** Dial and RPM only (§8.1, MESSAGE-32): the phase's duration is its timer. */
+  speed?: { dial: number; rpm: number; label: string };
   /** Markdown: paragraphs, tables, emphasis. */
   detail?: string;
   /** The success cue. */
@@ -171,7 +172,7 @@ Cover to prevent drying. Sources differ on venting: Gozney and Ooni say leave a 
     title: `Ferment at room temperature`,
     summary: `**2 hours** at room temperature, in the mixer bowl, covered so it can't dry out. Then into the fridge.`,
     summaryRetarded: `**2 hours** at room temperature, in the mixer bowl, covered so it can't dry out. Then into the fridge.`,
-    summaryClassic: `**16–18 hours** at 61–65 °F, covered so it can't dry out. The timeline plans {bigaRoomOnly} h.`,
+    summaryClassic: `At 61–65 °F, covered so it can't dry out. The Giorilli window is **16–18 hours**; the timeline plans **{bigaRoomOnly} h**.`,
     timerLabelRetarded: `2 h`,
     timerLabelClassic: `16–18 h`,
     detail: `**The 61–65 °F band isn't only about speed.** That range produces the right ratio of lactic to acetic acid, which is what gives biga its characteristic sharp, vinegary profile. Ferment much warmer and you get a preferment that is biga-shaped but tastes different.
@@ -187,7 +188,7 @@ That's why an unstable kitchen is a real problem here and not just a timing nuis
     id: "biga-4b",
     phase: "biga",
     shownWhen: "schedule === 'retarded'",
-    title: `Refrigerate`,
+    title: `Refrigerate the biga`,
     summary: `Into the fridge, still in the mixer bowl and covered, for **18–20 hours**. The timeline plans {bigaFridge} h.`,
     timerLabel: `18–20 h`,
     detail: `The two hours at room temperature started fermentation; the fridge now holds it somewhere stable while it ripens. 18–20 hours is the window Ooni's professional biga recipe uses, and a biga is forgiving across it — judge it by the cue in the next step, not by the clock.`,
@@ -255,7 +256,9 @@ Split the tempered biga into {nMix} equal portions by weight, {bigaMassPerMix} g
     title: `Phase A, breakdown`,
     summary: `Add **{phaseAWaterPerMix} g** of water ({phaseAPercent}%) with the mixer **off**, then run at **1½ lit segments** (15%, 85 RPM) for 3–4 min until the biga pieces disappear into a rough shaggy mass.`,
     values: [`Phase A water: {phaseAWaterPerMix} g — weigh it, don't estimate`],
-    speed: { dial: 15, rpm: 85, minutes: [3, 4], label: `15% / 85 RPM, 3–4 min` },
+    timerLabel: `3–4 min`,
+    timerMinutes: [3, 4],
+    speed: { dial: 15, rpm: 85, label: `15% / 85 RPM` },
     detail: `**Highest-torque phase of the whole session.**
 
 **Add the water with the mixer off.** The Core's slowest setting is 60 RPM — there is no creep speed to fold liquid in gently, and pouring onto flour at 85 RPM throws it out of the bowl. Add, then dial up.
@@ -272,7 +275,9 @@ If motor protection engages, stop, rest 5 minutes, and resume one step lower. Lo
     title: `Phase B, salt and bassinage`,
     summary: `Add {saltPerMix} g salt. Then **{phaseBWaterPerMix} g** (the remaining {phaseBPercent}%) in **3 additions**, each fully absorbed before the next. **2 lit segments** (20%, 98 RPM), 5–6 min.`,
     values: [`Salt: {saltPerMix} g`, `Phase B water: {phaseBWaterPerMix} g`],
-    speed: { dial: 20, rpm: 98, minutes: [5, 6], label: `20% / 98 RPM, 5–6 min` },
+    timerLabel: `5–6 min`,
+    timerMinutes: [5, 6],
+    speed: { dial: 20, rpm: 98, label: `20% / 98 RPM` },
     detail: `**Salt goes in here — never in the biga**, where it would suppress the yeast you just spent 20 hours propagating.
 
 At 2.8% the salt is at the upper end of the Neapolitan range of 2.5–3.0%. That tightens the gluten slightly and slows fermentation a touch, both useful over a long schedule.
@@ -320,7 +325,9 @@ Remaining friction is diluted by the mixer bowl's thermal mass, and the rest exc
     phase: "mix",
     title: `Phase C, development`,
     summary: `**3 lit segments** (30%, 123 RPM), 3–4 min, to smooth and glossy. Adjust duration from the probe: about **{observedRate30} °F per minute** at this speed.`,
-    speed: { dial: 30, rpm: 123, minutes: [3, 4], label: `30% / 123 RPM, 3–4 min` },
+    timerLabel: `3–4 min`,
+    timerMinutes: [3, 4],
+    speed: { dial: 30, rpm: 123, label: `30% / 123 RPM` },
     detail: `**Phase C has limited authority over temperature, and this is the important part.**
 
 At 6 balls, cutting it to 2 minutes saves only **1.5 °F** and stretching it to 5.5 minutes adds only **1.9 °F**. That's the entire usable range, and it is narrower at 3 balls (−1.3 / +1.8) and slightly wider at 9 (−1.5 / +2.0).
@@ -347,7 +354,9 @@ It also breaks up the mixer's continuous run time, which keeps the whole session
     phase: "mix",
     title: `Phase D, finish`,
     summary: `**2 lit segments** (20%, 98 RPM), 45–60 seconds. The dough should pull cleanly off the bowl wall.`,
-    speed: { dial: 20, rpm: 98, minutes: [1, 1], label: `20% / 98 RPM, ~1 min` },
+    timerLabel: `45–60 s`,
+    timerMinutes: [0.75, 1],
+    speed: { dial: 20, rpm: 98, label: `20% / 98 RPM` },
     detail: `**Temperature is a pass/fail gate, not a suggestion.** Record the actual number every time; it's the input to your friction factor and therefore to every future batch.
 
 **Never above 4 lit segments (40%, 148 RPM) with this dough.** Total run time is about 15 minutes, inside the mixer's {maxRunMin}-minute continuous limit, and the rest breaks it up anyway.`,
@@ -423,9 +432,9 @@ At {ballWeight} g, open to about **{openDiameterIn} inches** — the same thickn
     id: "bulk-3",
     phase: "bulk",
     title: `Onto trays`,
-    summary: `**Very lightly oiled** half-sheet trays with lids — a film wiped with a paper towel, not a pool. Nothing on top of the balls. Room temperature **{roomMin} min**, set by how far the dough you actually hit is from DDT.`,
-    values: [`Room time: {roomMin} min (final dough {finalDoughTemp} °F against DDT {ddt} °F)`],
-    timerLabel: `{roomMin} min`,
+    summary: `**Very lightly oiled** half-sheet trays with lids — a film wiped with a paper towel, not a pool. Nothing on top of the balls. Room temperature **{ballRoomMin} min**, set by how far the dough you actually hit is from DDT.`,
+    values: [`Room time: {ballRoomMin} min (final dough {finalDoughTemp} °F against DDT {ddt} °F)`],
+    timerLabel: `{ballRoomMin} min`,
     detail: `**Oil, not flour.**
 
 Flour is hygroscopic. It pulls water out of the dough surface and hydrates into paste. Over 24–36 hours in a fridge — a drying environment even under a lid — you get the worst of both: patches of gluey paste where the flour hydrated, and a dry skin everywhere else. That skin resists opening and tears at the cornicione instead of stretching.
@@ -444,6 +453,10 @@ Oil is a barrier rather than an absorbent: it stops the dough bonding to the met
 **Keep it to a film.** Too much oil and three things go wrong: the ball slides instead of gripping enough to hold its dome as it relaxes, the base picks up enough oil to fry and over-brown on the stone, and the excess smokes on contact. A neutral oil is marginally better than olive purely on smoke point, though at a wiped film it barely matters.
 
 **Nothing on top of the balls.** The lid handles humidity. Oil on the upper surface becomes the cornicione surface and darkens it unevenly.`,
+    detailWhen: {
+      condition: "nMix > 1",
+      detail: `**This is shorter than one dough on its own would get.** At {finalDoughTemp} °F a single mix would rest {roomMin} min. The first mix has been fermenting longer than the last, so the calculator takes up to {staggerHalfMinutes} minutes off the rise to centre the difference (see *Bulk rest*), and never goes below 45 minutes.`,
+    },
     concepts: ["oil-not-flour"],
   },
   {

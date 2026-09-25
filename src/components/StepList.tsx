@@ -181,7 +181,7 @@ function StepRow({
             )}
 
             {step.speed && (
-              <SpeedIndicator dial={step.speed.dial} rpm={step.speed.rpm} minutes={step.speed.minutes} />
+              <SpeedIndicator dial={step.speed.dial} rpm={step.speed.rpm} />
             )}
 
             {step.watchFor && (
@@ -279,8 +279,8 @@ function FinalTempCapture({ state }: { state: AppState }) {
         step={BOUNDS.finalDoughTempF.step}
         hint={
           measured === null
-            ? `Not measured yet — planning at DDT ${formatTempF(result.ddtF)} °F, which gives ${Math.round(result.roomMinutes)} min at room temperature.`
-            : `Room temperature shortened or extended to ${Math.round(result.roomMinutes)} min to compensate. Every later stage moves with it.`
+            ? `Not measured yet — planning at DDT ${formatTempF(result.ddtF)} °F, which gives ${Math.round(result.ballRoomMinutes)} min at room temperature.`
+            : `Room temperature shortened or extended to ${Math.round(result.ballRoomMinutes)} min to compensate. Every later stage moves with it.`
         }
       />
       {measured !== null && (
@@ -342,7 +342,7 @@ export function StepList({
 
   /**
    * A timer for any step whose label states a duration. The label is bound
-   * first, so `{coldFerment} h` and `{roomMin} min` resolve to real numbers and
+   * first, so `{coldFerment} h` and `{ballRoomMin} min` resolve to real numbers and
    * no step ids need special-casing. A range ("18–20 h") is a window (§7.5).
    */
   const renderTimer = (label: string | undefined, key: string) => {

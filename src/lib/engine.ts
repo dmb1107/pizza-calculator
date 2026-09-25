@@ -606,7 +606,21 @@ export function mixStaggerH(nMix: number): number {
  */
 export function staggerUncentredMin(roomMinutes: number, nMix: number): number {
   const target = roomMinutes / 60 - mixStaggerH(Math.max(1, nMix)) / 2;
-  return (clampRise(target) - target) * 60;
+  return (plannedBallRiseH(roomMinutes, nMix) - target) * 60;
+}
+
+/**
+ * §4.7 / §4.8. The ball rise the timeline plans, in hours: the per-dough rise
+ * less half the stagger, held to the floor. Equal to the per-dough rise at
+ * `nMix = 1`.
+ *
+ * The timeline's `ballRoomTemp` stage and `{ballRoomMin}` both read this, so
+ * `bulk-3` and the schedule cannot part again. They did: until MESSAGE-32
+ * `bulk-3` printed and timed the uncorrected `{roomMin}`, 17.5 min longer than
+ * the plan at `nMix = 2`.
+ */
+export function plannedBallRiseH(roomMinutes: number, nMix: number): number {
+  return clampRise(roomMinutes / 60 - mixStaggerH(Math.max(1, nMix)) / 2);
 }
 
 // ---------------------------------------------------------------------------
@@ -764,6 +778,12 @@ export interface CalculatorResult {
   opening: Opening;
   /** §4.8 room-temperature minutes before the fridge. */
   roomMinutes: number;
+  /**
+   * The ball rise the timeline plans: `roomMinutes` less half the stagger,
+   * floored (`plannedBallRiseH`). Equal to `roomMinutes` at `nMix = 1`. What
+   * `bulk-3`, copy-as-text and the final-temperature hint print (MESSAGE-32).
+   */
+  ballRoomMinutes: number;
   /** True when roomMinutes came from DDT rather than a measurement. */
   roomMinutesIsPlanned: boolean;
   /**
@@ -846,6 +866,7 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
     probe,
     opening: computeOpening(inputs.ballWeightG),
     roomMinutes,
+    ballRoomMinutes: plannedBallRiseH(roomMinutes, capacity.nMix) * 60,
     roomMinutesIsPlanned,
     staggerUncentredMin: uncentred,
     effectiveFinalTempF,

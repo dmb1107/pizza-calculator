@@ -515,6 +515,7 @@ All are per-mix and computed at the user's inputs; none is a literal.
 | Token | Value |
 |---|---|
 | `{frictionRemainingF}` | `0.33 × FF × Ct/TOT` — the friction still to come after the probe |
+| `{ballRoomMin}` | `ballRoomTemp` in minutes — the ball rise **the timeline plans**, after the stagger correction (§4.8). Equal to `{roomMin}` at `nMix = 1`. `{roomMin}` stays the per-dough figure, before the correction. ⚠️ `bulk-3` printed and timed `{roomMin}`, so every split batch ran its rise 17.5 min long at `nMix = 2` and 35 min at `nMix = 3` against the plan |
 | `{restExchangeF}` | `|0.2 × (DDT − T_room)|` — how far the rest moves the dough toward room temperature |
 | `{probeGapPhrase}` | `"1.6 °F below DDT"` / `"0.3 °F above DDT"` / `"right at DDT"` — the magnitude of `DDT − probeTargetF`, with the direction in words. The number must equal \|printed DDT − printed target\| exactly |
 | `{phaseAPercent}` / `{phaseBPercent}` | `PHASE_A_FRACTION × 100` and its complement. **No scope suffix** — they are ratios, and the `PerMix` / `PerBiga` rule is about masses |
@@ -833,7 +834,7 @@ See §8. Each step: a checkbox that persists, a summary, computed values inlined
 
 1. **A drawn indicator that matches the real one** (geometry below): `floor(dial / INDICATOR_PCT_PER_SEGMENT)` segments lit, the **next segment dimmed** when the remainder is 5, the rest unlit. Large enough to hold up against the mixer at arm's length on a phone.
 2. **The count in words beside it:** "2 lit segments", "1½ lit segments".
-3. **Secondary, smaller:** "20% · 98 RPM · 5–6 min" — the step's duration included, because no speed step has a timer chip and the duration would otherwise appear only in the summary sentence.
+3. **Secondary, smaller:** "20% · 98 RPM". The duration is not repeated here: every speed step has its own timer (§8.2), which carries it. ⚠️ An earlier version appended the minutes to this line, because the speed steps had no timers then.
 
 **The real indicator, as Dave observed it at the mixer** (not published by Ooni):
 - **A ring of ten segments round the knob**, on a dark panel. Think of twelve 30° positions with the bottom two missing, so the gap is centred at 6 o'clock.
@@ -842,7 +843,7 @@ See §8. Each step: a checkbox that persists, a summary, computed values inlined
 
 ⚠️ **Corrected:** an earlier version said to draw the half step as a half-filled segment and named neither the ring nor the fill direction.
 
-The same order applies wherever §8 prose gives a speed: **"2 lit segments (20%, 98 RPM)"**. The `speed` field in each step keeps its `dial% / RPM` form — it is data; this section governs how it renders.
+The same order applies wherever §8 prose gives a speed: **"2 lit segments (20%, 98 RPM)"**. The `speed` field in each step keeps its `dial% / RPM` form — it is data; this section governs how it renders. The step's duration is its `timer`, one source for both the countdown and anything else that needs phase length.
 
 ⚠️ **Do not show a setting number** ("setting 4 of 20"). A segment count and a dial-click count differ by a factor of two, and at the 40% ceiling a 2× misread is 80%. The drawn indicator is the one form that reads the same whichever way the baker counts.
 
@@ -862,7 +863,7 @@ interface Step {
   summary: string;                  // default view, 1-2 sentences
   values?: string[];                // computed, "{braces}" bind to engine output
   timerMinutes?: number | [number, number];
-  speed?: { dial: number; rpm: number; minutes: [number, number] };
+  speed?: { dial: number; rpm: number };   // duration lives in timerMinutes, not here
   detail?: string;                  // MARKDOWN. paragraphs, tables, emphasis.
   watchFor?: string;                // the success cue
   troubleshoot?: { symptom: string; cause: string; fix: string }[];
@@ -943,7 +944,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 #### `biga-4` — Ferment at room temperature
 **phase:** biga
 **summary (retarded):** **2 hours** at room temperature, in the mixer bowl, covered so it can't dry out. Then into the fridge.
-**summary (classic):** **16–18 hours** at 61–65 °F, covered so it can't dry out. The timeline plans {bigaRoomOnly} h.
+**summary (classic):** At 61–65 °F, covered so it can't dry out. The Giorilli window is **16–18 hours**; the timeline plans **{bigaRoomOnly} h**.
 **timer (retarded):** 2 h
 **timer (classic):** 16–18 h
 
@@ -959,7 +960,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 ---
 
-#### `biga-4b` — Refrigerate
+#### `biga-4b` — Refrigerate the biga
 **phase:** biga
 **shown only when:** `schedule === 'retarded'`
 **summary:** Into the fridge, still in the mixer bowl and covered, for **18–20 hours**. The timeline plans {bigaFridge} h.
@@ -1034,7 +1035,8 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 **phase:** mix
 **summary:** Add **{phaseAWaterPerMix} g** of water ({phaseAPercent}%) with the mixer **off**, then run at **1½ lit segments** (15%, 85 RPM) for 3–4 min until the biga pieces disappear into a rough shaggy mass.
 **values:** Phase A water: {phaseAWaterPerMix} g — weigh it, don't estimate
-**speed:** 15% / 85 RPM, 3–4 min
+**speed:** 15% / 85 RPM
+**timer:** 3–4 min
 
 **detail:**
 > **Highest-torque phase of the whole session.**
@@ -1051,7 +1053,8 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 #### `mix-3` — Phase B, salt and bassinage
 **phase:** mix
 **summary:** Add {saltPerMix} g salt. Then **{phaseBWaterPerMix} g** (the remaining {phaseBPercent}%) in **3 additions**, each fully absorbed before the next. **2 lit segments** (20%, 98 RPM), 5–6 min.
-**speed:** 20% / 98 RPM, 5–6 min
+**speed:** 20% / 98 RPM
+**timer:** 5–6 min
 **values:** Salt: {saltPerMix} g · Phase B water: {phaseBWaterPerMix} g
 
 **detail:**
@@ -1101,7 +1104,8 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 #### `mix-5` — Phase C, development
 **phase:** mix
 **summary:** **3 lit segments** (30%, 123 RPM), 3–4 min, to smooth and glossy. Adjust duration from the probe: about **{observedRate30} °F per minute** at this speed.
-**speed:** 30% / 123 RPM, 3–4 min
+**speed:** 30% / 123 RPM
+**timer:** 3–4 min
 
 **detail:**
 > **Phase C has limited authority over temperature, and this is the important part.**
@@ -1129,7 +1133,8 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 #### `mix-7` — Phase D, finish
 **phase:** mix
 **summary:** **2 lit segments** (20%, 98 RPM), 45–60 seconds. The dough should pull cleanly off the bowl wall.
-**speed:** 20% / 98 RPM, ~1 min
+**speed:** 20% / 98 RPM
+**timer:** 45–60 s
 **watchFor:** Smooth and glossy, "pumpkin-lattice" surface, cleans the bowl, thin windowpane with only slight tearing — **and at DDT ±1 °F.**
 
 **detail:**
@@ -1189,10 +1194,10 @@ The wrong form has the **same instance count, the same labels, and the same supp
 
 | | `nMix` 1 | 2 | 3 |
 |---|---:|---:|---:|
-| retarded | **19** | 27 | 35 |
+| retarded | **20** | 28 | 36 |
 | classic | **18** | 26 | 34 |
 
-(6 or 5 biga + 7/15/23 mix + 4 bulk + 2 bake.) The previous figures of 18/26/34 were the classic counts, and were correct only because the temper step did not exist. Not the count, not the labels, not "the changeover appears once" — every one of those is true of the wrong form. Where order is the meaning, order is the thing to assert, and a golden sequence is the only assertion a plausible-looking reordering cannot satisfy.
+(7 or 5 biga + 7/15/23 mix + 4 bulk + 2 bake.) Retarded gained one step when `biga-4b` split the fridge stage out of `biga-4`; it was 19 / 27 / 35 before that. The figures of 18/26/34 before *that* were the classic counts, and were correct only because the temper step did not exist. Not the count, not the labels, not "the changeover appears once" — every one of those is true of the wrong form. Where order is the meaning, order is the thing to assert, and a golden sequence is the only assertion a plausible-looking reordering cannot satisfy.
 
 **Keep the expansion in its own pure module.** Inside the component that renders it, no test can reach it.
 - **Checkbox and timer state key off the expanded id**, which is the whole point.
@@ -1263,9 +1268,9 @@ A bare token on a per-mix or per-biga step is then a **visible** error rather th
 
 #### `bulk-3` — Onto trays
 **phase:** bulk
-**summary:** **Very lightly oiled** half-sheet trays with lids — a film wiped with a paper towel, not a pool. Nothing on top of the balls. Room temperature **{roomMin} min**, set by how far the dough you actually hit is from DDT.
-**timer:** {roomMin} min
-**values:** Room time: {roomMin} min (final dough {finalDoughTemp} °F against DDT {ddt} °F)
+**summary:** **Very lightly oiled** half-sheet trays with lids — a film wiped with a paper towel, not a pool. Nothing on top of the balls. Room temperature **{ballRoomMin} min**, set by how far the dough you actually hit is from DDT.
+**timer:** {ballRoomMin} min
+**values:** Room time: {ballRoomMin} min (final dough {finalDoughTemp} °F against DDT {ddt} °F)
 
 **detail:**
 > **Oil, not flour.**
@@ -1286,6 +1291,9 @@ A bare token on a per-mix or per-biga step is then a **visible** error rather th
 > **Keep it to a film.** Too much oil and three things go wrong: the ball slides instead of gripping enough to hold its dome as it relaxes, the base picks up enough oil to fry and over-brown on the stone, and the excess smokes on contact. A neutral oil is marginally better than olive purely on smoke point, though at a wiped film it barely matters.
 >
 > **Nothing on top of the balls.** The lid handles humidity. Oil on the upper surface becomes the cornicione surface and darkens it unevenly.
+
+**detail, shown only when `nMix > 1`:**
+> **This is shorter than one dough on its own would get.** At {finalDoughTemp} °F a single mix would rest {roomMin} min. The first mix has been fermenting longer than the last, so the calculator takes up to {staggerHalfMinutes} minutes off the rise to centre the difference (see *Bulk rest*), and never goes below 45 minutes.
 **concepts:** oil-not-flour
 
 ---

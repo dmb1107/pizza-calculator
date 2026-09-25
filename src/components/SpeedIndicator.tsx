@@ -53,15 +53,7 @@ const SEGMENT_STYLE: Record<SegmentState, { stroke: string; opacity: number; glo
   off: { stroke: '#3b3734', opacity: 1, glow: false },
 };
 
-export function SpeedIndicator({
-  dial,
-  rpm,
-  minutes,
-}: {
-  dial: number;
-  rpm: number;
-  minutes: readonly [number, number];
-}) {
+export function SpeedIndicator({ dial, rpm }: { dial: number; rpm: number }) {
   const { full, half, total } = indicatorForDial(dial);
   const segments = indicatorSegments(dial);
   // Eight of these render on a split batch; their gradient and filter ids must not collide.
@@ -113,7 +105,7 @@ export function SpeedIndicator({
       <div className="min-w-0">
         <p className="text-xl font-semibold tabular">{words}</p>
         <p className="mt-1 text-sm text-stone-600 tabular dark:text-stone-400">
-          {formatSpeedDetail(dial, rpm, minutes)}
+          {formatSpeedDetail(dial, rpm)}
         </p>
       </div>
     </div>

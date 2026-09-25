@@ -36,13 +36,16 @@ export interface TimerSpec {
  * MESSAGE-31 every step's label does: §7.5 retired "per schedule", and
  * `timers.test.ts` requires every resolved label to parse.
  */
+/** Minutes per unit. Seconds since MESSAGE-32: `mix-7`'s Phase D is 45–60 s. */
+const UNIT_MINUTES = { h: 60, min: 1, s: 1 / 60 } as const;
+
 export function parseTimerLabel(label: string): TimerSpec | null {
   const text = label.trim();
 
-  // "3–6 min", "45–60 min", "10–15 min between rounds". En dash or hyphen.
-  const range = /^(\d+(?:\.\d+)?)\s*[–-]\s*(\d+(?:\.\d+)?)\s*(min|h)\b/.exec(text);
+  // "3–6 min", "45–60 min", "10–15 min between rounds", "45–60 s". En dash or hyphen.
+  const range = /^(\d+(?:\.\d+)?)\s*[–-]\s*(\d+(?:\.\d+)?)\s*(min|h|s)\b/.exec(text);
   if (range) {
-    const scale = range[3] === 'h' ? 60 : 1;
+    const scale = UNIT_MINUTES[range[3] as keyof typeof UNIT_MINUTES];
     return {
       minMinutes: Number(range[1]) * scale,
       maxMinutes: Number(range[2]) * scale,
@@ -51,9 +54,9 @@ export function parseTimerLabel(label: string): TimerSpec | null {
   }
 
   // "10 min", "24 h", "2.5 h".
-  const single = /^(\d+(?:\.\d+)?)\s*(min|h)\b/.exec(text);
+  const single = /^(\d+(?:\.\d+)?)\s*(min|h|s)\b/.exec(text);
   if (single) {
-    const minutes = Number(single[1]) * (single[2] === 'h' ? 60 : 1);
+    const minutes = Number(single[1]) * UNIT_MINUTES[single[2] as keyof typeof UNIT_MINUTES];
     return { minMinutes: minutes, maxMinutes: minutes, isWindow: false };
   }
 
@@ -129,7 +132,7 @@ export function formatCountdown(ms: number): string {
 }
 
 /**
- * Short human label: "10 min", "3–6 min", "2 h 30 min", "45 min–1 h".
+ * Short human label: "10 min", "3–6 min", "2 h 30 min", "45 min–1 h", "45–60 s".
  *
  * A window whose bounds share a unit collapses to one — "3–6 min" rather than
  * "3 min–6 min", which is what the recipe says and what reads at arm's length.
@@ -142,6 +145,12 @@ export function describeSpec(spec: TimerSpec): string {
     if (m === 0) return `${h} h`;
     return `${h} h ${m} min`;
   };
+
+  // Under a minute reads in seconds, as the recipe writes Phase D: "45–60 s".
+  const seconds = (minutes: number) => Math.round(minutes * 60);
+  if (spec.maxMinutes <= 1) {
+    return spec.isWindow ? `${seconds(spec.minMinutes)}–${seconds(spec.maxMinutes)} s` : `${seconds(spec.minMinutes)} s`;
+  }
 
   if (!spec.isWindow) return one(spec.minMinutes);
 

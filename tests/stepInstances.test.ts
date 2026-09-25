@@ -112,7 +112,7 @@ describe('§8.2a golden sequence', () => {
     ]);
   });
 
-  it('matches the instance counts §8.2a publishes — classic now, retarded once corrected', () => {
+  it('matches the instance counts §8.2a publishes', () => {
     // Read from §8.2a's table rather than typed, so a correction there shows up.
     const published = (schedule: Schedule) => {
       const row = new RegExp(`^\\| ${schedule} \\| \\*\\*(\\d+)\\*\\* \\| (\\d+) \\| (\\d+) \\|$`, 'm').exec(SPEC);
@@ -121,10 +121,8 @@ describe('§8.2a golden sequence', () => {
     };
     const counts = (schedule: Schedule) => [1, 2, 3].map((n) => allKeys(n, schedule).length);
     expect(counts('classic')).toEqual(published('classic'));
-    // Known wrong, reported in FINDINGS-32: the table predates biga-4b and
-    // still reads 19 / 27 / 35. Pinned both ways, like a gate knownWrong —
-    // when the spec is corrected this fails; replace it with the equality above.
-    expect(published('retarded'), '§8.2a corrected: drop this pin').toEqual([19, 27, 35]);
+    // MESSAGE-32 corrected the retarded row (19 / 27 / 35 before biga-4b).
+    expect(counts('retarded')).toEqual(published('retarded'));
     expect(counts('retarded')).toEqual([20, 28, 36]);
   });
 

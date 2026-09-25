@@ -66,6 +66,15 @@ describe('recipe text', () => {
     expect(nine).toContain('90 min (final dough 74.0 °F against DDT 74.0 °F)');
   });
 
+  it('prints the rise the timeline plans at a split batch, as bulk-3 does', () => {
+    // MESSAGE-32: the planned rise, not the per-dough one. At 12 balls (nMix 2)
+    // and a 74 °F dough on its DDT of 74, one dough would get 90 min; half the
+    // 35-minute stagger comes off, so the plan is 72.5, printed 73.
+    const twelve = text({ balls: 12, finalDoughTempF: 74 });
+    expect(twelve).toContain('73 min (final dough 74.0 °F against DDT 74.0 °F)');
+    expect(twelve).not.toContain('90 min');
+  });
+
   it('records the conditions, so the numbers can be reproduced', () => {
     // A gram figure without the temperatures behind it is not reproducible.
     const out = text({ roomTempF: 66, bigaTempF: 58 });
