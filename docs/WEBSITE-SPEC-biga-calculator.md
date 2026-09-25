@@ -58,7 +58,7 @@ export const C = {
 
   // Mixer bowl - REQUIRED thermal mass, do not omit
   C_BOWL_SPECIFIC_HEAT: 0.12, // stainless, cal/g·°C
-  DEFAULT_BOWL_MASS_G: 965,   // measured; user-editable, persist
+  BOWL_MASS_G: 965,           // measured once on a kitchen scale. FIXED, not an input: the app supports only the Halo Core, whose bowl never changes
 
   // Ooni Halo Core limits
   MAX_DOUGH: 2500,            // g
@@ -75,6 +75,7 @@ export const C = {
   // Speed. Two anchors, one measured and one published; the line through them is DERIVED (below).
   RPM_AT_5_PCT: 60,           // MEASURED: 20 hook revolutions in 20 s at 5% (first-bake calibration)
   RPM_AT_100_PCT: 300,        // Ooni's published maximum at 100%
+  INDICATOR_PCT_PER_SEGMENT: 10, // Ooni: a fully lit LED segment = 10%, a half-lit one = 5%. The Core has no number display
 
   // Friction rate by dial %, °F per minute of run time
   FRICTION_RATE: { 15: 0.75, 20: 0.86, 30: 1.08 },
@@ -159,7 +160,7 @@ Ct = Cb + Cf + Cw + Cs
 Effect of the fix, at the §5 vector conditions (biga and bowl 58 °F): **12 balls +2.6 °F of water, 18 balls +1.8 °F.** Across the supported envelope it runs from **1.5 °F** (19 × 257 g, biga 60 °F) to **6.2 °F** (9 × 272 g, biga 45 °F; tied exactly with 17 × 288 g and 18 × 272 g) — largest with the coldest biga, and independent of room and flour temperature. All three follow from the closed form: the gap is `C_bowl × (DDT − T_bowl) × (nMix − 1) ÷ (Cw per gram of dough × batch dough mass)`, because every other term in the water formula is scale-invariant. Room and flour temperature don't appear in it; `T_bowl` defaults to `T_biga`; and the three batches at the maximum share `(nMix − 1) ÷ batch dough mass` — 18 × 272 g is exactly twice 9 × 272 g, with one more mix. They do *not* share a per-mix dough (1251 g vs 1668 g). Every `nMix = 1` batch is unchanged.
 
 ```
-C_bowl = bowlMassG × 0.12          // 115.8 at the 965 g default
+C_bowl = BOWL_MASS_G × 0.12        // 115.8
 TOT    = Ct + C_bowl
 ```
 
@@ -279,7 +280,7 @@ nMix  = max(1, ceil(max(doughTotal / MAX_DOUGH, F / FLOUR_CAP_66)))
 nBiga = max(1, ceil(max(bigaFlour / FLOUR_CAP_55, bigaMass / MAX_DOUGH)))
 ```
 
-Also warn when `doughTotal / nMix < MIN_DOUGH` (mixer can't grip) and when a single final mix lands within 5% of `MAX_DOUGH` (workable but tight).
+Every capacity condition is surfaced to the baker — split required, biga split required, near the limit, below the minimum. Conditions and wording are in §7.3, *Capacity*.
 
 When `nBiga < nMix`, the UI should say so plainly: *"Mix one biga, then divide it by weight into N portions for N separate final mixes."* That's the 12-ball case and it's a genuine convenience, not a compromise.
 
@@ -513,9 +514,11 @@ All are per-mix and computed at the user's inputs; none is a literal.
 | `{restExchangeF}` | `|0.2 × (DDT − T_room)|` — how far the rest moves the dough toward room temperature |
 | `{probeGapPhrase}` | `"1.6 °F below DDT"` / `"0.3 °F above DDT"` / `"right at DDT"` — the magnitude of `DDT − probeTargetF`, with the direction in words. The number must equal \|printed DDT − printed target\| exactly |
 | `{phaseAPercent}` / `{phaseBPercent}` | `PHASE_A_FRACTION × 100` and its complement. **No scope suffix** — they are ratios, and the `PerMix` / `PerBiga` rule is about masses |
-| `{bowlMassG}` | the bowl-mass input |
+| `{bowlMassG}` | `BOWL_MASS_G`, the fixed bowl mass |
 | `{openDiameterIn}`, `{thicknessPercentOver}` | §4.9 |
 | `{defaultBallG}`, `{treadMaxDiameterIn}` | the constants, bound rather than typed |
+| `{doughTotal}`, `{doughPerMix}` | batch dough mass and per-mix dough mass (§7.3, *Capacity*) |
+| `{maxDoughG}`, `{minDoughG}`, `{bigaFlourCapG}` | `MAX_DOUGH`, `MIN_DOUGH`, `FLOUR_CAP_55` — constants, bound rather than typed |
 
 **`{frictionRemainingF}` and `{restExchangeF}` are displayed independently and may not visibly add to the gap in `{probeGapPhrase}`** — rounding each once can leave a 0.1 °F mismatch. That is correct. Do not force the displayed parts to sum; that would mean rounding twice.
 
@@ -695,7 +698,7 @@ Group into three panels. **Batch** open by default; the other two collapsed with
 ### Panel 1 — Batch
 | Field | Type | Default | Range |
 |---|---|---|---|
-| Number of balls | stepper | 6 | **3–24** — see §4.4 for why 3 is the floor |
+| Number of balls | stepper | 6 | **3–24** — see §4.4 for why 3 is the floor. Whenever `nMix > 1`, show beside the field: *"→ {nMix} mixes of {doughPerMix} g"*, so the split is visible while choosing. At the floor, stepping down shows the §7.3 minimum message instead of silently stopping |
 | Ball weight (g) | number | 265 | 240–300 |
 | Cold ferment (hours) | slider | 24 | 6–36 |
 | Schedule | radio | Retarded biga | Retarded / Classic RT |
@@ -706,9 +709,10 @@ Group into three panels. **Batch** open by default; the other two collapsed with
 | Room temp (°F) | number | 70 | |
 | Flour temp (°F) | number | = room | "same as room" toggle |
 | Biga temp at mix (°F) | number | **58** | ⚠️ **Highest-leverage input in the model.** Was 64, which was unsourced; 58 is the one value ever measured (bake 1, after tearing). `d(T_water)/d(T_biga)` is −1.92 at 6 balls and −2.25 at 3 **on the bowl-tracking basis, `(Cb + C_bowl)/Cw`** — the field's default, where the cold-bowl prefill follows the biga reading — so a 6 °F miss here moves the required water 11.5 °F and the finished dough 3.5 °F. **Once the bowl is measured, or its state is room or warm, the bowl holds and the coefficient is `Cb/Cw` = −1.59 at every mix size (§7.2):** the same miss moves the water 9.6 °F. Mark the field as expecting a measurement and show the sensitivity inline **on whichever basis currently applies** — never a fixed figure. |
-| Bowl mass (g) | number | 965 | weigh once; persist |
 | Bowl state | 3-way selector | *Cold* (mix 1) / *Warm from previous mix* (mix 2+) | Prefills bowl temp from `T_biga`, `T_room` or `DDT` — see §4.2. Show the rinse note beside it |
 | Bowl temp at mix (°F) | number | *(from the selector)* | ⚠️ **Promoted to a real input.** The selector sets a starting value; a measurement always wins. The biga gains ~5 °F from tearing and the bowl does not. Worth 0.66 °F of water per °F at a 3-ball mix, 0.22 at 9. Show that coefficient inline |
+
+**Bowl mass is not an input.** The app supports only the Halo Core, and its bowl always weighs the same, so the mass is the constant `BOWL_MASS_G` (§3). ⚠️ **Removed:** an earlier version had an editable, persisted *Bowl mass (g)* field. Ignore any stored value. Bowl **temperature** stays a real input — it changes every bake.
 
 #### Per-mix overrides — required when `nMix > 1`
 
@@ -764,7 +768,33 @@ Cards after the first recompute from that mix's own biga and bowl readings (§6,
 Quoting −1.59 against a tempering biga understates the effect by 20%; quoting −1.92 against two separate readings overstates it. Across every legal mix size the bowl-tracking figure spans **1.81 to 2.32** — all of which round to "about two degrees".
 
 ### 7.3 Warnings
-Render above the step list, never hidden in a collapsed panel. Sources: capacity splits, **water below 38 °F**, **water above 120 °F**, dough below mixer minimum, overnight timeline stages, **uncentred stagger** (below).
+Render above the step list, never hidden in a collapsed panel. Sources: **capacity** (below), **water below 38 °F**, **water above 120 °F**, overnight timeline stages, **uncentred stagger** (below).
+
+#### Capacity: say when the batch must be split, and how
+
+The engine already splits (§4.5) and every step is written per mix, so the baker never mixes an over-capacity batch by following the steps. What they need is to be **told**: that the batch is over the Halo Core's limit, that it has been split, and into what. Each condition below is evaluated on the values the app displays.
+
+**Split required — `nMix > 1`. Always shown, first in the strip:**
+> **Too much dough for one mix — this batch is split.** {balls} balls is {doughTotal} g of dough, and the Halo Core takes at most {maxDoughG} g. Mix it as **{nMix} batches of {doughPerMix} g**, one after another in the same bowl. The amounts and steps below are already per mix.
+
+Name the limit that binds: the larger of `doughTotal / MAX_DOUGH` and `F / FLOUR_CAP_66`. At this formula it is always the dough limit — the flour cap corresponds to `FLOUR_CAP_66 × DOUGH_YIELD` = 2600.6 g of dough, above 2500 — so ship only the dough sentence, and add a test that fails if the flour cap ever binds first (a hydration change could do it).
+
+**Biga split required — `nBiga > 1`:**
+> **Too much biga for one bowl — make {nBiga}.** {bigaFlourTotal} g of biga flour is over the Core's {bigaFlourCapG} g limit for a stiff dough. Mix {nBiga} bigas of {bigaFlourPerBiga} g flour each. Only one can ferment in the mixer bowl; the other ferments elsewhere.
+
+For the biga the flour cap always binds first (`FLOUR_CAP_55 × 1.5` = 2415 g of biga, under 2500). When `nBiga < nMix`, keep §4.5's line: *"Mix one biga, then divide it by weight into {nMix} portions for {nMix} separate final mixes."*
+
+**Near the limit — `doughPerMix ≥ 0.95 × MAX_DOUGH`:**
+> **Close to the Core's limit.** {doughPerMix} g per mix is within 5% of the {maxDoughG} g maximum. It will mix, but there's little margin — weigh carefully.
+
+Fires at 9 and 18 balls at the 265 g default (2437.5 g per mix).
+
+**Below the minimum.** Two layers:
+- **At the input.** `Number of balls` stops at 3. Stepping below it shows, next to the field: *"**3 balls minimum.** Below that the Halo Core's hook can't grip the dough, and the water would need to be hotter than a tap delivers. For one or two pizzas, mix by hand."*
+- **As a guard — `doughPerMix < MIN_DOUGH`:**
+> **Too little dough for the mixer.** {doughPerMix} g is under the Halo Core's {minDoughG} g minimum — the hook won't grip it. Make more balls.
+
+The guard cannot fire inside the input ranges: the smallest single mix is 735.8 g (3 × 240 g), and a split never leaves a mix under 1250.9 g, because `nMix` is the smallest count that fits. Keep it anyway, with a test that it stays silent across 3–24 balls × 240–300 g, so a future range change can't make it silently reachable.
 
 #### The stagger warning appears twice, on purpose
 
@@ -784,6 +814,18 @@ Vertical list of stages with clock times and durations. Highlight "now" if the s
 
 ### 7.5 Steps
 See §8. Each step: a checkbox that persists, a summary, computed values inlined, an expandable "Why", and a timer where a duration applies.
+
+#### Speed: show what the mixer shows
+
+**The Halo Core has no number display.** Its speed is shown on an LED indicator in segments: a fully lit segment is 10% and a half-lit one is 5% (Ooni help center). The baker sets the speed by counting lit segments, so a chip that leads with "20%" makes them convert in their head at the mixer. **Lead with the indicator:**
+
+1. **A drawn indicator** of `100 / INDICATOR_PCT_PER_SEGMENT` segments: `floor(dial / INDICATOR_PCT_PER_SEGMENT)` full, one half-filled when the remainder is 5, the rest empty. Large enough to hold up against the mixer at arm's length on a phone.
+2. **The count in words beside it:** "2 lit segments", "1½ lit segments".
+3. **Secondary, smaller:** "20% · 98 RPM".
+
+The same order applies wherever §8 prose gives a speed: **"2 lit segments (20%, 98 RPM)"**. The `speed` field in each step keeps its `dial% / RPM` form — it is data; this section governs how it renders.
+
+⚠️ **Do not show a setting number** ("setting 4 of 20"). A segment count and a dial-click count differ by a factor of two, and at the 40% ceiling a 2× misread is 80%. The drawn indicator is the one form that reads the same whichever way the baker counts.
 
 ---
 
@@ -959,7 +1001,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 #### `mix-2` — Phase A, breakdown
 **phase:** mix
-**summary:** Add **{phaseAWaterPerMix} g** of water ({phaseAPercent}%) with the mixer **off**, then run at **15% / 85 RPM** for 3–4 min until the biga pieces disappear into a rough shaggy mass.
+**summary:** Add **{phaseAWaterPerMix} g** of water ({phaseAPercent}%) with the mixer **off**, then run at **1½ lit segments** (15%, 85 RPM) for 3–4 min until the biga pieces disappear into a rough shaggy mass.
 **values:** Phase A water: {phaseAWaterPerMix} g — weigh it, don't estimate
 **speed:** 15% / 85 RPM, 3–4 min
 
@@ -977,7 +1019,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 #### `mix-3` — Phase B, salt and bassinage
 **phase:** mix
-**summary:** Add {saltPerMix} g salt. Then **{phaseBWaterPerMix} g** (the remaining {phaseBPercent}%) in **3 additions**, each fully absorbed before the next. **20% / 98 RPM**, 5–6 min.
+**summary:** Add {saltPerMix} g salt. Then **{phaseBWaterPerMix} g** (the remaining {phaseBPercent}%) in **3 additions**, each fully absorbed before the next. **2 lit segments** (20%, 98 RPM), 5–6 min.
 **speed:** 20% / 98 RPM, 5–6 min
 **values:** Salt: {saltPerMix} g · Phase B water: {phaseBWaterPerMix} g
 
@@ -1027,7 +1069,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 #### `mix-5` — Phase C, development
 **phase:** mix
-**summary:** **30% / 123 RPM**, 3–4 min, to smooth and glossy. Adjust duration from the probe: about **{observedRate30} °F per minute** at this speed.
+**summary:** **3 lit segments** (30%, 123 RPM), 3–4 min, to smooth and glossy. Adjust duration from the probe: about **{observedRate30} °F per minute** at this speed.
 **speed:** 30% / 123 RPM, 3–4 min
 
 **detail:**
@@ -1055,14 +1097,14 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 #### `mix-7` — Phase D, finish
 **phase:** mix
-**summary:** **20% / 98 RPM**, 45–60 seconds. The dough should pull cleanly off the bowl wall.
+**summary:** **2 lit segments** (20%, 98 RPM), 45–60 seconds. The dough should pull cleanly off the bowl wall.
 **speed:** 20% / 98 RPM, ~1 min
 **watchFor:** Smooth and glossy, "pumpkin-lattice" surface, cleans the bowl, thin windowpane with only slight tearing — **and at DDT ±1 °F.**
 
 **detail:**
 > **Temperature is a pass/fail gate, not a suggestion.** Record the actual number every time; it's the input to your friction factor and therefore to every future batch.
 >
-> **Never above 40% / 148 RPM with this dough.** Total run time is about 15 minutes, inside the mixer's {maxRunMin}-minute continuous limit, and the rest breaks it up anyway.
+> **Never above 4 lit segments (40%, 148 RPM) with this dough.** Total run time is about 15 minutes, inside the mixer's {maxRunMin}-minute continuous limit, and the rest breaks it up anyway.
 
 ---
 
@@ -1398,16 +1440,18 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 Put these on a secondary page or in a drawer — needed occasionally, not every session.
 
 ### Mixer speed
+The Core has no number display. Its LED indicator shows the speed in segments: a fully lit segment is 10% and a half-lit one 5%, so 20% is two lit segments.
+
 `RPM = 47.4 + 2.526 × dial%`, the line through a measured 60 RPM at 5% and Ooni's published 300 RPM at 100%. Ooni's help-center chart, which puts 5% at 15 RPM, is **wrong** — use this line instead.
 
-| Dial | RPM | Used for |
-|---:|---:|---|
-| 5% | 60 | floor — no slower setting exists |
-| 15% | 85 | Phase A breakdown |
-| 20% | 98 | Phase B, Phase D |
-| 30% | 123 | Phase C development |
-| 40% | 148 | hard ceiling for this dough |
-| 80% | 249 | Ooni max recommended at 66%+ hydration |
+| Lit segments | Dial | RPM | Used for |
+|---|---:|---:|---|
+| ½ | 5% | 60 | floor — no slower setting exists |
+| 1½ | 15% | 85 | Phase A breakdown |
+| 2 | 20% | 98 | Phase B, Phase D |
+| 3 | 30% | 123 | Phase C development |
+| 4 | 40% | 148 | hard ceiling for this dough |
+| 8 | 80% | 249 | Ooni max recommended at 66%+ hydration |
 
 ### Friction rate
 **Dough-only** (matching FF): 0.75 °F/min at 15% · 0.86 at 20% · 1.08 at 30%

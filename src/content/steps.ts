@@ -236,7 +236,7 @@ Split the tempered biga into {nMix} equal portions by weight, {bigaMassPerMix} g
     id: "mix-2",
     phase: "mix",
     title: `Phase A, breakdown`,
-    summary: `Add **{phaseAWaterPerMix} g** of water ({phaseAPercent}%) with the mixer **off**, then run at **15% / 85 RPM** for 3–4 min until the biga pieces disappear into a rough shaggy mass.`,
+    summary: `Add **{phaseAWaterPerMix} g** of water ({phaseAPercent}%) with the mixer **off**, then run at **1½ lit segments** (15%, 85 RPM) for 3–4 min until the biga pieces disappear into a rough shaggy mass.`,
     values: [`Phase A water: {phaseAWaterPerMix} g — weigh it, don't estimate`],
     speed: { dial: 15, rpm: 85, minutes: [3, 4], label: `15% / 85 RPM, 3–4 min` },
     detail: `**Highest-torque phase of the whole session.**
@@ -253,7 +253,7 @@ If motor protection engages, stop, rest 5 minutes, and resume one step lower. Lo
     id: "mix-3",
     phase: "mix",
     title: `Phase B, salt and bassinage`,
-    summary: `Add {saltPerMix} g salt. Then **{phaseBWaterPerMix} g** (the remaining {phaseBPercent}%) in **3 additions**, each fully absorbed before the next. **20% / 98 RPM**, 5–6 min.`,
+    summary: `Add {saltPerMix} g salt. Then **{phaseBWaterPerMix} g** (the remaining {phaseBPercent}%) in **3 additions**, each fully absorbed before the next. **2 lit segments** (20%, 98 RPM), 5–6 min.`,
     values: [`Salt: {saltPerMix} g`, `Phase B water: {phaseBWaterPerMix} g`],
     speed: { dial: 20, rpm: 98, minutes: [5, 6], label: `20% / 98 RPM, 5–6 min` },
     detail: `**Salt goes in here — never in the biga**, where it would suppress the yeast you just spent 20 hours propagating.
@@ -302,7 +302,7 @@ Remaining friction is diluted by the mixer bowl's thermal mass, and the rest exc
     id: "mix-5",
     phase: "mix",
     title: `Phase C, development`,
-    summary: `**30% / 123 RPM**, 3–4 min, to smooth and glossy. Adjust duration from the probe: about **{observedRate30} °F per minute** at this speed.`,
+    summary: `**3 lit segments** (30%, 123 RPM), 3–4 min, to smooth and glossy. Adjust duration from the probe: about **{observedRate30} °F per minute** at this speed.`,
     speed: { dial: 30, rpm: 123, minutes: [3, 4], label: `30% / 123 RPM, 3–4 min` },
     detail: `**Phase C has limited authority over temperature, and this is the important part.**
 
@@ -329,11 +329,11 @@ It also breaks up the mixer's continuous run time, which keeps the whole session
     id: "mix-7",
     phase: "mix",
     title: `Phase D, finish`,
-    summary: `**20% / 98 RPM**, 45–60 seconds. The dough should pull cleanly off the bowl wall.`,
+    summary: `**2 lit segments** (20%, 98 RPM), 45–60 seconds. The dough should pull cleanly off the bowl wall.`,
     speed: { dial: 20, rpm: 98, minutes: [1, 1], label: `20% / 98 RPM, ~1 min` },
     detail: `**Temperature is a pass/fail gate, not a suggestion.** Record the actual number every time; it's the input to your friction factor and therefore to every future batch.
 
-**Never above 40% / 148 RPM with this dough.** Total run time is about 15 minutes, inside the mixer's {maxRunMin}-minute continuous limit, and the rest breaks it up anyway.`,
+**Never above 4 lit segments (40%, 148 RPM) with this dough.** Total run time is about 15 minutes, inside the mixer's {maxRunMin}-minute continuous limit, and the rest breaks it up anyway.`,
     watchFor: `Smooth and glossy, "pumpkin-lattice" surface, cleans the bowl, thin windowpane with only slight tearing — **and at DDT ±1 °F.**`,
     repeatsPerMix: true,
   },

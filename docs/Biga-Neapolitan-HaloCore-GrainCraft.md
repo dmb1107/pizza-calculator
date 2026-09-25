@@ -77,7 +77,7 @@ Where the constants come from: **1.728** is the dough yield factor (1 + 0.70 wat
 - Final dough `F × 1.728` ≤ **2500 g**, and `F` ≤ **1505 g** → otherwise split the final mix
 - Biga flour `F × 0.65` ≤ **1610 g** → otherwise split the biga too
 
-Every mixing speed and duration (§4, §8) holds at any batch size. **The water-temperature formula does not** — the mixer bowl is a fixed thermal mass while everything else scales with flour, so the weights shift with batch size (§6). Friction factor also changes with scale, which is why §6 keeps one per batch size.
+Every mixing speed and duration (§4, §8) holds at any batch size. **The water-temperature formula does not** — the mixer bowl is a fixed thermal mass while everything else scales with flour, so the weights shift with batch size (§6). Friction factor *may* also change with scale — an untested hypothesis (§6) — which is why §6 keeps one per mix size.
 
 ### Bigger parties — the Halo Core forces a split
 
@@ -110,19 +110,21 @@ That settles it. The **Ooni help-center chart in the project files is wrong** �
 
 The line runs through the two anchors: the measured 60 RPM at 5%, and Ooni's published 300 RPM at 100%. Only the bottom end is measured; the rows between assume the 20 levels are evenly spaced.
 
-| Level | Dial | RPM | Used for |
+**Read the speed off the LED indicator, not the dial.** The Core has no number display. Each fully lit segment is 10% and a half-lit one is 5% (Ooni help center), so the *Lit segments* column is what you'll actually see at the mixer.
+
+| Lit segments | Dial | RPM | Used for |
 |---:|---:|---:|---|
-| 1 | 5% | **60** | floor — no slower setting exists |
-| 2 | 10% | 73 | |
-| 3 | **15%** | **85** | biga mix · Phase A breakdown |
-| 4 | **20%** | **98** | Phase B bassinage · Phase D finish |
-| 5 | 25% | 111 | |
-| 6 | **30%** | **123** | Phase C development |
-| 7 | 35% | 136 | |
-| 8 | **40%** | **148** | hard ceiling for this dough |
-| 10 | 50% | 174 | |
-| 16 | 80% | 249 | Ooni max recommended @ 66%+ hyd |
-| 20 | 100% | 300 | never with dough |
+| ½ | 5% | **60** | floor — no slower setting exists |
+| 1 | 10% | 73 | |
+| **1½** | **15%** | **85** | Phase A breakdown |
+| **2** | **20%** | **98** | Phase B bassinage · Phase D finish |
+| 2½ | 25% | 111 | |
+| **3** | **30%** | **123** | Phase C development |
+| 3½ | 35% | 136 | |
+| **4** | **40%** | **148** | hard ceiling for this dough |
+| 5 | 50% | 174 | |
+| 8 | 80% | 249 | Ooni max recommended @ 66%+ hyd |
+| 10 | 100% | 300 | never with dough |
 
 Each 5% step = **12.6 RPM**. Note the intercept: the dial maps across a *usable band*, not from zero. The Halo Pro works the same way (`RPM ≈ 45 + 3 × %`, from Ooni's own Pro recipes) — same design logic, different band. That cross-check corroborates the measurement.
 
@@ -498,15 +500,15 @@ Do neither until the ~50 h version has worked twice.
 
 Have everything weighed before you start, and the water already blended to temperature.
 
-| Phase | Speed | Time | What |
+| Phase | Speed (lit segments) | Time | What |
 |---|---:|---:|---|
 | **Prep** | — | — | Break up clumps in the fresh flour dry, same as the biga flour. Crumble the biga small — smaller is better, it is the stiffest thing the mixer will face. Add the flour, toss to coat. |
-| **A — breakdown** | **15%** / 85 RPM | 3–4 min | Add **60% of the final water — weigh it** (3 balls 105.8 g · 6 balls 211.6 g · 9 balls 317.4 g) **with the mixer off**, then bring the dial up. Run until the biga pieces disappear into a rough shaggy mass. Highest-torque phase. *Optional (PizzaBlab): soak the crumbled biga in that water a few minutes first — but only a few. Working biga in water alone strips starch off the chunks and leaves hard, sticky gluten lumps.* |
-| **B — bassinage** | **20%** / 98 RPM | 5–6 min | Add salt. Then the remaining 40% (3 balls 70.5 g · 6 balls 141.1 g · 9 balls 211.6 g) in **3 additions**, waiting for each to fully absorb before the next. Pour **slowly down the splash-guard spout** — at 98 RPM the hook will sling it if you dump it. |
+| **A — breakdown** | **1½** · 15% / 85 RPM | 3–4 min | Add **60% of the final water — weigh it** (3 balls 105.8 g · 6 balls 211.6 g · 9 balls 317.4 g) **with the mixer off**, then bring the dial up. Run until the biga pieces disappear into a rough shaggy mass. Highest-torque phase. *Optional (PizzaBlab): soak the crumbled biga in that water a few minutes first — but only a few. Working biga in water alone strips starch off the chunks and leaves hard, sticky gluten lumps.* |
+| **B — bassinage** | **2** · 20% / 98 RPM | 5–6 min | Add salt. Then the remaining 40% (3 balls 70.5 g · 6 balls 141.1 g · 9 balls 211.6 g) in **3 additions**, waiting for each to fully absorb before the next. Pour **slowly down the splash-guard spout** — at 98 RPM the hook will sling it if you dump it. |
 | **— probe —** | 0% | — | **Target: 3 balls 72.2 °F · 6 balls 71.8 °F · 9 balls 70.5 °F** (at FF 14 in a 70 °F room). You are *not* aiming at DDT yet; about a third of the friction is still ahead of you. General form below. |
-| **C — development** | **30%** / 123 RPM | 3–4 min | Runs to smooth and glossy. Adjust the duration from the probe: **~1 °F per minute** at 6 balls or larger, **~0.9 at 3 balls**. |
+| **C — development** | **3** · 30% / 123 RPM | 3–4 min | Runs to smooth and glossy. Adjust the duration from the probe: **~1 °F per minute** at 6 balls or larger, **~0.9 at 3 balls**. |
 | **Rest** | 0% | 10 min | Bowl covered, mixer off. Relaxes gluten; the dough will smooth out on its own. |
-| **D — finish** | **20%** / 98 RPM | 45–60 s | Final smoothing. Dough should pull cleanly off the bowl wall. |
+| **D — finish** | **2** · 20% / 98 RPM | 45–60 s | Final smoothing. Dough should pull cleanly off the bowl wall. |
 
 **Never above 40% (148 RPM) with this dough.** Total run ~15 min, inside the 20-minute continuous limit, and the rest breaks it up anyway.
 
@@ -762,22 +764,23 @@ PROBE = DDT - 0.33 x FF x Ct/(Ct+C_bowl) + 0.2 x (DDT - Troom)
         3bl 72.2 / 6bl 71.8 / 9bl 70.5   (FF 14, room 70)
 
 RPM = 47.4 + 2.526 x dial%   [MEASURED 5% = 60; OONI 100% = 300]
-  15% = 85    20% = 98    30% = 123    40% = 148 (ceiling)
+INDICATOR: FULL segment = 10%, HALF-lit = 5%. Count LIT SEGMENTS.
+  1.5 seg = 15%/85   2 seg = 20%/98   3 seg = 30%/123   4 seg = 40%/148 (ceiling)
   60 RPM is the FLOOR - add water with mixer OFF, then dial up.
 
-FINAL  A      15%/85   3-4 min   breakdown, 60% of water (PhA above)
-       B      20%/98   5-6 min   salt + remaining 40% in 3 adds (PhB above)
+FINAL  A  1.5 seg  15%/85   3-4 min   breakdown, 60% of water (PhA above)
+       B  2 seg    20%/98   5-6 min   salt + remaining 40% in 3 adds (PhB above)
        PROBE  at a 70 F ROOM: 3bl DDT-2.8 / 6bl DDT-3.2 / 9bl DDT-3.5
               ROOM MATTERS MORE THAN BATCH: +0.2 toward DDT per F below 70.
               62 F kitchen, 6bl = DDT-1.6 (not 3.2). MEASURE THE ROOM.
               THE OLD "DDT - 4" RULE IS DEAD.
   general: DDT - 0.33 x FF x Ct/(Ct+C_bowl) + 0.2 x (DDT - Troom)
-       C      30%/123  3-4 min   develop
+       C  3 seg    30%/123  3-4 min   develop
               OBSERVED rate 0.89 F/min (3bl) 0.97 (6bl) 1.01 (9bl)
               authority only -1.5 to +1.9 F @6bl. Bigger miss -> fix water.
-       rest    0%      10 min
-       D      20%/98   45-60 s   finish
-NEVER above 40%.  20 min continuous max.
+       rest     off     10 min
+       D  2 seg    20%/98   45-60 s   finish
+NEVER above 4 SEGMENTS (40%).  20 min continuous max.
 FRICTION RATES 0.75/0.86/1.08 F-min @15/20/30% ARE DOUGH-ONLY.
   To compare against a thermometer, x Ct/(Ct+C_bowl): 0.82/0.90/0.93 at 3/6/9.
 

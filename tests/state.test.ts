@@ -37,7 +37,6 @@ const CUSTOM: Inputs = {
   flourSameAsRoom: false,
   flourTempF: 62,
   bigaTempF: [58.5, 61],
-  bowlMassG: 1100,
   bowlState: 'room',
   bowlTempF: [71.5, null],
   bigaFridgeH: 18.5,
@@ -119,8 +118,8 @@ describe('URL serialization', () => {
   });
 
   it('accepts a supplied base for the fallbacks', () => {
-    const base = { ...DEFAULT_INPUTS, bowlMassG: 1100 };
-    expect(decodeInputs('balls=9', base).bowlMassG).toBe(1100);
+    const base = { ...DEFAULT_INPUTS, roomTempF: 64 };
+    expect(decodeInputs('balls=9', base).roomTempF).toBe(64);
   });
 
   describe('rejects hostile or truncated links', () => {
@@ -139,7 +138,6 @@ describe('URL serialization', () => {
       expect(decodeInputs('balls=-5').balls).toBe(BOUNDS.balls.min);
       expect(decodeInputs('ball=10').ballWeightG).toBe(BOUNDS.ballWeightG.min);
       expect(decodeInputs('cold=500').coldFermentH).toBe(BOUNDS.coldFermentH.max);
-      expect(decodeInputs('bowl=99999').bowlMassG).toBe(BOUNDS.bowlMassG.max);
     });
 
     it('rounds a fractional ball count', () => {
@@ -182,8 +180,7 @@ describe('localStorage persistence', () => {
       timelineMode: 'backward' as const,
       bakeAtIso: '2026-08-23T22:00:00.000Z',
       checkedSteps: ['biga-1', 'biga-2'],
-      bowlMassG: 1100,
-      timers: [{ stepId: 'mix-6', startedAt: 1_700_000_000_000, minMinutes: 10, maxMinutes: 10 }],
+          timers: [{ stepId: 'mix-6', startedAt: 1_700_000_000_000, minMinutes: 10, maxMinutes: 10 }],
     };
     savePersisted(s, value);
     expect(loadPersisted(s)).toEqual(value);
@@ -211,7 +208,6 @@ describe('localStorage persistence', () => {
       const loaded = loadPersisted(fakeStorage({ [STORAGE_KEY]: raw }));
 
       // Every field is a usable value rather than a crash or a NaN.
-      expect(Number.isFinite(loaded.bowlMassG)).toBe(true);
       expect(typeof loaded.panels.batch).toBe('boolean');
       expect(Array.isArray(loaded.checkedSteps)).toBe(true);
       expect(Array.isArray(loaded.timers)).toBe(true);
@@ -235,6 +231,17 @@ describe('localStorage persistence', () => {
       expect(load({ timelineMode: 'backward', bakeAtIso: 'Saturday' }).timelineMode).toBe('forward');
       expect(load({ timelineMode: 'sideways', bakeAtIso: '2026-10-03T22:00:00.000Z' }).timelineMode).toBe('forward');
       expect(load({}).timelineMode).toBe('forward');
+    });
+
+    it('ignores a bowl mass stored before MESSAGE-29 made it a constant', () => {
+      const loaded = loadPersisted(fakeStorage({ [STORAGE_KEY]: JSON.stringify({ bowlMassG: 1100 }) }));
+      expect('bowlMassG' in loaded).toBe(false);
+    });
+
+    it('decodes an old link carrying a bowl mass, and ignores it', () => {
+      const decoded = decodeInputs('balls=9&bowl=1100');
+      expect(decoded.balls).toBe(9);
+      expect('bowlMassG' in decoded).toBe(false);
     });
 
     it('drops corrupt friction entries but keeps the good ones', () => {

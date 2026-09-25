@@ -1,4 +1,5 @@
 import { CopyButton } from './CopyButton';
+import { Markdown } from './Markdown';
 import { C } from '../lib/constants';
 import { formatAdy, formatGrams, formatPercent, formatTempF } from '../lib/format';
 import { buildRecipeText } from '../lib/recipeText';
@@ -150,7 +151,9 @@ const WARNING_STYLES: Record<Warning['severity'], string> = {
  * §7.3. "Render above the step list, never hidden in a collapsed panel."
  *
  * Errors first, then warnings, then information — a batch that can't be made
- * should not be reported below a note about splitting the mix.
+ * should not be reported below a note about splitting the mix. The sort is
+ * stable and §7.3's capacity messages come in first, so the split leads the
+ * strip as §7.3 requires.
  */
 export function WarningsList({ warnings }: { warnings: Warning[] }) {
   if (warnings.length === 0) return null;
@@ -164,8 +167,10 @@ export function WarningsList({ warnings }: { warnings: Warning[] }) {
     <section aria-label="Warnings" className="grid gap-2">
       {sorted.map((w) => (
         <div key={w.id} className={`rounded-xl border p-3 ${WARNING_STYLES[w.severity]}`}>
-          <p className="font-semibold">{w.title}</p>
-          <p className="mt-1 text-sm leading-relaxed">{w.detail}</p>
+          {w.title && <p className="font-semibold">{w.title}</p>}
+          {/* Markdown: §7.3's capacity messages carry bold ("Mix it as **2
+              batches of 1625.0 g**"), and plain text would print the asterisks. */}
+          <Markdown className={`${w.title ? 'mt-1 ' : ''}text-sm leading-relaxed`}>{w.detail}</Markdown>
         </div>
       ))}
     </section>

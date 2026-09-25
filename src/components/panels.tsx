@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { Panel } from './Panel';
+import { Markdown } from './Markdown';
+import { CAPACITY } from '../content/capacity';
 import { Badge, NumberField, SegmentedField, SliderField, Stepper, ToggleField } from './fields';
 import { BOUNDS } from '../state/defaults';
 import { bigaReadingCost, bowlReadingCost } from '../lib/engine';
@@ -32,8 +35,10 @@ const SCHEDULE_OPTIONS: { value: Schedule; label: string; description: string }[
 ];
 
 export function BatchPanel(s: AppState) {
-  const { inputs, setInput, commitNumber, stepNumber, panels, togglePanel } = s;
+  const { inputs, setInput, commitNumber, stepNumber, panels, togglePanel, ballsSplitHint } = s;
   const scheduleLabel = inputs.schedule === 'retarded' ? 'Retarded' : 'Classic RT';
+  // §7.3: stepping below 3 shows why, next to the field. Cleared by the next step up.
+  const [belowMin, setBelowMin] = useState(false);
 
   return (
     <Panel
@@ -46,7 +51,18 @@ export function BatchPanel(s: AppState) {
         <Stepper
           label="Number of balls"
           value={inputs.balls}
-          onStep={(d) => stepNumber('balls', d)}
+          onStep={(d) => {
+            setBelowMin(false);
+            stepNumber('balls', d);
+          }}
+          onBelowMin={() => setBelowMin(true)}
+          hint={
+            belowMin ? (
+              <Markdown className="text-amber-900 dark:text-amber-200">{CAPACITY.minimumAtInput}</Markdown>
+            ) : (
+              ballsSplitHint
+            )
+          }
           min={BOUNDS.balls.min}
           max={BOUNDS.balls.max}
         />
@@ -113,7 +129,7 @@ export function TemperaturesPanel(s: AppState) {
   return (
     <Panel
       title="Today's temperatures"
-      summary={`Room ${formatTempF(inputs.roomTempF)} · Biga ${formatTempF(inputs.bigaTempF[0]!)} °F · Bowl ${Math.round(inputs.bowlMassG)} g`}
+      summary={`Room ${formatTempF(inputs.roomTempF)} · Biga ${formatTempF(inputs.bigaTempF[0]!)} °F`}
       open={panels.temperatures}
       onToggle={() => togglePanel('temperatures')}
     >
@@ -189,16 +205,6 @@ export function TemperaturesPanel(s: AppState) {
             </div>
           );
         })}
-        <NumberField
-          label="Mixer bowl mass"
-          unit="g"
-          value={inputs.bowlMassG}
-          onCommit={(v) => commitNumber('bowlMassG', v)}
-          min={BOUNDS.bowlMassG.min}
-          max={BOUNDS.bowlMassG.max}
-          step={BOUNDS.bowlMassG.step}
-          hint="Weigh it once. The bowl absorbs friction energy alongside the dough — leaving it out of the model put the water 5 °F wrong on the first bake. Its mass matters far more than its temperature, which is why this one is weighed once and the temperature above is read every time."
-        />
       </div>
     </Panel>
   );

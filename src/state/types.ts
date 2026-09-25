@@ -45,8 +45,6 @@ export interface Inputs {
    * mix, which is what an older shared link decodes to.
    */
   bigaTempF: number[];
-  /** Weigh once; persisted. */
-  bowlMassG: number;
   /**
    * §4.2. How the bowl arrives at MIX 1. Later mixes are always 'warm'.
    * Prefills `bowlTempF` from a value already in the model.
@@ -133,8 +131,6 @@ export interface Persisted {
   bakeAtIso: string;
   /** Ids of steps ticked off. §7.5: "a checkbox that persists". */
   checkedSteps: string[];
-  /** Weighed once, then never again. */
-  bowlMassG: number;
   /**
    * Timers the user has started, as absolute start timestamps. Persisted so a
    * reload — or a phone locking its screen mid-mix — doesn't lose one.

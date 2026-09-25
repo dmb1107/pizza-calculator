@@ -7,7 +7,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ballsPerMix, calculate, type CalculatorResult } from '../lib/engine';
+import { ballsPerMix, calculate, type CalculatorResult, type Warning } from '../lib/engine';
+import { capacityAlerts, splitHint } from '../lib/capacity';
 import { defaultDdtF } from '../lib/constants';
 import {
   roundToNextQuarterHour,
@@ -88,6 +89,10 @@ export interface AppState {
   clearCheckedSteps: () => void;
   /** {token} bindings for step and concept prose. */
   tokens: Record<string, string>;
+  /** §7.3 capacity messages, then the engine's warnings — what the strip shows, in order. */
+  alerts: Warning[];
+  /** §6 Panel 1: "→ {nMix} mixes of {doughPerMix} g", or null for a single mix. */
+  ballsSplitHint: string | null;
   /** The schedule inputs behind `tokens`, so per-instance tables can be rebuilt. */
   scheduleTokens: {
     bigaFridgeH: number;
@@ -126,15 +131,12 @@ export interface AppState {
 export function useAppState(): AppState {
   const storage = useMemo(() => browserStorage(), []);
 
-  // Read storage once, then URL on top of it, so a link wins per key while
-  // unshared preferences (the weighed bowl mass) still come from this device.
+  // Read storage once, then the URL for the inputs. The bowl mass used to be
+  // the one unshared input here; it is a constant now (MESSAGE-29), and a
+  // stored value from before is ignored.
   const initial = useMemo(() => {
     const persisted = loadPersisted(storage);
-    const base: Inputs = {
-      ...DEFAULT_INPUTS,
-      bowlMassG: persisted.bowlMassG,
-    };
-    return { persisted, inputs: decodeInputs(currentSearch(), base) };
+    return { persisted, inputs: decodeInputs(currentSearch(), DEFAULT_INPUTS) };
   }, [storage]);
 
   const [inputs, setInputs] = useState<Inputs>(initial.inputs);
@@ -192,7 +194,6 @@ export function useAppState(): AppState {
       timelineMode,
       bakeAtIso: bakeAt ? bakeAt.toISOString() : '',
       checkedSteps: [...checkedSteps],
-      bowlMassG: inputs.bowlMassG,
       timers,
     };
     savePersisted(storage, value);
@@ -200,7 +201,6 @@ export function useAppState(): AppState {
     storage,
     calibration,
     panels,
-    inputs.bowlMassG,
     bigaStartAt,
     timelineMode,
     bakeAt,
@@ -240,8 +240,8 @@ export function useAppState(): AppState {
   }, []);
 
   const resetInputs = useCallback(() => {
-    setInputs({ ...DEFAULT_INPUTS, bowlMassG: inputs.bowlMassG });
-  }, [inputs.bowlMassG]);
+    setInputs(DEFAULT_INPUTS);
+  }, []);
 
   // §6: FF is looked up and filed by balls per mix, not total balls.
   const mixSize = useMemo(
@@ -285,7 +285,6 @@ export function useAppState(): AppState {
         bowlState: inputs.bowlState,
         bowlTempF: inputs.bowlTempF,
         frictionFactorF: friction.ff,
-        bowlMassG: inputs.bowlMassG,
         ddtOverrideF: calibration.ddtOverrideF,
         finalDoughTempF: inputs.finalDoughTempF,
       }),
@@ -391,6 +390,11 @@ export function useAppState(): AppState {
     [result, scheduleTokens],
   );
 
+  // §7.3: capacity first — the split "always shown, first in the strip" —
+  // then the engine's water and stagger warnings.
+  const alerts = useMemo(() => [...capacityAlerts(result, tokens), ...result.warnings], [result, tokens]);
+  const ballsSplitHint = useMemo(() => splitHint(result, tokens), [result, tokens]);
+
   const shareUrl = useMemo(() => {
     if (typeof window === 'undefined') return '';
     const qs = encodeInputs(inputs);
@@ -423,6 +427,8 @@ export function useAppState(): AppState {
     toggleStep,
     clearCheckedSteps,
     tokens,
+    alerts,
+    ballsSplitHint,
     scheduleTokens,
     bigaStartAt,
     setBigaStartAt,

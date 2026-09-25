@@ -91,7 +91,7 @@ export function buildRecipeText(result: CalculatorResult): string {
     lines.push(row(`Bowl at mix${label}`, `${formatTempF(mix.bowlTempF)} °F (${mix.bowlState})`));
   }
   lines.push(row('Friction', `${formatTempF(inputs.frictionFactorF)} °F`));
-  lines.push(row('Bowl', `${formatGramsWhole(inputs.bowlMassG ?? C.DEFAULT_BOWL_MASS_G)} g`));
+  lines.push(row('Bowl', `${formatGramsWhole(C.BOWL_MASS_G)} g`));
 
   return lines.join('\n');
 }

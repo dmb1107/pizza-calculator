@@ -144,11 +144,19 @@ export function tokenValues(
     maxRunMin: trim(C.MAX_RUN_MIN),
     treadMaxDiameterIn: trim(C.TREAD_MAX_DIAMETER_IN),
 
+    // §7.3 *Capacity* (MESSAGE-29). Batch and per-mix dough, and the three
+    // limits the messages name — bound, not typed, like `maxRunMin`.
+    doughTotal: formatGrams(formula.doughTotal),
+    doughPerMix: formatGrams(capacity.doughPerMix),
+    maxDoughG: trim(C.MAX_DOUGH),
+    minDoughG: trim(C.MIN_DOUGH),
+    bigaFlourCapG: trim(C.FLOUR_CAP_55),
+
     // Inputs — trimmed, since the prose supplies the unit.
     balls: String(inputs.balls),
     ballWeight: trim(inputs.ballWeightG),
     // `biga-6` stated 965 g, the default, whatever the user had measured.
-    bowlMassG: trim(inputs.bowlMassG ?? C.DEFAULT_BOWL_MASS_G),
+    bowlMassG: trim(C.BOWL_MASS_G),
     coldFerment: trim(schedule.coldFermentH),
     bigaFridge: trim(schedule.bigaFridgeH),
     bigaRoomOnly: trim(schedule.bigaRoomOnlyH),

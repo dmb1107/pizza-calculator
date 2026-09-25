@@ -5,6 +5,7 @@ import { StepTimer } from './StepTimer';
 import { BOUNDS } from '../state/defaults';
 import { formatTempF } from '../lib/format';
 import { parseTimerLabel } from '../lib/timers';
+import { SpeedIndicator } from './SpeedIndicator';
 import {
   PHASE_LABELS,
   type DetailCondition,
@@ -152,7 +153,7 @@ function StepRow({
               </div>
             )}
 
-            {(values.length > 0 || step.speed || step.timerLabel) && (
+            {(values.length > 0 || step.timerLabel) && (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {values.map((v) => (
                   <span
@@ -162,17 +163,16 @@ function StepRow({
                     {v}
                   </span>
                 ))}
-                {step.speed && (
-                  <span className="rounded-lg bg-stone-200 px-2 py-1 text-sm font-medium tabular dark:bg-stone-800">
-                    {step.speed.label}
-                  </span>
-                )}
                 {step.timerLabel && (
                   <span className="rounded-lg bg-stone-200 px-2 py-1 text-sm font-medium tabular dark:bg-stone-800">
                     {bind(step.timerLabel)}
                   </span>
                 )}
               </div>
+            )}
+
+            {step.speed && (
+              <SpeedIndicator dial={step.speed.dial} rpm={step.speed.rpm} minutes={step.speed.minutes} />
             )}
 
             {step.watchFor && (

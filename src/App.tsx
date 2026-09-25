@@ -64,7 +64,7 @@ export default function App() {
       </div>
 
       <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-3">
-        <WarningsList warnings={result.warnings} />
+        <WarningsList warnings={state.alerts} />
         <IngredientsCard result={result} />
         <WaterCard result={result} />
         <TargetsCard result={result} />

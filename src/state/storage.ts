@@ -42,10 +42,6 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
-function finiteOr(v: unknown, fallback: number): number {
-  return typeof v === 'number' && Number.isFinite(v) ? v : fallback;
-}
-
 /**
  * A key the map can legitimately hold: some whole number of balls split
  * evenly across some number of mixes, `balls / nMix` exactly. 6, 6.5 and 20/3
@@ -179,7 +175,6 @@ export function loadPersisted(storage: StorageLike | null): Persisted {
     bigaStartAtIso: parseIsoInstant(parsed['bigaStartAtIso']),
     ...parseTimelineAnchor(parsed['timelineMode'], parsed['bakeAtIso']),
     checkedSteps: parseStringArray(parsed['checkedSteps']),
-    bowlMassG: clampField('bowlMassG', finiteOr(parsed['bowlMassG'], DEFAULT_PERSISTED.bowlMassG)),
     timers: parseTimers(parsed['timers']),
   };
 }

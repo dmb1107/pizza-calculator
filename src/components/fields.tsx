@@ -16,8 +16,9 @@ function Label({ htmlFor, children }: { htmlFor: string; children: ReactNode }) 
   );
 }
 
+/** A div, not a p: a hint may carry rendered markdown (§7.3's minimum message), which brings its own paragraphs. */
 function Hint({ children }: { children: ReactNode }) {
-  return <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">{children}</p>;
+  return <div className="mt-1 text-sm text-stone-500 dark:text-stone-400">{children}</div>;
 }
 
 /**
@@ -119,6 +120,7 @@ export function Stepper({
   min,
   max,
   hint,
+  onBelowMin,
 }: {
   label: string;
   value: number;
@@ -126,6 +128,11 @@ export function Stepper({
   min: number;
   max: number;
   hint?: ReactNode;
+  /**
+   * §7.3: at the floor, "−" explains instead of silently stopping. When given,
+   * the button stays enabled at `min` and calls this rather than `onStep`.
+   */
+  onBelowMin?: () => void;
 }) {
   const id = useId();
   const button =
@@ -138,8 +145,8 @@ export function Stepper({
         <button
           type="button"
           className={button}
-          onClick={() => onStep(-1)}
-          disabled={value <= min}
+          onClick={() => (value <= min && onBelowMin ? onBelowMin() : onStep(-1))}
+          disabled={value <= min && !onBelowMin}
           aria-label={`Decrease ${label.toLowerCase()}`}
         >
           −

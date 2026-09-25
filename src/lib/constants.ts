@@ -34,7 +34,17 @@ const BASE = {
   // Mixer bowl — REQUIRED thermal mass, do not omit.
   // Omitting it made the water temperature 5 degF wrong on bake 1.
   C_BOWL_SPECIFIC_HEAT: 0.12, // stainless, cal/g·°C
-  DEFAULT_BOWL_MASS_G: 965, // measured; user-editable, persisted
+  /**
+   * The Halo Core's bowl, measured once on a kitchen scale. FIXED, not an input
+   * (MESSAGE-29): the app supports only this mixer, and its bowl never changes.
+   * Renamed from DEFAULT_BOWL_MASS_G because it is no longer a default.
+   */
+  BOWL_MASS_G: 965,
+  /**
+   * §7.5. The Core has no number display: its LED indicator shows speed in
+   * segments, a fully lit one 10% and a half-lit one 5% (Ooni help center).
+   */
+  INDICATOR_PCT_PER_SEGMENT: 10,
 
   // Ooni Halo Core limits
   /**
@@ -275,4 +285,18 @@ export function defaultDdtF(balls: number): number {
  */
 export function rpmForDial(dialPercent: number): number {
   return C.RPM_INTERCEPT + C.RPM_SLOPE * dialPercent;
+}
+
+/**
+ * §7.5. What the Core's LED indicator shows at a dial percentage:
+ * `floor(dial / INDICATOR_PCT_PER_SEGMENT)` full segments, one half-lit when
+ * the remainder is 5, out of `100 / INDICATOR_PCT_PER_SEGMENT`.
+ */
+export function indicatorForDial(dialPercent: number): { full: number; half: boolean; total: number } {
+  const per = C.INDICATOR_PCT_PER_SEGMENT;
+  return {
+    full: Math.floor(dialPercent / per),
+    half: dialPercent % per === per / 2,
+    total: 100 / per,
+  };
 }

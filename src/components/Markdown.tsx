@@ -11,9 +11,16 @@ import remarkGfm from 'remark-gfm';
  * Tables scroll inside their own container rather than widening the page —
  * `bulk-3` and `bake-2` both carry tables that do not fit a 375 px screen.
  */
-export function Markdown({ children }: { children: string }) {
+export function Markdown({
+  children,
+  className = 'text-stone-700 dark:text-stone-300',
+}: {
+  children: string;
+  /** The wrapper's classes. A warning passes its own so the text keeps the warning's tone. */
+  className?: string;
+}) {
   return (
-    <div className="text-stone-700 dark:text-stone-300">
+    <div className={className}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{

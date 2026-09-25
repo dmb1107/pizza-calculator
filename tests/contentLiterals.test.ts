@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { STEPS, type Step } from '../src/content/steps';
 import { CONCEPTS } from '../src/content/concepts';
 import { ABOUT_INTRO, REFERENCE, SOURCES } from '../src/content/reference';
+import { CAPACITY } from '../src/content/capacity';
+import { NEAR_LIMIT_FRACTION } from '../src/lib/capacity';
 import { C, bowlHeatCapacity, defaultDdtF, rpmForDial } from '../src/lib/constants';
 import {
   computeCapacity,
@@ -19,6 +21,7 @@ import { BAKE_1, WATER_REACHABILITY } from './vectors';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseAst } from 'vite';
+import { formatPercent } from '../src/lib/format';
 
 /**
  * §8.1: *no literal in §8 content may restate an engine output unchecked.*
@@ -74,6 +77,8 @@ function contentByLocation(): Map<Loc, string> {
   // §9 and §11 render too (Task 9), so they answer to the same gate.
   for (const r of REFERENCE) put(`reference:${r.id}`, r.body);
   put('about', ABOUT_INTRO);
+  // §7.3 capacity messages (MESSAGE-29).
+  for (const [key, text] of Object.entries(CAPACITY)) put(`capacity:${key}`, text);
   for (const src of SOURCES) put('about', `${src.title} — ${src.note}`);
   return out;
 }
@@ -103,7 +108,7 @@ const fx = (x: number, dp: number) => (Math.round(x * 10 ** dp + 1e-9) / 10 ** d
 /** Thermal system for a batch at the default ball weight and bowl. */
 function thermalAt(balls: number, ballWeightG: number = C.DEFAULT_BALL_G) {
   const f = computeFormula({ balls, ballWeightG });
-  return computeThermal(f, C.DEFAULT_BOWL_MASS_G, computeCapacity(f).nMix);
+  return computeThermal(f, C.BOWL_MASS_G, computeCapacity(f).nMix);
 }
 
 /** Dough-only-to-observed factor `Ct/TOT`. */
@@ -148,6 +153,17 @@ const speedOf = (id: string) => {
 const mid = ([a, b]: readonly [number, number]) => (a + b) / 2;
 const rpm = (dial: number) => String(Math.round(rpmForDial(dial)));
 
+/**
+ * §7.5 lit segments, derived here from the dial and INDICATOR_PCT_PER_SEGMENT —
+ * independently of the app's formatter, so a bug there can't agree with itself.
+ */
+const segs = (dial: number) => {
+  const n = dial / C.INDICATOR_PCT_PER_SEGMENT;
+  const whole = Math.floor(n);
+  return `${whole || ''}${n - whole === 0.5 ? '½' : ''}`;
+};
+const segWords = (dial: number) => `${segs(dial)} lit segment${dial / C.INDICATOR_PCT_PER_SEGMENT > 1 ? 's' : ''}`;
+
 /** Phase C's planned minutes: the midpoint of `mix-5`'s printed range. */
 const PHASE_C_MIN = mid(speedOf('mix-5').minutes);
 
@@ -175,14 +191,20 @@ interface Claim {
 }
 
 const CLAIMS: readonly Claim[] = [
-  // --- speeds: every "N% / R RPM" is RPM = 47.4 + 2.526 × N ----------------
+  // --- speeds: every "N% / R RPM" is RPM = 47.4 + 2.526 × N, and prose leads
+  // with the lit segments N ÷ 10 (§7.5, MESSAGE-29) ----------------------------
   ...(['mix-2', 'mix-3', 'mix-5', 'mix-7'] as const).flatMap((id): Claim[] => {
     const { dial, minutes } = speedOf(id);
     const pair = `${dial}% / ${rpm(dial)} RPM`;
     const range = minutes[0] === minutes[1] ? `~${minutes[0]} min` : `${minutes[0]}–${minutes[1]} min`;
     return [
       { at: `${id}.speed`, restates: 'rpmForDial', text: `${pair}, ${range}`, covers: [`${dial}%`, `${rpm(dial)} RPM`, range.replace('~', '')] },
-      { at: `${id}.summary`, restates: 'rpmForDial', text: pair, covers: [`${dial}%`, `${rpm(dial)} RPM`] },
+      {
+        at: `${id}.summary`,
+        restates: 'the speed field\'s dial as lit segments, then dial and rpmForDial',
+        text: `**${segWords(dial)}** (${dial}%, ${rpm(dial)} RPM)`,
+        covers: [String(Math.floor(dial / C.INDICATOR_PCT_PER_SEGMENT)), `${dial}%`, `${rpm(dial)} RPM`],
+      },
       // mix-7's summary says "45–60 seconds" where its speed field rounds to
       // "~1 min"; that pair is procedure, classified in FIXED.
       ...(minutes[0] === minutes[1]
@@ -193,7 +215,12 @@ const CLAIMS: readonly Claim[] = [
   { at: 'mix-2.detail', restates: 'rpmForDial(5), the dial floor', text: `slowest setting is ${rpm(5)} RPM`, covers: [`${rpm(5)} RPM`] },
   { at: 'mix-2.detail', restates: 'rpmForDial(15)', text: `onto flour at ${rpm(15)} RPM`, covers: [`${rpm(15)} RPM`] },
   { at: 'mix-3.detail', restates: 'rpmForDial(20)', text: `At ${rpm(20)} RPM the hook`, covers: [`${rpm(20)} RPM`] },
-  { at: 'mix-7.detail', restates: 'rpmForDial(40), the ceiling', text: `Never above 40% / ${rpm(40)} RPM`, covers: ['40%', `${rpm(40)} RPM`] },
+  {
+    at: 'mix-7.detail',
+    restates: 'the 40% ceiling as lit segments, and rpmForDial(40)',
+    text: `Never above ${segWords(40)} (40%, ${rpm(40)} RPM)`,
+    covers: [segs(40), '40%', `${rpm(40)} RPM`],
+  },
   {
     at: 'concept:no-creep-speed',
     restates: 'the two anchors, RPM_AT_5_PCT and RPM_AT_100_PCT, and the derived line printed to display precision',
@@ -415,7 +442,7 @@ const CLAIMS: readonly Claim[] = [
     restates: 'C_BIGA (derived), C_FLOUR, C_WATER, C_SALT, C_BOWL_SPECIFIC_HEAT, the default bowl and its capacity',
     text:
       `biga at ${fx(C.BIGA_HYDRATION * 100, 0)}% hydration ${fx(C.C_BIGA, 4)}, flour ${fx(C.C_FLOUR, 2)}, water ${fx(C.C_WATER, 2)}, ` +
-      `salt ${fx(C.C_SALT, 2)}, stainless ${fx(C.C_BOWL_SPECIFIC_HEAT, 2)}. A ${C.DEFAULT_BOWL_MASS_G} g bowl contributes ${fx(bowlHeatCapacity(C.DEFAULT_BOWL_MASS_G), 1)}`,
+      `salt ${fx(C.C_SALT, 2)}, stainless ${fx(C.C_BOWL_SPECIFIC_HEAT, 2)}. A ${C.BOWL_MASS_G} g bowl contributes ${fx(bowlHeatCapacity(C.BOWL_MASS_G), 1)}`,
     covers: ['50%', '0.6133', '0.42', '1.00', '0.21', '0.12', '965 g', '115.8'],
   },
   {
@@ -482,8 +509,8 @@ const CLAIMS: readonly Claim[] = [
           for (const bigaTempF of [45, 60]) {
             const t = { ddtF: defaultDdtF(balls), frictionFactorF: 14, bigaTempF, flourTempF: roomTempF, roomTempF };
             const low =
-              computeWaterTempF(t, computeThermal(f, C.DEFAULT_BOWL_MASS_G, nMix)) -
-              computeWaterTempF(t, computeThermal(f, C.DEFAULT_BOWL_MASS_G, 1));
+              computeWaterTempF(t, computeThermal(f, C.BOWL_MASS_G, nMix)) -
+              computeWaterTempF(t, computeThermal(f, C.BOWL_MASS_G, 1));
             lo = Math.min(lo, low);
             if (low > hi) { hi = low; hiBigaF = bigaTempF; }
           }
@@ -566,6 +593,20 @@ const CLAIMS: readonly Claim[] = [
   },
   { at: 'concept:friction-factor', restates: 'the 10-minute rest, from mix-6', text: `a ${step('mix-6').timerMinutes}-minute rest`, covers: ['10-minute'] },
 
+  // --- §7.3 capacity messages (MESSAGE-29) -------------------------------------
+  {
+    at: 'capacity:nearLimit',
+    restates: 'NEAR_LIMIT_FRACTION, the threshold capacityAlerts applies',
+    text: `within ${formatPercent(1 - NEAR_LIMIT_FRACTION)} of the {maxDoughG} g maximum`,
+    covers: ['5%'],
+  },
+  {
+    at: 'capacity:minimumAtInput',
+    restates: 'C.MIN_BALLS, the stepper floor',
+    text: `**${C.MIN_BALLS} balls minimum.**`,
+    covers: [`${C.MIN_BALLS} balls`],
+  },
+
   // --- §9 reference tables (Task 9) --------------------------------------------
   {
     at: 'reference:mixer-speed',
@@ -577,47 +618,52 @@ const CLAIMS: readonly Claim[] = [
   },
   {
     at: 'reference:mixer-speed',
-    restates: 'the 5% floor, on the line',
-    text: `| 5% | ${rpm(5)} | floor — no slower setting exists |`,
+    restates: 'INDICATOR_PCT_PER_SEGMENT: a full segment, a half one, and 20% as segments (§7.5, MESSAGE-29)',
+    holds: () => segs(20) === '2',
+    text: `a fully lit segment is ${C.INDICATOR_PCT_PER_SEGMENT}% and a half-lit one ${C.INDICATOR_PCT_PER_SEGMENT / 2}%, so 20% is two lit segments`,
+    covers: ['10%', '20%'],
+  },
+  // Every row leads with its lit segments (dial ÷ 10), and each row's dial is
+  // the one the step for that phase actually runs at, so the table and the
+  // step list cannot drift apart.
+  {
+    at: 'reference:mixer-speed',
+    restates: 'the 5% floor, as segments and on the line',
+    text: `| ${segs(5)} | 5% | ${rpm(5)} | floor — no slower setting exists |`,
     covers: ['60'],
   },
-  // Each row's dial is the one the step for that phase actually runs at, so
-  // the table and the step list cannot drift apart.
+  ...([
+    ['mix-2', 'Phase A breakdown', 'Phase A: mix-2’s dial'],
+    ['mix-3', 'Phase B, Phase D', 'Phases B and D: mix-3’s dial, which must equal mix-7’s'],
+    ['mix-5', 'Phase C development', 'Phase C: mix-5’s dial'],
+  ] as const).map(([id, use, what]): Claim => {
+    const d = speedOf(id).dial;
+    return {
+      at: 'reference:mixer-speed',
+      restates: `${what}, as segments, and its RPM`,
+      holds: () => speedOf('mix-3').dial === speedOf('mix-7').dial,
+      text: `| ${segs(d)} | ${d}% | ${rpm(d)} | ${use} |`,
+      covers: [segs(d).replace('½', ''), `${d}%`, rpm(d)].filter((x) => x !== ''),
+    };
+  }),
   {
     at: 'reference:mixer-speed',
-    restates: 'Phase A: mix-2’s dial, and its RPM',
-    text: `| ${speedOf('mix-2').dial}% | ${rpm(speedOf('mix-2').dial)} | Phase A breakdown |`,
-    covers: ['15%', '85'],
-  },
-  {
-    at: 'reference:mixer-speed',
-    restates: 'Phases B and D: mix-3’s and mix-7’s dial, which must be one setting, and its RPM',
-    holds: () => speedOf('mix-3').dial === speedOf('mix-7').dial,
-    text: `| ${speedOf('mix-3').dial}% | ${rpm(speedOf('mix-3').dial)} | Phase B, Phase D |`,
-    covers: ['20%', '98'],
-  },
-  {
-    at: 'reference:mixer-speed',
-    restates: 'Phase C: mix-5’s dial, and its RPM',
-    text: `| ${speedOf('mix-5').dial}% | ${rpm(speedOf('mix-5').dial)} | Phase C development |`,
-    covers: ['30%', '123'],
-  },
-  {
-    at: 'reference:mixer-speed',
-    restates: 'the ceiling mix-7 states ("Never above N% / R RPM"), with R on the measured line',
+    restates: 'the ceiling mix-7 states ("Never above S lit segments (N%, R RPM)"), with S = N ÷ 10 and R on the line',
     text: (() => {
-      const m = /Never above (\d+)% \/ (\d+) RPM/.exec(STEPS.find((s) => s.id === 'mix-7')?.detail ?? '');
-      const dial = Number(m?.[1]);
-      return m?.[2] === rpm(dial) ? `| ${dial}% | ${rpm(dial)} | hard ceiling for this dough |` : 'mix-7 ceiling off the RPM line';
+      const m = /Never above (\S+) lit segments \((\d+)%, (\d+) RPM\)/.exec(STEPS.find((s) => s.id === 'mix-7')?.detail ?? '');
+      const dial = Number(m?.[2]);
+      return m?.[1] === segs(dial) && m?.[3] === rpm(dial)
+        ? `| ${segs(dial)} | ${dial}% | ${rpm(dial)} | hard ceiling for this dough |`
+        : 'mix-7 ceiling off the segment count or the RPM line';
     })(),
-    covers: ['40%', '148'],
+    covers: ['4', '40%', '148'],
   },
   {
     at: 'reference:mixer-speed',
     // Read 250 until MESSAGE-28 — a rounding slip (Ooni's own chart says 240).
-    restates: '80% on the line: 249.47',
-    text: `| 80% | ${rpm(80)} | Ooni max recommended at 66%+ hydration |`,
-    covers: ['80%', '249'],
+    restates: '80% as segments, and on the line: 249.47',
+    text: `| ${segs(80)} | 80% | ${rpm(80)} | Ooni max recommended at 66%+ hydration |`,
+    covers: ['8', '80%', '249'],
   },
   {
     at: 'reference:friction-rate',
@@ -666,7 +712,7 @@ const CLAIMS: readonly Claim[] = [
           for (const roomTempF of [W.roomF.min, W.roomF.max]) {
             const f = computeFormula({ balls, ballWeightG: w });
             const t = { ddtF: defaultDdtF(balls), frictionFactorF: C.DEFAULT_FF, bigaTempF, flourTempF: roomTempF, roomTempF };
-            const water = computeWaterTempF(t, computeThermal(f, C.DEFAULT_BOWL_MASS_G, computeCapacity(f).nMix));
+            const water = computeWaterTempF(t, computeThermal(f, C.BOWL_MASS_G, computeCapacity(f).nMix));
             lo = Math.min(lo, water);
             if (water > hi) { hi = water; hiBalls = balls; }
             if (w === C.DEFAULT_BALL_G) { lo265 = Math.min(lo265, water); hi265 = Math.max(hi265, water); }
@@ -893,7 +939,6 @@ describe('§8.1 every numeric literal in §8 is classified', () => {
 describe('§8.1 numbers in component copy are classified too', () => {
   const COMPONENT_FIXED: Record<string, string> = {
     'Biga at 61–65 °F': 'the published fermentation band — procedure',
-    'put the water 5 °F wrong on the first bake': 'bake-1 history, with its condition stated',
     'handling gains about 5 °F that the bowl does not share':
       'bake-1 history: §6, 53 °F at pull and 58 °F after tearing — one observation, which §6 forbids turning into a constant',
     'between midnight and 6 a.m.': 'the definition `isUnsocialHour` implements — §4.7 "between midnight and 6 AM"',

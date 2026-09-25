@@ -125,7 +125,7 @@ describe('constants', () => {
   });
 
   it('gives the bowl a heat capacity of 115.8 at the 965 g default', () => {
-    within(C.DEFAULT_BOWL_MASS_G * C.C_BOWL_SPECIFIC_HEAT, 115.8, 0.05, 'C_bowl');
+    within(C.BOWL_MASS_G * C.C_BOWL_SPECIFIC_HEAT, 115.8, 0.05, 'C_bowl');
   });
 
   it('maps 5% dial to the measured 60 RPM', () => {

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { CONCEPTS } from '../src/content/concepts';
 import { ABOUT_INTRO, REFERENCE, SOURCES } from '../src/content/reference';
+import { CAPACITY } from '../src/content/capacity';
 import { STEPS } from '../src/content/steps';
 
 /**
@@ -381,6 +382,43 @@ describe('§11 sources are reproduced verbatim', () => {
 
   it('links only over https', () => {
     for (const s of SOURCES) expect(s.url, s.title).toMatch(/^https:\/\//);
+  });
+});
+
+/**
+ * §7.3 capacity messages and §6's split hint, re-derived by regex over the
+ * whole section — the generator walks lines — so the two only agree if the
+ * grammar is read the same way twice.
+ */
+describe('§7.3 capacity messages are reproduced verbatim', () => {
+  const section = SPEC.slice(SPEC.indexOf('#### Capacity'), SPEC.indexOf('#### The stagger warning'));
+  const panel1 = SPEC.slice(SPEC.indexOf('### Panel 1'), SPEC.indexOf('### Panel 2'));
+  const blockquoteAfter = (label: string) => {
+    const m = new RegExp(`^${label.replace(/[*.?()]/g, '\\$&')}[^\\n]*\\n> (.+)$`, 'm').exec(section);
+    return m?.[1];
+  };
+  const quotedAfter = (text: string, lead: string) => {
+    const at = text.indexOf(lead);
+    return at < 0 ? undefined : /\*"(.+?)"\*/.exec(text.slice(at))?.[1];
+  };
+
+  it.each([
+    ['split', blockquoteAfter('**Split required')],
+    ['bigaSplit', blockquoteAfter('**Biga split required')],
+    ['divideBiga', quotedAfter(section, "keep §4.5's line:")],
+    ['nearLimit', blockquoteAfter('**Near the limit')],
+    ['belowMinimum', blockquoteAfter('- **As a guard')],
+    ['minimumAtInput', quotedAfter(section, 'shows, next to the field:')],
+    ['splitHint', quotedAfter(panel1, 'show beside the field:')],
+  ] as const)('%s matches the spec', (key, spec) => {
+    expect(spec, `${key} not found in the spec`).toBeDefined();
+    expect(CAPACITY[key]).toBe(spec);
+  });
+
+  it('has exactly the messages §7.3 defines — one blockquote per condition', () => {
+    // Four conditions carry a blockquote; a fifth would be a message nothing renders.
+    expect((section.match(/^> /gm) ?? []).length).toBe(4);
+    expect(Object.keys(CAPACITY)).toHaveLength(7);
   });
 });
 

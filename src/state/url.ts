@@ -21,7 +21,6 @@ const KEYS = {
   flourSameAsRoom: 'flsame',
   flourTempF: 'flour',
   bigaTempF: 'biga',
-  bowlMassG: 'bowl',
   bowlState: 'bowlst',
   bowlTempF: 'bowlt',
   bigaFridgeH: 'fridge',
@@ -92,7 +91,6 @@ export function encodeInputs(inputs: Inputs): string {
     inputs.bigaRoomOnlyH === DEFAULT_INPUTS.bigaRoomOnlyH,
   );
   put(KEYS.temperH, num(inputs.temperH), inputs.temperH === DEFAULT_INPUTS.temperH);
-  put(KEYS.bowlMassG, num(inputs.bowlMassG), inputs.bowlMassG === DEFAULT_INPUTS.bowlMassG);
   put(
     KEYS.bowlState,
     BOWL_STATE_CODE[inputs.bowlState],
@@ -220,7 +218,6 @@ export function decodeInputs(search: string, base: Inputs = DEFAULT_INPUTS): Inp
     bigaFridgeH: readNumber(p, KEYS.bigaFridgeH, 'bigaFridgeH', base.bigaFridgeH),
     bigaRoomOnlyH: readNumber(p, KEYS.bigaRoomOnlyH, 'bigaRoomOnlyH', base.bigaRoomOnlyH),
     temperH: readNumber(p, KEYS.temperH, 'temperH', base.temperH),
-    bowlMassG: readNumber(p, KEYS.bowlMassG, 'bowlMassG', base.bowlMassG),
     bowlState: BOWL_STATE_BY_CODE[p.get(KEYS.bowlState) ?? ''] ?? base.bowlState,
     bowlTempF: readOptionalNumberList(p, KEYS.bowlTempF, 'bowlTempF', base.bowlTempF),
     finalDoughTempF: readOptionalNumber(p, KEYS.finalDoughTempF, 'finalDoughTempF', base.finalDoughTempF),

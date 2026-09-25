@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Regenerate src/content/steps.ts, concepts.ts and reference.ts from WEBSITE-SPEC
-§8, §9 and §11.
+Regenerate src/content/steps.ts, concepts.ts, reference.ts and capacity.ts from
+WEBSITE-SPEC §8, §9, §11, and §7.3's capacity messages with §6's split hint.
 
     python3 scripts/generate-content.py
 
@@ -256,3 +256,50 @@ for x in sources:
 rout.append('];\n\n')
 open('src/content/reference.ts', 'w').write(''.join(rout) + rtail)
 print("reference: %s; sources: %d" % ([r['id'] for r in sections], len(sources)))
+
+# --- §7.3 capacity messages, and §6's split hint (MESSAGE-29) -----------------
+#
+# Each message is found by the bold label or phrase that introduces it, and a
+# missing anchor is an error rather than an empty string.
+
+cap = spec[spec.index('#### Capacity'):spec.index('#### The stagger warning')]
+clines = cap.split('\n')
+
+def quote_after(label):
+    """The blockquote on the line after the one starting with `label`."""
+    for i, l in enumerate(clines):
+        if l.startswith(label):
+            nxt = clines[i + 1]
+            if not nxt.startswith('> '): raise SystemExit('no blockquote after %r' % label)
+            return nxt[2:]
+    raise SystemExit('capacity label not found: %r' % label)
+
+def italic_quote(text, lead):
+    """The *"..."* that follows `lead` on one line."""
+    for l in text.split('\n'):
+        i = l.find(lead)
+        if i < 0: continue
+        m = re.search(r'\*"(.+?)"\*', l[i:])
+        if m: return m.group(1)
+    raise SystemExit('quoted message not found after %r' % lead)
+
+panel1 = spec[spec.index('### Panel 1'):spec.index('### Panel 2')]
+capacity = [
+    ('split', quote_after('**Split required')),
+    ('bigaSplit', quote_after('**Biga split required')),
+    ('divideBiga', italic_quote(cap, "keep §4.5's line:")),
+    ('nearLimit', quote_after('**Near the limit')),
+    ('belowMinimum', quote_after('- **As a guard')),
+    ('minimumAtInput', italic_quote(cap, 'shows, next to the field:')),
+    ('splitHint', italic_quote(panel1, 'show beside the field:')),
+]
+
+kold = open('src/content/capacity.ts').read()
+khead = kold[:kold.index('export const CAPACITY')]
+ktail = kold[kold.index('// --- end generated ---'):]
+kout = [khead, 'export const CAPACITY = {\n']
+for k, v in capacity:
+    kout.append('  %s: `%s`,\n' % (k, tpl(v)))
+kout.append('} as const;\n\n')
+open('src/content/capacity.ts', 'w').write(''.join(kout) + ktail)
+print("capacity: %s" % [k for k, _ in capacity])

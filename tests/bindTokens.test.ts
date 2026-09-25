@@ -6,6 +6,7 @@ import { detailConditionContext } from '../src/lib/stepInstances';
 import { formatTempF } from '../src/lib/format';
 import { CONCEPTS } from '../src/content/concepts';
 import { STEPS } from '../src/content/steps';
+import { CAPACITY } from '../src/content/capacity';
 
 /** {token} binding — WEBSITE-SPEC-biga-calculator.md §8.1. */
 
@@ -17,7 +18,6 @@ const INPUTS: CalculatorInputs = {
   flourTempF: 69,
   bigaTempF: 58,
   frictionFactorF: 14.0,
-  bowlMassG: 965,
 };
 
 const SCHEDULE: ScheduleTokens = {
@@ -56,6 +56,8 @@ function allContent(): { where: string; text: string }[] {
     }
   }
   for (const c of CONCEPTS) out.push({ where: `concept:${c.id}`, text: c.body });
+  // §7.3 capacity messages bind through the same table (MESSAGE-29).
+  for (const [key, text] of Object.entries(CAPACITY)) out.push({ where: `capacity:${key}`, text });
   return out;
 }
 
@@ -284,8 +286,8 @@ describe('§4.10 tokens', () => {
     expect(values.phaseBPercent).toBe(pct(1 - C.PHASE_A_FRACTION));
   });
 
-  it('prints the bowl the user entered, not the default', () => {
-    expect(tokenValues(calculate({ ...INPUTS, bowlMassG: 1100 }), SCHEDULE).bowlMassG).toBe('1100');
+  it('binds the fixed bowl mass — MESSAGE-29 made it a constant, not an input', () => {
+    expect(tokenValues(calculate(INPUTS), SCHEDULE).bowlMassG).toBe(String(C.BOWL_MASS_G));
   });
 });
 

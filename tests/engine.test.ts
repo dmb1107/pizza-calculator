@@ -62,7 +62,6 @@ function vectorInputs(balls: number, ballWeightG: number): CalculatorInputs {
     flourTempF: VECTOR_CONDITIONS.tFlourF,
     bigaTempF: VECTOR_CONDITIONS.tBigaF,
     frictionFactorF: VECTOR_CONDITIONS.ff,
-    bowlMassG: VECTOR_CONDITIONS.bowlMassG,
   };
 }
 
@@ -100,7 +99,6 @@ describe('bake 1 regression — 21 Aug 2026', () => {
     flourTempF: BAKE_1.tFlourF,
     bigaTempF: BAKE_1.tBigaF,
     frictionFactorF: BAKE_1.ff,
-    bowlMassG: BAKE_1.bowlMassG,
   };
   const formula = computeFormula(inputs);
   const thermal = computeThermal(formula, BAKE_1.bowlMassG);
@@ -273,7 +271,7 @@ describe('§4.2 the bowl', () => {
     // bound has to come from the cap. Reproduces 6.637%.
     const probe = calculate(vectorInputs(6, 265));
     const ctPerGram = probe.thermal.cTotal / probe.formula.doughTotal;
-    const cBowl = bowlHeatCapacity(C.DEFAULT_BOWL_MASS_G);
+    const cBowl = bowlHeatCapacity(C.BOWL_MASS_G);
     within(ctPerGram, 0.6516, 0.0005, 'Ct per gram of dough');
     within(cBowl / (ctPerGram * C.MAX_DOUGH + cBowl), BOWL_SHARE_FLOOR, 0.0001, 'infimum');
   });
@@ -314,9 +312,12 @@ describe('§4.2 the bowl', () => {
   });
 
   it('makes a heavier bowl need warmer water', () => {
-    const inputs = vectorInputs(6, 265);
-    const light = calculate({ ...inputs, bowlMassG: 500 }).waterTempF;
-    const heavy = calculate({ ...inputs, bowlMassG: 1500 }).waterTempF;
+    // An engine property, not an app case: the bowl mass is fixed at
+    // BOWL_MASS_G since MESSAGE-29, so this goes through computeThermal.
+    const f = computeFormula({ balls: 6, ballWeightG: 265 });
+    const t = { ddtF: 75, frictionFactorF: 14, bigaTempF: 58, flourTempF: 69, roomTempF: 70 };
+    const light = computeWaterTempF(t, computeThermal(f, 500));
+    const heavy = computeWaterTempF(t, computeThermal(f, 1500));
     // A cold bowl of greater mass pulls more heat out, so the water compensates.
     expect(heavy).toBeGreaterThan(light);
   });
@@ -692,14 +693,14 @@ describe('§4.2 per-mix thermal weights', () => {
     // against two runs of the engine's water formula — so a bowl term wired
     // differently in `computeWaterTempF` fails it. Room and flour are varied
     // because the closed form says they cancel.
-    const cBowl = bowlHeatCapacity(C.DEFAULT_BOWL_MASS_G);
+    const cBowl = bowlHeatCapacity(C.BOWL_MASS_G);
     const gap = (balls: number, ballWeightG: number, bigaTempF: number, roomTempF: number) => {
       const f = computeFormula({ balls, ballWeightG });
       const nMix = computeCapacity(f).nMix;
       const t = { ddtF: defaultDdtF(balls), frictionFactorF: 14, bigaTempF, flourTempF: roomTempF, roomTempF };
       const engine =
-        computeWaterTempF(t, computeThermal(f, C.DEFAULT_BOWL_MASS_G, nMix)) -
-        computeWaterTempF(t, computeThermal(f, C.DEFAULT_BOWL_MASS_G, 1));
+        computeWaterTempF(t, computeThermal(f, C.BOWL_MASS_G, nMix)) -
+        computeWaterTempF(t, computeThermal(f, C.BOWL_MASS_G, 1));
       const cwPerGram = (f.freshWater * C.C_WATER) / f.doughTotal;
       const closed = (cBowl * (t.ddtF - bigaTempF) * (nMix - 1)) / (cwPerGram * f.doughTotal);
       return { engine, closed };
@@ -1029,12 +1030,6 @@ describe('§4.5 capacity', () => {
     expect(C.FLOUR_CAP_55).toBeLessThan(C.MAX_DOUGH / (1 + C.BIGA_HYDRATION));
   });
 
-  it('warns below the mixer minimum', () => {
-    const r = calculate(vectorInputs(1, 265));
-    expect(r.capacity.belowMixerMinimum).toBe(true);
-    expect(r.warnings.map((w) => w.id)).toContain('below-minimum');
-  });
-
   it('never returns a mix over the ceiling or a flour load over the cap', () => {
     for (let balls = 1; balls <= 24; balls++) {
       const f = computeFormula({ balls, ballWeightG: 265 });
@@ -1155,7 +1150,7 @@ describe('§4.2 the two biga sensitivities are different quantities', () => {
    */
   const sens = (balls: number, ballWeightG: number = C.DEFAULT_BALL_G, nMix = 1) => {
     const f = computeFormula({ balls, ballWeightG });
-    const th = computeThermal(f, C.DEFAULT_BOWL_MASS_G, nMix);
+    const th = computeThermal(f, C.BOWL_MASS_G, nMix);
     const base = {
       ddtF: 73.5,
       frictionFactorF: C.DEFAULT_FF,
@@ -1380,7 +1375,7 @@ describe('§4.9 opening diameter', () => {
 describe('§4.10 the probe target in parts', () => {
   const at = (balls: number, roomTempF: number, frictionFactorF = 14) => {
     const f = computeFormula({ balls, ballWeightG: 265 });
-    const thermal = computeThermal(f, C.DEFAULT_BOWL_MASS_G, computeCapacity(f).nMix);
+    const thermal = computeThermal(f, C.BOWL_MASS_G, computeCapacity(f).nMix);
     return { parts: computeProbeParts({ ddtF: defaultDdtF(balls), frictionFactorF, roomTempF, thermal }), thermal };
   };
 

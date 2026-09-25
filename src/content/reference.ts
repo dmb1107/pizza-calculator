@@ -26,16 +26,18 @@ export const REFERENCE: readonly ReferenceSection[] = [
   {
     id: "mixer-speed",
     title: "Mixer speed",
-    body: `\`RPM = 47.4 + 2.526 × dial%\`, the line through a measured 60 RPM at 5% and Ooni's published 300 RPM at 100%. Ooni's help-center chart, which puts 5% at 15 RPM, is **wrong** — use this line instead.
+    body: `The Core has no number display. Its LED indicator shows the speed in segments: a fully lit segment is 10% and a half-lit one 5%, so 20% is two lit segments.
 
-| Dial | RPM | Used for |
-|---:|---:|---|
-| 5% | 60 | floor — no slower setting exists |
-| 15% | 85 | Phase A breakdown |
-| 20% | 98 | Phase B, Phase D |
-| 30% | 123 | Phase C development |
-| 40% | 148 | hard ceiling for this dough |
-| 80% | 249 | Ooni max recommended at 66%+ hydration |`,
+\`RPM = 47.4 + 2.526 × dial%\`, the line through a measured 60 RPM at 5% and Ooni's published 300 RPM at 100%. Ooni's help-center chart, which puts 5% at 15 RPM, is **wrong** — use this line instead.
+
+| Lit segments | Dial | RPM | Used for |
+|---|---:|---:|---|
+| ½ | 5% | 60 | floor — no slower setting exists |
+| 1½ | 15% | 85 | Phase A breakdown |
+| 2 | 20% | 98 | Phase B, Phase D |
+| 3 | 30% | 123 | Phase C development |
+| 4 | 40% | 148 | hard ceiling for this dough |
+| 8 | 80% | 249 | Ooni max recommended at 66%+ hydration |`,
   },
   {
     id: "friction-rate",

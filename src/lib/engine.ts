@@ -14,7 +14,7 @@
  */
 
 import { C, bowlHeatCapacity, defaultDdtF } from './constants';
-import { formatGrams, formatTempF } from './format';
+import { formatTempF } from './format';
 
 // ---------------------------------------------------------------------------
 // §4.1 Formula
@@ -123,7 +123,7 @@ export interface Thermal {
  */
 export function computeThermal(
   f: Formula,
-  bowlMassG: number = C.DEFAULT_BOWL_MASS_G,
+  bowlMassG: number = C.BOWL_MASS_G,
   nMix: number = 1,
 ): Thermal {
   const perMix = {
@@ -390,10 +390,6 @@ export interface Capacity {
   doughPerMix: number;
   bigaMassPerBatch: number;
   bigaFlourPerBatch: number;
-  /** Dough per mix is under the mixer's 500 g minimum — it can't grip. */
-  belowMixerMinimum: boolean;
-  /** A final mix lands within 5% of the 2500 g ceiling: workable but tight. */
-  tightFinalMix: boolean;
   /** One biga divides by weight across several final mixes. The 12-ball case. */
   divideBigaAcrossMixes: boolean;
 }
@@ -416,8 +412,6 @@ export function computeCapacity(f: Formula): Capacity {
     doughPerMix,
     bigaMassPerBatch: f.bigaMass / nBiga,
     bigaFlourPerBatch: f.bigaFlour / nBiga,
-    belowMixerMinimum: doughPerMix < C.MIN_DOUGH,
-    tightFinalMix: doughPerMix >= 0.95 * C.MAX_DOUGH,
     divideBigaAcrossMixes: nBiga < nMix,
   };
 }
@@ -634,55 +628,15 @@ export interface Warning {
  * collapsed panel.
  */
 function buildWarnings(
-  f: Formula,
-  capacity: Capacity,
   waterTempF: number,
   staggerUncentred: number,
 ): Warning[] {
   const w: Warning[] = [];
 
-  if (capacity.nBiga > 1) {
-    w.push({
-      id: 'biga-split',
-      severity: 'info',
-      title: `Mix the biga in ${capacity.nBiga} batches`,
-      detail: `${formatGrams(f.bigaFlour)} g of biga flour exceeds what the Halo Core handles at 50% hydration. Split into ${capacity.nBiga} batches of about ${formatGrams(capacity.bigaMassPerBatch)} g each.`,
-    });
-  }
-
-  if (capacity.divideBigaAcrossMixes) {
-    w.push({
-      id: 'divide-biga',
-      severity: 'info',
-      title: `Mix one biga, then divide it for ${capacity.nMix} final mixes`,
-      detail: `Mix one biga, then divide it by weight into ${capacity.nMix} portions for ${capacity.nMix} separate final mixes. That's a genuine convenience, not a compromise — the biga is stiff enough that one batch covers ${capacity.nMix === 2 ? 'both' : `all ${capacity.nMix}`} of them.`,
-    });
-  } else if (capacity.nMix > 1) {
-    w.push({
-      id: 'mix-split',
-      severity: 'info',
-      title: `${capacity.nMix} separate final mixes`,
-      detail: `${formatGrams(f.doughTotal)} g of dough exceeds the mixer's ${C.MAX_DOUGH} g ceiling. Run ${capacity.nMix} final mixes of about ${formatGrams(capacity.doughPerMix)} g each.`,
-    });
-  }
-
-  if (capacity.tightFinalMix) {
-    w.push({
-      id: 'tight-mix',
-      severity: 'warn',
-      title: 'Final mix is close to the mixer ceiling',
-      detail: `${formatGrams(capacity.doughPerMix)} g is within 5% of the Halo Core's ${C.MAX_DOUGH} g limit. Workable, but tight — expect the motor to work hard during Phase A breakdown.`,
-    });
-  }
-
-  if (capacity.belowMixerMinimum) {
-    w.push({
-      id: 'below-minimum',
-      severity: 'warn',
-      title: 'Batch is below the mixer minimum',
-      detail: `${formatGrams(capacity.doughPerMix)} g is under the ${C.MIN_DOUGH} g the Halo Core needs to grip. Mix this one by hand, or scale the batch up. The biga is hand-mixed at every size, so only the final mix is affected.`,
-    });
-  }
+  // §7.3 *Capacity* — split, biga split, near the limit, below the minimum —
+  // lives in `capacity.ts` (MESSAGE-29): its wording is the spec's, bound
+  // through the token table, and its thresholds are decided on printed values,
+  // neither of which belongs in the engine.
 
   // §4.4. Two warnings, one at each end. They mirror each other: same failure
   // ("you cannot get there by blending"), opposite end, and both point the user
@@ -753,8 +707,6 @@ export interface CalculatorInputs extends BatchInputs {
    */
   bigaTempF: PerMix<number>;
   frictionFactorF: number;
-  /** Weigh once; persisted. */
-  bowlMassG?: number;
   /**
    * §4.2. How the bowl arrives at MIX 1. Later mixes are always 'warm' — they
    * start in the bowl that just finished the previous mix.
@@ -833,7 +785,7 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
   const capacity = computeCapacity(formula);
   const thermal = computeThermal(
     formula,
-    inputs.bowlMassG ?? C.DEFAULT_BOWL_MASS_G,
+    C.BOWL_MASS_G, // MESSAGE-29: fixed, not an input
     capacity.nMix,
   );
   const ddtF = inputs.ddtOverrideF ?? defaultDdtF(inputs.balls);
@@ -899,7 +851,7 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
     effectiveFinalTempF,
     // Warnings key off mix 1; a later mix is always warmer-bowled and so
     // never colder, and the hot end is what mix 1 already worst-cases.
-    warnings: buildWarnings(formula, capacity, waterTempF, uncentred),
+    warnings: buildWarnings(waterTempF, uncentred),
   };
 }
 

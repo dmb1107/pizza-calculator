@@ -11,7 +11,6 @@ const BASE: CalculatorInputs = {
   flourTempF: 69,
   bigaTempF: 58,
   frictionFactorF: 14.0,
-  bowlMassG: 965,
 };
 
 function text(overrides: Partial<CalculatorInputs> = {}): string {

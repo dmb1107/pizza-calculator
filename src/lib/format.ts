@@ -93,6 +93,23 @@ export function formatBallsPerMix(value: number): string {
   return String(roundTo(value, 1));
 }
 
+/**
+ * §7.5. The lit-segment count as the baker reads the indicator: "½", "1½",
+ * "2". A setting number ("setting 4 of 20") is deliberately not offered — a
+ * segment count and a dial-click count differ by 2×, and at the 40% ceiling a
+ * 2× misread is 80%.
+ */
+export function formatSegmentCount(full: number, half: boolean): string {
+  if (full === 0) return half ? '½' : '0';
+  return `${full}${half ? '½' : ''}`;
+}
+
+/** "2 lit segments", "1½ lit segments", "½ lit segment". */
+export function formatLitSegments(full: number, half: boolean): string {
+  const count = formatSegmentCount(full, half);
+  return `${count} lit segment${full === 1 && !half || count === '½' ? '' : 's'}`;
+}
+
 /** "65%" from 0.65. */
 export function formatPercent(fraction: number, decimals = 0): string {
   return `${roundTo(fraction * 100, decimals).toFixed(decimals)}%`;

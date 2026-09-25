@@ -13,7 +13,6 @@ export const DEFAULT_INPUTS: Inputs = {
   flourSameAsRoom: true,
   flourTempF: 70,
   bigaTempF: [C.DEFAULT_BIGA_TEMP_F],
-  bowlMassG: C.DEFAULT_BOWL_MASS_G,
   bowlState: 'cold',
   bowlTempF: [null],
 
@@ -47,7 +46,6 @@ export const DEFAULT_PERSISTED: Persisted = {
   timelineMode: 'forward',
   bakeAtIso: '',
   checkedSteps: [],
-  bowlMassG: DEFAULT_INPUTS.bowlMassG,
   timers: [],
 };
 
@@ -79,7 +77,6 @@ export const BOUNDS = {
   bigaRoomOnlyH: { min: 12, max: 18, step: 0.5 },
   temperH: { min: 2, max: 3, step: 0.25 },
 
-  bowlMassG: { min: 200, max: 3000, step: 5 },
   /** Wide: this is a reading off a probe, and a wild one should be visible. */
   finalDoughTempF: { min: 55, max: 95, step: 0.1 },
 } as const;
