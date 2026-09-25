@@ -16,9 +16,9 @@ check instead (§7).
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-28**, and nothing is owed
-  either way. FINDINGS-29 answers it, and their next would be 29. No
-  `knownWrong` pin is live.
+- **The correspondence is applied through MESSAGE-29** (unprompted: speed as
+  lit segments, bowl mass a constant, capacity messages). FINDINGS-30 answers
+  it; their next would be 30. No `knownWrong` pin is live.
 - **Numbering, since it has stepped twice.** FINDINGS-25 went unprompted, so
   the pairs now share a number: MESSAGE-N answers FINDINGS-N, and
   FINDINGS-(N+1) answers MESSAGE-N. **There is no MESSAGE-22** (a stray draft,
@@ -29,6 +29,8 @@ check instead (§7).
   the last message applied.
 - **What's left:**
   - Task 10 — only the phone-in-the-kitchen check remains, and that's Dave's.
+    It now includes whether the drawn speed indicator (a row of ten) matches
+    the Core's real LED indicator.
   - Task 11 — the bake log. Its `ff_measured` is `solveFrictionFactorF`, never
     `final − predicted_mix` (§10); file it under the bake's balls per mix;
     one row per mix on a split batch (§10, MESSAGE-28).
