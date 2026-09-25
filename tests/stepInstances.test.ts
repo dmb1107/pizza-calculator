@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { DETAIL_CONDITION_NAMES, detailConditionHolds, expandSteps } from '../src/lib/stepInstances';
 import { STEPS } from '../src/content/steps';
 import type { Schedule } from '../src/state/types';
+import { readFileSync } from 'node:fs';
+
+const SPEC = readFileSync(new URL('../docs/WEBSITE-SPEC-biga-calculator.md', import.meta.url), 'utf8');
 
 /**
  * §8.2a expansion. This logic decides how many checkboxes and timers exist and
@@ -18,7 +21,8 @@ describe('§8.2a golden sequence', () => {
   /**
    * §8.2a: "Assert the full rendered id sequence at `nMix` 1, 2 and 3 against an
    * expected sequence written out in the test" — and since MESSAGE-13, per
-   * schedule too, because `biga-6` renders only on the retarded track.
+   * schedule too, because `biga-6` renders only on the retarded track, and
+   * since MESSAGE-31 `biga-4b` (the fridge) as well.
    *
    * Every list below is written out by hand from the procedure, not generated
    * from `STEPS` or from `expandSteps`. That is the whole point: the property
@@ -31,14 +35,16 @@ describe('§8.2a golden sequence', () => {
    * cannot satisfy, because the expected list comes from a person reasoning
    * about the procedure rather than from the thing under test.
    *
-   * Counts: retarded 19 / 27 / 35, classic 18 / 26 / 34 at nMix 1 / 2 / 3.
+   * Counts: retarded 20 / 28 / 36, classic 18 / 26 / 34 at nMix 1 / 2 / 3.
    */
   const allKeys = (nMix: number, schedule: Schedule) =>
     expandSteps(nMix, schedule).map((i) => i.key);
 
-  it('retarded, nMix 1 — 19 bare ids', () => {
+  it('retarded, nMix 1 — 20 bare ids', () => {
     expect(allKeys(1, 'retarded')).toEqual([
-      'biga-1', 'biga-2', 'biga-3', 'biga-4', 'biga-5',
+      'biga-1', 'biga-2', 'biga-3', 'biga-4',
+      'biga-4b', // fridge — retarded only, its own timer since MESSAGE-31
+      'biga-5',
       'biga-6', // temper — retarded only, and missing entirely before MESSAGE-13
       'mix-1', 'mix-2', 'mix-3', 'mix-4', 'mix-5', 'mix-6', 'mix-7',
       // no mix-8 — one mix, no changeover
@@ -47,8 +53,8 @@ describe('§8.2a golden sequence', () => {
     ]);
   });
 
-  it('classic, nMix 1 — 18 bare ids, no temper', () => {
-    // The biga never went in the fridge, so there is nothing to temper.
+  it('classic, nMix 1 — 18 bare ids, no fridge and no temper', () => {
+    // The biga never goes in the fridge, so there is nothing to temper.
     expect(allKeys(1, 'classic')).toEqual([
       'biga-1', 'biga-2', 'biga-3', 'biga-4', 'biga-5',
       'mix-1', 'mix-2', 'mix-3', 'mix-4', 'mix-5', 'mix-6', 'mix-7',
@@ -58,9 +64,9 @@ describe('§8.2a golden sequence', () => {
   });
 
   it('retarded, nMix 2 — two complete passes', () => {
-    // 12 balls. 27 instances.
+    // 12 balls. 28 instances.
     expect(allKeys(2, 'retarded')).toEqual([
-      'biga-1', 'biga-2', 'biga-3', 'biga-4', 'biga-5', 'biga-6',
+      'biga-1', 'biga-2', 'biga-3', 'biga-4', 'biga-4b', 'biga-5', 'biga-6',
       'mix-1#1', 'mix-2#1', 'mix-3#1', 'mix-4#1', 'mix-5#1', 'mix-6#1', 'mix-7#1',
       'mix-8#1', // changeover, BETWEEN the passes — never last
       'mix-1#2', 'mix-2#2', 'mix-3#2', 'mix-4#2', 'mix-5#2', 'mix-6#2', 'mix-7#2',
@@ -82,7 +88,7 @@ describe('§8.2a golden sequence', () => {
 
   it('retarded, nMix 3 — three complete passes', () => {
     expect(allKeys(3, 'retarded')).toEqual([
-      'biga-1', 'biga-2', 'biga-3', 'biga-4', 'biga-5', 'biga-6',
+      'biga-1', 'biga-2', 'biga-3', 'biga-4', 'biga-4b', 'biga-5', 'biga-6',
       'mix-1#1', 'mix-2#1', 'mix-3#1', 'mix-4#1', 'mix-5#1', 'mix-6#1', 'mix-7#1',
       'mix-8#1',
       'mix-1#2', 'mix-2#2', 'mix-3#2', 'mix-4#2', 'mix-5#2', 'mix-6#2', 'mix-7#2',
@@ -106,23 +112,29 @@ describe('§8.2a golden sequence', () => {
     ]);
   });
 
-  it('matches the instance counts §8.2a publishes', () => {
-    // The table in §8.2a, independently of the sequences above.
-    expect(allKeys(1, 'retarded')).toHaveLength(19);
-    expect(allKeys(2, 'retarded')).toHaveLength(27);
-    expect(allKeys(3, 'retarded')).toHaveLength(35);
-    expect(allKeys(1, 'classic')).toHaveLength(18);
-    expect(allKeys(2, 'classic')).toHaveLength(26);
-    expect(allKeys(3, 'classic')).toHaveLength(34);
+  it('matches the instance counts §8.2a publishes — classic now, retarded once corrected', () => {
+    // Read from §8.2a's table rather than typed, so a correction there shows up.
+    const published = (schedule: Schedule) => {
+      const row = new RegExp(`^\\| ${schedule} \\| \\*\\*(\\d+)\\*\\* \\| (\\d+) \\| (\\d+) \\|$`, 'm').exec(SPEC);
+      if (!row) throw new Error(`§8.2a has no ${schedule} row`);
+      return row.slice(1).map(Number);
+    };
+    const counts = (schedule: Schedule) => [1, 2, 3].map((n) => allKeys(n, schedule).length);
+    expect(counts('classic')).toEqual(published('classic'));
+    // Known wrong, reported in FINDINGS-32: the table predates biga-4b and
+    // still reads 19 / 27 / 35. Pinned both ways, like a gate knownWrong —
+    // when the spec is corrected this fails; replace it with the equality above.
+    expect(published('retarded'), '§8.2a corrected: drop this pin').toEqual([19, 27, 35]);
+    expect(counts('retarded')).toEqual([20, 28, 36]);
   });
 
-  it('differs between schedules by exactly the temper step', () => {
+  it('differs between schedules by exactly the fridge and temper steps', () => {
     for (const nMix of [1, 2, 3]) {
       const retarded = allKeys(nMix, 'retarded');
       const classic = allKeys(nMix, 'classic');
       expect(
-        retarded.filter((k) => k !== 'biga-6'),
-        `only biga-6 differs at nMix ${nMix}`,
+        retarded.filter((k) => k !== 'biga-4b' && k !== 'biga-6'),
+        `only biga-4b and biga-6 differ at nMix ${nMix}`,
       ).toEqual(classic);
     }
   });

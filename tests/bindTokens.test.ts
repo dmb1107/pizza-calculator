@@ -217,10 +217,18 @@ describe('step summaries bind to real numbers', () => {
     expect(bindTokens(step?.summary ?? '', values)).toContain('611.2 g of flour');
   });
 
-  it('fills both of biga-4’s schedule summaries', () => {
-    const step = STEPS.find((s) => s.id === 'biga-4');
-    expect(bindTokens(step?.summaryRetarded ?? '', values)).toContain('19 hours in the fridge');
-    expect(bindTokens(step?.summaryClassic ?? '', values)).toContain('16 hours at 61–65 °F');
+  it('binds each biga stage\'s planning point beside its range', () => {
+    // MESSAGE-31: the range leads and the planned point sits beside it.
+    const step = (id: string) => STEPS.find((s) => s.id === id);
+    expect(bindTokens(step('biga-4')?.summaryClassic ?? '', values)).toContain(
+      '**16–18 hours** at 61–65 °F, covered so it can\'t dry out. The timeline plans 16 h.',
+    );
+    expect(bindTokens(step('biga-4b')?.summary ?? '', values)).toContain(
+      'for **18–20 hours**. The timeline plans 19 h.',
+    );
+    expect(bindTokens(step('bake-1')?.summary ?? '', values)).toContain(
+      '**2–3 hours** before baking — the timeline plans 2.5 h.',
+    );
   });
 
   it('fills mix-4 with the probe target', () => {

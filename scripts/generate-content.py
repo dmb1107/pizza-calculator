@@ -62,7 +62,7 @@ def table(c,marker):
     return {'headers':raw[0],'rows':raw[2:]} if len(raw)>=3 else None
 # The field markers §8.2 uses. Mirrored in tests/steps.test.ts.
 KNOWN_MARKERS=[r'phase', r'summary', r'summary \(retarded\)', r'summary \(classic\)', r'values',
-    r'timer', r'speed', r'watchFor', r'concepts', r'detail', r'troubleshoot', r'repeatsPerMix',
+    r'timer', r'timer \(retarded\)', r'timer \(classic\)', r'speed', r'watchFor', r'concepts', r'detail', r'troubleshoot', r'repeatsPerMix',
     r'shown only when', r'detail, shown only when `[^`]+`', r'warning, shown when `[^`]+`']
 steps=[]
 for c in body.split('\n#### ')[1:]:
@@ -80,7 +80,8 @@ for c in body.split('\n#### ')[1:]:
     s={'id':h.group(1),'title':h.group(2).strip(),'phase':ph,
        'summary':field(c,'summary'),'summaryRetarded':field(c,r'summary \(retarded\)'),
        'summaryClassic':field(c,r'summary \(classic\)'),'values':field(c,'values'),
-       'timer':field(c,'timer'),'speed':field(c,'speed'),'watchFor':field(c,'watchFor'),
+       'timer':field(c,'timer'),'timerRetarded':field(c,r'timer \(retarded\)'),
+       'timerClassic':field(c,r'timer \(classic\)'),'speed':field(c,'speed'),'watchFor':field(c,'watchFor'),
        'concepts':field(c,'concepts'),'detail':bq(c,'**detail:**'),
        'troubleshoot':table(c,'**troubleshoot:**'),
        'repeatsPerMix':ph=='mix','suppressOnFinal':bool(rm and 'suppress' in rm.lower()),
@@ -139,6 +140,10 @@ for s in steps:
         out.append('    timerLabel: `%s`,\n'%tpl(s['timer']))
         tm=parse_timer(s['timer'])
         if tm: out.append('    timerMinutes: %s,\n'%tm)
+    # 7.5: a retarded biga has two timed stages; biga-4 times the first on
+    # each track, so its timer is per track like its summary.
+    if s['timerRetarded']: out.append('    timerLabelRetarded: `%s`,\n'%tpl(s['timerRetarded']))
+    if s['timerClassic']: out.append('    timerLabelClassic: `%s`,\n'%tpl(s['timerClassic']))
     if s['speed']:
         sp=parse_speed(s['speed'])
         if sp: out.append('    speed: %s,\n'%sp)

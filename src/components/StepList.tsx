@@ -14,7 +14,13 @@ import {
   type StepTable,
 } from '../content/steps';
 import { bindTokens, tokenValues } from '../lib/bindTokens';
-import { detailConditionContext, detailConditionHolds, expandSteps } from '../lib/stepInstances';
+import {
+  detailConditionContext,
+  detailConditionHolds,
+  expandSteps,
+  summaryFor,
+  timerLabelFor,
+} from '../lib/stepInstances';
 import type { AppState } from '../state/useAppState';
 
 /**
@@ -64,6 +70,7 @@ function StepRow({
   label,
   summary,
   values,
+  timerLabel,
   bind,
   conditionHolds,
   showWarning,
@@ -78,6 +85,8 @@ function StepRow({
   label?: string;
   summary: string;
   values: string[];
+  /** The bound timer chip, resolved for the schedule by `timerLabelFor`. */
+  timerLabel?: string;
   bind: (text: string) => string;
   /** Whether a `detailWhen` condition holds for the current batch. */
   conditionHolds?: (condition: DetailCondition) => boolean;
@@ -153,7 +162,7 @@ function StepRow({
               </div>
             )}
 
-            {(values.length > 0 || step.timerLabel) && (
+            {(values.length > 0 || timerLabel) && (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {values.map((v) => (
                   <span
@@ -163,9 +172,9 @@ function StepRow({
                     {v}
                   </span>
                 ))}
-                {step.timerLabel && (
+                {timerLabel && (
                   <span className="rounded-lg bg-stone-200 px-2 py-1 text-sm font-medium tabular dark:bg-stone-800">
-                    {bind(step.timerLabel)}
+                    {timerLabel}
                   </span>
                 )}
               </div>
@@ -333,13 +342,12 @@ export function StepList({
 
   /**
    * A timer for any step whose label states a duration. The label is bound
-   * first, so `{coldFerment} h` and `{temper} h` resolve to real numbers and no
-   * step ids need special-casing. `biga-4`'s "per schedule" resolves to nothing,
-   * which is right — the timeline owns that one.
+   * first, so `{coldFerment} h` and `{roomMin} min` resolve to real numbers and
+   * no step ids need special-casing. A range ("18–20 h") is a window (§7.5).
    */
-  const renderTimer = (step: Step, key: string, bindHere: (t: string) => string) => {
-    if (!step.timerLabel) return undefined;
-    const spec = parseTimerLabel(bindHere(step.timerLabel));
+  const renderTimer = (label: string | undefined, key: string) => {
+    if (!label) return undefined;
+    const spec = parseTimerLabel(label);
     if (!spec) return undefined;
     return (
       <StepTimer
@@ -402,22 +410,19 @@ export function StepList({
             {instances
               .filter((i) => i.step.phase === phase)
               .map(({ key, step, mixIndex }) => {
-                // biga-4 reads differently depending on the schedule.
-                const raw =
-                  step.summaryRetarded && step.summaryClassic
-                    ? inputs.schedule === 'retarded'
-                      ? step.summaryRetarded
-                      : step.summaryClassic
-                    : step.summary;
                 const bindHere = (text: string) => bindTokens(text, tokensFor(mixIndex));
+                // biga-4 reads and times differently depending on the schedule.
+                const timerLabel = timerLabelFor(step, inputs.schedule, inputs.bigaRoomOnlyH);
+                const boundTimer = timerLabel === undefined ? undefined : bindHere(timerLabel);
                 const repeated = step.repeatsPerMix && nMix > 1;
                 return (
                   <StepRow
                     key={key}
                     step={step}
                     label={repeated ? `Mix ${mixIndex}` : undefined}
-                    summary={bindHere(raw)}
+                    summary={bindHere(summaryFor(step, inputs.schedule))}
                     values={(step.values ?? []).map(bindHere)}
+                    timerLabel={boundTimer}
                     bind={bindHere}
                     conditionHolds={(condition) =>
                       detailConditionHolds(condition, detailConditionContext(state.result, tokens))
@@ -433,7 +438,7 @@ export function StepList({
                         <FinalTempCapture state={state} />
                       ) : undefined
                     }
-                    timer={renderTimer(step, key, bindHere)}
+                    timer={renderTimer(boundTimer, key)}
                   />
                 );
               })}

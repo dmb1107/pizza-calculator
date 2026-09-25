@@ -78,10 +78,17 @@ export interface Step {
   summaryClassic?: string;
   /** Computed values pulled out for scanning, one per chip. */
   values?: string[];
-  /** Raw timer label from the spec, e.g. "3–6 min", "per schedule", "{temper} h". */
+  /** Raw timer label from the spec, e.g. "3–6 min", "18–20 h", "{roomMin} min". */
   timerLabel?: string;
   /** Parsed where the label is a fixed number of minutes. */
   timerMinutes?: number | [number, number];
+  /**
+   * `biga-4` times a different stage on each track (§7.5): 2 h at room
+   * temperature before the fridge, or the whole 16–18 h classic ferment. When
+   * set these replace `timerLabel`; resolve through `timerLabelFor`.
+   */
+  timerLabelRetarded?: string;
+  timerLabelClassic?: string;
   speed?: { dial: number; rpm: number; minutes: [number, number]; label: string };
   /** Markdown: paragraphs, tables, emphasis. */
   detail?: string;
@@ -161,11 +168,12 @@ Cover to prevent drying. Sources differ on venting: Gozney and Ooni say leave a 
   {
     id: "biga-4",
     phase: "biga",
-    title: `Ferment`,
-    summary: `2 hours at room temperature, then {bigaFridge} hours in the fridge. Cover so it can't dry out.`,
-    summaryRetarded: `2 hours at room temperature, then {bigaFridge} hours in the fridge. Cover so it can't dry out.`,
-    summaryClassic: `{bigaRoomOnly} hours at 61–65 °F. Cover so it can't dry out.`,
-    timerLabel: `per schedule`,
+    title: `Ferment at room temperature`,
+    summary: `**2 hours** at room temperature, in the mixer bowl, covered so it can't dry out. Then into the fridge.`,
+    summaryRetarded: `**2 hours** at room temperature, in the mixer bowl, covered so it can't dry out. Then into the fridge.`,
+    summaryClassic: `**16–18 hours** at 61–65 °F, covered so it can't dry out. The timeline plans {bigaRoomOnly} h.`,
+    timerLabelRetarded: `2 h`,
+    timerLabelClassic: `16–18 h`,
     detail: `**The 61–65 °F band isn't only about speed.** That range produces the right ratio of lactic to acetic acid, which is what gives biga its characteristic sharp, vinegary profile. Ferment much warmer and you get a preferment that is biga-shaped but tastes different.
 
 That's why an unstable kitchen is a real problem here and not just a timing nuisance.
@@ -174,6 +182,15 @@ That's why an unstable kitchen is a real problem here and not just a timing nuis
 
 **The classic room-temperature version** is the one that produces the truest profile, if you have a wine fridge, a cool basement, or winter.`,
     concepts: ["why-61-65"],
+  },
+  {
+    id: "biga-4b",
+    phase: "biga",
+    shownWhen: "schedule === 'retarded'",
+    title: `Refrigerate`,
+    summary: `Into the fridge, still in the mixer bowl and covered, for **18–20 hours**. The timeline plans {bigaFridge} h.`,
+    timerLabel: `18–20 h`,
+    detail: `The two hours at room temperature started fermentation; the fridge now holds it somewhere stable while it ripens. 18–20 hours is the window Ooni's professional biga recipe uses, and a biga is forgiving across it — judge it by the cue in the next step, not by the clock.`,
   },
   {
     id: "biga-5",
@@ -408,6 +425,7 @@ At {ballWeight} g, open to about **{openDiameterIn} inches** — the same thickn
     title: `Onto trays`,
     summary: `**Very lightly oiled** half-sheet trays with lids — a film wiped with a paper towel, not a pool. Nothing on top of the balls. Room temperature **{roomMin} min**, set by how far the dough you actually hit is from DDT.`,
     values: [`Room time: {roomMin} min (final dough {finalDoughTemp} °F against DDT {ddt} °F)`],
+    timerLabel: `{roomMin} min`,
     detail: `**Oil, not flour.**
 
 Flour is hygroscopic. It pulls water out of the dough surface and hydrates into paste. Over 24–36 hours in a fridge — a drying environment even under a lid — you get the worst of both: patches of gluey paste where the flour hydrated, and a dry skin everywhere else. That skin resists opening and tears at the cornicione instead of stretching.
@@ -442,8 +460,8 @@ This is also why a warmer dough isn't free. Every degree of starting temperature
     id: "bake-1",
     phase: "bake",
     title: `Temper`,
-    summary: `Out of the fridge {temper} hours before baking. Target **60–65 °F at the core** — measure it, don't guess.`,
-    timerLabel: `{temper} h`,
+    summary: `Out of the fridge **2–3 hours** before baking — the timeline plans {temper} h. Target **60–65 °F at the core** — measure it, don't guess.`,
+    timerLabel: `2–3 h`,
     detail: `Below **55 °F** the dough tears on opening and won't spring in the oven. Above **70 °F** it goes slack and sticky and loses its shape on the peel.
 
 The visual cue and the thermometer should agree. If the ball looks ready but reads 52 °F, trust the thermometer — the surface warms long before the core does.`,

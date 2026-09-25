@@ -111,6 +111,7 @@ const KNOWN_MARKERS = [
   /^summary \((retarded|classic)\)$/,
   /^values$/,
   /^timer$/,
+  /^timer \((retarded|classic)\)$/,
   /^speed$/,
   /^watchFor$/,
   /^concepts$/,
@@ -147,6 +148,8 @@ const specSteps = SPEC.slice(SPEC.indexOf('### 8.2 Steps'), SPEC.indexOf('### 8.
       summaryClassic: field(chunk, 'summary \\(classic\\)'),
       values: field(chunk, 'values'),
       timer: field(chunk, 'timer'),
+      timerRetarded: field(chunk, 'timer \\(retarded\\)'),
+      timerClassic: field(chunk, 'timer \\(classic\\)'),
       speed: field(chunk, 'speed'),
       watchFor: field(chunk, 'watchFor'),
       concepts: field(chunk, 'concepts'),
@@ -232,6 +235,8 @@ describe('§8.2 steps are reproduced verbatim', () => {
     expect(step.summaryClassic, `${id} classic summary`).toBe(spec.summaryClassic);
     expect(step.watchFor, `${id} watchFor`).toBe(spec.watchFor);
     expect(step.timerLabel, `${id} timer`).toBe(spec.timer);
+    expect(step.timerLabelRetarded, `${id} retarded timer`).toBe(spec.timerRetarded);
+    expect(step.timerLabelClassic, `${id} classic timer`).toBe(spec.timerClassic);
     expect(step.speed?.label, `${id} speed`).toBe(spec.speed);
 
     expect(step.values?.join(' · '), `${id} values`).toBe(spec.values);
@@ -260,10 +265,15 @@ describe('§8.2 steps are reproduced verbatim', () => {
     expect(step?.troubleshoot?.rows).toHaveLength(4);
   });
 
-  it('gives biga-4 both schedule summaries and no plain one in the spec', () => {
+  it('gives biga-4 both schedule summaries and both schedule timers, and no plain timer', () => {
+    // MESSAGE-31: a retarded biga has two timed stages, so biga-4 times the
+    // first on each track and biga-4b times the fridge.
     const step = STEPS.find((s) => s.id === 'biga-4');
-    expect(step?.summaryRetarded).toContain('2 hours at room temperature');
-    expect(step?.summaryClassic).toContain('{bigaRoomOnly} hours at 61–65 °F');
+    expect(step?.summaryRetarded).toContain('**2 hours** at room temperature');
+    expect(step?.summaryClassic).toContain('**16–18 hours** at 61–65 °F');
+    expect(step?.timerLabelRetarded).toBe('2 h');
+    expect(step?.timerLabelClassic).toBe('16–18 h');
+    expect(step?.timerLabel).toBeUndefined();
   });
 
   it('has markdown in watchFor that a renderer must handle', () => {

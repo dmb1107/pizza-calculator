@@ -352,6 +352,10 @@ Durations in hours, from biga mix at t=0. **These are authoritative** — they w
 | `coldFerment` | **user input** | **user input** | 6–36, default 24 |
 | `temper` | 2.5 | 2.5 | user-adjustable 2–3 |
 
+**Four keys are planning points inside a recipe range:** `bigaFridge` (18–20 h), `bigaRoomOnly` (16–18 h, the Giorilli window), `bulkRest` (45–60 min) and `temper` (2–3 h). The timeline needs one number to put a clock time on a stage, so it uses the point. **Nothing the baker reads collapses the range** — steps and timeline show the range, with the planned point beside it (§7.4, §7.5).
+
+**Stage → step:** `bigaRoomTemp` and `bigaRoomOnly` → `biga-4`; `bigaFridge` → `biga-4b`; `bigaTemper` → `biga-6`. `biga-4b` was split out of `biga-4` so that each timed stage has its own timer — a retarded biga has two, 2 h and then 18–20 h, and one step cannot carry both.
+
 ⚠️ **This table is a sequence, and the overhead total cannot detect a wrong one.** Addition is commutative, so a stage-order error produces a correct sum and a wrong schedule. That has already happened once here, in the step expansion (§8.2a), where the instance count was right and the order was not — and the sum is a weaker check than the count was.
 
 **The backward timeline is where this becomes visible.** Solving from a target bake time back through the stages turns the order into timestamps. Get it wrong and every total still asserts clean while every intermediate time is wrong, and the failure surfaces as a baker standing at a cold oven rather than as a red test.
@@ -814,8 +818,14 @@ The two water warnings mirror each other — same failure ("you cannot get there
 ### 7.4 Timeline
 Vertical list of stages with clock times and durations. Highlight "now" if the session is in progress.
 
+Where a stage's duration is a planning point inside a recipe range (§4.7), show the range beside it: *"Refrigerate the biga — 19 h (18–20)"*. The clock time uses the point; the baker still sees the window.
+
 ### 7.5 Steps
 See §8. Each step: a checkbox that persists, a summary, computed values inlined, an expandable "Why", and a timer where a duration applies.
+
+**Ranges stay ranges.** When the recipe gives a range for a duration — because it reasons that anywhere in the window works, and the cue decides — the step's text and its timer show the range, never a single number picked from it. Use the ranged-timer behaviour `bulk-1`'s 45–60 min already has. A planning point may appear beside the range ("the timeline plans 19 h"), but never instead of it. A single number is right only where the recipe gives one (`biga-6`'s 1 h) or the app computes one (`bulk-3`'s room time). A step with a duration never says "per schedule" — it names the time.
+
+**One exception on the classic track:** if the baker has planned `bigaRoomOnly` outside 16–18 h (the calculator allows 12–18, crediting 12–16 to PizzaBlab), `biga-4`'s classic timer uses the planned value instead — they have chosen to run off the Giorilli window, and the timer should follow the plan they made.
 
 #### Speed: show what the mixer shows
 
@@ -930,11 +940,12 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 ---
 
-#### `biga-4` — Ferment
+#### `biga-4` — Ferment at room temperature
 **phase:** biga
-**summary (retarded):** 2 hours at room temperature, then {bigaFridge} hours in the fridge. Cover so it can't dry out.
-**summary (classic):** {bigaRoomOnly} hours at 61–65 °F. Cover so it can't dry out.
-**timer:** per schedule
+**summary (retarded):** **2 hours** at room temperature, in the mixer bowl, covered so it can't dry out. Then into the fridge.
+**summary (classic):** **16–18 hours** at 61–65 °F, covered so it can't dry out. The timeline plans {bigaRoomOnly} h.
+**timer (retarded):** 2 h
+**timer (classic):** 16–18 h
 
 **detail:**
 > **The 61–65 °F band isn't only about speed.** That range produces the right ratio of lactic to acetic acid, which is what gives biga its characteristic sharp, vinegary profile. Ferment much warmer and you get a preferment that is biga-shaped but tastes different.
@@ -945,6 +956,17 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 >
 > **The classic room-temperature version** is the one that produces the truest profile, if you have a wine fridge, a cool basement, or winter.
 **concepts:** why-61-65
+
+---
+
+#### `biga-4b` — Refrigerate
+**phase:** biga
+**shown only when:** `schedule === 'retarded'`
+**summary:** Into the fridge, still in the mixer bowl and covered, for **18–20 hours**. The timeline plans {bigaFridge} h.
+**timer:** 18–20 h
+
+**detail:**
+> The two hours at room temperature started fermentation; the fridge now holds it somewhere stable while it ripens. 18–20 hours is the window Ooni's professional biga recipe uses, and a biga is forgiving across it — judge it by the cue in the next step, not by the clock.
 
 ---
 
@@ -1163,7 +1185,7 @@ WRONG     mix-1#1 mix-1#2 mix-2#1 mix-2#2 … mix-7#1 mix-7#2   mix-8#1
 
 The wrong form has the **same instance count, the same labels, and the same suppression** — 26 instances at 12 balls either way. What it does not have is a procedure: it tells the baker to prep both bowls, then run Phase A twice, then Phase B twice, and it puts the changeover *last*, after both Phase Ds, which is the one position where "changeover to the next mix" means nothing.
 
-**Assert the full rendered id sequence at `nMix` 1, 2 and 3 against an expected sequence written out in the test** — and now **per schedule**, since `biga-6` renders only on the retarded track. Six golden sequences:
+**Assert the full rendered id sequence at `nMix` 1, 2 and 3 against an expected sequence written out in the test** — and now **per schedule**, since `biga-4b` and `biga-6` render only on the retarded track. Six golden sequences:
 
 | | `nMix` 1 | 2 | 3 |
 |---|---:|---:|---:|
@@ -1242,6 +1264,7 @@ A bare token on a per-mix or per-biga step is then a **visible** error rather th
 #### `bulk-3` — Onto trays
 **phase:** bulk
 **summary:** **Very lightly oiled** half-sheet trays with lids — a film wiped with a paper towel, not a pool. Nothing on top of the balls. Room temperature **{roomMin} min**, set by how far the dough you actually hit is from DDT.
+**timer:** {roomMin} min
 **values:** Room time: {roomMin} min (final dough {finalDoughTemp} °F against DDT {ddt} °F)
 
 **detail:**
@@ -1281,8 +1304,8 @@ A bare token on a per-mix or per-biga step is then a **visible** error rather th
 
 #### `bake-1` — Temper
 **phase:** bake
-**summary:** Out of the fridge {temper} hours before baking. Target **60–65 °F at the core** — measure it, don't guess.
-**timer:** {temper} h
+**summary:** Out of the fridge **2–3 hours** before baking — the timeline plans {temper} h. Target **60–65 °F at the core** — measure it, don't guess.
+**timer:** 2–3 h
 **watchFor:** Balls relaxed and spread slightly, domed, airy, with a slow incomplete rebound when poked.
 
 **detail:**

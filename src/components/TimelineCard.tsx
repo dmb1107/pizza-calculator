@@ -4,6 +4,7 @@ import { BOUNDS } from '../state/defaults';
 import {
   formatClock,
   formatDuration,
+  formatStageDuration,
   fromDatetimeLocal,
   socialWindowPhrase,
   toDatetimeLocal,
@@ -155,7 +156,7 @@ export function TimelineCard(s: AppState) {
               <span className="text-lg font-semibold tabular">{formatClock(stage.startsAt)}</span>
               <span className="text-stone-800 dark:text-stone-200">{stage.title}</span>
               <span className="text-sm text-stone-500 tabular">
-                {formatDuration(stage.durationH)}
+                {formatStageDuration(stage.durationH, stage.range)}
               </span>
               {stage.current && (
                 <span className="rounded-full bg-amber-600 px-2 py-0.5 text-xs font-medium text-white">

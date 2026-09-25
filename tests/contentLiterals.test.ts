@@ -15,7 +15,7 @@ import {
   ballsPerMix,
   observedRate,
 } from '../src/lib/engine';
-import { stageDurations } from '../src/lib/timeline';
+import { PLANNING_RANGE_H, STAGE_INFO, stageDurations, type StageKey } from '../src/lib/timeline';
 import { BOUNDS } from '../src/state/defaults';
 import { BAKE_1, WATER_REACHABILITY } from './vectors';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -56,6 +56,9 @@ import { formatPercent } from '../src/lib/format';
 
 type Loc = string;
 
+/** Step fields that are identifiers or lookups, never shown as text. */
+const STEP_FIELDS_NOT_RENDERED = new Set(['id', 'phase', 'shownWhen', 'concepts']);
+
 /** Every rendered text field, keyed `step.field`, `concept:id`, `reference:id` or `about`. */
 function contentByLocation(): Map<Loc, string> {
   const out = new Map<Loc, string>();
@@ -63,17 +66,30 @@ function contentByLocation(): Map<Loc, string> {
     if (!text) return;
     out.set(loc, out.has(loc) ? `${out.get(loc)}\n${text}` : text);
   };
-  for (const s of STEPS) {
-    for (const f of ['summary', 'summaryRetarded', 'summaryClassic', 'timerLabel', 'detail', 'watchFor'] as const) {
-      put(`${s.id}.${f}`, s[f]);
+  // Every string a step carries, walked rather than listed, keyed by the
+  // top-level field. This was a list of six fields, so MESSAGE-31's per-track
+  // timers and every title (biga-5's "~20%") were invisible to the gate. Only
+  // what never renders is skipped: identifiers and condition expressions.
+  const walk = (loc: Loc, value: unknown): void => {
+    if (typeof value === 'string') put(loc, value);
+    else if (Array.isArray(value)) value.forEach((v) => walk(loc, v));
+    else if (value && typeof value === 'object') {
+      for (const [k, v] of Object.entries(value)) if (k !== 'condition') walk(loc, v);
     }
-    s.values?.forEach((v) => put(`${s.id}.values`, v));
-    put(`${s.id}.speed`, s.speed?.label);
-    put(`${s.id}.detailWhen`, s.detailWhen?.detail);
-    put(`${s.id}.warningWhen`, s.warningWhen?.text);
-    s.troubleshoot?.rows.forEach((row) => row.forEach((cell) => put(`${s.id}.troubleshoot`, cell)));
+  };
+  for (const s of STEPS) {
+    for (const [field, value] of Object.entries(s)) {
+      if (!STEP_FIELDS_NOT_RENDERED.has(field)) walk(`${s.id}.${field}`, value);
+    }
   }
   for (const c of CONCEPTS) put(`concept:${c.id}`, c.body);
+  // The timeline's stage titles and descriptions render on the timeline card,
+  // and are typed in timeline.ts — invisible to both halves of this gate until
+  // MESSAGE-31 put ranges on the timeline.
+  for (const [key, { title, description }] of Object.entries(STAGE_INFO)) {
+    put(`stage:${key}`, title);
+    put(`stage:${key}`, description);
+  }
   // §9 and §11 render too (Task 9), so they answer to the same gate.
   for (const r of REFERENCE) put(`reference:${r.id}`, r.body);
   put('about', ABOUT_INTRO);
@@ -189,6 +205,17 @@ interface Claim {
    */
   knownWrong?: { reads: string; see: string };
 }
+
+/** §4.7's bigaRoomTemp, the retarded biga's hours at room temperature. */
+const BIGA_ROOM_H = stageDurations('retarded', {
+  bigaFridgeH: 19, bigaRoomOnlyH: 16, ballRoomTempH: 1.5, nMix: 1, coldFermentH: 24, temperH: 2.5,
+}).bigaRoomTemp;
+
+/** A planning range as prose prints it, "18–20", scaled to the prose's unit. */
+const span = (key: StageKey, scale = 1) => {
+  const [lo, hi] = PLANNING_RANGE_H[key] as readonly [number, number];
+  return `${lo * scale}–${hi * scale}`;
+};
 
 const CLAIMS: readonly Claim[] = [
   // --- speeds: every "N% / R RPM" is RPM = 47.4 + 2.526 × N, and prose leads
@@ -400,27 +427,32 @@ const CLAIMS: readonly Claim[] = [
     covers: ['0.375%', '65%', '0.244%'],
   },
 
-  // --- schedule --------------------------------------------------------------
-  {
-    at: 'biga-4.summaryRetarded',
-    restates: '§4.7 bigaRoomTemp',
-    text: `${stageDurations('retarded', { bigaFridgeH: 19, bigaRoomOnlyH: 16, ballRoomTempH: 1.5, nMix: 1, coldFermentH: 24, temperH: 2.5 }).bigaRoomTemp} hours at room temperature`,
-    covers: ['2 hours'],
-  },
+  // --- schedule: §4.7's stages, and the ranges its planning points sit in ------
+  // MESSAGE-31: where the recipe gives a range, the step prints the range —
+  // PLANNING_RANGE_H, which the timeline prints beside the point too (§7.4).
+  { at: 'biga-4.summaryRetarded', restates: '§4.7 bigaRoomTemp', text: `**${BIGA_ROOM_H} hours** at room temperature`, covers: ['2 hours'] },
   {
     at: 'biga-4.summary',
     restates: '§4.7 bigaRoomTemp — `summary` falls back to the retarded text',
-    text: '2 hours at room temperature',
-    holds: () => stageDurations('retarded', { bigaFridgeH: 19, bigaRoomOnlyH: 16, ballRoomTempH: 1.5, nMix: 1, coldFermentH: 24, temperH: 2.5 }).bigaRoomTemp === 2,
+    text: `**${BIGA_ROOM_H} hours** at room temperature`,
     covers: ['2 hours'],
   },
+  { at: 'biga-4.timerLabelRetarded', restates: '§4.7 bigaRoomTemp', text: `${BIGA_ROOM_H} h`, covers: ['2 h'] },
+  { at: 'biga-4.summaryClassic', restates: 'PLANNING_RANGE_H.bigaRoomOnly', text: `**${span('bigaRoomOnly')} hours** at`, covers: [`${span('bigaRoomOnly')} hours`] },
+  { at: 'biga-4.timerLabelClassic', restates: 'PLANNING_RANGE_H.bigaRoomOnly', text: `${span('bigaRoomOnly')} h`, covers: [`${span('bigaRoomOnly')} h`] },
   {
     at: 'biga-4.detail',
-    restates: '§4.7 bigaRoomTemp and the bigaFridgeH input range',
-    text: `2 h at room temperature, then ${BOUNDS.bigaFridgeH.min}–${BOUNDS.bigaFridgeH.max} h in the fridge`,
-    holds: () => stageDurations('retarded', { bigaFridgeH: 19, bigaRoomOnlyH: 16, ballRoomTempH: 1.5, nMix: 1, coldFermentH: 24, temperH: 2.5 }).bigaRoomTemp === 2,
+    restates: '§4.7 bigaRoomTemp, then PLANNING_RANGE_H.bigaFridge',
+    text: `${BIGA_ROOM_H} h at room temperature, then ${span('bigaFridge')} h in the fridge`,
     covers: ['2 h', '18–20 h', '2 hours'],
   },
+  { at: 'biga-4b.summary', restates: 'PLANNING_RANGE_H.bigaFridge', text: `for **${span('bigaFridge')} hours**`, covers: ['18–20 hours'] },
+  { at: 'biga-4b.timerLabel', restates: 'PLANNING_RANGE_H.bigaFridge', text: `${span('bigaFridge')} h`, covers: ['18–20 h'] },
+  { at: 'biga-4b.detail', restates: 'PLANNING_RANGE_H.bigaFridge', text: `${span('bigaFridge')} hours is the window`, covers: ['18–20 hours'] },
+  { at: 'bulk-1.summary', restates: 'PLANNING_RANGE_H.bulkRest', text: `${span('bulkRest', 60)} min at room temperature`, covers: ['45–60 min'] },
+  { at: 'bulk-1.timerLabel', restates: 'PLANNING_RANGE_H.bulkRest', text: `${span('bulkRest', 60)} min`, covers: ['45–60 min'] },
+  { at: 'bake-1.summary', restates: 'PLANNING_RANGE_H.temper', text: `**${span('temper')} hours** before baking`, covers: ['2–3 hours'] },
+  { at: 'bake-1.timerLabel', restates: 'PLANNING_RANGE_H.temper', text: `${span('temper')} h`, covers: ['2–3 h'] },
 
   // --- concepts: the formula -------------------------------------------------
   { at: 'concept:why-biga', restates: 'BIGA_FRACTION', text: `Why ${fx(C.BIGA_FRACTION * 100, 0)}% and not 100%`, covers: ['65%'] },
@@ -763,6 +795,7 @@ const FIXED: Record<Loc, readonly string[]> = {
   'biga-3.detail': ['100%', '3–6 minutes'],
   'biga-4.summaryClassic': ['61–65 °F'],
   'biga-4.detail': ['61–65 °F'],
+  'biga-5.title': ['20%'],
   'biga-5.summary': ['20%'],
   'biga-5.detail': ['20%'],
   'biga-5.troubleshoot': ['3–6 min'],
@@ -793,9 +826,7 @@ const FIXED: Record<Loc, readonly string[]> = {
   'mix-7.watchFor': ['1 °F'],
   'mix-8.detail': ['0 g', '60 g'], // illustrative residue
 
-  // Procedure: bulk, balling, trays, fridge. §4.7 plans on 60 of the 45–60.
-  'bulk-1.summary': ['45–60 min'],
-  'bulk-1.timerLabel': ['45–60 min'],
+  // Procedure: balling, trays, fridge. (bulk-1's 45–60 is PLANNING_RANGE_H, claimed.)
   'bulk-2.summary': ['10–15 min'],
   'bulk-2.timerLabel': ['10–15 min'],
   'bulk-3.detail': ['24–36 hours'],
@@ -806,6 +837,15 @@ const FIXED: Record<Loc, readonly string[]> = {
 
   // Procedure: temper cues, and the oven — validated by Dave, not computed.
   'bake-1.summary': ['60–65 °F'],
+
+  // The timeline's stage text, each restating a step's procedure figure that
+  // is classified above: biga-4/biga-5's band and cue, mix-6's rest, bulk-2's
+  // bench rest, bulk-4's fridge and spacing, bake-1's core target.
+  'stage:bigaRoomOnly': ['61–65 °F', '20%'],
+  'stage:mix': ['10-minute'],
+  'stage:divideBall': ['10–15 min'],
+  'stage:coldFerment': ['38–40 °F', '4 hours'],
+  'stage:temper': ['60–65 °F'],
   'bake-1.detail': ['55 °F', '70 °F', '52 °F'],
   'bake-2.summary': ['750 °F', '60–90 s', '15–20 s'],
   'bake-2.detail': ['750', '750 °F', '800 °F', '15–20 s', '9–18'],

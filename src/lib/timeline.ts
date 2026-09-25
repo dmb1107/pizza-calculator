@@ -70,7 +70,28 @@ export const STAGE_ORDER: readonly StageKey[] = [
   'temper',
 ];
 
-const STAGE_INFO: Record<StageKey, { title: string; description: string }> = {
+/**
+ * §4.7 (MESSAGE-31). Four stages last a planning point inside a range the
+ * recipe reasons for. The timeline needs one number to put a clock time on a
+ * stage, so it uses the point; nothing the baker reads collapses the range
+ * (§7.4, §7.5). Hours, low to high.
+ */
+export const PLANNING_RANGE_H: Partial<Record<StageKey, readonly [number, number]>> = {
+  bigaFridge: [18, 20],
+  // The Giorilli window. The input allows 12–18 (§4.7); §7.5's classic
+  // exception covers a plan outside this.
+  bigaRoomOnly: [16, 18],
+  bulkRest: [45 / 60, 1],
+  temper: [2, 3],
+};
+
+/** The planning point's range, if `hours` lies inside it — §7.4 shows it beside the point. */
+export function planningRangeFor(key: StageKey, hours: number): readonly [number, number] | undefined {
+  const range = PLANNING_RANGE_H[key];
+  return range && hours >= range[0] && hours <= range[1] ? range : undefined;
+}
+
+export const STAGE_INFO: Record<StageKey, { title: string; description: string }> = {
   bigaRoomTemp: {
     title: 'Biga at room temperature',
     description: 'Gets fermentation started before the fridge takes over.',
@@ -153,6 +174,12 @@ export interface TimelineStage {
   title: string;
   description: string;
   durationH: number;
+  /**
+   * §7.4: the recipe's range when `durationH` is a planning point inside it,
+   * shown beside the point. Absent for a stage with no range, or a plan the
+   * baker has moved outside it (§7.5's classic exception).
+   */
+  range?: readonly [number, number];
   startsAt: Date;
   endsAt: Date;
   /**
@@ -229,6 +256,7 @@ export function buildTimeline({
       key,
       ...STAGE_INFO[key],
       durationH,
+      range: planningRangeFor(key, durationH),
       startsAt,
       endsAt,
       unsocialStart: isUnsocialHour(startsAt),
@@ -382,6 +410,22 @@ export function formatDuration(hours: number): string {
   if (h === 0) return `${m} min`;
   if (m === 0) return `${h} h`;
   return `${h} h ${m} min`;
+}
+
+/**
+ * §7.4: the planning point, then the recipe's range beside it — "19 h (18–20)".
+ * The range's unit is left off only when the point already reads in it, so
+ * "1 h (45–60 min)" and "2 h 30 min (2–3 h)" can't be misread.
+ */
+export function formatStageDuration(hours: number, range?: readonly [number, number]): string {
+  const point = formatDuration(hours);
+  if (!range) return point;
+  const [lo, hi] = range;
+  const inHours = Number.isInteger(lo) && Number.isInteger(hi);
+  const unit = inHours ? 'h' : 'min';
+  const span = inHours ? `${lo}–${hi}` : `${Math.round(lo * 60)}–${Math.round(hi * 60)}`;
+  const pointIsOneUnit = !point.includes(' h ') && point.endsWith(` ${unit}`);
+  return `${point} (${span}${pointIsOneUnit ? '' : ` ${unit}`})`;
 }
 
 /** "Sat 3:00 PM" — the weekday matters over a 52-hour schedule. */

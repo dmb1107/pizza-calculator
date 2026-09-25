@@ -7,7 +7,10 @@ import {
   timerState,
   type RunningTimer,
 } from '../src/lib/timers';
-import { STEPS } from '../src/content/steps';
+import { calculate } from '../src/lib/engine';
+import { bindTokens, tokenValues } from '../src/lib/bindTokens';
+import { expandSteps, timerLabelFor } from '../src/lib/stepInstances';
+import { DEFAULT_INPUTS } from '../src/state/defaults';
 
 /** Step timers — WEBSITE-SPEC-biga-calculator.md §7.5. */
 
@@ -36,23 +39,28 @@ describe('parsing timer labels', () => {
     expect(parseTimerLabel('3-6 min')).toEqual(parseTimerLabel('3–6 min'));
   });
 
-  it('covers every timer label in the step content', () => {
-    // Bound labels: {coldFerment} and {temper} are substituted before parsing,
-    // which is what keeps step ids out of the parser.
-    const bound: Record<string, string> = {
-      '{coldFerment} h': '24 h',
-      '{temper} h': '2.5 h',
-      '{bigaTemper} h': '1 h',
-    };
-    const labels = STEPS.map((s) => s.timerLabel).filter((l): l is string => Boolean(l));
-    // 9 since MESSAGE-13: `biga-6`'s temper hour joins `mix-8`'s changeover.
-    expect(labels.length).toBe(9);
-
-    const parsed = labels.map((l) => parseTimerLabel(bound[l] ?? l));
-    // Eight resolve to a duration; only "per schedule" does not, because the
-    // timeline owns that one.
-    expect(parsed.filter(Boolean)).toHaveLength(8);
-    expect(labels[parsed.findIndex((p) => p === null)]).toBe('per schedule');
+  it('resolves every step timer to a duration on both schedules, and none says "per schedule"', () => {
+    // §7.5 (MESSAGE-31): a step with a duration names it. Resolved per schedule
+    // and bound with the real token table, the way the step list does it, so a
+    // label the parser can't read shows up here rather than as a missing timer.
+    const i = DEFAULT_INPUTS;
+    const tokens = tokenValues(calculate({ ...i, frictionFactorF: 14 }), i);
+    const timed = (schedule: 'retarded' | 'classic') =>
+      expandSteps(2, schedule).flatMap(({ key, step }) => {
+        const label = timerLabelFor(step, schedule, i.bigaRoomOnlyH);
+        if (label === undefined) return [];
+        const bound = bindTokens(label, tokens);
+        expect(parseTimerLabel(bound), `${key} on ${schedule}: "${bound}"`).not.toBeNull();
+        return [key];
+      });
+    // At nMix 2, so mix-8's changeover renders once.
+    expect(timed('retarded')).toEqual([
+      'biga-3', 'biga-4', 'biga-4b', 'biga-6', 'mix-6#1', 'mix-8#1', 'mix-6#2',
+      'bulk-1', 'bulk-2', 'bulk-3', 'bulk-4', 'bake-1',
+    ]);
+    expect(timed('classic')).toEqual([
+      'biga-3', 'biga-4', 'mix-6#1', 'mix-8#1', 'mix-6#2', 'bulk-1', 'bulk-2', 'bulk-3', 'bulk-4', 'bake-1',
+    ]);
   });
 });
 

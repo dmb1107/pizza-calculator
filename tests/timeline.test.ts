@@ -4,6 +4,7 @@ import { computeRoomMinutes, mixStaggerH } from '../src/lib/engine';
 import {
   buildTimeline,
   formatDuration,
+  formatStageDuration,
   fromDatetimeLocal,
   isUnsocialHour,
   roundToNextQuarterHour,
@@ -779,5 +780,39 @@ describe('formatting', () => {
     expect(toDatetimeLocal(roundToNextQuarterHour(new Date(2026, 7, 21, 14, 1)))).toBe('2026-08-21T14:15');
     expect(toDatetimeLocal(roundToNextQuarterHour(new Date(2026, 7, 21, 14, 15)))).toBe('2026-08-21T14:15');
     expect(toDatetimeLocal(roundToNextQuarterHour(new Date(2026, 7, 21, 23, 58)))).toBe('2026-08-22T00:00');
+  });
+});
+
+describe('§7.4 a planning point shows its range', () => {
+  const shown = (schedule: Schedule, a: ScheduleAdjustments = DEFAULTS) =>
+    buildTimeline({ startAt: new Date(2026, 8, 25, 9), schedule, adjustments: a }).stages.map(
+      (s) => `${s.key}: ${formatStageDuration(s.durationH, s.range)}`,
+    );
+
+  it('puts the recipe range beside each planning point, and only there', () => {
+    // MESSAGE-31: bigaFridge, bigaRoomOnly, bulkRest and temper. Written out,
+    // not derived from PLANNING_RANGE_H, so a wrong range fails here.
+    expect(shown('retarded')).toEqual([
+      'bigaRoomTemp: 2 h',
+      'bigaFridge: 19 h (18–20)',
+      'bigaTemper: 1 h',
+      'mix: 30 min',
+      'bulkRest: 1 h (45–60 min)',
+      'divideBall: 20 min',
+      'ballRoomTemp: 1 h 30 min',
+      'coldFerment: 24 h',
+      'temper: 2 h 30 min (2–3 h)',
+    ]);
+    expect(shown('classic').slice(0, 2)).toEqual(['bigaRoomOnly: 16 h (16–18)', 'mix: 30 min']);
+  });
+
+  it('drops the range for a classic ferment planned off the Giorilli window', () => {
+    // §7.5's exception: the plan rules, so "13 h (16–18)" would contradict it.
+    expect(shown('classic', { ...DEFAULTS, bigaRoomOnlyH: 13 })[0]).toBe('bigaRoomOnly: 13 h');
+    expect(shown('classic', { ...DEFAULTS, bigaRoomOnlyH: 18 })[0]).toBe('bigaRoomOnly: 18 h (16–18)');
+  });
+
+  it('keeps the unit when the point is not in the range\'s unit alone', () => {
+    expect(shown('retarded', { ...DEFAULTS, bigaFridgeH: 18.5 })[1]).toBe('bigaFridge: 18 h 30 min (18–20 h)');
   });
 });

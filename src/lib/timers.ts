@@ -30,10 +30,11 @@ export interface TimerSpec {
 /**
  * Parse a bound timer label into minutes.
  *
- * Bound, not raw: `bulk-4` reads `{coldFerment} h` and `bake-1` `{temper} h`,
+ * Bound, not raw: `bulk-4` reads `{coldFerment} h` and `bulk-3` `{roomMin} min`,
  * so the token has to be substituted first. Doing it this way keeps the step
- * ids out of here — anything whose label states a duration gets a timer, and
- * anything that doesn't (`per schedule`) gets none.
+ * ids out of here — anything whose label states a duration gets a timer. Since
+ * MESSAGE-31 every step's label does: §7.5 retired "per schedule", and
+ * `timers.test.ts` requires every resolved label to parse.
  */
 export function parseTimerLabel(label: string): TimerSpec | null {
   const text = label.trim();
@@ -56,7 +57,7 @@ export function parseTimerLabel(label: string): TimerSpec | null {
     return { minMinutes: minutes, maxMinutes: minutes, isWindow: false };
   }
 
-  // "per schedule" and anything else the timeline owns rather than a timer.
+  // Not a duration. No step label reaches here any more (§7.5).
   return null;
 }
 

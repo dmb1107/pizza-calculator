@@ -10,6 +10,7 @@ import { STEPS, type DetailCondition, type ShownWhen, type Step } from '../conte
 import type { Schedule } from '../state/types';
 import type { CalculatorResult } from './engine';
 import { C } from './constants';
+import { PLANNING_RANGE_H } from './timeline';
 
 /**
  * §8.2's `shown only when` conditions, resolved by lookup rather than by
@@ -151,4 +152,28 @@ export function expandSteps(
     i = end;
   }
   return out;
+}
+
+/** The summary a step shows on this schedule: `biga-4` reads differently per track. */
+export function summaryFor(step: Step, schedule: Schedule): string {
+  return (schedule === 'retarded' ? step.summaryRetarded : step.summaryClassic) ?? step.summary;
+}
+
+/**
+ * The timer label a step shows on this schedule, unbound. `biga-4` times a
+ * different stage on each track: the 2 h before the fridge, or the whole
+ * classic ferment (§7.5, MESSAGE-31).
+ *
+ * §7.5's one exception to *ranges stay ranges*: a classic baker who planned
+ * `bigaRoomOnly` outside the Giorilli window gets a timer for the plan they
+ * made, since the input allows 12–18 h and the window is 16–18. Only the
+ * classic timer can meet it: the fridge and temper inputs are bounded by
+ * their own windows, and `bulkRest` is fixed at its upper end.
+ */
+export function timerLabelFor(step: Step, schedule: Schedule, bigaRoomOnlyH: number): string | undefined {
+  if (schedule === 'classic' && step.timerLabelClassic) {
+    const [lo, hi] = PLANNING_RANGE_H.bigaRoomOnly as readonly [number, number];
+    return bigaRoomOnlyH < lo || bigaRoomOnlyH > hi ? '{bigaRoomOnly} h' : step.timerLabelClassic;
+  }
+  return (schedule === 'retarded' ? step.timerLabelRetarded : step.timerLabelClassic) ?? step.timerLabel;
 }
