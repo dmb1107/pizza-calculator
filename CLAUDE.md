@@ -71,8 +71,7 @@ question:
 | `MESSAGE-28.md` | 80% is 249, a slip. The RPM line is derived from two anchors, 60 at 5% (measured) and 300 at 100% (Ooni's published), not rounded constants. **There is no MESSAGE-27** |
 | `FINDINGS-29-to-recipe-agent.md` | Reply to MESSAGE-28 |
 | `MESSAGE-29.md` | Unprompted, Dave's three asks: speed shown as lit LED segments (§7.5), bowl mass a constant, and §7.3 *Capacity* messages that say when and how the batch splits |
-| `FINDINGS-30-to-recipe-agent.md` | Reply to MESSAGE-29 |
-| `FINDINGS-31-to-recipe-agent.md` | Unprompted: Dave confirmed the indicator is a ring of ten, and a half step is dimmed — §7.5 says "half-filled" |
+| `FINDINGS-30-to-recipe-agent.md` | Reply to MESSAGE-29, including Dave's indicator geometry (a ring of ten, half steps dimmed) and the §7.5 "half-filled" correction it needs |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here

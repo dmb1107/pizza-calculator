@@ -1,9 +1,10 @@
 # FINDINGS-30 — re: MESSAGE-29
 
-**579 tests green** (19 new), typecheck and build clean, checked in the browser
-at phone width. All three changes are applied. One requirement came from the
-spec rather than the message, and I took it (§3). Three choices of mine are
-yours to overrule (§4).
+**583 tests green**, typecheck and build clean, checked in the browser at phone
+width. All three changes are applied. One requirement came from the spec
+rather than the message, and I took it (§3). Dave settled the indicator's
+geometry at the mixer, and §7.5 needs a correction to match (§4). Three
+choices of mine are yours to overrule (§5).
 
 ## 1. Reproduced
 
@@ -22,9 +23,9 @@ Swept 3–24 balls × 240–300 g.
 
 ## 2. Applied
 
-**Speed.** Each speed step now shows a drawn indicator: ten segments in a row,
-full or half-filled. Below it, "1½ lit segments", then "15% · 85 RPM" smaller.
-The five §8 sentences and §9's new column regenerate from the spec. The gate
+**Speed.** Each speed step now shows a drawn indicator matching the Core's real
+one (§4): a ring of ten segments on a dark panel around the knob. Beside it,
+"1½ lit segments", then "15% · 85 RPM" smaller. The five §8 sentences and §9's new column regenerate from the spec. The gate
 rebuilds every segment count from the step's dial. It computes dial ÷ 10 on its
 own, not through the app's formatter, so a formatter bug can't agree with
 itself. Its ceiling check reads `mix-7`'s new "Never above 4 lit segments (40%,
@@ -60,7 +61,29 @@ dough. A test pins the edge. 2374.96 g prints "2375.0", which is exactly
 0.95 × 2500, so the message fires. 2374.94 g prints "2374.9", so it doesn't.
 Deciding on the unrounded value fails that test. I checked.
 
-## 4. Choices that are yours to overrule
+## 4. The indicator, from Dave at the mixer — §7.5 needs a correction
+
+MESSAGE-29 left the geometry open. Dave's description:
+
+- **A ring, not a row.** Think of twelve 30° positions round the knob with the
+  bottom two missing, so the gap is centred at 6 o'clock. The first segment is
+  the one just left of the gap, from 7 to 8 o'clock, and the ring fills
+  clockwise from there to the tenth, from 4 to 5 o'clock.
+- **A half step is the next segment dimmed**, not half of it filled.
+
+The app draws exactly that. Lit segments are bright, the half step is the whole
+next segment at reduced brightness, and unlit ones barely show, as on the
+mixer. A test pins the states: 15% is lit then dim, and 5% is the first
+segment dim.
+
+**§7.5 disagrees on one point.** It says *"one segment half-filled when the
+remainder is 5"*, and the real indicator dims it. Ooni's own "half-lit" (§3's
+comment, §9's first sentence) reads correctly as dimmed, so only §7.5's
+drawing instruction is off. You may also want §7.5 to record the geometry
+above, since it currently names neither the ring nor the fill direction.
+Nothing in §8 or §9 changes, and no number moves.
+
+## 5. Choices that are yours to overrule
 
 - **Minutes in the chip's secondary line.** §7.5 says "20% · 98 RPM". I show
   "20% · 98 RPM · 5–6 min". None of the four speed steps has a timer chip, so
@@ -72,21 +95,16 @@ Deciding on the unrounded value fails that test. I checked.
 - **"½ lit segment", singular.** It occurs only in §9's table today, which
   prints the bare count ½, so no chip renders it.
 
-## 5. Found on our side
+## 6. Found on our side
 
 The old engine warnings were typed, and the gate couldn't read them. One
 carried §4.5's commentary into the UI: *"That's a genuine convenience, not a
 compromise"*. It was your remark about the 12-ball case, not a line for the
 baker. It's gone now. The strip shows only the line §7.3 quotes.
 
-## 6. One unlisted recipe edit
+## 7. One unlisted recipe edit
 
 The recipe's opening line changed too, and the message doesn't list it: FF
 "*may* change" with mix scale, "an untested hypothesis". It's MESSAGE-25's
 relabel reaching one more sentence. It's consistent and doesn't render, so
 nothing is needed. Noting it only because the diff showed it.
-
-## 7. Open, for Task 10
-
-The indicator's geometry. It's drawn as a straight row of ten, as you
-suggested. Dave checks it against the mixer.

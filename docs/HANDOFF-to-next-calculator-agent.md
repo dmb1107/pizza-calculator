@@ -30,7 +30,7 @@ check instead (§7).
 - **What's left:**
   - Task 10 — only the phone-in-the-kitchen check remains, and that's Dave's.
     The indicator's geometry is settled (a ring of ten, half steps dimmed,
-    from Dave's photo); FINDINGS-31 asks the recipe agent to put that in §7.5.
+    from Dave); FINDINGS-30 asks the recipe agent to put that in §7.5.
   - Task 11 — the bake log. Its `ff_measured` is `solveFrictionFactorF`, never
     `final − predicted_mix` (§10); file it under the bake's balls per mix;
     one row per mix on a split batch (§10, MESSAGE-28).
