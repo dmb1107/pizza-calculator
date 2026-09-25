@@ -110,6 +110,15 @@ export function formatLitSegments(full: number, half: boolean): string {
   return `${count} lit segment${full === 1 && !half || count === '½' ? '' : 's'}`;
 }
 
+/**
+ * §7.5 item 3, the speed chip's smaller line: "20% · 98 RPM · 5–6 min". The
+ * duration is there because no speed step has a timer chip.
+ */
+export function formatSpeedDetail(dial: number, rpm: number, minutes: readonly [number, number]): string {
+  const duration = minutes[0] === minutes[1] ? `~${minutes[0]} min` : `${minutes[0]}–${minutes[1]} min`;
+  return `${dial}% · ${rpm} RPM · ${duration}`;
+}
+
 /** "65%" from 0.65. */
 export function formatPercent(fraction: number, decimals = 0): string {
   return `${roundTo(fraction * 100, decimals).toFixed(decimals)}%`;

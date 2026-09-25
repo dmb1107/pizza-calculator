@@ -302,8 +302,8 @@ export function indicatorSegments(dialPercent: number): SegmentState[] {
 
 /**
  * §7.5. What the Core's LED indicator shows at a dial percentage:
- * `floor(dial / INDICATOR_PCT_PER_SEGMENT)` full segments, one half-lit when
- * the remainder is 5, out of `100 / INDICATOR_PCT_PER_SEGMENT`.
+ * `floor(dial / INDICATOR_PCT_PER_SEGMENT)` segments lit, the next one dimmed
+ * when the remainder is 5, out of `100 / INDICATOR_PCT_PER_SEGMENT`.
  */
 export function indicatorForDial(dialPercent: number): { full: number; half: boolean; total: number } {
   const per = C.INDICATOR_PCT_PER_SEGMENT;

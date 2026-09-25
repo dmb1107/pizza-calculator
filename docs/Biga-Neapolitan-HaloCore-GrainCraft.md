@@ -110,7 +110,7 @@ That settles it. The **Ooni help-center chart in the project files is wrong** �
 
 The line runs through the two anchors: the measured 60 RPM at 5%, and Ooni's published 300 RPM at 100%. Only the bottom end is measured; the rows between assume the 20 levels are evenly spaced.
 
-**Read the speed off the LED indicator, not the dial.** The Core has no number display. Each fully lit segment is 10% and a half-lit one is 5% (Ooni help center), so the *Lit segments* column is what you'll actually see at the mixer.
+**Read the speed off the LED indicator, not the dial.** The Core has no number display. Each fully lit segment is 10% and a half-lit one is 5% (Ooni help center), so the *Lit segments* column is what you'll actually see at the mixer. The segments form a ring round the knob that fills clockwise from the gap at 6 o'clock, and the half step shows as the next segment dimmed — so 1½ is one bright segment and one dim one.
 
 | Lit segments | Dial | RPM | Used for |
 |---:|---:|---:|---|
@@ -764,7 +764,7 @@ PROBE = DDT - 0.33 x FF x Ct/(Ct+C_bowl) + 0.2 x (DDT - Troom)
         3bl 72.2 / 6bl 71.8 / 9bl 70.5   (FF 14, room 70)
 
 RPM = 47.4 + 2.526 x dial%   [MEASURED 5% = 60; OONI 100% = 300]
-INDICATOR: FULL segment = 10%, HALF-lit = 5%. Count LIT SEGMENTS.
+INDICATOR: FULL segment = 10%, HALF-lit (next one DIM) = 5%. Count LIT SEGMENTS.
   1.5 seg = 15%/85   2 seg = 20%/98   3 seg = 30%/123   4 seg = 40%/148 (ceiling)
   60 RPM is the FLOOR - add water with mixer OFF, then dial up.
 

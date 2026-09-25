@@ -5,7 +5,7 @@ Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
 **Status:** Tasks 0–9 complete, on the bowl-aware thermal model with **per-mix
-weights**, the ice calculation removed, and **MESSAGE-29 applied**. Left: the
+weights**, the ice calculation removed, and **MESSAGE-30 applied**. Left: the
 phone-in-the-kitchen check (Task 10, Dave's) and the bake log (Task 11).
 
 ---

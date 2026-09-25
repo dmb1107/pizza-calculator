@@ -774,6 +774,8 @@ Render above the step list, never hidden in a collapsed panel. Sources: **capaci
 
 The engine already splits (§4.5) and every step is written per mix, so the baker never mixes an over-capacity batch by following the steps. What they need is to be **told**: that the batch is over the Halo Core's limit, that it has been split, and into what. Each condition below is evaluated on the values the app displays.
 
+**Severity:** split required, biga split required and near the limit are **warnings**; §4.5's one-biga line is **information**; below the minimum is an **error**, though it cannot fire inside the input ranges.
+
 **Split required — `nMix > 1`. Always shown, first in the strip:**
 > **Too much dough for one mix — this batch is split.** {balls} balls is {doughTotal} g of dough, and the Halo Core takes at most {maxDoughG} g. Mix it as **{nMix} batches of {doughPerMix} g**, one after another in the same bowl. The amounts and steps below are already per mix.
 
@@ -787,7 +789,7 @@ For the biga the flour cap always binds first (`FLOUR_CAP_55 × 1.5` = 2415 g of
 **Near the limit — `doughPerMix ≥ 0.95 × MAX_DOUGH`:**
 > **Close to the Core's limit.** {doughPerMix} g per mix is within 5% of the {maxDoughG} g maximum. It will mix, but there's little margin — weigh carefully.
 
-Fires at 9 and 18 balls at the 265 g default (2437.5 g per mix).
+Fires at 9 and 18 balls at the 265 g default (2437.5 g per mix); across 240–300 g it also fires at 8, 10, 16, 17, 19, 20 and 24 balls. Compare the **printed** per-mix dough, per the rule above: 2374.96 g prints 2375.0 and fires.
 
 **Below the minimum.** Two layers:
 - **At the input.** `Number of balls` stops at 3. Stepping below it shows, next to the field: *"**3 balls minimum.** Below that the Halo Core's hook can't grip the dough, and the water would need to be hotter than a tap delivers. For one or two pizzas, mix by hand."*
@@ -819,9 +821,16 @@ See §8. Each step: a checkbox that persists, a summary, computed values inlined
 
 **The Halo Core has no number display.** Its speed is shown on an LED indicator in segments: a fully lit segment is 10% and a half-lit one is 5% (Ooni help center). The baker sets the speed by counting lit segments, so a chip that leads with "20%" makes them convert in their head at the mixer. **Lead with the indicator:**
 
-1. **A drawn indicator** of `100 / INDICATOR_PCT_PER_SEGMENT` segments: `floor(dial / INDICATOR_PCT_PER_SEGMENT)` full, one half-filled when the remainder is 5, the rest empty. Large enough to hold up against the mixer at arm's length on a phone.
+1. **A drawn indicator that matches the real one** (geometry below): `floor(dial / INDICATOR_PCT_PER_SEGMENT)` segments lit, the **next segment dimmed** when the remainder is 5, the rest unlit. Large enough to hold up against the mixer at arm's length on a phone.
 2. **The count in words beside it:** "2 lit segments", "1½ lit segments".
-3. **Secondary, smaller:** "20% · 98 RPM".
+3. **Secondary, smaller:** "20% · 98 RPM · 5–6 min" — the step's duration included, because no speed step has a timer chip and the duration would otherwise appear only in the summary sentence.
+
+**The real indicator, as Dave observed it at the mixer** (not published by Ooni):
+- **A ring of ten segments round the knob**, on a dark panel. Think of twelve 30° positions with the bottom two missing, so the gap is centred at 6 o'clock.
+- **It fills clockwise from the gap.** Segment 1 is just left of the gap, 7 to 8 o'clock; segment 10 is just right of it, 4 to 5 o'clock.
+- **Ooni's "half-lit" is the next whole segment at reduced brightness**, not half a segment. 15% is one bright segment then one dim one; 5% is the first segment dim. Unlit segments barely show.
+
+⚠️ **Corrected:** an earlier version said to draw the half step as a half-filled segment and named neither the ring nor the fill direction.
 
 The same order applies wherever §8 prose gives a speed: **"2 lit segments (20%, 98 RPM)"**. The `speed` field in each step keeps its `dial% / RPM` form — it is data; this section governs how it renders.
 

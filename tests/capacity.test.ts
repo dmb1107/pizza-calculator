@@ -3,7 +3,8 @@ import { C, indicatorForDial, indicatorSegments } from '../src/lib/constants';
 import { calculate, computeCapacity, computeFormula, type CalculatorInputs } from '../src/lib/engine';
 import { tokenValues, type ScheduleTokens } from '../src/lib/bindTokens';
 import { capacityAlerts, splitHint, NEAR_LIMIT_FRACTION } from '../src/lib/capacity';
-import { formatLitSegments, formatSegmentCount } from '../src/lib/format';
+import { formatLitSegments, formatSegmentCount, formatSpeedDetail } from '../src/lib/format';
+import { STEPS } from '../src/content/steps';
 
 /** §7.3 *Capacity* and §7.5 *Speed* — MESSAGE-29. */
 
@@ -40,6 +41,15 @@ describe('§7.3 capacity: which message, when', () => {
     const near = [];
     for (let b = C.MIN_BALLS; b <= 24; b++) if (ids(b).includes('capacity-near-limit')) near.push(b);
     expect(near).toEqual([9, 18]);
+  });
+
+  it('fires near the limit at 8, 9, 10, 16, 17, 18, 19, 20 and 24 balls across 240–300 g', () => {
+    // §7.3's list since MESSAGE-30. Capacity reads balls and ball weight only.
+    const near = new Set<number>();
+    for (let b = C.MIN_BALLS; b <= 24; b++) {
+      for (let w = 240; w <= 300; w++) if (ids(b, w).includes('capacity-near-limit')) near.add(b);
+    }
+    expect([...near]).toEqual([8, 9, 10, 16, 17, 18, 19, 20, 24]);
   });
 
   it('never reaches the below-minimum guard anywhere in the input ranges', () => {
@@ -153,5 +163,22 @@ describe('§7.5 speed: what the indicator shows', () => {
     expect(segs).toHaveLength(10);
     expect(segs.slice(0, head.length)).toEqual(head);
     expect(segs.slice(head.length).every((s) => s === 'off')).toBe(true);
+  });
+});
+
+describe('§7.5 speed: the chip\'s smaller line', () => {
+  it('reads "20% · 98 RPM · 5–6 min" for each speed step, the duration included', () => {
+    // §7.5 item 3 since MESSAGE-30: no speed step has a timer chip, so the
+    // minutes would otherwise appear only in the summary sentence.
+    const lines = STEPS.filter((s) => s.speed).map((s) => {
+      expect(s.timerLabel, s.id).toBeUndefined();
+      return [s.id, formatSpeedDetail(s.speed!.dial, s.speed!.rpm, s.speed!.minutes)];
+    });
+    expect(lines).toEqual([
+      ['mix-2', '15% · 85 RPM · 3–4 min'],
+      ['mix-3', '20% · 98 RPM · 5–6 min'],
+      ['mix-5', '30% · 123 RPM · 3–4 min'],
+      ['mix-7', '20% · 98 RPM · ~1 min'],
+    ]);
   });
 });
