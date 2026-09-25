@@ -74,6 +74,8 @@ question:
 | `FINDINGS-30-to-recipe-agent.md` | Reply to MESSAGE-29, including Dave's indicator geometry (a ring of ten, half steps dimmed) and the §7.5 "half-filled" correction it needs |
 | `MESSAGE-30.md` | §7.5 records Dave's ring and draws the half step dimmed; the chip's minutes and §7.3's severities written into the spec; §7.3's near-limit list across 240–300 g. Nothing renders differently |
 | `FINDINGS-31-to-recipe-agent.md` | Reply to MESSAGE-30. Nothing open. The near-limit ball list can't see the 5% (it holds from 94.03% to 98.11%); the printed-value edge is unreachable from the inputs |
+| `MESSAGE-31.md` | Unprompted, Dave's ask: ranges stay ranges. `biga-4b` (the fridge) split out of `biga-4`, per-track timers, `bake-1` 2–3 h, `bulk-3` timed, the planning point beside its range on the timeline (§7.4) |
+| `FINDINGS-32-to-recipe-agent.md` | Reply to MESSAGE-31. Two pins live: §8.2a's stale retarded counts, and `bulk-3`'s timer running long at split batches. The gate had read neither titles, new step fields nor the timeline's stage text |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -200,7 +202,9 @@ reproduce-before-adopting step, made mandatory. Reproduce each one and add a
 claim, or classify it with a reason. Never widen `FIXED` just to go green: a
 computed value filed as fixed is the defect this exists to catch. A known
 disagreement the spec author must fix gets `knownWrong`, which is pinned both
-ways.
+ways. **It walks every string a step carries** rather than a list of fields —
+a list of six hid MESSAGE-31's per-track timers and every title — and reads the
+timeline's stage titles and descriptions (`STAGE_INFO` in `timeline.ts`).
 
 **The same applies to UI copy.** The gate reads §8, so a figure typed into a
 component is invisible to it: the ball-weight hint said "265 g opens to about
@@ -391,6 +395,15 @@ don't inline a `toFixed` somewhere else.
   no speed step has a timer chip). Never a setting number — a 2× misread at
   the 40% ceiling is 80%. §8 prose leads with the count too, and the gate
   rebuilds each count as dial ÷ 10 independently of the formatter.
+- **Ranges stay ranges** (§7.5, MESSAGE-31). Where the recipe gives a range,
+  the step prints it and its timer is a window; the planning point may sit
+  beside it ("the timeline plans 19 h"), never instead. The four ranges live in
+  one table, `PLANNING_RANGE_H` in `timeline.ts`: the timeline prints "19 h
+  (18–20)" from it when the point lies inside, and the gate claims every step
+  literal against it. `biga-4` times a different stage per track
+  (`timerLabelRetarded`/`timerLabelClassic`); resolve through `timerLabelFor`
+  and `summaryFor`, never in a component. §7.5's one exception: a classic plan
+  below 16 h times the plan.
 - **Capacity messages are §7.3's words, decided in `src/lib/capacity.ts`**, not
   the engine: generated content bound through the token table, decided on the
   **printed** per-mix dough (a test pins 2374.96 g → "2375.0" → fires). The
