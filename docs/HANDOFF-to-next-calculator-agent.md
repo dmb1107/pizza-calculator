@@ -9,22 +9,21 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-32, Task 10's emulated audit and the speed indicator (25 September).
+MESSAGE-33, Task 10's emulated audit and the speed indicator (26 September).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-32.** It settled both of
-  FINDINGS-32's pins: `bulk-3` prints and times `{ballRoomMin}`, the rise the
-  timeline plans, and §8.2a reads 20/28/36. The tests that pinned them now
-  assert equality. It also carried Dave's timers on the four mixer phases:
-  the `speed` field lost its minutes, and the timer is the one source of a
-  phase's duration. **FINDINGS-33** answers it (25 September) with nothing
-  open and two unpinned notes. At `nMix` 2, `bulk-3`'s block prints "90 …
-  up to 18" beside a summary of 73, because 17.5 rounds up. And the §4.10 ⚠️
-  should say "up to". No pin of any kind is live.
+- **The correspondence is applied through MESSAGE-33.** MESSAGE-32 settled
+  FINDINGS-32's pins (`bulk-3` on `{ballRoomMin}`, the rise the timeline plans;
+  §8.2a at 20/28/36) and added Dave's timers on the four mixer phases, making
+  the timer the one source of a phase's duration. MESSAGE-33 took both of
+  FINDINGS-33's notes: `bulk-3`'s block now states both rises instead of
+  inviting a subtraction. **FINDINGS-34** answers it (26 September) with
+  nothing open, so the next message, if one comes, is unprompted. No pin of
+  any kind is live.
 - **Numbering, since it has stepped twice.** FINDINGS-25 went unprompted, so
   the pairs now share a number: MESSAGE-N answers FINDINGS-N, and
   FINDINGS-(N+1) answers MESSAGE-N. **There is no MESSAGE-22** (a stray draft,
@@ -171,7 +170,7 @@ true and what they need to change.
 | `stepInstances.test.ts` | Golden step sequences per schedule at `nMix` 1–3, and §8.2a's published counts read from the spec. Closed condition sets: detail blocks (`nMix > 1`, `nBiga > 1`, `thickerThanDefault`) and `shownWhen`; both throw on unknown | The expansion repeated templates instead of mixes: same count, same labels, wrong procedure. A component ternary read any unknown condition as `nBiga > 1` |
 | `stageSteps.test.ts` | Every timeline stage has a step rendered on its schedule, and every step maps to a stage. §7.5: each planning-point stage's step times the whole §4.7 range; the classic exception across 12–18 h; a single-number timer equals its stage's planned duration, `bulk-3` included at `nMix` 1–3 and at the 45-minute floor | `bigaTemper` had a duration and a clock time but no step. `bulk-3` timed the unshortened rise for a round: each side right alone, disagreeing |
 | `engine.test.ts` | §5 vectors and the bake-1 regression, **held to printed precision (0.005)**, not `TOL`. Per-mix thermal weights. The panel hints' bases, measured by perturbing `calculate`. Water reachability sweep (samples 257 g for the true corner). Shaped rise **keyed by DDT**. The two biga bases, measured off `computeWaterTempF`. §4.9, §4.10 | Every rise table was keyed on dough temperature, silently assuming DDT 75 — including this suite's own vector. At `TOL.degF` = 0.1 the bake-1 pin couldn't tell 67.97 from 68.00 |
-| `bindTokens.test.ts` | No unbound or unused token. `{probeGapPhrase}` at below / above / right at DDT. The thicker note decided on its **printed** value | A condition decided on unrounded values printed "12.0 rather than 12" |
+| `bindTokens.test.ts` | No unbound or unused token, over every string a step carries (walked, not listed, since FINDINGS-34). `{probeGapPhrase}` at below / above / right at DDT. The thicker note decided on its **printed** value | A condition decided on unrounded values printed "12.0 rather than 12" |
 | `state.test.ts` | URL and storage round-trips. The FF map keyed through `ballsPerMix`, exact-match at 6.5, the old seed replaced on load and nothing else | The map was keyed on total balls, so a 12-ball bake would have filed FF under a size no mix has |
 | `timeline.test.ts` | §4.7 durations, the stage sequence on both schedules, daylight saving. §7.4's "19 h (18–20)" on every stage, written out. **Backward mode pinned to hand-written clock times** on both schedules and at `nMix` 2; exact landing on the bake across fractional durations; the overnight windows against a brute-force scan | A wrong order sums to the right total. Summing hours × 3.6e6 landed 1 ms early and printed the minute before |
 | `capacity.test.ts` | §7.3: which capacity message fires and when, its bound wording, the binding-limit guards (flour cap never first for a mix, always first for the biga), the below-minimum guard silent across the range, decisions on the **printed** per-mix dough, the near-limit ball list across 240–300 g. §7.5 segment states (lit / dim / off), and the chip's smaller line for every speed step | The spec says conditions are decided on displayed values; 2374.96 g prints 2375.0 and must fire. **The ball list can't see the 5%**: it holds for any threshold from 94.03% to 98.11%, so the edge test is what pins the threshold |

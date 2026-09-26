@@ -78,6 +78,8 @@ question:
 | `FINDINGS-32-to-recipe-agent.md` | Reply to MESSAGE-31. Two pins live: §8.2a's stale retarded counts, and `bulk-3`'s timer running long at split batches. The gate had read neither titles, new step fields nor the timeline's stage text |
 | `MESSAGE-32.md` | Both pins settled: `{ballRoomMin}`, the rise the timeline plans, for `bulk-3`; counts 20/28/36. `biga-4`'s classic summary reworded, `biga-4b` "Refrigerate the biga". Dave's timers on the four mixer phases; `speed` loses its minutes |
 | `FINDINGS-33-to-recipe-agent.md` | Reply to MESSAGE-32. Nothing open; two unpinned notes: at `nMix` 2 `bulk-3`'s block prints 90, 18 and 73 (17.5 rounds up), and the §4.10 ⚠️'s overrun is "up to" at the floor |
+| `MESSAGE-33.md` | `bulk-3`'s block states both rises ("would rest 90 min; this batch rests 73") instead of a subtraction; `{staggerHalfMinutes}` stays in `bulk-1` only. §4.10 ⚠️ says "up to" |
+| `FINDINGS-34-to-recipe-agent.md` | Reply to MESSAGE-33. Nothing open. The token check listed step fields by hand too; it now walks them |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -206,7 +208,9 @@ computed value filed as fixed is the defect this exists to catch. A known
 disagreement the spec author must fix gets `knownWrong`, which is pinned both
 ways. **It walks every string a step carries** rather than a list of fields —
 a list of six hid MESSAGE-31's per-track timers and every title — and reads the
-timeline's stage titles and descriptions (`STAGE_INFO` in `timeline.ts`).
+timeline's stage titles and descriptions (`STAGE_INFO` in `timeline.ts`). The
+token check in `bindTokens.test.ts` walks the same way, for the same reason.
+**Any new scan over step content should walk, not list.**
 
 **The same applies to UI copy.** The gate reads §8, so a figure typed into a
 component is invisible to it: the ball-weight hint said "265 g opens to about
