@@ -164,7 +164,10 @@ for s in steps:
         for r in t['rows']: out.append('        [%s],\n'%', '.join('`%s`'%tpl(x) for x in r))
         out.append('      ],\n    },\n')
     if s['concepts']:
-        out.append('    concepts: [%s],\n'%', '.join(json.dumps(x) for x in s['concepts'].split()))
+        # Comma- or space-separated: biga-3 lists two since MESSAGE-34. A bare
+        # split() kept the comma in "mix-dont-knead,".
+        ids=[x for x in re.split(r'[,\s]+', s['concepts']) if x]
+        out.append('    concepts: [%s],\n'%', '.join(json.dumps(x) for x in ids))
     if s['repeatsPerMix']: out.append('    repeatsPerMix: true,\n')
     if s['suppressOnFinal']: out.append('    suppressOnFinal: true,\n')
     if s.get('warningWhen'):

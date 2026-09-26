@@ -404,9 +404,35 @@ const CLAIMS: readonly Claim[] = [
   { at: 'biga-3.detail', restates: 'MIN_DOUGH', text: `mixer's ${C.MIN_DOUGH} g minimum`, covers: [`${C.MIN_DOUGH} g`] },
   { at: 'mix-3.detail', restates: 'SALT', text: `At ${fx(C.SALT * 100, 1)}% the salt`, covers: ['2.8%'] },
 
+  // --- biga-3's dissolve paragraph (MESSAGE-34) -----------------------------
+  { at: 'biga-3.detail', restates: 'BIGA_HYDRATION', text: `a stiff ${fx(C.BIGA_HYDRATION * 100, 0)}% biga`, covers: ['50%'] },
+
+  // --- §11's Halo Core sources (MESSAGE-34). §3 now cites these pages for the
+  // constants, so the note and the constant are checked against each other: a
+  // constant that moved off its cited source fails here.
+  {
+    at: 'about',
+    restates: 'MIN_DOUGH–MAX_DOUGH, Ooni\'s published capacity',
+    text: `${C.MIN_DOUGH / 1000}–${C.MAX_DOUGH / 1000} kg dough`,
+    covers: ['0.5–2.5'],
+  },
+  {
+    at: 'about',
+    restates: 'MAX_RUN_MIN, Ooni\'s published continuous limit',
+    text: `${C.MAX_RUN_MIN}-minute maximum continuous operating time`,
+    covers: ['20-minute'],
+  },
+  {
+    at: 'about',
+    restates: 'INDICATOR_PCT_PER_SEGMENT / 2, the half-lit step and so the dial\'s increment',
+    text: `${C.INDICATOR_PCT_PER_SEGMENT / 2}% increments`,
+    covers: ['5%'],
+  },
+  { at: 'about', restates: 'RPM_AT_100_PCT, Ooni\'s published maximum', text: `${C.RPM_AT_100_PCT} RPM at 100%`, covers: ['300 RPM'] },
+
   // --- yeast -----------------------------------------------------------------
   {
-    at: 'biga-2.detail',
+    at: 'biga-3.detail',
     restates: 'FRESH_YEAST_OF_BIGA_FLOUR → FRESH_TO_IDY → ADY_OF_BIGA_FLOUR',
     text: `${fx(C.FRESH_YEAST_OF_BIGA_FLOUR * 100, 0)}% fresh yeast = ${fx(C.FRESH_YEAST_OF_BIGA_FLOUR * C.FRESH_TO_IDY * 100, 2)}% IDY = ${fx(C.ADY_OF_BIGA_FLOUR * 100, 3)}% ADY`,
     covers: ['1%', '0.30%', '0.375%'],
@@ -807,12 +833,12 @@ const CLAIMS: readonly Claim[] = [
  */
 const FIXED: Record<Loc, readonly string[]> = {
   // Procedure: biga — the hand-mix, the published 61–65 °F band, the ripeness cue.
-  // Giorilli's window in °F and °C, PizzaBlab's wider one (§11 sources);
-  // Gozney's 100% biga recipe.
-  'biga-2.detail': ['16–18 h', '61–65 °F', '16–18 °C', '12–24 h', '100%'],
+  // biga-3's detail carries the Giorilli dose paragraphs since MESSAGE-34 folded
+  // biga-2 into it: Giorilli's window in °F and °C, PizzaBlab's wider one (§11
+  // sources), Gozney's 100% biga recipe.
   'biga-3.summary': ['3–6 minutes'],
   'biga-3.timerLabel': ['3–6 min'],
-  'biga-3.detail': ['100%', '3–6 minutes'],
+  'biga-3.detail': ['100%', '3–6 minutes', '16–18 h', '61–65 °F', '16–18 °C', '12–24 h'],
   'biga-4.summaryClassic': ['61–65 °F'],
   'biga-4.detail': ['61–65 °F'],
   'biga-5.title': ['20%'],
@@ -900,8 +926,10 @@ const FIXED: Record<Loc, readonly string[]> = {
   // Column keys: the table is indexed by balls per mix.
   'reference:friction-rate': ['3', '6', '9'],
   // §11: what each published source states — cited, not computed. Gozney's
-  // 61–64 °F is its own conversion of 16–18 °C; "100%" is in recipe titles.
-  about: ['1%', '12–24 h', '16–18 °C', '100%', '16–18 h', '61–64 °F', '44–45%', '16–20 h', '16–20 °C', '18', '45%', '50%'],
+  // 61–64 °F is its own conversion of 16–18 °C; "100%" is in recipe titles and
+  // Ooni's 300 RPM anchor; "9" is the section reference "(§9)". The Halo Core
+  // figures are claimed above against the constants that cite them.
+  about: ['1%', '12–24 h', '16–18 °C', '100%', '16–18 h', '61–64 °F', '44–45%', '16–20 h', '16–20 °C', '18', '45%', '50%', '9'],
   'concept:burn-ring': ['1', '100 °C', '1–1.5 cm', '2'],
 };
 

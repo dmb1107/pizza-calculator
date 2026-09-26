@@ -84,6 +84,16 @@ export const SOURCES: readonly Source[] = [
     note: "the fridge-retarded schedule",
   },
   {
+    title: "Ooni help center — Halo Core min/max capacity and hydration limits",
+    url: "https://ooni.com/pages/help-center?a=What-are-the-minmax-capacity-and-hydration-limits-for-Ooni-Halo-Core---id--tLwhKnlnR4G9F-kkvNO9Gw",
+    note: "0.5–2.5 kg dough, flour caps by hydration, recommended speeds, 20-minute maximum continuous operating time",
+  },
+  {
+    title: "Ooni help center — Halo Core speed settings",
+    url: "https://ooni.com/pages/help-center?a=Halo-Core-Speed-Settings%3A-Percentage-to-RPM-Explained---id--J1HYTOEHRCiv1ONI2mRgqg",
+    note: "5% increments, the lit/half-lit indicator, 300 RPM at 100%. Its low-end RPM chart is wrong (§9)",
+  },
+  {
     title: "Stadler Made — Biga",
     url: "https://www.stadlermade.com/pizza/ingredients/biga/",
     note: "warm-kitchen workaround",

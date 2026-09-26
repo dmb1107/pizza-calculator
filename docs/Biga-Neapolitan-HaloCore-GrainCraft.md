@@ -139,6 +139,8 @@ Each 5% step = **12.6 RPM**. Note the intercept: the dial maps across a *usable 
 
 ### Hard limits
 
+The first three are Ooni's published limits (help center, Halo Core capacity and hydration limits).
+
 - Dough: **0.5–2.5 kg** · Flour cap: **1505 g** @ 66%+ hyd, **1610 g** @ 55–59%
 - Recommended speed: **5–80%** @ 60%+ hyd, **5–20%** @ 55–59% hyd
 - **Max continuous run: 20 minutes**

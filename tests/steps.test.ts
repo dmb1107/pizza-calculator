@@ -240,7 +240,11 @@ describe('§8.2 steps are reproduced verbatim', () => {
     expect(step.speed?.label, `${id} speed`).toBe(spec.speed);
 
     expect(step.values?.join(' · '), `${id} values`).toBe(spec.values);
-    expect(step.concepts?.join(' '), `${id} concepts`).toBe(spec.concepts);
+    // Split here, independently of the generator, and compared as ids. Joining
+    // the generated array back into a string agreed with the spec when the
+    // generator split "mix-dont-knead, giorilli-standard" on whitespace and
+    // kept the comma in the id (MESSAGE-34).
+    expect(step.concepts, `${id} concepts`).toEqual(spec.concepts?.split(/\s*,\s*|\s+/));
     expect(step.troubleshoot, `${id} troubleshoot`).toEqual(spec.troubleshoot);
     expect(step.detailWhen, `${id} conditional detail`).toEqual(spec.detailWhen);
     expect(step.warningWhen, `${id} conditional warning`).toEqual(spec.warningWhen);

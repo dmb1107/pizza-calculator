@@ -118,7 +118,7 @@ export function tokenValues(
     ballRoomMin: String(Math.round(result.ballRoomMinutes)),
     finalDoughTemp: formatTempF(result.effectiveFinalTempF),
 
-    // §8.2 per-biga values. `biga-1` and `biga-2` are per-biga steps: at 18
+    // §8.2 per-biga values. `biga-1` and `biga-3` are per-biga steps: at 18
     // balls the batch total is 1833.7 g, which is above the 1610 g the machine
     // handles at this hydration — which is *why* it splits, so showing it as
     // one weight to scale out would be actively wrong.

@@ -35,14 +35,16 @@ describe('§8.2a golden sequence', () => {
    * cannot satisfy, because the expected list comes from a person reasoning
    * about the procedure rather than from the thing under test.
    *
-   * Counts: retarded 20 / 28 / 36, classic 18 / 26 / 34 at nMix 1 / 2 / 3.
+   * Counts: retarded 19 / 27 / 35, classic 17 / 25 / 33 at nMix 1 / 2 / 3.
+   * `biga-2` is deliberately absent: MESSAGE-34 folded it into `biga-3` and
+   * kept every other id.
    */
   const allKeys = (nMix: number, schedule: Schedule) =>
     expandSteps(nMix, schedule).map((i) => i.key);
 
-  it('retarded, nMix 1 — 20 bare ids', () => {
+  it('retarded, nMix 1 — 19 bare ids', () => {
     expect(allKeys(1, 'retarded')).toEqual([
-      'biga-1', 'biga-2', 'biga-3', 'biga-4',
+      'biga-1', 'biga-3', 'biga-4',
       'biga-4b', // fridge — retarded only, its own timer since MESSAGE-31
       'biga-5',
       'biga-6', // temper — retarded only, and missing entirely before MESSAGE-13
@@ -53,10 +55,10 @@ describe('§8.2a golden sequence', () => {
     ]);
   });
 
-  it('classic, nMix 1 — 18 bare ids, no fridge and no temper', () => {
+  it('classic, nMix 1 — 17 bare ids, no fridge and no temper', () => {
     // The biga never goes in the fridge, so there is nothing to temper.
     expect(allKeys(1, 'classic')).toEqual([
-      'biga-1', 'biga-2', 'biga-3', 'biga-4', 'biga-5',
+      'biga-1', 'biga-3', 'biga-4', 'biga-5',
       'mix-1', 'mix-2', 'mix-3', 'mix-4', 'mix-5', 'mix-6', 'mix-7',
       'bulk-1', 'bulk-2', 'bulk-3', 'bulk-4',
       'bake-1', 'bake-2',
@@ -64,9 +66,9 @@ describe('§8.2a golden sequence', () => {
   });
 
   it('retarded, nMix 2 — two complete passes', () => {
-    // 12 balls. 28 instances.
+    // 12 balls. 27 instances.
     expect(allKeys(2, 'retarded')).toEqual([
-      'biga-1', 'biga-2', 'biga-3', 'biga-4', 'biga-4b', 'biga-5', 'biga-6',
+      'biga-1', 'biga-3', 'biga-4', 'biga-4b', 'biga-5', 'biga-6',
       'mix-1#1', 'mix-2#1', 'mix-3#1', 'mix-4#1', 'mix-5#1', 'mix-6#1', 'mix-7#1',
       'mix-8#1', // changeover, BETWEEN the passes — never last
       'mix-1#2', 'mix-2#2', 'mix-3#2', 'mix-4#2', 'mix-5#2', 'mix-6#2', 'mix-7#2',
@@ -77,7 +79,7 @@ describe('§8.2a golden sequence', () => {
 
   it('classic, nMix 2 — two complete passes', () => {
     expect(allKeys(2, 'classic')).toEqual([
-      'biga-1', 'biga-2', 'biga-3', 'biga-4', 'biga-5',
+      'biga-1', 'biga-3', 'biga-4', 'biga-5',
       'mix-1#1', 'mix-2#1', 'mix-3#1', 'mix-4#1', 'mix-5#1', 'mix-6#1', 'mix-7#1',
       'mix-8#1',
       'mix-1#2', 'mix-2#2', 'mix-3#2', 'mix-4#2', 'mix-5#2', 'mix-6#2', 'mix-7#2',
@@ -88,7 +90,7 @@ describe('§8.2a golden sequence', () => {
 
   it('retarded, nMix 3 — three complete passes', () => {
     expect(allKeys(3, 'retarded')).toEqual([
-      'biga-1', 'biga-2', 'biga-3', 'biga-4', 'biga-4b', 'biga-5', 'biga-6',
+      'biga-1', 'biga-3', 'biga-4', 'biga-4b', 'biga-5', 'biga-6',
       'mix-1#1', 'mix-2#1', 'mix-3#1', 'mix-4#1', 'mix-5#1', 'mix-6#1', 'mix-7#1',
       'mix-8#1',
       'mix-1#2', 'mix-2#2', 'mix-3#2', 'mix-4#2', 'mix-5#2', 'mix-6#2', 'mix-7#2',
@@ -101,7 +103,7 @@ describe('§8.2a golden sequence', () => {
 
   it('classic, nMix 3 — three complete passes', () => {
     expect(allKeys(3, 'classic')).toEqual([
-      'biga-1', 'biga-2', 'biga-3', 'biga-4', 'biga-5',
+      'biga-1', 'biga-3', 'biga-4', 'biga-5',
       'mix-1#1', 'mix-2#1', 'mix-3#1', 'mix-4#1', 'mix-5#1', 'mix-6#1', 'mix-7#1',
       'mix-8#1',
       'mix-1#2', 'mix-2#2', 'mix-3#2', 'mix-4#2', 'mix-5#2', 'mix-6#2', 'mix-7#2',
@@ -123,7 +125,8 @@ describe('§8.2a golden sequence', () => {
     expect(counts('classic')).toEqual(published('classic'));
     // MESSAGE-32 corrected the retarded row (19 / 27 / 35 before biga-4b).
     expect(counts('retarded')).toEqual(published('retarded'));
-    expect(counts('retarded')).toEqual([20, 28, 36]);
+    expect(counts('retarded')).toEqual([19, 27, 35]);
+    expect(counts('classic')).toEqual([17, 25, 33]);
   });
 
   it('differs between schedules by exactly the fridge and temper steps', () => {

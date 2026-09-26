@@ -60,13 +60,13 @@ export const C = {
   C_BOWL_SPECIFIC_HEAT: 0.12, // stainless, cal/g·°C
   BOWL_MASS_G: 965,           // measured once on a kitchen scale. FIXED, not an input: the app supports only the Halo Core, whose bowl never changes
 
-  // Ooni Halo Core limits
+  // Ooni Halo Core limits — all from Ooni's help center, "min/max capacity and hydration limits" (§11)
   MAX_DOUGH: 2500,            // g
   MIN_DOUGH: 500,             // g
   MIN_BALLS: 3,               // smallest supported machine batch - see 4.4
   FLOUR_CAP_66: 1505,         // g, at 66%+ hydration (final mix)
   FLOUR_CAP_55: 1610,         // g, at 55-59% hydration (biga)
-  MAX_RUN_MIN: 20,            // continuous. Read by the profile assertion in §5 and bound into mix-6/mix-7 prose
+  MAX_RUN_MIN: 20,            // Ooni's published maximum continuous operating time, spiral hook. Read by the profile assertion in §5 and bound into mix-6/mix-7 prose
 
   // Oven geometry (§4.9). Thickness is referenced to DEFAULT_BALL_G on the full stone.
   TREAD_MAX_DIAMETER_IN: 12,       // Gozney Tread stone capacity
@@ -906,25 +906,11 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 ---
 
-#### `biga-2` — Dissolve the yeast
-**phase:** biga
-**summary:** {bigaWaterPerBiga} g of **room-temperature** water, {bigaADYPerBiga} g ADY. Stir to dissolve.
-**values:** Biga water: {bigaWaterPerBiga} g · ADY: {bigaADYPerBiga} g
-
-**detail:**
-> **The dose is the Giorilli standard: 1% fresh yeast = 0.30% IDY = 0.375% ADY on biga flour**, the baseline for 16–18 h at 61–65 °F (16–18 °C).
->
-> This is the dose Piergiorgio Giorilli codified, and the sources this recipe draws on repeat it — Gozney's own 100% biga recipe and Baking With Theory with that window, PizzaBlab with a wider 12–24 h at the same temperature. Go longer and you cut it; run warmer and you cut it. For a time or temperature off that baseline, use PizzaBlab's dough calculator rather than guessing.
->
-> **Room-temperature water, not warm and not cold.** Cold water damages yeast cells. There is no proofing or activation step in the classic method — you are not trying to wake the yeast up, just disperse it. At these quantities you are well clear of scale resolution, so no slurry workaround is needed either.
-**concepts:** giorilli-standard
-
----
-
 #### `biga-3` — Mix by hand to chunks
 **phase:** biga
-**summary:** Add the flour. Hand-mix 3–6 minutes with your fingers in a claw. Target gnocchi-sized chunks with no dry flour anywhere.
+**summary:** In the mixer bowl, stir {bigaADYPerBiga} g ADY into {bigaWaterPerBiga} g of **room-temperature** water until dissolved. Add the flour. Hand-mix 3–6 minutes with your fingers in a claw. Target gnocchi-sized chunks with no dry flour anywhere.
 **timer:** 3–6 min
+**values:** Biga water: {bigaWaterPerBiga} g · ADY: {bigaADYPerBiga} g
 **watchFor:** Crumbly chunks, not dough. No dry flour left anywhere.
 
 **detail:**
@@ -932,12 +918,18 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 >
 > The goal is **small-to-medium chunks, like gnocchi** — not a dough. A spiral mixer's entire purpose is building a gluten network, which is precisely what you don't want here. An over-mixed biga rises like a dough instead of fermenting like a biga, and then it doubles and misleads you about ripeness.
 >
-> Method: water and yeast **into the mixer bowl** — the biga ferments in the same bowl the final mix runs in, always. Mix to dissolve. Add flour. Make a claw with your hand and circulate your fingertips through it. **3–6 minutes, until no dry flour remains** — any dry flour never ferments. Break up large chunks by hand.
+> **Why dissolve the yeast first.** Not to wake it up — there is no proofing or activation step in the classic method. It's dispersion: a few grams of yeast have to reach every part of a stiff 50% biga that is only hand-mixed to chunks and never kneaded, and the water is the only thing that carries it there. **Room-temperature water, not warm and not cold** — cold water damages yeast cells.
+>
+> The biga goes **into the mixer bowl** because it ferments in the same bowl the final mix runs in, always. Make a claw with your hand and circulate your fingertips through it. **3–6 minutes, until no dry flour remains** — any dry flour never ferments. Break up large chunks by hand.
 >
 > Cover to prevent drying. Sources differ on venting: Gozney and Ooni say leave a gap, PizzaBlab says it serves no purpose. Either is fine; the thing that matters is that it doesn't dry out.
 >
 > *A side benefit: hand-mixing means the mixer's 500 g minimum never applies to the biga phase, so no batch is too small.*
-**concepts:** mix-dont-knead
+>
+> **The dose is the Giorilli standard: 1% fresh yeast = 0.30% IDY = 0.375% ADY on biga flour**, the baseline for 16–18 h at 61–65 °F (16–18 °C).
+>
+> This is the dose Piergiorgio Giorilli codified, and the sources this recipe draws on repeat it — Gozney's own 100% biga recipe and Baking With Theory with that window, PizzaBlab with a wider 12–24 h at the same temperature. Go longer and you cut it; run warmer and you cut it. For a time or temperature off that baseline, use PizzaBlab's dough calculator rather than guessing. At these quantities you are well clear of scale resolution, so no slurry workaround is needed.
+**concepts:** mix-dont-knead, giorilli-standard
 
 ---
 
@@ -1194,10 +1186,10 @@ The wrong form has the **same instance count, the same labels, and the same supp
 
 | | `nMix` 1 | 2 | 3 |
 |---|---:|---:|---:|
-| retarded | **20** | 28 | 36 |
-| classic | **18** | 26 | 34 |
+| retarded | **19** | 27 | 35 |
+| classic | **17** | 25 | 33 |
 
-(7 or 5 biga + 7/15/23 mix + 4 bulk + 2 bake.) Retarded gained one step when `biga-4b` split the fridge stage out of `biga-4`; it was 19 / 27 / 35 before that. The figures of 18/26/34 before *that* were the classic counts, and were correct only because the temper step did not exist. Not the count, not the labels, not "the changeover appears once" — every one of those is true of the wrong form. Where order is the meaning, order is the thing to assert, and a golden sequence is the only assertion a plausible-looking reordering cannot satisfy.
+(6 or 4 biga + 7/15/23 mix + 4 bulk + 2 bake.) Both schedules lost one step when `biga-2` (dissolve the yeast) was folded into `biga-3`; before that retarded was 20 / 28 / 36 and classic 18 / 26 / 34. **The ids are not renumbered: `biga-2` is deliberately absent.** Retarded had gained one step earlier when `biga-4b` split the fridge stage out of `biga-4`; it was 19 / 27 / 35 before that. The figures of 18/26/34 before *that* were the classic counts, and were correct only because the temper step did not exist. Not the count, not the labels, not "the changeover appears once" — every one of those is true of the wrong form. Where order is the meaning, order is the thing to assert, and a golden sequence is the only assertion a plausible-looking reordering cannot satisfy.
 
 **Keep the expansion in its own pure module.** Inside the component that renders it, no test can reach it.
 - **Checkbox and timer state key off the expanded id**, which is the whole point.
@@ -1552,6 +1544,8 @@ Link these from an About page. The recipe is built on published practice, not in
 - [PizzaBlab — Dough Calculator](https://www.pizzablab.com/calculators/pizza-dough-calculator/) — for biga yeast off the baseline time/temp
 - [Gozney — 100% Biga Pizza Dough](https://us.gozney.com/blogs/recipes/100-biga-pizza-dough-recipe) — 1% yeast, 16–18 h at 61–64 °F, hand-mixed
 - [Ooni / Marco Fuso — 100% Biga using Halo Pro](https://ooni.com/blogs/recipes/ooni-100-biga-dough-using-halo-pro) — the fridge-retarded schedule
+- [Ooni help center — Halo Core min/max capacity and hydration limits](https://ooni.com/pages/help-center?a=What-are-the-minmax-capacity-and-hydration-limits-for-Ooni-Halo-Core---id--tLwhKnlnR4G9F-kkvNO9Gw) — 0.5–2.5 kg dough, flour caps by hydration, recommended speeds, 20-minute maximum continuous operating time
+- [Ooni help center — Halo Core speed settings](https://ooni.com/pages/help-center?a=Halo-Core-Speed-Settings%3A-Percentage-to-RPM-Explained---id--J1HYTOEHRCiv1ONI2mRgqg) — 5% increments, the lit/half-lit indicator, 300 RPM at 100%. Its low-end RPM chart is wrong (§9)
 - [Stadler Made — Biga](https://www.stadlermade.com/pizza/ingredients/biga/) — warm-kitchen workaround
 - [Baking With Theory — Biga](https://www.bakingwiththeory.com/theory/biga/) — Giorilli formula: 44–45% hydration, 1% fresh yeast, short biga 16–20 h at 16–20 °C (ideally 18)
 - [Italian Pizza Secrets — Essential guide to biga](https://www.italianpizzasecrets.com/essential-guide-to-biga-for-pizza/) — Giorilli's short biga (16–18 h at 16–18 °C) and long biga

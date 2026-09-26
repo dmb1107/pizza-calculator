@@ -135,36 +135,30 @@ Weigh before you break up, not after, so anything lost to the sieve doesn't chan
     },
   },
   {
-    id: "biga-2",
-    phase: "biga",
-    title: `Dissolve the yeast`,
-    summary: `{bigaWaterPerBiga} g of **room-temperature** water, {bigaADYPerBiga} g ADY. Stir to dissolve.`,
-    values: [`Biga water: {bigaWaterPerBiga} g`, `ADY: {bigaADYPerBiga} g`],
-    detail: `**The dose is the Giorilli standard: 1% fresh yeast = 0.30% IDY = 0.375% ADY on biga flour**, the baseline for 16–18 h at 61–65 °F (16–18 °C).
-
-This is the dose Piergiorgio Giorilli codified, and the sources this recipe draws on repeat it — Gozney's own 100% biga recipe and Baking With Theory with that window, PizzaBlab with a wider 12–24 h at the same temperature. Go longer and you cut it; run warmer and you cut it. For a time or temperature off that baseline, use PizzaBlab's dough calculator rather than guessing.
-
-**Room-temperature water, not warm and not cold.** Cold water damages yeast cells. There is no proofing or activation step in the classic method — you are not trying to wake the yeast up, just disperse it. At these quantities you are well clear of scale resolution, so no slurry workaround is needed either.`,
-    concepts: ["giorilli-standard"],
-  },
-  {
     id: "biga-3",
     phase: "biga",
     title: `Mix by hand to chunks`,
-    summary: `Add the flour. Hand-mix 3–6 minutes with your fingers in a claw. Target gnocchi-sized chunks with no dry flour anywhere.`,
+    summary: `In the mixer bowl, stir {bigaADYPerBiga} g ADY into {bigaWaterPerBiga} g of **room-temperature** water until dissolved. Add the flour. Hand-mix 3–6 minutes with your fingers in a claw. Target gnocchi-sized chunks with no dry flour anywhere.`,
+    values: [`Biga water: {bigaWaterPerBiga} g`, `ADY: {bigaADYPerBiga} g`],
     timerLabel: `3–6 min`,
     timerMinutes: [3, 6],
     detail: `**Hand-mix at every batch size.** This isn't a concession for small batches — it's the method. Gozney's 100% biga recipe says to mix by hand to a dry lumpy consistency, and PizzaBlab warns specifically against forming a cohesive mass.
 
 The goal is **small-to-medium chunks, like gnocchi** — not a dough. A spiral mixer's entire purpose is building a gluten network, which is precisely what you don't want here. An over-mixed biga rises like a dough instead of fermenting like a biga, and then it doubles and misleads you about ripeness.
 
-Method: water and yeast **into the mixer bowl** — the biga ferments in the same bowl the final mix runs in, always. Mix to dissolve. Add flour. Make a claw with your hand and circulate your fingertips through it. **3–6 minutes, until no dry flour remains** — any dry flour never ferments. Break up large chunks by hand.
+**Why dissolve the yeast first.** Not to wake it up — there is no proofing or activation step in the classic method. It's dispersion: a few grams of yeast have to reach every part of a stiff 50% biga that is only hand-mixed to chunks and never kneaded, and the water is the only thing that carries it there. **Room-temperature water, not warm and not cold** — cold water damages yeast cells.
+
+The biga goes **into the mixer bowl** because it ferments in the same bowl the final mix runs in, always. Make a claw with your hand and circulate your fingertips through it. **3–6 minutes, until no dry flour remains** — any dry flour never ferments. Break up large chunks by hand.
 
 Cover to prevent drying. Sources differ on venting: Gozney and Ooni say leave a gap, PizzaBlab says it serves no purpose. Either is fine; the thing that matters is that it doesn't dry out.
 
-*A side benefit: hand-mixing means the mixer's 500 g minimum never applies to the biga phase, so no batch is too small.*`,
+*A side benefit: hand-mixing means the mixer's 500 g minimum never applies to the biga phase, so no batch is too small.*
+
+**The dose is the Giorilli standard: 1% fresh yeast = 0.30% IDY = 0.375% ADY on biga flour**, the baseline for 16–18 h at 61–65 °F (16–18 °C).
+
+This is the dose Piergiorgio Giorilli codified, and the sources this recipe draws on repeat it — Gozney's own 100% biga recipe and Baking With Theory with that window, PizzaBlab with a wider 12–24 h at the same temperature. Go longer and you cut it; run warmer and you cut it. For a time or temperature off that baseline, use PizzaBlab's dough calculator rather than guessing. At these quantities you are well clear of scale resolution, so no slurry workaround is needed.`,
     watchFor: `Crumbly chunks, not dough. No dry flour left anywhere.`,
-    concepts: ["mix-dont-knead"],
+    concepts: ["mix-dont-knead", "giorilli-standard"],
   },
   {
     id: "biga-4",

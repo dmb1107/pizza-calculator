@@ -55,7 +55,6 @@ const INSTRUCTED_BY: Record<StageKey, readonly string[]> = {
 /** Steps that deliberately instruct no stage, each with the reason. */
 const NO_STAGE: Record<string, string> = {
   'biga-1': 'making the biga — t = 0, the instant every stage is measured from',
-  'biga-2': 'making the biga — t = 0',
   'biga-3': 'making the biga — t = 0',
   'biga-5': 'the ripeness cue that ENDS fermentation: a moment, not a duration',
   'bake-2': 'the bake itself, after the timeline finishes at `temper`',
