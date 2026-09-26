@@ -32,27 +32,21 @@ const values = tokenValues(calculate(INPUTS), SCHEDULE);
 /** Every piece of bindable prose in the app. */
 function allContent(): { where: string; text: string }[] {
   const out: { where: string; text: string }[] = [];
-  for (const s of STEPS) {
-    for (const [field, text] of [
-      ['summary', s.summary],
-      ['summaryRetarded', s.summaryRetarded],
-      ['summaryClassic', s.summaryClassic],
-      ['detail', s.detail],
-      // §8.2's conditional blocks carry tokens of their own — {nBiga},
-      // {bigaFlourTotal}, {staggerUncentred} — and are rendered to the user,
-      // so they belong in every scan the unconditional detail belongs in.
-      ['detailWhen', s.detailWhen?.detail],
-      ['warningWhen', s.warningWhen?.text],
-      ['watchFor', s.watchFor],
-      ['timerLabel', s.timerLabel],
-    ] as const) {
-      if (text) out.push({ where: `${s.id}.${field}`, text });
+  // Every string a step carries, walked rather than listed — a list missed
+  // MESSAGE-31's per-track timers (timerLabelRetarded / timerLabelClassic) and
+  // every title, the same blind spot the literal gate had. Conditional blocks
+  // count: they carry tokens of their own ({nBiga}, {staggerUncentred}) and
+  // render. Only identifiers and condition expressions are skipped.
+  const walk = (where: string, value: unknown): void => {
+    if (typeof value === 'string') out.push({ where, text: value });
+    else if (Array.isArray(value)) value.forEach((v) => walk(where, v));
+    else if (value && typeof value === 'object') {
+      for (const [k, v] of Object.entries(value)) if (k !== 'condition') walk(where, v);
     }
-    for (const v of s.values ?? []) out.push({ where: `${s.id}.values`, text: v });
-    if (s.troubleshoot) {
-      for (const row of s.troubleshoot.rows) {
-        for (const cell of row) out.push({ where: `${s.id}.troubleshoot`, text: cell });
-      }
+  };
+  for (const s of STEPS) {
+    for (const [field, value] of Object.entries(s)) {
+      if (!['id', 'phase', 'shownWhen', 'concepts'].includes(field)) walk(`${s.id}.${field}`, value);
     }
   }
   for (const c of CONCEPTS) out.push({ where: `concept:${c.id}`, text: c.body });
@@ -230,6 +224,18 @@ describe('step summaries bind to real numbers', () => {
     expect(bindTokens(step('bake-1')?.summary ?? '', values)).toContain(
       '**2–3 hours** before baking — the timeline plans 2.5 h.',
     );
+  });
+
+  it('states both of bulk-3\'s rises at a split batch, rather than a subtraction', () => {
+    // MESSAGE-33: two displayed values, each rounded once from the engine.
+    // Before it, "90 min … up to 18 off" sat beside a summary of 73.
+    const block = STEPS.find((s) => s.id === 'bulk-3')!.detailWhen!.detail;
+    const at = (balls: number, finalDoughTempF?: number) =>
+      bindTokens(block, tokenValues(calculate({ ...INPUTS, balls, finalDoughTempF }), SCHEDULE));
+    // 12 balls, dough on its DDT of 74 °F: 90 per dough, 72.5 planned.
+    expect(at(12)).toContain('At 74.0 °F a single mix would rest 90 min; this batch rests 73.');
+    // 24 balls at a measured 76 °F: 71.2 per dough, held at the 45-minute floor.
+    expect(at(24, 76)).toContain('At 76.0 °F a single mix would rest 71 min; this batch rests 45.');
   });
 
   it('fills mix-4 with the probe target', () => {

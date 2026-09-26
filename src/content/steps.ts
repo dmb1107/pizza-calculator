@@ -455,7 +455,7 @@ Oil is a barrier rather than an absorbent: it stops the dough bonding to the met
 **Nothing on top of the balls.** The lid handles humidity. Oil on the upper surface becomes the cornicione surface and darkens it unevenly.`,
     detailWhen: {
       condition: "nMix > 1",
-      detail: `**This is shorter than one dough on its own would get.** At {finalDoughTemp} °F a single mix would rest {roomMin} min. The first mix has been fermenting longer than the last, so the calculator takes up to {staggerHalfMinutes} minutes off the rise to centre the difference (see *Bulk rest*), and never goes below 45 minutes.`,
+      detail: `**This is shorter than one dough on its own would get.** At {finalDoughTemp} °F a single mix would rest {roomMin} min; this batch rests {ballRoomMin}. The first mix has been fermenting longer than the last, so the calculator shortens the rise by half that spread to centre it (see *Bulk rest*), and never below 45 minutes.`,
     },
     concepts: ["oil-not-flour"],
   },

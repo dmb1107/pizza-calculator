@@ -515,7 +515,7 @@ All are per-mix and computed at the user's inputs; none is a literal.
 | Token | Value |
 |---|---|
 | `{frictionRemainingF}` | `0.33 × FF × Ct/TOT` — the friction still to come after the probe |
-| `{ballRoomMin}` | `ballRoomTemp` in minutes — the ball rise **the timeline plans**, after the stagger correction (§4.8). Equal to `{roomMin}` at `nMix = 1`. `{roomMin}` stays the per-dough figure, before the correction. ⚠️ `bulk-3` printed and timed `{roomMin}`, so every split batch ran its rise 17.5 min long at `nMix = 2` and 35 min at `nMix = 3` against the plan |
+| `{ballRoomMin}` | `ballRoomTemp` in minutes — the ball rise **the timeline plans**, after the stagger correction (§4.8). Equal to `{roomMin}` at `nMix = 1`. `{roomMin}` stays the per-dough figure, before the correction. ⚠️ `bulk-3` printed and timed `{roomMin}`, so every split batch ran its rise up to 17.5 min long at `nMix = 2` and up to 35 min at `nMix = 3` against the plan — less where the 45-minute floor held (24 balls at 76 °F: 26.2 min) |
 | `{restExchangeF}` | `|0.2 × (DDT − T_room)|` — how far the rest moves the dough toward room temperature |
 | `{probeGapPhrase}` | `"1.6 °F below DDT"` / `"0.3 °F above DDT"` / `"right at DDT"` — the magnitude of `DDT − probeTargetF`, with the direction in words. The number must equal \|printed DDT − printed target\| exactly |
 | `{phaseAPercent}` / `{phaseBPercent}` | `PHASE_A_FRACTION × 100` and its complement. **No scope suffix** — they are ratios, and the `PerMix` / `PerBiga` rule is about masses |
@@ -1293,7 +1293,7 @@ A bare token on a per-mix or per-biga step is then a **visible** error rather th
 > **Nothing on top of the balls.** The lid handles humidity. Oil on the upper surface becomes the cornicione surface and darkens it unevenly.
 
 **detail, shown only when `nMix > 1`:**
-> **This is shorter than one dough on its own would get.** At {finalDoughTemp} °F a single mix would rest {roomMin} min. The first mix has been fermenting longer than the last, so the calculator takes up to {staggerHalfMinutes} minutes off the rise to centre the difference (see *Bulk rest*), and never goes below 45 minutes.
+> **This is shorter than one dough on its own would get.** At {finalDoughTemp} °F a single mix would rest {roomMin} min; this batch rests {ballRoomMin}. The first mix has been fermenting longer than the last, so the calculator shortens the rise by half that spread to centre it (see *Bulk rest*), and never below 45 minutes.
 **concepts:** oil-not-flour
 
 ---

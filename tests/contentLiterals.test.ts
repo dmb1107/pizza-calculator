@@ -468,7 +468,7 @@ const CLAIMS: readonly Claim[] = [
   {
     at: 'bulk-3.detailWhen',
     restates: '§4.8 ROOM_MIN_CLAMP, the rise floor plannedBallRiseH holds',
-    text: `never goes below ${C.ROOM_MIN_CLAMP[0]} minutes`,
+    text: `never below ${C.ROOM_MIN_CLAMP[0]} minutes`,
     covers: [`${C.ROOM_MIN_CLAMP[0]} minutes`],
   },
   { at: 'bake-1.summary', restates: 'PLANNING_RANGE_H.temper', text: `**${span('temper')} hours** before baking`, covers: ['2–3 hours'] },
