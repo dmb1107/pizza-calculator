@@ -9,7 +9,7 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-33, Task 10's emulated audit and the speed indicator (26 September).
+MESSAGE-34, Task 10's emulated audit and the speed indicator (26 September).
 Don't trust any status here that you can check instead (§7).
 
 ---
@@ -21,9 +21,11 @@ Don't trust any status here that you can check instead (§7).
   §8.2a at 20/28/36) and added Dave's timers on the four mixer phases, making
   the timer the one source of a phase's duration. MESSAGE-33 took both of
   FINDINGS-33's notes: `bulk-3`'s block now states both rises instead of
-  inviting a subtraction. **FINDINGS-34** answers it (26 September) with
-  nothing open, so the next message, if one comes, is unprompted. No pin of
-  any kind is live.
+  inviting a subtraction. MESSAGE-34 (unprompted, Dave's asks) folded
+  `biga-2` into `biga-3` without renumbering, so **`biga-2` is absent on
+  purpose**, and sourced the Halo Core limits to Ooni's help center.
+  **FINDINGS-35** answers it (26 September) with nothing open, so the next
+  message, if one comes, is unprompted. No pin of any kind is live.
 - **Numbering, since it has stepped twice.** FINDINGS-25 went unprompted, so
   the pairs now share a number: MESSAGE-N answers FINDINGS-N, and
   FINDINGS-(N+1) answers MESSAGE-N. **There is no MESSAGE-22** (a stray draft,
@@ -164,7 +166,7 @@ true and what they need to change.
 
 | Suite | Guards | Why it exists |
 |---|---|---|
-| `steps.test.ts` | §8 prose verbatim, plus §9, §11 and §7.3's capacity messages (with §6's split hint), each re-derived by a differently shaped parser. The generator and this file parse the same grammar independently. Both refuse unknown `**marker:**` lines, a raw count of conditional markers is taken from the spec itself, and each step ends at the next `###`. Per-track `timer (retarded\|classic)` since MESSAGE-31 | Two parsers sharing one condition list dropped `bulk-2`'s capped block, and 42/42 still passed. `mix-8` used to swallow §8.2a |
+| `steps.test.ts` | §8 prose verbatim, plus §9, §11 and §7.3's capacity messages (with §6's split hint), each re-derived by a differently shaped parser. The generator and this file parse the same grammar independently. Both refuse unknown `**marker:**` lines, a raw count of conditional markers is taken from the spec itself, and each step ends at the next `###`. Per-track `timer (retarded\|classic)` since MESSAGE-31. Concepts compared as ids split from the spec line, not re-joined | Two parsers sharing one condition list dropped `bulk-2`'s capped block, and 42/42 still passed. `mix-8` used to swallow §8.2a. Re-joining split ids agreed with the spec when the generator kept a comma in `"mix-dont-knead,"` (MESSAGE-34) |
 | `contentLiterals.test.ts` | Every number in §8, §9, §11 and the capacity messages either rebuilt from the engine (`CLAIMS`) or classified (`FIXED`); `knownWrong` pins a disagreement both ways (none live); numeric copy in **every `.tsx` under `src`**, read from the syntax tree (JSX text, attributes, template text), and a classified phrase excuses only itself. **Every string a step carries**, walked rather than listed, and the timeline's stage text (`STAGE_INFO`). The planning ranges claimed against `PLANNING_RANGE_H`. Lit-segment counts are rebuilt as dial ÷ 10 independently of the formatter. A counterfactual can still be a claim: `computeThermal` at `nMix` 1 *is* the batch-total model | `mix-4` showed stale probe values for eight rounds while prose-vs-prose passed. The biga hint's typed figures hid inside a template literal, then behind a classified phrase in the same string. A list of six step fields hid the per-track timers and every title (MESSAGE-31). **It checks numbers, not sources:** a worded claim passes by construction |
 | `constants.test.ts` | Derived constants recomputed from their inputs; every constant has a **code** read (`C.X` / `BASE.X`, comments stripped) | `divideBall = 0.33`, `ADY 0.0038`. The reader check once counted the comment recording a constant's removal as a read |
 | `stepInstances.test.ts` | Golden step sequences per schedule at `nMix` 1–3, and §8.2a's published counts read from the spec. Closed condition sets: detail blocks (`nMix > 1`, `nBiga > 1`, `thickerThanDefault`) and `shownWhen`; both throw on unknown | The expansion repeated templates instead of mixes: same count, same labels, wrong procedure. A component ternary read any unknown condition as `nBiga > 1` |

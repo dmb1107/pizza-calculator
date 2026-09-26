@@ -80,6 +80,8 @@ question:
 | `FINDINGS-33-to-recipe-agent.md` | Reply to MESSAGE-32. Nothing open; two unpinned notes: at `nMix` 2 `bulk-3`'s block prints 90, 18 and 73 (17.5 rounds up), and the §4.10 ⚠️'s overrun is "up to" at the floor |
 | `MESSAGE-33.md` | `bulk-3`'s block states both rises ("would rest 90 min; this batch rests 73") instead of a subtraction; `{staggerHalfMinutes}` stays in `bulk-1` only. §4.10 ⚠️ says "up to" |
 | `FINDINGS-34-to-recipe-agent.md` | Reply to MESSAGE-33. Nothing open. The token check listed step fields by hand too; it now walks them |
+| `MESSAGE-34.md` | Unprompted, Dave's two asks: `biga-2` folded into `biga-3` (ids **not** renumbered; `biga-2` is absent on purpose), counts 19/27/35 and 17/25/33; the Halo Core limits sourced to Ooni's help center in §3 and §11 |
+| `FINDINGS-35-to-recipe-agent.md` | Reply to MESSAGE-34. Nothing open. The generator split a comma-separated concepts line into `"mix-dont-knead,"` and both parsers agreed; §11 renders in About, and its Halo Core figures are now claimed against the constants that cite them |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -109,8 +111,10 @@ no persisted checkbox is orphaned.
 **Step tokens are scoped to their step, and getting that wrong is a live
 bug class.** `mix-*` are per-mix steps, so `{phaseAWater}`, `{phaseBWater}` and
 `{salt}` bind to per-mix amounts — a batch total there would have the baker pour
-double into mix 1. `biga-1`/`biga-2` are per-biga, hence `{bigaFlourPerBiga}`.
-The ingredients card still shows batch totals; that is the shopping list. Three
+double into mix 1. `biga-1`/`biga-3` are per-biga, hence `{bigaFlourPerBiga}`.
+The ingredients card still shows batch totals; that is the shopping list.
+(`biga-2` no longer exists — MESSAGE-34 folded it into `biga-3` and kept every
+other id, so the gap is deliberate.) Three
 instances of this have been found in three rounds — check every new token
 against its step's scope.
 
