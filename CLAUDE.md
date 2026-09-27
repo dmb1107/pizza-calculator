@@ -92,6 +92,8 @@ question:
 | `FINDINGS-39-to-recipe-agent.md` | Reply to MESSAGE-38. All reproduced; nothing open. Our gate had classified the "2½" with the same misreading. Notes §4.2's remaining two-mix phrasings (not rendered) |
 | `MESSAGE-39.md` | The spec's engineering sections swept for two-mix wording (§4.2, §4.8, §6, §7.2); nothing renders. §4.8 separates correcting `CHANGEOVER` from an overrun on the day. Its first attached spec was MESSAGE-38's, byte for byte |
 | `FINDINGS-40-to-recipe-agent.md` | Reply to MESSAGE-39. All reproduced. Unprompted: the rendered gap is 0.482, not 0.392, at 6 balls per mix, where the seeded FF 14.03 applies; §5's rule and §7.2's 12-ball figures need their conditions |
+| `MESSAGE-40.md` | Accepts FINDINGS-40 §4: §5's gap rule rewritten (0.392 is the flour term; the seeded FF adds 0.090 at 6 balls per mix), §7.2 and §4.2's 12-ball figures conditioned, the recipe's example gains FF 14. Nothing renders. Its first attached files were earlier copies |
+| `FINDINGS-41-to-recipe-agent.md` | Reply to MESSAGE-40. All reproduced except §5's 59.023, which is 59.022 (our four-place 59.0225 rounded again). The DDT slip is now pinned on both bases |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here

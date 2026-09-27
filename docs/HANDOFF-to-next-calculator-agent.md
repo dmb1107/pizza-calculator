@@ -9,19 +9,17 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-39, FINDINGS-40, Task 10 and the speed indicator (27 September).
+MESSAGE-40, FINDINGS-41, Task 10 and the speed indicator (27 September).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-39, and FINDINGS-40 is the
-  last thing sent.** One item is open on their side: §5's "0.392 at every
-  batch size" and §7.2's 12-ball figures need their conditions, because the
-  seeded FF makes the rendered gap 0.482 at 6 balls per mix (FINDINGS-40 §4).
-  Neither is §8 text, so no pin is live (`knownWrong` is empty). The next
-  move is theirs: expect MESSAGE-40.
+- **The correspondence is applied through MESSAGE-40, and FINDINGS-41 is the
+  last thing sent.** One figure is open on their side: §5's 59.023 should be
+  59.022 (FINDINGS-41 §3). It isn't §8 text, so no pin is live (`knownWrong`
+  is empty). The next move is theirs: expect MESSAGE-41.
 - **What the last rounds settled**, so you don't reopen it:
   - MESSAGE-32: `bulk-3` prints `{ballRoomMin}`, the rise the timeline plans;
     Dave's timers on the four mixer phases, so **the timer is the one source
@@ -48,11 +46,14 @@ Don't trust any status here that you can check instead (§7).
     nothing renders. §4.8 now separates correcting `CHANGEOVER` (half on the
     rise, per changeover) from an overrun on the day (whole, on every dough
     mixed before it).
+  - MESSAGE-40: FINDINGS-40's gap accepted. 0.392 is the flour term; at 6
+    balls per mix the seeded FF adds `(14.03 − 14) × Ct/Cw`, so the rendered
+    gap there is 0.482. §4.2, §5 and §7.2 now name their conditions.
 - **Git state.** PRs #1, #2, #3 and #5 merged MESSAGE-30 to 38 into `main`,
   each with a merge commit. PR #4, from another session, added the pizza
   icon (`public/`) and CLAUDE.md's rule to bring `README.md` current before
-  opening a PR. Task 10's status and MESSAGE-39 sit on the session branch
-  until Dave asks for the next PR. The session branch restarts from `main` after each
+  opening a PR. Task 10's status and MESSAGE-39 and 40 sit on the session
+  branch until Dave asks for the next PR. The session branch restarts from `main` after each
   merge, so a new round starts on `main` plus nothing.
 - **Numbering, since it has stepped twice.** FINDINGS-25 went unprompted, so
   the pairs now share a number: MESSAGE-N answers FINDINGS-N, and
@@ -153,8 +154,10 @@ true and what they need to change.
    `docs/` by something outside the session. Before overwriting anything, compare
    it byte for byte with the uploaded bundle. **An empty spec diff when the
    message lists edits means the wrong file:** MESSAGE-39's first spec was
-   MESSAGE-38's, byte for byte. `sha256sum` the uploads and ask Dave to
-   re-send. In a fresh cloud container,
+   MESSAGE-38's, byte for byte, and MESSAGE-40's first spec and recipe were
+   the copies already in `docs/`. `sha256sum` the uploads against `docs/`,
+   and ask Dave to re-send. Filing the message alone meanwhile keeps the
+   tree clean. In a fresh cloud container,
    `npm ci` before anything else (§8).
 1. **Copy into `docs/`, then diff the spec and recipe against HEAD.** Read the
    message's claims against the diff. **Their numbers are usually right; their
@@ -218,7 +221,7 @@ true and what they need to change.
 | `constants.test.ts` | Derived constants recomputed from their inputs; every constant has a **code** read (`C.X` / `BASE.X`, comments stripped) | `divideBall = 0.33`, `ADY 0.0038`. The reader check once counted the comment recording a constant's removal as a read |
 | `stepInstances.test.ts` | Golden step sequences per schedule at `nMix` 1–3, and §8.2a's published counts read from the spec. Closed condition sets: detail blocks (`nMix > 1`, `nBiga > 1`, `thickerThanDefault`) and `shownWhen`; both throw on unknown | The expansion repeated templates instead of mixes: same count, same labels, wrong procedure. A component ternary read any unknown condition as `nBiga > 1` |
 | `stageSteps.test.ts` | Every timeline stage has a step rendered on its schedule, and every step maps to a stage. §7.5: each planning-point stage's step times the whole §4.7 range; the classic exception across 12–18 h; a single-number timer equals its stage's planned duration, `bulk-3` included at `nMix` 1–3 and at the 45-minute floor | `bigaTemper` had a duration and a clock time but no step. `bulk-3` timed the unshortened rise for a round: each side right alone, disagreeing |
-| `engine.test.ts` | §5 vectors and the bake-1 regression, **held to printed precision (0.005)**, not `TOL`. The rendered gap at app defaults: 0.392, or 0.482 at 6 balls per mix where the seeded FF applies, with the 12-ball cards' printed figures. Per-mix thermal weights. The panel hints' bases, measured by perturbing `calculate`. Water reachability sweep (samples 257 g for the true corner). Shaped rise **keyed by DDT**. The two biga bases, measured off `computeWaterTempF`. §4.9, §4.10 | Every rise table was keyed on dough temperature, silently assuming DDT 75 — including this suite's own vector. At `TOL.degF` = 0.1 the bake-1 pin couldn't tell 67.97 from 68.00 |
+| `engine.test.ts` | §5 vectors and the bake-1 regression, **held to printed precision (0.005)**, not `TOL`. The rendered gap at app defaults: 0.392, or 0.482 at 6 balls per mix where the seeded FF applies, with the 12-ball cards' printed figures. §4.2's per-mix DDT slip, priced at `C_bowl/Cw` on both bases. Per-mix thermal weights. The panel hints' bases, measured by perturbing `calculate`. Water reachability sweep (samples 257 g for the true corner). Shaped rise **keyed by DDT**. The two biga bases, measured off `computeWaterTempF`. §4.9, §4.10 | Every rise table was keyed on dough temperature, silently assuming DDT 75 — including this suite's own vector. At `TOL.degF` = 0.1 the bake-1 pin couldn't tell 67.97 from 68.00 |
 | `bindTokens.test.ts` | No unbound or unused token, over every string a step carries (walked, not listed, since FINDINGS-34). `{probeGapPhrase}` at below / above / right at DDT. The thicker note decided on its **printed** value | A condition decided on unrounded values printed "12.0 rather than 12" |
 | `state.test.ts` | URL and storage round-trips. The FF map keyed through `ballsPerMix`, exact-match at 6.5, the old seed replaced on load and nothing else | The map was keyed on total balls, so a 12-ball bake would have filed FF under a size no mix has |
 | `timeline.test.ts` | §4.7 durations, the stage sequence on both schedules, daylight saving. §7.4's "19 h (18–20)" on every stage, written out. The centring at `nMix` 3 (middle dough on time) and a changeover overrun landing whole on the first dough (MESSAGE-38). **Backward mode pinned to hand-written clock times** on both schedules and at `nMix` 2; exact landing on the bake across fractional durations; the overnight windows against a brute-force scan | A wrong order sums to the right total. Summing hours × 3.6e6 landed 1 ms early and printed the minute before |
@@ -269,6 +272,10 @@ The long form is the errors table in their `HANDOFF-new-context.md`. The shapes:
 - **A worded claim resting on a thin margin:** "more than three times" held
   because `Ct/Cw` is 3.0023. A formula change a few points away breaks it, and
   no gate sees words. Print the computed figure instead.
+- **A four-place figure in a finding, rounded again by its reader.** Our
+  FINDINGS-40 table printed 59.0225, and MESSAGE-40 quoted it to three
+  places as 59.023; the engine says 59.022463. Quote six places in tables
+  meant to be quoted.
 - **Rounding while reading your own scratch output.** `toFixed(1)` in a
   scratch print turned 2437.47 into "2437.5", which then went into a finding
   as "unrounded". Print scratch values with more digits than the claim needs.
