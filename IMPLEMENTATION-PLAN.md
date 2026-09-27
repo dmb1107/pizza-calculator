@@ -4,9 +4,9 @@ Derived from [`docs/WEBSITE-SPEC-biga-calculator.md`](docs/WEBSITE-SPEC-biga-cal
 Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
-**Status:** Tasks 0–9 complete, on the bowl-aware thermal model with **per-mix
+**Status:** Tasks 0–10 complete, on the bowl-aware thermal model with **per-mix
 weights**, the ice calculation removed, and **MESSAGE-38 applied**. Left: the
-phone-in-the-kitchen check (Task 10, Dave's) and the bake log (Task 11).
+bake log (Task 11).
 
 ---
 
@@ -650,7 +650,8 @@ markdown, inline. A test pins `watchFor` as markdown so it can't regress.
       the gap (7–8 o'clock), filling clockwise; half steps dimmed. Redrawn to
       match — a first reading of his photo put the gap one position
       counterclockwise, and he corrected it.
-- [ ] Check on an actual phone, in a kitchen, at arm's length — Dave.
+- [x] Check on an actual phone, in a kitchen, at arm's length. Dave called it
+      done on 27 September.
 
 ---
 

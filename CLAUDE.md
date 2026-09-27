@@ -507,9 +507,9 @@ don't inline a `toFixed` somewhere else.
 Follow spec §12. Task list and status: [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md),
 which is kept current — check its status line first.
 
-Tasks 0–9 are done (engine, state, cards, both timeline modes, steps,
-concepts, timers, reference and About drawers). Remaining: the phone check that
-finishes the deploy task, and the bake log. **Pages deploys on every push to
+Tasks 0–10 are done (engine, state, cards, both timeline modes, steps,
+concepts, timers, reference and About drawers, deploy and the phone check).
+Remaining: the bake log. **Pages deploys on every push to
 `main`** and has since 1 September — check `gh run list` (in a cloud session,
 the GitHub MCP `actions_list`) rather than any written status. A session's
 `claude/*` branch doesn't deploy; it reaches `main` through a PR that Dave

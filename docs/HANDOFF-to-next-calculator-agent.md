@@ -53,25 +53,14 @@ Don't trust any status here that you can check instead (§7).
   FINDINGS-(N+1) answers MESSAGE-N. **There is no MESSAGE-22** (a stray draft,
   superseded by 21 and deleted) and **no MESSAGE-27** (FINDINGS-27 needed no
   reply).
-- **Tasks 0–9 are done:** engine, state, cards, both timeline modes, steps,
-  concepts, timers, reference and About drawers. The plan's status line names
-  the last message applied.
+- **Tasks 0–10 are done:** engine, state, cards, both timeline modes, steps,
+  concepts, timers, reference and About drawers, and the deploy. Dave called
+  the phone-in-the-kitchen check done on 27 September. The plan's status line
+  names the last message applied.
 - **What's left:**
-  - Task 10 — only the phone-in-the-kitchen check remains, and that's Dave's.
-    The emulated audit is done (§2). Dave has an eight-item checklist:
-    - reading at arm's length
-    - taps with floury fingers
-    - typing a temperature
-    - the phone's own date pickers
-    - the timer sound on silent
-    - locking the phone and coming back
-    - screen dimming while the mixer runs
-    - a share link
-
-    He also has the speed ring to check at 15% and 20%. **Wait for his
-    results before marking Task 10 done.** If screen dimming gets in the way,
-    he's been offered an opt-in "keep screen on" switch (the Screen Wake Lock
-    API). It's not built, so ask before building it.
+  - Nothing on Task 10. Dave was offered an opt-in "keep screen on" switch
+    (the Screen Wake Lock API) in case screen dimming got in the way, and
+    didn't ask for it. It's not built, so ask before building it.
   - Task 11 — the bake log. Its `ff_measured` is `solveFrictionFactorF`, never
     `final − predicted_mix` (§10); file it under the bake's balls per mix;
     one row per mix on a split batch (§10, MESSAGE-28).
