@@ -50,11 +50,10 @@ Don't trust any status here that you can check instead (§7).
     balls per mix the seeded FF adds `(14.03 − 14) × Ct/Cw`, so the rendered
     gap there is 0.482. §4.2, §5 and §7.2 now name their conditions.
     MESSAGE-41 corrected its 59.023 to 59.022.
-- **Git state.** PRs #1, #2, #3 and #5 merged MESSAGE-30 to 38 into `main`,
-  each with a merge commit. PR #4, from another session, added the pizza
-  icon (`public/`) and CLAUDE.md's rule to bring `README.md` current before
-  opening a PR. Task 10's status and MESSAGE-39 to 41 sit on the session
-  branch until Dave asks for the next PR. The session branch restarts from `main` after each
+- **Git state.** PRs #1, #2, #3, #5 and #6 merged MESSAGE-30 to 41 and
+  Task 10's status into `main`, each with a merge commit. PR #4, from
+  another session, added the pizza icon (`public/`) and CLAUDE.md's rule to
+  bring `README.md` current before opening a PR. The session branch restarts from `main` after each
   merge, so a new round starts on `main` plus nothing.
 - **Numbering, since it has stepped twice.** FINDINGS-25 went unprompted, so
   the pairs now share a number: MESSAGE-N answers FINDINGS-N, and
