@@ -1046,6 +1046,27 @@ describe('§5 the app-default flour offset', () => {
       cards(calculate({ ...vectorInputs(12, 265), flourTempF: VECTOR_CONDITIONS.tRoomF, frictionFactorF: ff12 })),
     ).toEqual(['64.3', '59.0']);
   });
+
+  it('prices the per-mix DDT slip at the bowl coefficient, on either basis', () => {
+    // §4.2: the warm-bowl prefill takes the BATCH DDT, 74 at 12 balls. The ≤6
+    // rule applied per mix would make it 75. Only the prefill moves, so mix 2
+    // shifts by C_bowl/Cw: 59.5 → 59.2 at the vector conditions, and 59.0 →
+    // 58.7 at app defaults (MESSAGE-40).
+    const ff12 = effectiveFriction(DEFAULT_CALIBRATION, ballsPerMix({ balls: 12, ballWeightG: 265 })).ff;
+    const slipped = defaultDdtF(12 / 2);
+    expect([defaultDdtF(12), slipped]).toEqual([74, 75]);
+    for (const [basis, inputs, before, after] of [
+      ['vector', vectorInputs(12, 265), '59.5', '59.2'],
+      ['app defaults', { ...vectorInputs(12, 265), flourTempF: VECTOR_CONDITIONS.tRoomF, frictionFactorF: ff12 }, '59.0', '58.7'],
+    ] as const) {
+      const batch = calculate(inputs).mixes[1]!;
+      const perMix = calculate({ ...inputs, bowlTempF: [null, slipped] }).mixes[1]!;
+      expect(batch.bowlTempF, `${basis}: warm prefill`).toBe(defaultDdtF(12));
+      expect([formatTempF(batch.waterTempF), formatTempF(perMix.waterTempF)], basis).toEqual([before, after]);
+      const t = calculate(inputs).thermal;
+      within(batch.waterTempF - perMix.waterTempF, t.cBowl / t.cFreshWater, 1e-9, `${basis}: shift is C_bowl/Cw`);
+    }
+  });
 });
 
 describe('§4.5 capacity', () => {

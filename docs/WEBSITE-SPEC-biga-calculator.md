@@ -184,7 +184,7 @@ Keep `T_biga` as the default value so nothing silently moves, but label the fiel
 
 ⚠️ **`DDT` is the one quantity that did not go per-mix**, and that asymmetry is easy to lose now that everything around it did. It is 75 at ≤6 **total** balls and 74 at 7 or more, because the band is about how fast the *bulk mass* sheds heat and the doughs are bulked together (settled in MESSAGE-4 §11).
 
-A 12-ball batch therefore has `DDT` 74, even though it runs as two 6-ball mixes and a lone 6-ball batch would get 75. Applying the ≤6 rule to the per-mix ball count is the natural slip, and it is silent: at 12 balls it moves the warm-bowl prefill from 74 to 75 and the mix-2 water target from **59.5 to 59.2 °F** — small enough to look like rounding.
+A 12-ball batch therefore has `DDT` 74, even though it runs as two 6-ball mixes and a lone 6-ball batch would get 75. Applying the ≤6 rule to the per-mix ball count is the natural slip, and it is silent: at 12 balls it moves the warm-bowl prefill from 74 to 75 and the mix-2 water target from **59.5 to 59.2 °F** at the §5 vector conditions (59.0 to 58.7 at app defaults) — small enough to look like rounding.
 
 **Use the batch `DDT` for:** the target itself, the probe formula's `0.2 × (DDT − T_room)` term, and the *warm* bowl-state prefill. There is no per-mix `DDT` anywhere in this model.
 
@@ -208,7 +208,7 @@ The prefill is a starting point and the field stays editable — a measurement a
 - **Thermally exactly neutral.** The residue is already at `DDT`, so it contributes its own share to both sides of the balance. Required water is unchanged to the decimal at 0 g, 30 g or 60 g of carry-over.
 - **The yield cancels, because the doughs are bulked together.** Residue transfers forward — each mix loses some to the next — and every mix lands in the same tub. Only what stays in the bowl after the *final* mix is a real loss, which is what the 2.2% overage has always covered. ⚠️ This cancellation depends on combining the doughs; if that ever changes, mix 1 can run short of its ball count at 50 g of carry-over.
 
-Spread across the three modes, at the 265 g default:
+Spread across the three modes, at 265 g and the §5 vector conditions (FF 14, biga 58, room 70, flour 69). At app defaults every cell is lower: by 0.392 °F in the 3, 9 and 18 rows and by 0.482 °F in the 6 and 12 rows, for the reason given in §5:
 
 | Batch | Cold (58) | Room (70) | Warm (DDT) |
 |---|---:|---:|---:|
@@ -563,7 +563,11 @@ Splits are unchanged: `nBiga` = 1 except 18 balls (2); `nMix` = 1 except 12 and 
 
 `T_flour` is pinned at **69 °F** in the vectors while the app defaults it to *"same as room"* = **70 °F**. That is deliberate on both sides: 69 makes the flour term independently observable, so a bug swapping `Cf` and `Cs` fails a test instead of hiding, while 70 is what a bag of flour sitting in the kitchen actually is.
 
-The consequence is that **every water target renders 0.392 °F below its vector value at app defaults** — the same figure at every batch size and every `nMix`, because `Cf/Cw` is scale-invariant. Small enough to read as rounding, which is what makes it worth stating: a 12-ball mix-2 target is 59.505 at vector conditions and 59.113 in the app, and both are correct.
+The consequence is that **the flour default puts every water target 0.392 °F below its vector value** — the same figure at every batch size and every `nMix`, because `Cf/Cw` is scale-invariant.
+
+**That is the whole gap only where FF falls back to 14.0.** The vectors run at FF 14. At 6 balls per mix the app reads bake 1's seeded 14.03 instead (§6, Panel 3), which lowers the target by a further `(14.03 − 14) × Ct/Cw` = 0.090 °F — the same at every 6-ball mix, since `Ct/Cw` (3.0023) is also a dough-only ratio. With only the seed in the calibration map, 3–24 balls × 240–300 g therefore has exactly two gaps: **0.392**, and **0.482 on every 6-ball mix** — 6 and 12 balls at every weight, and 18 balls from 272 g, which runs as three 6-ball mixes. The default page, 6 × 265 g, is one of them. Every FF the baker records adds a gap of its own at that mix size, so derive this term from the stored map, never as a constant 0.090.
+
+Small enough to read as rounding, which is what makes it worth stating. A 12-ball mix-2 target is 59.505 at vector conditions, 59.113 at flour 70 with FF 14, and 59.023 at app defaults, which prints **59.0**. All three are correct under their own conditions. ⚠️ An earlier version called 0.392 the gap "at every batch size and every `nMix`" and 59.113 the app's figure. Both left out the seeded FF, which applies on the default page itself.
 
 **Derive it; do not hardcode 0.392.** It is a ratio of formula constants with no `F` in it, so the per-mix division cancels top and bottom:
 
@@ -755,7 +759,7 @@ Two columns, **Biga** and **Final mix**, gram weights large enough to read at ar
 
 Nothing else. No split, no grams, no ice, and no commentary about whether the number is warm or cold — the user reads the number and blends to it.
 
-**When `nMix > 1`, render one card per mix.** They are genuinely different numbers, not a repeat: mix 2 starts in a bowl that just ran mix 1, so at 12 balls the targets are 64.8 °F and 59.5 °F on the default prefills. Label them by mix: "Mix 1", "Mix 2", and "Mix 3" at three mixes. Each card stays bare — the reason lives in `mix-8`, not on the card.
+**When `nMix > 1`, render one card per mix.** They are genuinely different numbers, not a repeat: mix 2 starts in a bowl that just ran mix 1, so at 12 × 265 g the targets are 64.3 °F and 59.0 °F at app defaults (64.8 °F and 59.5 °F at the §5 vector conditions), both on the default bowl prefills. Label them by mix: "Mix 1", "Mix 2", and "Mix 3" at three mixes. Each card stays bare — the reason lives in `mix-8`, not on the card.
 
 Cards after the first recompute from that mix's own biga and bowl readings (§6, per-mix overrides), so the number updates as the user enters what they measured.
 

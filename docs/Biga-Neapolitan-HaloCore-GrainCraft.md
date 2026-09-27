@@ -327,7 +327,7 @@ The table is keyed on mix size: 12 balls runs as two 6-ball mixes and reads the 
 
 **Why "upper bound", and why measure.** The bowl can't come off a mix warmer than the dough it held, so DDT bounds it, provided that mix finished at or below DDT. How far it cools toward the room during the 5-minute changeover has never been measured, and in a cold kitchen the room is further away. Read it before every mix after the first (below), and log it on the first split bake.
 
-At 12 balls that's a 5.3 °F spread in the water target between mix 1 and mix 2 (64.8 °F then 59.5 °F, with biga 58 °F, flour 69, room 70), enough to matter.
+At 12 balls that's a 5.3 °F spread in the water target between mix 1 and mix 2 (64.8 °F then 59.5 °F, with biga 58 °F, flour 69, room 70, FF 14), enough to matter.
 
 **Rinsing sets the bowl.** The bowl is thin stainless, and running water brings it to roughly the rinse temperature within a minute. If a later mix's target comes out awkward, set the bowl deliberately rather than chasing it with the water.
 
