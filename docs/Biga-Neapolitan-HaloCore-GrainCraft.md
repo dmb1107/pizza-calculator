@@ -325,13 +325,13 @@ The table is keyed on mix size: 12 balls runs as two 6-ball mixes and reads the 
 | **Room temperature** | room temperature | Bowl washed and left out; a second biga fermented elsewhere |
 | **Warm from the previous mix** | DDT | Mix 2 onward: *an upper bound; measure it* |
 
-**Why "upper bound", and why measure.** The bowl can't come off mix 1 warmer than the dough it held, so DDT bounds it, provided mix 1 finished at or below DDT. How far it cools toward the room during the 5-minute changeover has never been measured, and in a cold kitchen the room is further away. Read it before mix 2 (below), and log it on the first split bake.
+**Why "upper bound", and why measure.** The bowl can't come off a mix warmer than the dough it held, so DDT bounds it, provided that mix finished at or below DDT. How far it cools toward the room during the 5-minute changeover has never been measured, and in a cold kitchen the room is further away. Read it before every mix after the first (below), and log it on the first split bake.
 
 At 12 balls that's a 5.3 °F spread in the water target between mix 1 and mix 2 (64.8 °F then 59.5 °F, with biga 58 °F, flour 69, room 70), enough to matter.
 
-**Rinsing sets the bowl.** The bowl is thin stainless, and running water brings it to roughly the rinse temperature within a minute. If mix 2's target comes out awkward, set the bowl deliberately rather than chasing it with the water.
+**Rinsing sets the bowl.** The bowl is thin stainless, and running water brings it to roughly the rinse temperature within a minute. If a later mix's target comes out awkward, set the bowl deliberately rather than chasing it with the water.
 
-**Re-measure both the bowl and the biga before mix 2.** Both drift while mix 1 runs, the bowl toward DDT and the waiting biga toward room temperature, and both pull the water target the same way. **The biga is the bigger term:** −1.59 °F of water per °F of biga, against −0.33 for the bowl. Neither drift is modelled, and without data for it neither should be. Two readings, thirty seconds, then recompute.
+**Re-measure both the bowl and the biga before every mix after the first.** Both drift while the previous mix runs, the bowl toward DDT and the waiting biga toward room temperature, and both pull the water target the same way. **The biga is the bigger term:** −1.59 °F of water per °F of biga, against −0.33 for the bowl at a 6-ball mix. The bowl's figure shrinks as the mix grows (−0.22 at a 9-ball mix) and stays well under the biga's in every split batch. Neither drift is modelled, and without data for it neither should be. Two readings, thirty seconds, then recompute.
 
 ⚠️ **−1.59 here and −1.9 in §5's temper section are both right.** They answer different questions, depending on whether the bowl moves with the biga. During the temper it does, since biga and bowl warm together in the same vessel, so the coefficient is `(Cb + C_bowl)/Cw`, which runs from 2.25 at a 3-ball mix down to 1.81 at the largest. Between mixes you measure the bowl separately, so the coefficient is `Cb/Cw` alone: **1.59, the same at every batch size**, because it's a dough-only ratio.
 
@@ -439,18 +439,18 @@ Those are the defaults. Everything except the cold ferment is fixed overhead: **
 
 The 36 h end comes to ~64 h in total, with every number still inside published guidance. Start at **24 h cold (~52 h total)** and work up.
 
-**A split batch has 28.1 h of overhead**, not 27.8. The second mix and changeover add 0.58 h, and the stagger correction below takes 0.29 h back off the ball rise, so the net is +0.29 h. Three mixes (19 balls and up at 265 g) come to 28.4 h. The 5-minute changeover assumes the bowl isn't cleaned and every mix is weighed out before the first one starts.
+**A two-mix batch (10–18 balls at 265 g) has 28.1 h of overhead**, not 27.8. The second mix and changeover add 0.58 h, and the stagger correction below takes 0.29 h back off the ball rise, so the net is +0.29 h. A third mix adds the same again: three mixes (19 balls and up) come to 28.4 h. The 5-minute changeover assumes the bowl isn't cleaned and every mix is weighed out before the first one starts.
 
-### Split batches run on one clock, and one dough is ahead of it
+### Split batches run on one clock, and the earlier doughs are ahead of it
 
-Both doughs go into **one bulk container**, so the batch cools as a single mass, which is why `DDT` stays keyed to total balls (74 at 12, not the 75 a lone 6-ball mix would get). The cost is in the schedule.
+Every mix goes into **one bulk container**, so the batch cools as a single mass, which is why `DDT` stays keyed to total balls (74 at 12, not the 75 a lone 6-ball mix would get). The cost is in the schedule.
 
-**Mix 1's dough finishes 35 minutes before mix 2's.** Once they're in the same tub they can't be told apart, so the halves can't have separate clocks.
+**Each mix finishes 35 minutes after the one before it**: the 30 minutes the schedule allows for a mix, plus the 5-minute changeover. That gap is the stagger. At two mixes the first dough is 35 minutes ahead of the last; at three it's 70. Once the doughs are in the same tub they can't be told apart, so they can't have separate clocks.
 
-- **Clock the bulk rest from the second mix.** It's the only starting point that gives mix 2 any bulk at all. Mix 1's half runs long by design.
-- **Then take 17½ minutes off the ball room-temperature rise**, half the stagger. At 12 or 18 balls that turns a 90-minute rise into **72½**.
+- **Clock the bulk rest from the last mix.** It's the only starting point that gives the last dough any bulk at all. The earlier doughs run long by design.
+- **Then take half the stagger off the ball room-temperature rise**: 17½ minutes at two mixes, 35 at three. For a dough on target, that turns the 90-minute rise into **72½** at two mixes and **55** at three.
 
-⚠️ **This splits the error rather than removing it.** Before the correction, mix 1's half is 35 minutes over and mix 2's exactly on time; after it, they're +17½ and −17½. One clock can't do better, and halving the worst case is worth twenty seconds of arithmetic.
+⚠️ **This splits the error rather than removing it.** Before the correction, the first dough is the whole stagger over and the last exactly on time. After it, the first and last sit half the stagger either side: +17½ and −17½ at two mixes, +35 and −35 at three, with the middle dough on time. One clock can't do better, and halving the worst case is worth twenty seconds of arithmetic.
 
 ⚠️ **On a warm dough it may not split the error at all.** The ball rise has a 45-minute floor, so when the dough is warm enough that the computed rise is already near it, there's nothing left to subtract. At a 74 °F DDT a 77 °F dough computes a 62-minute rise, which clamps at 45 after a two-mix correction and stays at 45 after a three-mix one, leaving 18 minutes uncorrected. That hurts most where fermentation is fastest, in a warm dough. Don't override the floor for it; the levers are upstream: a batch size that needs fewer mixes, or a cooler dough.
 
@@ -458,10 +458,10 @@ The correction is derived, not measured. It assumes fermentation during bulk and
 
 **Don't clean the bowl between mixes.** It costs changeover time and gains nothing:
 
-- **The residue doesn't change the heat balance.** It's already at DDT, so the required water for mix 2 is identical at 0 g, 30 g or 60 g of carry-over: exactly, not approximately.
-- **The yield evens out.** Residue carries forward: mix 1 loses it, mix 2 gains it, and both end up in the same tub. Only what stays in the bowl after the *last* mix is lost, and the 2.2% overage covers that.
+- **The residue doesn't change the heat balance.** It's already at DDT, so the required water for the next mix is identical at 0 g, 30 g or 60 g of carry-over: exactly, not approximately.
+- **The yield evens out.** Residue carries forward: each mix loses some to the next, and every mix ends up in the same tub. Only what stays in the bowl after the *last* mix is lost, and the 2.2% overage covers that.
 
-Rinsing is still available: thin stainless reaches roughly the rinse temperature in under a minute, so you can set the bowl deliberately if mix 2's water target comes out awkward. It just isn't worth doing by default.
+Rinsing is still available: thin stainless reaches roughly the rinse temperature in under a minute, so you can set the bowl deliberately if a later mix's water target comes out awkward. It just isn't worth doing by default.
 
 ### Alternative: classic room-temperature biga
 
@@ -719,14 +719,16 @@ SCHEDULE (Ooni/Fuso): biga 2h RT + 18-20h fridge -> 1h temper -> mix
        -> bulk 1h -> ball -> RT per dough temp -> 6-36h fridge -> 2-3h temper.
        Fixed overhead outside the cold ferment = 27.8 h at defaults, so
        TOTAL = coldFerment + ~28 h:  ~34 h @6  ~52 h @24  ~64 h @36.
-       SPLIT BATCH (12, 18) = 28.1 h overhead (3 mixes = 28.4). Bulk clocks
-       from the LAST mix; then cut 17.5 min off the ball rise (90 -> 72.5).
-       Mix 1 is 35 min ahead and one container can't run two clocks, so this
-       SPLITS the error between the doughs. On a warm dough the 45-min
-       rise floor eats the correction - accept it, fix upstream.
+       SPLIT BATCH: 2 mixes (10-18 balls) = 28.1 h overhead, 3 mixes
+       (19-24) = 28.4 h. Each mix ends 35 min after the one before, and one
+       container can't run separate clocks. Bulk clocks from the LAST mix;
+       then cut HALF the stagger off the ball rise: 2 mixes 17.5 min
+       (90 -> 72.5), 3 mixes 35 min (90 -> 55). This SPLITS the error
+       between the doughs. On a warm dough the 45-min rise floor eats the
+       correction - accept it, fix upstream.
        DON'T clean the bowl between mixes: residue is at DDT, so it doesn't
-       change the heat balance, and the yield evens out since both doughs
-       bulk together. Pre-weigh mix 2 before starting mix 1.
+       change the heat balance, and the yield evens out since every mix
+       bulks together. Pre-weigh EVERY mix before starting mix 1.
        Classic alt: biga 16-18h @ 61-65F, then short proof (~24-30 h).
 
 WATER TEMP (includes the bowl; no fixed multiplier works)
@@ -736,8 +738,9 @@ WATER TEMP (includes the bowl; no fixed multiplier works)
   BOWL STATE: cold (=T_biga) / room (=T_room) / warm from last mix (=DDT,
   an UPPER BOUND - how far it cools in the changeover is unmeasured).
   SPLIT BATCHES: Ct is PER-MIX, not per-batch. 12 balls = a 6-ball system
-  twice. Batch-total Ct lands the water 2.6 F low (12bl, biga 58). Two mixes = two water
-  temps (12bl: 64.8 then 59.5). Re-measure biga AND bowl before mix 2.
+  twice. Batch-total Ct lands the water 2.6 F low (12bl, biga 58). One water temp
+  PER MIX (12bl: 64.8 then 59.5). Re-measure biga AND bowl before each
+  mix after the first.
   Rinse the bowl to set it - faster than chasing it with the water.
   T_water = [ DDT x (Ct+C_bowl) - FF x Ct - Cb.Tbiga - Cf.Tflour
               - Cs.Troom - C_bowl.Tbowl ] / Cw

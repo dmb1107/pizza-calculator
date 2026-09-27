@@ -843,9 +843,11 @@ const FIXED: Record<Loc, readonly string[]> = {
 
   // Bake 1, 21 Aug 2026: the pull reading is logged but not a vector.
   'mix-1.detail': ['1', '53 °F'],
-  // Half of an illustrative 5-minute overrun; the §4.7 centring that halves
-  // the stagger is asserted in timeline.test.ts ('subtracts half the stagger').
-  'mix-1.detailWhen': ['2'],
+  // mix-1's nMix > 1 block has no digit since MESSAGE-38. Its "2½" sat here as
+  // half of a 5-minute overrun, which was wrong: the rise cut is half the
+  // PLANNED stagger, so an overrun lands whole on the first dough. The words
+  // "five minutes adds five minutes" are outside this gate; timeline.test.ts
+  // ('lands a changeover overrun whole on the first dough') checks them.
 
   // Procedure: the three bassinage additions, the published Neapolitan salt
   // range, and a loose "20 hours" of biga time. "Bake 1" is the bake's number

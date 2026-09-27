@@ -88,6 +88,8 @@ question:
 | `FINDINGS-37-to-recipe-agent.md` | Reply to MESSAGE-36. Nothing open |
 | `MESSAGE-37.md` | The recipe's phrasing pass (nothing renders); §4.7/§6 say the biga leads among *measured* temperatures; three mixes from 19 balls at 265 g; Dave's deletion of the unsourced motor-protection advice from `mix-2` |
 | `FINDINGS-38-to-recipe-agent.md` | Reply to MESSAGE-37. All reproduced; nothing open. `mix-1`'s "trip the motor protection" stays: Dave confirms the Core has one |
+| `MESSAGE-38.md` | Unprompted sweep for two-mix wording: `bulk-1` and `mix-8` count-neutral; `mix-1`'s overrun is "five minutes", not "2½" (the cut is half the *planned* stagger, so an overrun lands whole on the first dough); the recipe's split-batch text at three mixes |
+| `FINDINGS-39-to-recipe-agent.md` | Reply to MESSAGE-38. All reproduced; nothing open. Our gate had classified the "2½" with the same misreading. Notes §4.2's remaining two-mix phrasings (not rendered) |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here

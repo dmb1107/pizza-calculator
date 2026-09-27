@@ -146,8 +146,9 @@ const BASE = {
   /**
    * §4.7. Hours between the end of one mix and the start of the next on a split
    * batch. Dave's estimate of his own workflow, NOT a measurement, and it
-   * assumes mix 2 is weighed out before mix 1 starts (§8 mix-1). Time it on the
-   * first split bake: every 5 min here moves the rise correction by 2.5 min.
+   * assumes every mix is weighed out before the first starts (§8 mix-1). Time
+   * it on the first split bake: every 5 min here moves the rise correction by
+   * 2.5 min per changeover.
    */
   CHANGEOVER_H: 5 / 60,
 

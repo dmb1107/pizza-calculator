@@ -229,9 +229,9 @@ describe('§4.7 stage durations', () => {
     });
 
     it('subtracts half the stagger from the ball rise, centring the error', () => {
-      // ⚠️ This CENTRES the spread rather than removing it: mix 1's half goes
-      // from +35 to +17.5 min and mix 2's from 0 to −17.5. One clock cannot do
-      // better, and halving the worst case is the whole gain.
+      // ⚠️ This CENTRES the spread rather than removing it: at nMix 2 the first
+      // dough goes from +35 to +17.5 min and the second from 0 to −17.5. One
+      // clock cannot do better, and halving the worst case is the whole gain.
       const one = stageDurations('retarded', { ...DEFAULTS, ballRoomTempH: 1.5 });
       const two = stageDurations('retarded', { ...DEFAULTS, ballRoomTempH: 1.5, nMix: 2 });
       expect(one.ballRoomTemp * 60).toBeCloseTo(90, 1);
@@ -241,6 +241,58 @@ describe('§4.7 stage durations', () => {
         (mixStaggerH(2) / 2) * 60,
         1,
       );
+    });
+
+    // Each dough's error against a uniform batch: its lead on the last mix,
+    // less the cut. Both read off `stageDurations`, so neither is transcribed.
+    const cutMin = (nMix: number) =>
+      (stageDurations('retarded', DEFAULTS).ballRoomTemp -
+        stageDurations('retarded', { ...DEFAULTS, nMix }).ballRoomTemp) *
+      60;
+    // One mix plus one changeover on the planning basis: 35 min.
+    const planStepMin =
+      (stageDurations('retarded', { ...DEFAULTS, nMix: 2 }).mix -
+        stageDurations('retarded', DEFAULTS).mix) *
+      60;
+    const doughErrorsMin = (nMix: number, changeoverMin = C.CHANGEOVER_H * 60) =>
+      Array.from(
+        { length: nMix },
+        (_, i) => (nMix - 1 - i) * (planStepMin - C.CHANGEOVER_H * 60 + changeoverMin) - cutMin(nMix),
+      );
+
+    it('centres the error at nMix 3, with the middle dough on time', () => {
+      // MESSAGE-38. The cut is half the stagger at any nMix: 35 min at 3,
+      // taking the 90-minute rise to 55. bulk-1's "the first and last end up
+      // about {staggerHalfMinutes} minutes off in opposite directions" rests
+      // on the middle dough's 0.
+      expect(stageDurations('retarded', { ...DEFAULTS, nMix: 3 }).ballRoomTemp * 60).toBeCloseTo(55, 6);
+      const [first, middle, last] = doughErrorsMin(3);
+      expect(first).toBeCloseTo(35, 6);
+      expect(middle).toBeCloseTo(0, 6);
+      expect(last).toBeCloseTo(-35, 6);
+      const [first2, last2] = doughErrorsMin(2);
+      expect(first2).toBeCloseTo(17.5, 6);
+      expect(last2).toBeCloseTo(-17.5, 6);
+    });
+
+    it('lands a changeover overrun whole on the first dough', () => {
+      // MESSAGE-38, mix-1: "every extra five minutes adds five minutes of
+      // fermentation to the first dough". The bulk clocks from the last mix,
+      // and the cut comes from the PLANNED stagger — nothing in the schedule
+      // reads the changeover the baker actually ran — so an overrun is never
+      // halved. The "2½" this replaced halved it.
+      const [first, last] = doughErrorsMin(2, 10);
+      expect(first, 'two mixes, a 10-minute changeover').toBeCloseTo(22.5, 6);
+      expect(last).toBeCloseTo(-17.5, 6);
+
+      // Three mixes, against plan: each changeover's overrun adds to every
+      // dough ahead of it.
+      const againstPlan = (changeoverMin: number) => {
+        const plan = doughErrorsMin(3);
+        return doughErrorsMin(3, changeoverMin).map((e, i) => e - plan[i]!);
+      };
+      againstPlan(10).forEach((e, i) => expect(e, `10-min changeovers, dough ${i + 1}`).toBeCloseTo([10, 5, 0][i]!, 6));
+      againstPlan(15).forEach((e, i) => expect(e, `15-min changeovers, dough ${i + 1}`).toBeCloseTo([20, 10, 0][i]!, 6));
     });
 
     it('still clamps the ball rise after the stagger correction', () => {
