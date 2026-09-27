@@ -383,6 +383,8 @@ src/lib/          pure calculation — no UI imports, this is what gets unit-tes
 src/content/      step and concept prose (steps.ts, concepts.ts)
 src/components/   React components
 src/state/        URL + localStorage persistence
+public/           icon.svg (browser tab, rounded) and apple-touch-icon.png
+                  (iOS home screen, 180 px, full-bleed square: iOS rounds it)
 tests/            vitest suites; vectors.ts holds the spec §5 acceptance data
 docs/             the spec, its source recipe, and the correspondence
                   that settled the revisions
