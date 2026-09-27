@@ -9,7 +9,7 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-37, FINDINGS-38, Task 10's emulated audit and the speed indicator
+MESSAGE-38, FINDINGS-39, Task 10's emulated audit and the speed indicator
 (27 September).
 Don't trust any status here that you can check instead (§7).
 
@@ -17,9 +17,9 @@ Don't trust any status here that you can check instead (§7).
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-37, and FINDINGS-38 is the
+- **The correspondence is applied through MESSAGE-38, and FINDINGS-39 is the
   last thing sent.** Nothing is open on either side and no pin of any kind is
-  live (`knownWrong` is empty). The next move is theirs: expect MESSAGE-38,
+  live (`knownWrong` is empty). The next move is theirs: expect MESSAGE-39,
   or an unprompted message carrying one of Dave's asks.
 - **What the last rounds settled**, so you don't reopen it:
   - MESSAGE-32: `bulk-3` prints `{ballRoomMin}`, the rise the timeline plans;
@@ -37,8 +37,15 @@ Don't trust any status here that you can check instead (§7).
   - MESSAGE-37: the recipe's phrasing pass; `mix-2`'s unsourced
     motor-protection advice deleted. `mix-1`'s "trip the motor protection"
     stays: Dave confirms the Core has one. Don't raise it again.
+  - MESSAGE-38: split-batch wording made count-neutral, since 19–24 balls
+    run as three mixes at 265 g. `mix-1`'s overrun is "five minutes" for
+    every extra five: the cut is half the *planned* stagger, so an overrun
+    lands whole on the first dough. Our gate had filed the old "2½" as half
+    an overrun, the same misreading. §4.2's two-mix phrasings and §4.8's
+    12-ball text stay as they are (FINDINGS-39 §4).
 - **Git state.** PRs #1, #2 and #3 merged MESSAGE-30 to 37 into `main`, each
-  with a merge commit. The session branch restarts from `main` after each
+  with a merge commit. MESSAGE-38 sits on the session branch until Dave asks
+  for its PR. The session branch restarts from `main` after each
   merge, so a new round starts on `main` plus nothing.
 - **Numbering, since it has stepped twice.** FINDINGS-25 went unprompted, so
   the pairs now share a number: MESSAGE-N answers FINDINGS-N, and
@@ -215,7 +222,7 @@ true and what they need to change.
 | `engine.test.ts` | §5 vectors and the bake-1 regression, **held to printed precision (0.005)**, not `TOL`. Per-mix thermal weights. The panel hints' bases, measured by perturbing `calculate`. Water reachability sweep (samples 257 g for the true corner). Shaped rise **keyed by DDT**. The two biga bases, measured off `computeWaterTempF`. §4.9, §4.10 | Every rise table was keyed on dough temperature, silently assuming DDT 75 — including this suite's own vector. At `TOL.degF` = 0.1 the bake-1 pin couldn't tell 67.97 from 68.00 |
 | `bindTokens.test.ts` | No unbound or unused token, over every string a step carries (walked, not listed, since FINDINGS-34). `{probeGapPhrase}` at below / above / right at DDT. The thicker note decided on its **printed** value | A condition decided on unrounded values printed "12.0 rather than 12" |
 | `state.test.ts` | URL and storage round-trips. The FF map keyed through `ballsPerMix`, exact-match at 6.5, the old seed replaced on load and nothing else | The map was keyed on total balls, so a 12-ball bake would have filed FF under a size no mix has |
-| `timeline.test.ts` | §4.7 durations, the stage sequence on both schedules, daylight saving. §7.4's "19 h (18–20)" on every stage, written out. **Backward mode pinned to hand-written clock times** on both schedules and at `nMix` 2; exact landing on the bake across fractional durations; the overnight windows against a brute-force scan | A wrong order sums to the right total. Summing hours × 3.6e6 landed 1 ms early and printed the minute before |
+| `timeline.test.ts` | §4.7 durations, the stage sequence on both schedules, daylight saving. §7.4's "19 h (18–20)" on every stage, written out. The centring at `nMix` 3 (middle dough on time) and a changeover overrun landing whole on the first dough (MESSAGE-38). **Backward mode pinned to hand-written clock times** on both schedules and at `nMix` 2; exact landing on the bake across fractional durations; the overnight windows against a brute-force scan | A wrong order sums to the right total. Summing hours × 3.6e6 landed 1 ms early and printed the minute before |
 | `capacity.test.ts` | §7.3: which capacity message fires and when, its bound wording, the binding-limit guards (flour cap never first for a mix, always first for the biga), the below-minimum guard silent across the range, decisions on the **printed** per-mix dough, the near-limit ball list across 240–300 g. §7.5 segment states (lit / dim / off), and the chip's smaller line for every speed step | The spec says conditions are decided on displayed values; 2374.96 g prints 2375.0 and must fire. **The ball list can't see the 5%**: it holds for any threshold from 94.03% to 98.11%, so the edge test is what pins the threshold |
 | `recipeText.test.ts` | Copy-as-text, and the dough total rounded once (2501.9 at 9 × 272 g, never the 2501.7 its rounded parts sum to) | The gate doesn't read `recipeText.ts` |
 | `timers.test.ts` | Timer state derived from an absolute start and `now`, windows as earliest → latest. Every step's timer, resolved per schedule and bound with the real token table, parses as a duration. The generator's `timerMinutes` and the runtime parser agree on every fixed label (seconds included) | `biga-4` said "per schedule" and had no timer for the longest stage in the recipe. Seconds are where two parsers of one label could part |
@@ -267,6 +274,9 @@ The long form is the errors table in their `HANDOFF-new-context.md`. The shapes:
 - **A reason asserted without checking it:** "the three tie because they share
   a per-mix dough". They don't (1250.93 g against 1667.90 g); they share
   `(nMix − 1) ÷ batch dough`. The number was checked and its explanation wasn't.
+  Again in MESSAGE-38: the gate filed `mix-1`'s "2½" as half an overrun,
+  because the centring halves the stagger. It halves the *planned* stagger,
+  and an overrun lands whole.
 - **A tolerance wider than the change:** `TOL.degF` = 0.1 passed both 67.97 and
   68.00. When a pin moves by less than its tolerance, the test never saw it.
 - **Verifying a list by its contents when order is the meaning:** the step
@@ -330,7 +340,7 @@ a deploy job; both must succeed.
 To confirm the site itself, compare the `assets/index-*.js` name in the live
 `index.html` with the one `npm run build` prints. **The container can't reach
 github.io**, so from a cloud session the successful run is the evidence. The
-MESSAGE-37 tree builds `index-BfIEWpEc.js`.
+MESSAGE-38 tree builds `index-Bf1mQ8-C.js`.
 
 Don't change the workflow or the Pages source; both are right. Two runner
 notices need nothing yet: `deploy-pages@v4` is forced onto Node 24, and
