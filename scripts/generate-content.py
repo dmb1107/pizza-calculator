@@ -62,7 +62,7 @@ def table(c,marker):
     return {'headers':raw[0],'rows':raw[2:]} if len(raw)>=3 else None
 # The field markers §8.2 uses. Mirrored in tests/steps.test.ts.
 KNOWN_MARKERS=[r'phase', r'summary', r'summary \(retarded\)', r'summary \(classic\)', r'values',
-    r'timer', r'speed', r'watchFor', r'concepts', r'detail', r'troubleshoot', r'repeatsPerMix',
+    r'timer', r'timer \(retarded\)', r'timer \(classic\)', r'speed', r'watchFor', r'concepts', r'detail', r'troubleshoot', r'repeatsPerMix',
     r'shown only when', r'detail, shown only when `[^`]+`', r'warning, shown when `[^`]+`']
 steps=[]
 for c in body.split('\n#### ')[1:]:
@@ -80,7 +80,8 @@ for c in body.split('\n#### ')[1:]:
     s={'id':h.group(1),'title':h.group(2).strip(),'phase':ph,
        'summary':field(c,'summary'),'summaryRetarded':field(c,r'summary \(retarded\)'),
        'summaryClassic':field(c,r'summary \(classic\)'),'values':field(c,'values'),
-       'timer':field(c,'timer'),'speed':field(c,'speed'),'watchFor':field(c,'watchFor'),
+       'timer':field(c,'timer'),'timerRetarded':field(c,r'timer \(retarded\)'),
+       'timerClassic':field(c,r'timer \(classic\)'),'speed':field(c,'speed'),'watchFor':field(c,'watchFor'),
        'concepts':field(c,'concepts'),'detail':bq(c,'**detail:**'),
        'troubleshoot':table(c,'**troubleshoot:**'),
        'repeatsPerMix':ph=='mix','suppressOnFinal':bool(rm and 'suppress' in rm.lower()),
@@ -108,17 +109,23 @@ for c in body.split('\n#### ')[1:]:
     steps.append(s)
 def tpl(x): return x.replace('\\','\\\\').replace('`','\\`').replace('${','\\${')
 def parse_timer(l):
+    # Minutes, or seconds (mix-7's 45-60 s, MESSAGE-32) as fractions of a minute.
+    # Hours and {token} labels are left to the runtime parser, bound.
     if not l: return None
-    m=re.match(r'^(\d+)[\u2013-](\d+)\s*min', l)
-    if m: return '[%s, %s]'%(m.group(1),m.group(2))
-    m=re.match(r'^(\d+)\s*min', l)
-    return m.group(1) if m else None
+    m=re.match(r'^(\d+)[\u2013-](\d+)\s*(min|s)\b', l)
+    if m:
+        sc=60 if m.group(3)=='s' else 1
+        return '[%s, %s]'%('%g'%(int(m.group(1))/sc),'%g'%(int(m.group(2))/sc))
+    m=re.match(r'^(\d+)\s*(min|s)\b', l)
+    return ('%g'%(int(m.group(1))/(60 if m.group(2)=='s' else 1))) if m else None
 def parse_speed(l):
+    # 8.1 since MESSAGE-32: dial and RPM only; the duration is the step's timer.
+    # A speed line that doesn't parse is refused, not dropped: the old regex
+    # required minutes and would have silently lost all four.
     if not l: return None
-    m=re.match(r'^(\d+)%\s*/\s*(\d+)\s*RPM,\s*~?(\d+)(?:[\u2013-](\d+))?\s*min', l)
-    if not m: return None
-    d,r,lo=m.group(1),m.group(2),m.group(3); hi=m.group(4) or lo
-    return '{ dial: %s, rpm: %s, minutes: [%s, %s], label: `%s` }'%(d,r,lo,hi,tpl(l))
+    m=re.match(r'^(\d+)%\s*/\s*(\d+)\s*RPM$', l)
+    if not m: raise SystemExit('unparseable **speed:** %r' % l)
+    return '{ dial: %s, rpm: %s, label: `%s` }'%(m.group(1),m.group(2),tpl(l))
 old=open('src/content/steps.ts').read()
 head=old[:old.index('export const STEPS')]
 tail=old[old.index('\n];\n', old.index('export const STEPS'))+4:]
@@ -139,6 +146,10 @@ for s in steps:
         out.append('    timerLabel: `%s`,\n'%tpl(s['timer']))
         tm=parse_timer(s['timer'])
         if tm: out.append('    timerMinutes: %s,\n'%tm)
+    # 7.5: a retarded biga has two timed stages; biga-4 times the first on
+    # each track, so its timer is per track like its summary.
+    if s['timerRetarded']: out.append('    timerLabelRetarded: `%s`,\n'%tpl(s['timerRetarded']))
+    if s['timerClassic']: out.append('    timerLabelClassic: `%s`,\n'%tpl(s['timerClassic']))
     if s['speed']:
         sp=parse_speed(s['speed'])
         if sp: out.append('    speed: %s,\n'%sp)
@@ -153,7 +164,10 @@ for s in steps:
         for r in t['rows']: out.append('        [%s],\n'%', '.join('`%s`'%tpl(x) for x in r))
         out.append('      ],\n    },\n')
     if s['concepts']:
-        out.append('    concepts: [%s],\n'%', '.join(json.dumps(x) for x in s['concepts'].split()))
+        # Comma- or space-separated: biga-3 lists two since MESSAGE-34. A bare
+        # split() kept the comma in "mix-dont-knead,".
+        ids=[x for x in re.split(r'[,\s]+', s['concepts']) if x]
+        out.append('    concepts: [%s],\n'%', '.join(json.dumps(x) for x in ids))
     if s['repeatsPerMix']: out.append('    repeatsPerMix: true,\n')
     if s['suppressOnFinal']: out.append('    suppressOnFinal: true,\n')
     if s.get('warningWhen'):

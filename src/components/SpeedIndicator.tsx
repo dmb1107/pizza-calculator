@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import { indicatorForDial, indicatorSegments, type SegmentState } from '../lib/constants';
-import { formatLitSegments } from '../lib/format';
+import { formatLitSegments, formatSpeedDetail } from '../lib/format';
 
 /**
  * §7.5 *Speed: show what the mixer shows* (MESSAGE-29). The Halo Core has no
@@ -53,15 +53,7 @@ const SEGMENT_STYLE: Record<SegmentState, { stroke: string; opacity: number; glo
   off: { stroke: '#3b3734', opacity: 1, glow: false },
 };
 
-export function SpeedIndicator({
-  dial,
-  rpm,
-  minutes,
-}: {
-  dial: number;
-  rpm: number;
-  minutes: readonly [number, number];
-}) {
+export function SpeedIndicator({ dial, rpm }: { dial: number; rpm: number }) {
   const { full, half, total } = indicatorForDial(dial);
   const segments = indicatorSegments(dial);
   // Eight of these render on a split batch; their gradient and filter ids must not collide.
@@ -69,7 +61,6 @@ export function SpeedIndicator({
   const knobId = `${uid}-knob`;
   const glowId = `${uid}-glow`;
   const words = formatLitSegments(full, half);
-  const duration = minutes[0] === minutes[1] ? `~${minutes[0]} min` : `${minutes[0]}–${minutes[1]} min`;
 
   return (
     <div className="mt-3 flex items-center gap-3 rounded-lg bg-stone-100 p-3 dark:bg-stone-800">
@@ -114,7 +105,7 @@ export function SpeedIndicator({
       <div className="min-w-0">
         <p className="text-xl font-semibold tabular">{words}</p>
         <p className="mt-1 text-sm text-stone-600 tabular dark:text-stone-400">
-          {dial}% · {rpm} RPM · {duration}
+          {formatSpeedDetail(dial, rpm)}
         </p>
       </div>
     </div>

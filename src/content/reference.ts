@@ -56,11 +56,11 @@ A 12-ball batch runs as two 6-ball mixes and reads the 6 column; 18 balls reads 
   {
     id: "water-temperature",
     title: "Water temperature",
-    body: `Blend fridge-cold water with tap to the target, measuring as you pour. Fridge water reaches ~38 °F; tap covers upward. Across the supported range (3–24 balls, 240–300 g, biga 45–60 °F, room 60–84 °F) the required water spans **53–109 °F**, and **53–107 °F** at the 265 g default — hottest at *small mixes*, not small batches. No ice and no split calculation.`,
+    body: `Blend fridge-cold water with tap water to reach the target, measuring as you pour. Fridge water gets to about 38 °F; the tap covers the warmer end. Across the supported range (3–24 balls, 240–300 g, biga 45–60 °F, room 60–84 °F) the required water spans **53–109 °F**, and **53–107 °F** at the default 265 g ball. It's hottest for *small mixes*, not small batches. You won't need ice, and the app doesn't calculate a blend ratio.`,
   },
 ];
 
-export const ABOUT_INTRO = "The recipe is built on published practice, not invention.";
+export const ABOUT_INTRO = "The recipe draws on these published sources.";
 
 export const SOURCES: readonly Source[] = [
   {
@@ -82,6 +82,16 @@ export const SOURCES: readonly Source[] = [
     title: "Ooni / Marco Fuso — 100% Biga using Halo Pro",
     url: "https://ooni.com/blogs/recipes/ooni-100-biga-dough-using-halo-pro",
     note: "the fridge-retarded schedule",
+  },
+  {
+    title: "Ooni help center — Halo Core min/max capacity and hydration limits",
+    url: "https://ooni.com/pages/help-center?a=What-are-the-minmax-capacity-and-hydration-limits-for-Ooni-Halo-Core---id--tLwhKnlnR4G9F-kkvNO9Gw",
+    note: "0.5–2.5 kg dough, flour caps by hydration, recommended speeds, 20-minute maximum continuous operating time",
+  },
+  {
+    title: "Ooni help center — Halo Core speed settings",
+    url: "https://ooni.com/pages/help-center?a=Halo-Core-Speed-Settings%3A-Percentage-to-RPM-Explained---id--J1HYTOEHRCiv1ONI2mRgqg",
+    note: "5% increments, the lit/half-lit indicator, 300 RPM at 100%. Its low-end RPM chart is wrong; see the mixer speed reference",
   },
   {
     title: "Stadler Made — Biga",

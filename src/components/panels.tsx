@@ -86,7 +86,7 @@ export function BatchPanel(s: AppState) {
           onChange={(v) => setInput('coldFermentH', v)}
           min={BOUNDS.coldFermentH.min}
           max={BOUNDS.coldFermentH.max}
-          hint="A classic biga front-loads the fermentation, so the ball proof stays short."
+          hint="The biga does nearly all the fermentation, so extra time goes into the biga and the ball proof stays short."
         />
         <SegmentedField
           legend="Schedule"
@@ -179,8 +179,8 @@ export function TemperaturesPanel(s: AppState) {
                 step={BOUNDS.bigaTempF.step}
                 hint={
                   mix.index === 1
-                    ? `Measure it — this is the highest-leverage input in the model. Every °F warmer here means about ${formatCoefficient(bigaCost.waterPerF, 1)} °F cooler water, so a ${BIGA_GUESS_EXAMPLE_F} °F guess is ${formatTempF(bigaCost.waterF)} °F of water and ${formatTempF(bigaCost.doughF)} °F of finished dough. Take the reading after tearing the biga, not at the pull: handling gains about 5 °F that the bowl does not share.`
-                    : `Re-read it before this mix. The waiting biga has been warming toward the room the whole time the previous mix ran, and that drift is not modelled — there is no data for it.`
+                    ? `Measure it: of the temperatures you measure, this one moves the water target most. Each °F warmer here means about ${formatCoefficient(bigaCost.waterPerF, 1)} °F cooler water, so a ${BIGA_GUESS_EXAMPLE_F} °F guess costs ${formatTempF(bigaCost.waterF)} °F of water and ${formatTempF(bigaCost.doughF)} °F of finished dough. Take the reading after tearing the biga, not at the pull: handling gains about 5 °F that the bowl does not share.`
+                    : `Re-read it before this mix. The waiting biga has been warming toward room temperature while the previous mix ran. The app doesn't model that drift, because there's no data for it.`
                 }
               />
               {mix.index === 1 && (
@@ -189,7 +189,7 @@ export function TemperaturesPanel(s: AppState) {
                   value={inputs.bowlState}
                   options={BOWL_STATE_OPTIONS}
                   onChange={(v) => setInput('bowlState', v)}
-                  hint="The biga always ferments in the mixer bowl, so it is normally cold. Later mixes start in the bowl that just finished the one before. Rinsing resets it to about the rinse temperature in under a minute if a target lands awkwardly."
+                  hint="The biga always ferments in the mixer bowl, so the bowl is normally cold. Later mixes start in the bowl the previous mix just left. If a target comes out awkward, rinsing brings the bowl to about the rinse water's temperature in under a minute."
                 />
               )}
               <NumberField
@@ -200,7 +200,7 @@ export function TemperaturesPanel(s: AppState) {
                 min={BOUNDS.bowlTempF.min}
                 max={BOUNDS.bowlTempF.max}
                 step={BOUNDS.bowlTempF.step}
-                hint={`${measuredBowl == null ? `Prefilled from ${mix.index === 1 ? 'the bowl state above' : 'the previous mix'}. ` : 'Measured — a reading always beats the prefill. '}Worth ${formatCoefficient(bowlCost.waterPerF, 2)} °F of water per °F at this mix size, which is ${formatCoefficient(bowlCost.waterOverDough, 1)} times what it costs the dough. That gap is why it earns a measurement even though the dough barely notices.`}
+                hint={`${measuredBowl == null ? `Prefilled from ${mix.index === 1 ? 'the bowl state above' : 'the previous mix'}. ` : 'Measured, which replaces the prefill. '}At this mix size each °F of bowl is worth ${formatCoefficient(bowlCost.waterPerF, 2)} °F of water, ${formatCoefficient(bowlCost.waterOverDough, 1)} times its effect on the dough, so it's worth measuring even though the dough barely changes.`}
               />
             </div>
           );
@@ -253,7 +253,7 @@ export function CalibrationPanel(s: AppState) {
             }
             hint={
               friction.isEstimate
-                ? 'Stored separately for each mix size. Whether it changes with mix size is untested; a value for each size you bake is how you find out.'
+                ? 'Kept separately for each mix size. Whether FF changes with mix size is untested; recording a value for each size you bake will show it.'
                 : `Recorded for ${formatBallsPerMix(mixSize)}-ball mixes. Other mix sizes keep their own value.`
             }
           />

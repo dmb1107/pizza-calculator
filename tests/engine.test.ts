@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { C, bowlHeatCapacity, defaultDdtF } from '../src/lib/constants';
-import { formatInches, formatWhole } from '../src/lib/format';
+import { formatInches, formatTempF, formatWhole } from '../src/lib/format';
 import {
+  ballsPerMix,
   bigaReadingCost,
   bowlReadingCost,
   calculate,
@@ -38,6 +39,8 @@ import {
   TOL,
   VECTOR_CONDITIONS,
 } from './vectors';
+import { DEFAULT_CALIBRATION } from '../src/state/defaults';
+import { effectiveFriction } from '../src/state/storage';
 
 /**
  * Engine acceptance tests — WEBSITE-SPEC-biga-calculator.md §5.
@@ -907,9 +910,11 @@ describe('§4.7 staggerUncentred', () => {
     expect(r.staggerUncentredMin).toBeGreaterThan(2);
     const warning = r.warnings.find((w) => w.id === 'stagger-uncentred');
     expect(warning?.severity).toBe('warn');
-    expect(warning?.title).toMatch(/minutes of the spread could not be absorbed/);
-    // Points upstream rather than at the floor.
-    expect(warning?.detail).toMatch(/fewer, larger mixes/);
+    // Mirrors bulk-1's warning in §8.2.
+    expect(warning?.title).toMatch(/minutes of the difference couldn't be absorbed/);
+    // Points upstream rather than at the floor. For a given batch nMix is
+    // already the fewest that fit, so the lever is the batch size (MESSAGE-36).
+    expect(warning?.detail).toMatch(/choose a batch size that needs fewer mixes, or aim for a cooler dough/);
     expect(warning?.detail).not.toMatch(/lower the floor|below 45/i);
   });
 
@@ -968,7 +973,8 @@ describe('§5 the app-default flour offset', () => {
 
   it('is exactly Cf/Cw, and the same at every batch size', () => {
     // This constant is why a rendered water target sits 0.39 °F below its
-    // vector value. It cost a round of correspondence, so it is pinned rather
+    // vector value wherever FF falls back to 14.0; at 6 balls per mix the
+    // seeded FF adds more (below). It cost a round of correspondence, so it is pinned rather
     // than left as a note: the vectors use flour 69, the app defaults it to
     // room (70), and both are deliberate.
     const seen = new Set<string>();
@@ -992,11 +998,74 @@ describe('§5 the app-default flour offset', () => {
   });
 
   it('accounts for the gap between a rendered target and its vector', () => {
-    // The 12-ball case that prompted this: 59.505 at flour 69, 59.113 at 70.
+    // The 12-ball case that prompted this: 59.505 at flour 69, 59.113 at 70,
+    // both at FF 14. The app's default FF at 12 balls is not 14 (next test).
     const at69 = calculate({ ...vectorInputs(12, 265), flourTempF: 69 });
     const at70 = calculate({ ...vectorInputs(12, 265), flourTempF: 70 });
     within(at69.mixes[1]!.waterTempF, 59.505, 0.002, 'mix 2 at vector conditions');
-    within(at70.mixes[1]!.waterTempF, 59.113, 0.002, 'mix 2 at app defaults');
+    within(at70.mixes[1]!.waterTempF, 59.113, 0.002, 'mix 2 at flour 70, FF 14');
+  });
+
+  it('adds the seeded friction factor wherever a mix is 6 balls', () => {
+    // FINDINGS-40. The flour offset is the whole gap only where FF falls back
+    // to 14.0, the vectors' value. At 6 balls per mix the app reads bake 1's
+    // 14.03, and the 0.03 moves the target a further 0.03 × Ct/Cw: 0.482 in
+    // all. That is 6 and 12 balls at every weight, the default page included,
+    // and 18 balls from 272 g, which runs as three 6-ball mixes.
+    const seeded: Record<number, number[]> = {};
+    const gaps = new Set<string>();
+    for (let balls = C.MIN_BALLS; balls <= 24; balls++) {
+      for (let ballG = 240; ballG <= 300; ballG++) {
+        const { ff } = effectiveFriction(DEFAULT_CALIBRATION, ballsPerMix({ balls, ballWeightG: ballG }));
+        const vector = calculate(vectorInputs(balls, ballG));
+        const app = calculate({
+          ...vectorInputs(balls, ballG),
+          flourTempF: VECTOR_CONDITIONS.tRoomF,
+          frictionFactorF: ff,
+        });
+        const expected =
+          C.APP_DEFAULT_FLOUR_OFFSET_F +
+          (ff - VECTOR_CONDITIONS.ff) * (app.thermal.cTotal / app.thermal.cFreshWater);
+        vector.mixes.forEach((m, i) =>
+          within(m.waterTempF - app.mixes[i]!.waterTempF, expected, 1e-9, `${balls} x ${ballG} g, mix ${i + 1}`),
+        );
+        gaps.add(expected.toFixed(3));
+        if (ff !== VECTOR_CONDITIONS.ff) (seeded[balls] ??= []).push(ballG);
+      }
+    }
+    expect([...gaps].sort()).toEqual(['0.392', '0.482']);
+    expect(
+      Object.fromEntries(Object.entries(seeded).map(([b, ws]) => [b, [ws[0], ws[ws.length - 1], ws.length]])),
+    ).toEqual({ 6: [240, 300, 61], 12: [240, 300, 61], 18: [272, 300, 29] });
+
+    // What the 12-ball cards print: §7.2 quotes the vector pair.
+    const cards = (r: ReturnType<typeof calculate>) => r.mixes.map((m) => formatTempF(m.waterTempF));
+    const ff12 = effectiveFriction(DEFAULT_CALIBRATION, ballsPerMix({ balls: 12, ballWeightG: 265 })).ff;
+    expect(cards(calculate(vectorInputs(12, 265)))).toEqual(['64.8', '59.5']);
+    expect(
+      cards(calculate({ ...vectorInputs(12, 265), flourTempF: VECTOR_CONDITIONS.tRoomF, frictionFactorF: ff12 })),
+    ).toEqual(['64.3', '59.0']);
+  });
+
+  it('prices the per-mix DDT slip at the bowl coefficient, on either basis', () => {
+    // §4.2: the warm-bowl prefill takes the BATCH DDT, 74 at 12 balls. The ≤6
+    // rule applied per mix would make it 75. Only the prefill moves, so mix 2
+    // shifts by C_bowl/Cw: 59.5 → 59.2 at the vector conditions, and 59.0 →
+    // 58.7 at app defaults (MESSAGE-40).
+    const ff12 = effectiveFriction(DEFAULT_CALIBRATION, ballsPerMix({ balls: 12, ballWeightG: 265 })).ff;
+    const slipped = defaultDdtF(12 / 2);
+    expect([defaultDdtF(12), slipped]).toEqual([74, 75]);
+    for (const [basis, inputs, before, after] of [
+      ['vector', vectorInputs(12, 265), '59.5', '59.2'],
+      ['app defaults', { ...vectorInputs(12, 265), flourTempF: VECTOR_CONDITIONS.tRoomF, frictionFactorF: ff12 }, '59.0', '58.7'],
+    ] as const) {
+      const batch = calculate(inputs).mixes[1]!;
+      const perMix = calculate({ ...inputs, bowlTempF: [null, slipped] }).mixes[1]!;
+      expect(batch.bowlTempF, `${basis}: warm prefill`).toBe(defaultDdtF(12));
+      expect([formatTempF(batch.waterTempF), formatTempF(perMix.waterTempF)], basis).toEqual([before, after]);
+      const t = calculate(inputs).thermal;
+      within(batch.waterTempF - perMix.waterTempF, t.cBowl / t.cFreshWater, 1e-9, `${basis}: shift is C_bowl/Cw`);
+    }
   });
 });
 

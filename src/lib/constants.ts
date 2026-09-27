@@ -46,7 +46,8 @@ const BASE = {
    */
   INDICATOR_PCT_PER_SEGMENT: 10,
 
-  // Ooni Halo Core limits
+  // Ooni Halo Core limits — from Ooni's help center, "min/max capacity and
+  // hydration limits" (§3, §11 since MESSAGE-34). MIN_BALLS is ours (§4.4).
   /**
    * §4.4. Smallest supported MACHINE batch. Two independent reasons point here:
    * 2 balls is 542 g, which clears the 500 g floor on paper but won't let a
@@ -60,7 +61,8 @@ const BASE = {
   FLOUR_CAP_66: 1505, // g, at 66%+ hydration (final mix)
   FLOUR_CAP_55: 1610, // g, at 55-59% hydration (biga)
   /**
-   * Continuous run limit, minutes. Read by the profile assertion in
+   * Ooni's published maximum continuous operating time for the spiral hook,
+   * minutes (help center, §11). Read by the profile assertion in
    * `tests/constants.test.ts` and bound into `mix-6` / `mix-7` prose as
    * `{maxRunMin}`, so the number lives in one place.
    */
@@ -134,8 +136,9 @@ const BASE = {
 
   /**
    * §6. The one biga temperature ever measured (bake 1, after tearing). Was 64,
-   * which was unsourced. This is the highest-leverage input in the model:
-   * d(T_water)/d(T_biga) is -1.92 at 6 balls and -2.25 at 3, so a 6 °F miss
+   * which was unsourced. Of the temperatures the baker measures, this one moves
+   * the water target most (FF and DDT move it more per °F, but aren't measured
+   * at the bench): d(T_water)/d(T_biga) is -1.92 at 6 balls and -2.25 at 3, so a 6 °F miss
    * moves the required water 11.5 °F.
    */
   DEFAULT_BIGA_TEMP_F: 58,
@@ -143,8 +146,9 @@ const BASE = {
   /**
    * §4.7. Hours between the end of one mix and the start of the next on a split
    * batch. Dave's estimate of his own workflow, NOT a measurement, and it
-   * assumes mix 2 is weighed out before mix 1 starts (§8 mix-1). Time it on the
-   * first split bake: every 5 min here moves the rise correction by 2.5 min.
+   * assumes every mix is weighed out before the first starts (§8 mix-1). Time
+   * it on the first split bake: every 5 min here moves the rise correction by
+   * 2.5 min per changeover.
    */
   CHANGEOVER_H: 5 / 60,
 
@@ -215,7 +219,10 @@ const FRESH_FLOUR_FRACTION = 1 - BASE.BIGA_FRACTION;
 const FRESH_WATER_FRACTION = BASE.HYDRATION - BASE.BIGA_FRACTION * BASE.BIGA_HYDRATION;
 
 /**
- * §5. How far below its vector value a rendered water target sits, in °F.
+ * §5. How far below its vector value a rendered water target sits, in °F,
+ * wherever FF falls back to 14.0. At 6 balls per mix the app reads the seeded
+ * 14.03, which adds `(14.03 − 14) × Ct/Cw` on top (engine.test.ts, 'adds the
+ * seeded friction factor').
  *
  * The vectors pin flour at 69 °F so the flour term stays independently
  * observable; the app defaults flour to room (70 °F), which is what a bag of
@@ -302,8 +309,8 @@ export function indicatorSegments(dialPercent: number): SegmentState[] {
 
 /**
  * §7.5. What the Core's LED indicator shows at a dial percentage:
- * `floor(dial / INDICATOR_PCT_PER_SEGMENT)` full segments, one half-lit when
- * the remainder is 5, out of `100 / INDICATOR_PCT_PER_SEGMENT`.
+ * `floor(dial / INDICATOR_PCT_PER_SEGMENT)` segments lit, the next one dimmed
+ * when the remainder is 5, out of `100 / INDICATOR_PCT_PER_SEGMENT`.
  */
 export function indicatorForDial(dialPercent: number): { full: number; half: boolean; total: number } {
   const per = C.INDICATOR_PCT_PER_SEGMENT;

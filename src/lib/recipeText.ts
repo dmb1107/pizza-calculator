@@ -41,7 +41,8 @@ export function buildRecipeText(result: CalculatorResult): string {
   lines.push(row('Fresh water', `${formatGrams(formula.freshWater)} g`));
   // Weighable grams for each addition — "~60% of the water" caused a guess on
   // bake 1 and cost a data point.
-  lines.push(row('  Phase A', `${formatGrams(formula.phaseAWater)} g (weigh it)`));
+  // No "(weigh it)": Dave took the same note out of mix-2's value chip (MESSAGE-35).
+  lines.push(row('  Phase A', `${formatGrams(formula.phaseAWater)} g`));
   lines.push(row('  Phase B', `${formatGrams(formula.phaseBWater)} g in 3 additions`));
   lines.push(row('Salt', `${formatGrams(formula.salt)} g`));
   if (capacity.nMix > 1) {
@@ -54,7 +55,8 @@ export function buildRecipeText(result: CalculatorResult): string {
 
   lines.push('WATER');
   if (result.mixes.length > 1) {
-    // Genuinely different numbers: mix 2 starts in the bowl that ran mix 1.
+    // Genuinely different numbers: every mix after the first starts in the
+    // bowl the previous one left.
     for (const mix of result.mixes) {
       lines.push(row(`Mix ${mix.index}`, `${formatTempF(mix.waterTempF)} °F`));
     }
@@ -70,9 +72,11 @@ export function buildRecipeText(result: CalculatorResult): string {
   lines.push(
     row(
       'Room time',
-      `${Math.round(result.roomMinutes)} min` +
+      `${Math.round(result.ballRoomMinutes)} min` +
         // Both terms, paired on the line (MESSAGE-24): the rise depends only on
         // the dough's offset from DDT, and a DDT two lines up isn't paired.
+        // The planned rise, as bulk-3 prints it (MESSAGE-32), not roomMinutes:
+        // at a split batch the two differ by half the stagger.
         (result.roomMinutesIsPlanned
           ? ` (planned at DDT ${formatTempF(result.ddtF)} °F — recompute once you measure)`
           : ` (final dough ${formatTempF(result.effectiveFinalTempF)} °F against DDT ${formatTempF(result.ddtF)} °F)`),

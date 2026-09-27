@@ -60,13 +60,13 @@ export const C = {
   C_BOWL_SPECIFIC_HEAT: 0.12, // stainless, cal/g·°C
   BOWL_MASS_G: 965,           // measured once on a kitchen scale. FIXED, not an input: the app supports only the Halo Core, whose bowl never changes
 
-  // Ooni Halo Core limits
+  // Ooni Halo Core limits — all from Ooni's help center, "min/max capacity and hydration limits" (§11)
   MAX_DOUGH: 2500,            // g
   MIN_DOUGH: 500,             // g
   MIN_BALLS: 3,               // smallest supported machine batch - see 4.4
   FLOUR_CAP_66: 1505,         // g, at 66%+ hydration (final mix)
   FLOUR_CAP_55: 1610,         // g, at 55-59% hydration (biga)
-  MAX_RUN_MIN: 20,            // continuous. Read by the profile assertion in §5 and bound into mix-6/mix-7 prose
+  MAX_RUN_MIN: 20,            // Ooni's published maximum continuous operating time, spiral hook. Read by the profile assertion in §5 and bound into mix-6/mix-7 prose
 
   // Oven geometry (§4.9). Thickness is referenced to DEFAULT_BALL_G on the full stone.
   TREAD_MAX_DIAMETER_IN: 12,       // Gozney Tread stone capacity
@@ -184,13 +184,13 @@ Keep `T_biga` as the default value so nothing silently moves, but label the fiel
 
 ⚠️ **`DDT` is the one quantity that did not go per-mix**, and that asymmetry is easy to lose now that everything around it did. It is 75 at ≤6 **total** balls and 74 at 7 or more, because the band is about how fast the *bulk mass* sheds heat and the doughs are bulked together (settled in MESSAGE-4 §11).
 
-A 12-ball batch therefore has `DDT` 74, even though it runs as two 6-ball mixes and a lone 6-ball batch would get 75. Applying the ≤6 rule to the per-mix ball count is the natural slip, and it is silent: at 12 balls it moves the warm-bowl prefill from 74 to 75 and the mix-2 water target from **59.5 to 59.2 °F** — small enough to look like rounding.
+A 12-ball batch therefore has `DDT` 74, even though it runs as two 6-ball mixes and a lone 6-ball batch would get 75. Applying the ≤6 rule to the per-mix ball count is the natural slip, and it is silent: at 12 balls it moves the warm-bowl prefill from 74 to 75 and the mix-2 water target from **59.5 to 59.2 °F** at the §5 vector conditions (59.0 to 58.7 at app defaults) — small enough to look like rounding.
 
 **Use the batch `DDT` for:** the target itself, the probe formula's `0.2 × (DDT − T_room)` term, and the *warm* bowl-state prefill. There is no per-mix `DDT` anywhere in this model.
 
 #### Bowl state — a three-way selector, per mix
 
-The bowl is not always cold. A split batch runs the second mix in a bowl that just finished the first, and above one biga only one of them can occupy the bowl at all. Offer a selector whose options **prefill from values already in the model** — no new constants:
+The bowl is not always cold. A split batch runs every mix after the first in a bowl that has just finished the one before, and above one biga only one of the bigas can occupy the bowl at all. Offer a selector whose options **prefill from values already in the model** — no new constants:
 
 | Mode | `T_bowl` prefill | When it applies |
 |---|---|---|
@@ -200,15 +200,15 @@ The bowl is not always cold. A split batch runs the second mix in a bowl that ju
 
 The prefill is a starting point and the field stays editable — a measurement always wins.
 
-**"Warm from the previous mix" is an upper bound, and how far below it the bowl sits is unmeasured.** The bowl can't come off mix 1 warmer than the dough it held, so `DDT` bounds it from above — *provided mix 1 finished at or below `DDT`*; a mix 1 that ran warm leaves a warmer bowl. How much the bowl then sheds toward the room during the 5-minute changeover has never been measured. ⚠️ An earlier version called this prefill "a good estimate" that would "run a degree or two high", on the grounds that five minutes is too short to shed much. Nothing supports either claim — thin stainless in open air may shed a real part of its gap to the room in that time, or may not. The gap it can shed is `DDT − T_room`, so whatever the rate, the prefill matters least in a warm kitchen and most in a cold one. Do not model it: `mix-8` asks for a reading, and the first split bake should log it (§10, `bowl_temp_f` on the `mix_index` 2 row).
+**"Warm from the previous mix" is an upper bound, and how far below it the bowl sits is unmeasured.** The bowl can't come off a mix warmer than the dough it held, so `DDT` bounds it from above — *provided that mix finished at or below `DDT`*; a mix that ran warm leaves a warmer bowl. How much the bowl then sheds toward the room during the 5-minute changeover has never been measured. ⚠️ An earlier version called this prefill "a good estimate" that would "run a degree or two high", on the grounds that five minutes is too short to shed much. Nothing supports either claim — thin stainless in open air may shed a real part of its gap to the room in that time, or may not. The gap it can shed is `DDT − T_room`, so whatever the rate, the prefill matters least in a warm kitchen and most in a cold one. Do not model it: `mix-8` asks for a reading, and the first split bake should log it (§10, `bowl_temp_f` on every row from `mix_index` 2 up).
 
-**Rinsing is available as a lever and is deliberately not used.** Thin stainless resets to about the rinse temperature in under a minute. Surface it only as a fallback if mix 2's target ever comes out awkward — it costs changeover time and the default workflow skips it.
+**Rinsing is available as a lever and is deliberately not used.** Thin stainless resets to about the rinse temperature in under a minute. Surface it only as a fallback if a later mix's target ever comes out awkward — it costs changeover time and the default workflow skips it.
 
 **Leaving dough residue in the bowl is harmless, and worth saying so.** Two reasons, both checked:
 - **Thermally exactly neutral.** The residue is already at `DDT`, so it contributes its own share to both sides of the balance. Required water is unchanged to the decimal at 0 g, 30 g or 60 g of carry-over.
-- **The yield cancels, because the doughs are bulked together.** Residue transfers forward — mix 1 loses it, mix 2 gains it — and both land in the same tub. Only what stays in the bowl after the *final* mix is a real loss, which is what the 2.2% overage has always covered. ⚠️ This cancellation depends on combining the doughs; if that ever changes, mix 1 can run short of its ball count at 50 g of carry-over.
+- **The yield cancels, because the doughs are bulked together.** Residue transfers forward — each mix loses some to the next — and every mix lands in the same tub. Only what stays in the bowl after the *final* mix is a real loss, which is what the 2.2% overage has always covered. ⚠️ This cancellation depends on combining the doughs; if that ever changes, mix 1 can run short of its ball count at 50 g of carry-over.
 
-Spread across the three modes, at the 265 g default:
+Spread across the three modes, at 265 g and the §5 vector conditions (FF 14, biga 58, room 70, flour 69). At app defaults every cell is lower: by 0.392 °F in the 3, 9 and 18 rows and by 0.482 °F in the 6 and 12 rows, for the reason given in §5:
 
 | Batch | Cold (58) | Room (70) | Warm (DDT) |
 |---|---:|---:|---:|
@@ -352,6 +352,10 @@ Durations in hours, from biga mix at t=0. **These are authoritative** — they w
 | `coldFerment` | **user input** | **user input** | 6–36, default 24 |
 | `temper` | 2.5 | 2.5 | user-adjustable 2–3 |
 
+**Four keys are planning points inside a recipe range:** `bigaFridge` (18–20 h), `bigaRoomOnly` (16–18 h, the Giorilli window), `bulkRest` (45–60 min) and `temper` (2–3 h). The timeline needs one number to put a clock time on a stage, so it uses the point. **Nothing the baker reads collapses the range** — steps and timeline show the range, with the planned point beside it (§7.4, §7.5).
+
+**Stage → step:** `bigaRoomTemp` and `bigaRoomOnly` → `biga-4`; `bigaFridge` → `biga-4b`; `bigaTemper` → `biga-6`. `biga-4b` was split out of `biga-4` so that each timed stage has its own timer — a retarded biga has two, 2 h and then 18–20 h, and one step cannot carry both.
+
 ⚠️ **This table is a sequence, and the overhead total cannot detect a wrong one.** Addition is commutative, so a stage-order error produces a correct sum and a wrong schedule. That has already happened once here, in the step expansion (§8.2a), where the instance count was right and the order was not — and the sum is a weaker check than the count was.
 
 **The backward timeline is where this becomes visible.** Solving from a target bake time back through the stages turns the order into timestamps. Get it wrong and every total still asserts clean while every intermediate time is wrong, and the failure surfaces as a baker standing at a cold oven rather than as a red test.
@@ -380,7 +384,7 @@ Note `coldFerment` sits **after** `ballRoomTemp`, not with the other biga stages
 
 ⚠️ **`bigaTemper` had no step.** It has a duration, a place in the sequence, a clock time in the timeline — and nothing in the guided step list told the baker to do it. A baker following the steps went from `biga-5` (pull at ~20% rise) straight to `mix-1` (prep the bowl).
 
-That is the worst possible stage to lose. Biga temperature is the most leveraged input in the model — `d(T_water)/d(T_biga)` runs **−1.92 at a 6-ball mix to −2.25 at a 3-ball** — and a skipped temper is named in the >120 °F warning as the usual cause of an unreachable water target. **The app scheduled the temper, computed from it, and warned about skipping it, while never instructing it.** Fixed by `biga-6`.
+That is the worst possible stage to lose. Of the temperatures the baker measures, biga temperature moves the water target most — `d(T_water)/d(T_biga)` runs **−1.92 at a 6-ball mix to −2.25 at a 3-ball** — and a skipped temper is named in the >120 °F warning as the usual cause of an unreachable water target. **The app scheduled the temper, computed from it, and warned about skipping it, while never instructing it.** Fixed by `biga-6`.
 
 **This is the same shape as `MAX_RUN_MIN` having no reader**, and it deserves the same kind of check: *every timeline stage maps to a step that instructs it, and every step maps to a stage.* Assert the mapping, name the deliberate exceptions, and let an orphan on either side point at whatever went missing.
 
@@ -428,20 +432,20 @@ Fixed overhead outside the cold ferment spans **25.6–30.8 h** across the full 
 
 Assert all three. Treat the bands as range checks, not equalities.
 
-#### Split batches: one clock for two doughs
+#### Split batches: one clock for all the doughs
 
-Dave bulks the two doughs **together in one container** — which settles the DDT question (it cools as one 12-ball mass, so `DDT` stays keyed to **total** balls) and creates a scheduling problem in its place.
+Dave bulks every mix **together in one container** — which settles the DDT question (a 12-ball batch cools as one 12-ball mass, so `DDT` stays keyed to **total** balls) and creates a scheduling problem in its place.
 
-Mix 1's dough finishes **35 minutes** before mix 2's — 30 min of mix plus a 5 min changeover. Once they're in the same tub they are indistinguishable, so the batch runs on one clock and there is no way to give the halves different ones.
+Each mix finishes **35 minutes** after the one before it — 30 min of mix plus a 5 min changeover. That gap is the stagger, and it accumulates: the first dough is 35 min ahead of the last at `nMix = 2` and 70 min at `nMix = 3`. Once the doughs are in the same tub they are indistinguishable, so the batch runs on one clock and there is no way to give them different ones.
 
-**Clock `bulkRest` from the last mix.** That is the only defensible anchor; the alternative gives mix 2 no bulk at all.
+**Clock `bulkRest` from the last mix.** That is the only defensible anchor; the alternative gives the last mix no bulk at all.
 
 **Then subtract half the stagger from `ballRoomTemp`:**
 
 ```
 CHANGEOVER   = 5 / 60                                  // 5 min, bowl not cleaned. NOT 0.0833
-stagger      = (MIX + CHANGEOVER) × (nMix − 1)         // 0.583 h = 35 min at nMix 2
-target       = computed − stagger/2                    // −17.5 min at nMix 2
+stagger      = (MIX + CHANGEOVER) × (nMix − 1)         // 0.583 h = 35 min at nMix 2, 70 min at nMix 3
+target       = computed − stagger/2                    // −17.5 min at nMix 2, −35 min at nMix 3
 ballRoomTemp = clamp(target, 45, 180)
 staggerUncentred = ballRoomTemp − target               // ≥ 0; minutes that could NOT be absorbed
 ```
@@ -461,13 +465,15 @@ staggerUncentred = ballRoomTemp − target               // ≥ 0; minutes that 
 
 This is better than a blanket sentence in the prose because it is quantitative and conditional — the user is told how many minutes are uncorrected, not merely that correction is imperfect.
 
-⚠️ **This does not remove the spread — it centres it.** Mix 1's half is 35 min over and mix 2's is 0; after the correction they are +17.5 and −17.5. That is the best a single clock can do, and it halves the worst-case error rather than leaving it all on one dough.
+⚠️ **This does not remove the spread — it centres it.** Before the correction the first dough is the whole stagger over and the last is on time: +35 and 0 at `nMix = 2`; +70, +35 and 0 at `nMix = 3`. After it they are +17.5 and −17.5, or +35, 0 and −35 — the centring `bulk-1`'s "the first and last" rests on. That is the best a single clock can do, and it halves the worst-case error rather than leaving it all on one dough.
 
-At 12 and 18 balls this takes a 90 min rise to **72.5 min**. `nMix = 1` is untouched.
+At `nMix = 2` (10–18 balls at 265 g) this takes a 90 min rise to **72.5 min**, and at `nMix = 3` (19–24) to **55 min**. `nMix = 1` is untouched.
 
 ⚠️ **`CHANGEOVER` is an estimate from Dave, not a measurement**, and it assumes every mix is weighed out before the first one starts — which `mix-1` now instructs in a block shown only when `nMix > 1`. Time it on the first split bake and correct it.
 
-**The sensitivity runs both ways.** `CHANGEOVER` appears in `mix` *and* in `stagger`, so a 5-minute error is 5 minutes on the schedule and 2½ on the rise, in the same direction. One timing fixes both.
+**The sensitivity runs both ways.** `CHANGEOVER` appears in `mix` *and* in `stagger`, so a 5-minute error is 5 minutes on the schedule and 2½ on the rise **per changeover**, in the same direction — 10 and 5 at `nMix = 3`. One timing fixes both.
+
+⚠️ **That is the effect of changing the constant, not of a changeover that overruns on the day.** With the constant unchanged, the cut stays at half the *planned* stagger, so an overrun lands in full on every dough mixed before it and not at all on the last: five minutes per extra five. The first dough collects every changeover's overrun — at `nMix = 3`, five extra minutes on each changeover puts the doughs at +10, +5 and 0 against plan. `mix-1` once said 2½ for this case, borrowing the figure above.
 
 ⚠️ **This is the one thing in this round that is derived rather than measured.** It rests on a single assumption: that fermentation during bulk and during the ball rise are equivalent at the same temperature. That should hold — same dough, same temperature, and dividing displaces gas without resetting fermentation — but it has not been tested. It is one named term; if the assumption is wrong, set `stagger` to 0 and everything else stands.
 
@@ -511,6 +517,7 @@ All are per-mix and computed at the user's inputs; none is a literal.
 | Token | Value |
 |---|---|
 | `{frictionRemainingF}` | `0.33 × FF × Ct/TOT` — the friction still to come after the probe |
+| `{ballRoomMin}` | `ballRoomTemp` in minutes — the ball rise **the timeline plans**, after the stagger correction (§4.8). Equal to `{roomMin}` at `nMix = 1`. `{roomMin}` stays the per-dough figure, before the correction. ⚠️ `bulk-3` printed and timed `{roomMin}`, so every split batch ran its rise up to 17.5 min long at `nMix = 2` and up to 35 min at `nMix = 3` against the plan — less where the 45-minute floor held (24 balls at 76 °F: 26.2 min) |
 | `{restExchangeF}` | `|0.2 × (DDT − T_room)|` — how far the rest moves the dough toward room temperature |
 | `{probeGapPhrase}` | `"1.6 °F below DDT"` / `"0.3 °F above DDT"` / `"right at DDT"` — the magnitude of `DDT − probeTargetF`, with the direction in words. The number must equal \|printed DDT − printed target\| exactly |
 | `{phaseAPercent}` / `{phaseBPercent}` | `PHASE_A_FRACTION × 100` and its complement. **No scope suffix** — they are ratios, and the `PerMix` / `PerBiga` rule is about masses |
@@ -556,7 +563,11 @@ Splits are unchanged: `nBiga` = 1 except 18 balls (2); `nMix` = 1 except 12 and 
 
 `T_flour` is pinned at **69 °F** in the vectors while the app defaults it to *"same as room"* = **70 °F**. That is deliberate on both sides: 69 makes the flour term independently observable, so a bug swapping `Cf` and `Cs` fails a test instead of hiding, while 70 is what a bag of flour sitting in the kitchen actually is.
 
-The consequence is that **every water target renders 0.392 °F below its vector value at app defaults** — the same figure at every batch size and every `nMix`, because `Cf/Cw` is scale-invariant. Small enough to read as rounding, which is what makes it worth stating: a 12-ball mix-2 target is 59.505 at vector conditions and 59.113 in the app, and both are correct.
+The consequence is that **the flour default puts every water target 0.392 °F below its vector value** — the same figure at every batch size and every `nMix`, because `Cf/Cw` is scale-invariant.
+
+**That is the whole gap only where FF falls back to 14.0.** The vectors run at FF 14. At 6 balls per mix the app reads bake 1's seeded 14.03 instead (§6, Panel 3), which lowers the target by a further `(14.03 − 14) × Ct/Cw` = 0.090 °F — the same at every 6-ball mix, since `Ct/Cw` (3.0023) is also a dough-only ratio. With only the seed in the calibration map, 3–24 balls × 240–300 g therefore has exactly two gaps: **0.392**, and **0.482 on every 6-ball mix** — 6 and 12 balls at every weight, and 18 balls from 272 g, which runs as three 6-ball mixes. The default page, 6 × 265 g, is one of them. Every FF the baker records adds a gap of its own at that mix size, so derive this term from the stored map, never as a constant 0.090.
+
+Small enough to read as rounding, which is what makes it worth stating. A 12-ball mix-2 target is 59.505 at vector conditions, 59.113 at flour 70 with FF 14, and 59.022 at app defaults, which prints **59.0**. All three are correct under their own conditions. ⚠️ An earlier version called 0.392 the gap "at every batch size and every `nMix`" and 59.113 the app's figure. Both left out the seeded FF, which applies on the default page itself.
 
 **Derive it; do not hardcode 0.392.** It is a ratio of formula constants with no `F` in it, so the per-mix division cancels top and bottom:
 
@@ -708,7 +719,7 @@ Group into three panels. **Batch** open by default; the other two collapsed with
 |---|---|---|---|
 | Room temp (°F) | number | 70 | |
 | Flour temp (°F) | number | = room | "same as room" toggle |
-| Biga temp at mix (°F) | number | **58** | ⚠️ **Highest-leverage input in the model.** Was 64, which was unsourced; 58 is the one value ever measured (bake 1, after tearing). `d(T_water)/d(T_biga)` is −1.92 at 6 balls and −2.25 at 3 **on the bowl-tracking basis, `(Cb + C_bowl)/Cw`** — the field's default, where the cold-bowl prefill follows the biga reading — so a 6 °F miss here moves the required water 11.5 °F and the finished dough 3.5 °F. **Once the bowl is measured, or its state is room or warm, the bowl holds and the coefficient is `Cb/Cw` = −1.59 at every mix size (§7.2):** the same miss moves the water 9.6 °F. Mark the field as expecting a measurement and show the sensitivity inline **on whichever basis currently applies** — never a fixed figure. |
+| Biga temp at mix (°F) | number | **58** | ⚠️ **Of the temperatures the baker measures, the one that moves the water target most** (FF and DDT move it more, per °F, but aren't measured at the bench). Was 64, which was unsourced; 58 is the one value ever measured (bake 1, after tearing). `d(T_water)/d(T_biga)` is −1.92 at 6 balls and −2.25 at 3 **on the bowl-tracking basis, `(Cb + C_bowl)/Cw`** — the field's default, where the cold-bowl prefill follows the biga reading — so a 6 °F miss here moves the required water 11.5 °F and the finished dough 3.5 °F. **Once the bowl is measured, or its state is room or warm, the bowl holds and the coefficient is `Cb/Cw` = −1.59 at every mix size (§7.2):** the same miss moves the water 9.6 °F. Mark the field as expecting a measurement and show the sensitivity inline **on whichever basis currently applies** — never a fixed figure. |
 | Bowl state | 3-way selector | *Cold* (mix 1) / *Warm from previous mix* (mix 2+) | Prefills bowl temp from `T_biga`, `T_room` or `DDT` — see §4.2. Show the rinse note beside it |
 | Bowl temp at mix (°F) | number | *(from the selector)* | ⚠️ **Promoted to a real input.** The selector sets a starting value; a measurement always wins. The biga gains ~5 °F from tearing and the bowl does not. Worth 0.66 °F of water per °F at a 3-ball mix, 0.22 at 9. Show that coefficient inline |
 
@@ -718,11 +729,11 @@ Group into three panels. **Batch** open by default; the other two collapsed with
 
 ⚠️ **Biga temperature and bowl temperature become arrays of length `nMix`.** Everything else stays global.
 
-This was under-specified before and the gap was real: `mix-8` tells the user to re-measure both before each subsequent mix, and the mix-2 water card is computed from those readings — but with a single pair of fields there was nowhere to enter them, so the instruction was unactionable and the second card was a prediction the user could not correct.
+This was under-specified before and the gap was real: `mix-8` tells the user to re-measure both before each subsequent mix, and every water card after the first is computed from those readings — but with a single pair of fields there was nowhere to enter them, so the instruction was unactionable and those cards were predictions the user could not correct.
 
 - Render the extra pairs only when `nMix > 1`, labelled by mix.
 - Default mix 1 from the selector as now; default later mixes to *warm* (`T_bowl = DDT`) and to mix 1's biga temperature, so behaviour is unchanged until the user overrides.
-- **Yes, this touches the URL codec.** It is worth it — a shared link for a split batch that silently drops the mix-2 readings is worse than the field not existing. Encode as a delimited list and keep the single-value form parsing as a length-1 array so old links still open.
+- **Yes, this touches the URL codec.** It is worth it — a shared link for a split batch that silently drops the later mixes' readings is worse than the field not existing. Encode as a delimited list and keep the single-value form parsing as a length-1 array so old links still open.
 
 ### Panel 3 — Calibration
 | Field | Type | Default | Note |
@@ -748,7 +759,7 @@ Two columns, **Biga** and **Final mix**, gram weights large enough to read at ar
 
 Nothing else. No split, no grams, no ice, and no commentary about whether the number is warm or cold — the user reads the number and blends to it.
 
-**When `nMix > 1`, render one card per mix.** They are genuinely different numbers, not a repeat: mix 2 starts in a bowl that just ran mix 1, so at 12 balls the targets are 64.8 °F and 59.5 °F on the default prefills. Label them "Mix 1" and "Mix 2". Each card stays bare — the reason lives in `mix-8`, not on the card.
+**When `nMix > 1`, render one card per mix.** They are genuinely different numbers, not a repeat: mix 2 starts in a bowl that just ran mix 1, so at 12 × 265 g the targets are 64.3 °F and 59.0 °F at app defaults (64.8 °F and 59.5 °F at the §5 vector conditions), both on the default bowl prefills. Label them by mix: "Mix 1", "Mix 2", and "Mix 3" at three mixes. Each card stays bare — the reason lives in `mix-8`, not on the card.
 
 Cards after the first recompute from that mix's own biga and bowl readings (§6, per-mix overrides), so the number updates as the user enters what they measured.
 
@@ -774,6 +785,8 @@ Render above the step list, never hidden in a collapsed panel. Sources: **capaci
 
 The engine already splits (§4.5) and every step is written per mix, so the baker never mixes an over-capacity batch by following the steps. What they need is to be **told**: that the batch is over the Halo Core's limit, that it has been split, and into what. Each condition below is evaluated on the values the app displays.
 
+**Severity:** split required, biga split required and near the limit are **warnings**; §4.5's one-biga line is **information**; below the minimum is an **error**, though it cannot fire inside the input ranges.
+
 **Split required — `nMix > 1`. Always shown, first in the strip:**
 > **Too much dough for one mix — this batch is split.** {balls} balls is {doughTotal} g of dough, and the Halo Core takes at most {maxDoughG} g. Mix it as **{nMix} batches of {doughPerMix} g**, one after another in the same bowl. The amounts and steps below are already per mix.
 
@@ -787,7 +800,7 @@ For the biga the flour cap always binds first (`FLOUR_CAP_55 × 1.5` = 2415 g of
 **Near the limit — `doughPerMix ≥ 0.95 × MAX_DOUGH`:**
 > **Close to the Core's limit.** {doughPerMix} g per mix is within 5% of the {maxDoughG} g maximum. It will mix, but there's little margin — weigh carefully.
 
-Fires at 9 and 18 balls at the 265 g default (2437.5 g per mix).
+Fires at 9 and 18 balls at the 265 g default (2437.5 g per mix); across 240–300 g it also fires at 8, 10, 16, 17, 19, 20 and 24 balls. Compare the **printed** per-mix dough, per the rule above: 2374.96 g prints 2375.0 and fires.
 
 **Below the minimum.** Two layers:
 - **At the input.** `Number of balls` stops at 3. Stepping below it shows, next to the field: *"**3 balls minimum.** Below that the Halo Core's hook can't grip the dough, and the water would need to be hotter than a tap delivers. For one or two pizzas, mix by hand."*
@@ -802,8 +815,8 @@ The guard cannot fire inside the input ranges: the smallest single mix is 735.8 
 
 | | Read when | Says |
 |---|---|---|
-| **This strip** | choosing a batch size, before committing | the lever is still available: fewer, larger mixes, or a cooler dough |
-| **`bulk-1` block** | dough already in the tub | the decision is made — chill the older half first, then don't misread the result |
+| **This strip** | choosing a batch size, before committing | the lever is still available: a batch size that needs fewer mixes, or a cooler dough. For a given batch `nMix` is already the fewest that fit, so "fewer mixes" means choosing a different batch size |
+| **`bulk-1` block** | dough already in the tub | the decision is made — chill the first dough before the rest, then don't misread the result |
 
 ⚠️ **Editorial guidance about step content belongs here, not inside §8.2.** An earlier draft put this note between the block marker and its blockquote, which is a parse hazard (a scanner reasonably reads the marker as ending at the first non-quoted line) and mixes spec voice into content that renders verbatim. **§8.2 contains only content.** Anything that tells an implementer *how* to write or place content goes in the section that governs it.
 
@@ -812,18 +825,31 @@ The two water warnings mirror each other — same failure ("you cannot get there
 ### 7.4 Timeline
 Vertical list of stages with clock times and durations. Highlight "now" if the session is in progress.
 
+Where a stage's duration is a planning point inside a recipe range (§4.7), show the range beside it: *"Refrigerate the biga — 19 h (18–20)"*. The clock time uses the point; the baker still sees the window.
+
 ### 7.5 Steps
 See §8. Each step: a checkbox that persists, a summary, computed values inlined, an expandable "Why", and a timer where a duration applies.
+
+**Ranges stay ranges.** When the recipe gives a range for a duration — because it reasons that anywhere in the window works, and the cue decides — the step's text and its timer show the range, never a single number picked from it. Use the ranged-timer behaviour `bulk-1`'s 45–60 min already has. A planning point may appear beside the range ("the timeline plans 19 h"), but never instead of it. A single number is right only where the recipe gives one (`biga-6`'s 1 h) or the app computes one (`bulk-3`'s room time). A step with a duration never says "per schedule" — it names the time.
+
+**One exception on the classic track:** if the baker has planned `bigaRoomOnly` outside 16–18 h (the calculator allows 12–18, crediting 12–16 to PizzaBlab), `biga-4`'s classic timer uses the planned value instead — they have chosen to run off the Giorilli window, and the timer should follow the plan they made.
 
 #### Speed: show what the mixer shows
 
 **The Halo Core has no number display.** Its speed is shown on an LED indicator in segments: a fully lit segment is 10% and a half-lit one is 5% (Ooni help center). The baker sets the speed by counting lit segments, so a chip that leads with "20%" makes them convert in their head at the mixer. **Lead with the indicator:**
 
-1. **A drawn indicator** of `100 / INDICATOR_PCT_PER_SEGMENT` segments: `floor(dial / INDICATOR_PCT_PER_SEGMENT)` full, one half-filled when the remainder is 5, the rest empty. Large enough to hold up against the mixer at arm's length on a phone.
+1. **A drawn indicator that matches the real one** (geometry below): `floor(dial / INDICATOR_PCT_PER_SEGMENT)` segments lit, the **next segment dimmed** when the remainder is 5, the rest unlit. Large enough to hold up against the mixer at arm's length on a phone.
 2. **The count in words beside it:** "2 lit segments", "1½ lit segments".
-3. **Secondary, smaller:** "20% · 98 RPM".
+3. **Secondary, smaller:** "20% · 98 RPM". The duration is not repeated here: every speed step has its own timer (§8.2), which carries it. ⚠️ An earlier version appended the minutes to this line, because the speed steps had no timers then.
 
-The same order applies wherever §8 prose gives a speed: **"2 lit segments (20%, 98 RPM)"**. The `speed` field in each step keeps its `dial% / RPM` form — it is data; this section governs how it renders.
+**The real indicator, as Dave observed it at the mixer** (not published by Ooni):
+- **A ring of ten segments round the knob**, on a dark panel. Think of twelve 30° positions with the bottom two missing, so the gap is centred at 6 o'clock.
+- **It fills clockwise from the gap.** Segment 1 is just left of the gap, 7 to 8 o'clock; segment 10 is just right of it, 4 to 5 o'clock.
+- **Ooni's "half-lit" is the next whole segment at reduced brightness**, not half a segment. 15% is one bright segment then one dim one; 5% is the first segment dim. Unlit segments barely show.
+
+⚠️ **Corrected:** an earlier version said to draw the half step as a half-filled segment and named neither the ring nor the fill direction.
+
+The same order applies wherever §8 prose gives a speed: **"2 lit segments (20%, 98 RPM)"**. The `speed` field in each step keeps its `dial% / RPM` form — it is data; this section governs how it renders. The step's duration is its `timer`, one source for both the countdown and anything else that needs phase length.
 
 ⚠️ **Do not show a setting number** ("setting 4 of 20"). A segment count and a dial-click count differ by a factor of two, and at the 40% ceiling a 2× misread is 80%. The drawn indicator is the one form that reads the same whichever way the baker counts.
 
@@ -843,7 +869,7 @@ interface Step {
   summary: string;                  // default view, 1-2 sentences
   values?: string[];                // computed, "{braces}" bind to engine output
   timerMinutes?: number | [number, number];
-  speed?: { dial: number; rpm: number; minutes: [number, number] };
+  speed?: { dial: number; rpm: number };   // duration lives in timerMinutes, not here
   detail?: string;                  // MARKDOWN. paragraphs, tables, emphasis.
   watchFor?: string;                // the success cue
   troubleshoot?: { symptom: string; cause: string; fix: string }[];
@@ -869,97 +895,95 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 #### `biga-1` — Break up the flour dry
 **phase:** biga
-**summary:** Weigh {bigaFlourPerBiga} g of flour, then whisk hard or push it through a coarse sieve to break up the clumps. Weigh first, break up second.
+**summary:** Weigh {bigaFlourPerBiga} g of flour, then whisk it hard or push it through a coarse sieve to break up the clumps.
 **values:** Biga flour: {bigaFlourPerBiga} g{bigaCountSuffix}
 
 **detail:**
-> Grain Craft arrives lumpy. It's a milling artifact, not a quality problem — but dry is the only easy time to fix it.
+> Grain Craft arrives lumpy from the mill; the flour itself is fine. The lumps are only easy to break up while the flour is dry.
+>
+> A clump that survives into the biga keeps dry flour at its core, and dry flour never ferments. In a stiff 50% biga you can't find it by hand once the water is in, and it turns up later as a hard nodule in the finished dough.
+>
+> Weigh before you break it up, so flour lost in the sieve doesn't change your number.
 
 **detail, shown only when `nBiga > 1`:**
-> **This batch needs {nBiga} separate bigas**, and the weights above are for **one of them**. Don't weigh the batch total into a single container — {bigaFlourTotal} g of biga flour exceeds the 1610 g the machine handles at this hydration, which is why it splits.
+> **This batch needs {nBiga} separate bigas.** The weights above are for one of them. Don't weigh the batch total into one container: {bigaFlourTotal} g of biga flour is more than the 1610 g the machine handles at this hydration.
 >
-> Make them back to back and keep them in separate containers. They are identical in every respect and they ferment side by side on the same clock, so the steps that follow cover both at once — only one of them can occupy the mixer bowl, so the second goes in its own tub.
->
-> A clump that survives into the biga has dry flour at its core that never ferments, and in a stiff 50% hydration biga you will not find it by hand once the water is in. It turns up later as a hard nodule in the finished dough.
->
-> Weigh before you break up, not after, so anything lost to the sieve doesn't change the number you're working from.
-
----
-
-#### `biga-2` — Dissolve the yeast
-**phase:** biga
-**summary:** {bigaWaterPerBiga} g of **room-temperature** water, {bigaADYPerBiga} g ADY. Stir to dissolve.
-**values:** Biga water: {bigaWaterPerBiga} g · ADY: {bigaADYPerBiga} g
-
-**detail:**
-> **The dose is the Giorilli standard: 1% fresh yeast = 0.30% IDY = 0.375% ADY on biga flour**, the baseline for 16–18 h at 61–65 °F (16–18 °C).
->
-> This is the dose Piergiorgio Giorilli codified, and the sources this recipe draws on repeat it — Gozney's own 100% biga recipe and Baking With Theory with that window, PizzaBlab with a wider 12–24 h at the same temperature. Go longer and you cut it; run warmer and you cut it. For a time or temperature off that baseline, use PizzaBlab's dough calculator rather than guessing.
->
-> **Room-temperature water, not warm and not cold.** Cold water damages yeast cells. There is no proofing or activation step in the classic method — you are not trying to wake the yeast up, just disperse it. At these quantities you are well clear of scale resolution, so no slurry workaround is needed either.
-**concepts:** giorilli-standard
+> Make them back to back in separate containers. They ferment side by side on the same clock, so the steps that follow cover both. Only one fits in the mixer bowl; the second goes in its own tub.
 
 ---
 
 #### `biga-3` — Mix by hand to chunks
 **phase:** biga
-**summary:** Add the flour. Hand-mix 3–6 minutes with your fingers in a claw. Target gnocchi-sized chunks with no dry flour anywhere.
+**summary:** In the mixer bowl, stir {bigaADYPerBiga} g ADY into {bigaWaterPerBiga} g of **room-temperature** water until dissolved. Add the flour and mix by hand, fingers in a claw, for 3–6 minutes, until you have gnocchi-sized chunks and no dry flour.
 **timer:** 3–6 min
-**watchFor:** Crumbly chunks, not dough. No dry flour left anywhere.
+**values:** Biga water: {bigaWaterPerBiga} g · ADY: {bigaADYPerBiga} g
+**watchFor:** Crumbly chunks, not a dough. No dry flour anywhere.
 
 **detail:**
-> **Hand-mix at every batch size.** This isn't a concession for small batches — it's the method. Gozney's 100% biga recipe says to mix by hand to a dry lumpy consistency, and PizzaBlab warns specifically against forming a cohesive mass.
+> Mix by hand at every batch size. Gozney's 100% biga recipe calls for mixing by hand to a dry, lumpy consistency, and PizzaBlab warns against forming a cohesive mass.
 >
-> The goal is **small-to-medium chunks, like gnocchi** — not a dough. A spiral mixer's entire purpose is building a gluten network, which is precisely what you don't want here. An over-mixed biga rises like a dough instead of fermenting like a biga, and then it doubles and misleads you about ripeness.
+> Aim for small-to-medium chunks, like gnocchi. A spiral mixer builds gluten, which a biga shouldn't have yet. An over-mixed biga rises like a dough, can double, and then looks riper than it is.
 >
-> Method: water and yeast **into the mixer bowl** — the biga ferments in the same bowl the final mix runs in, always. Mix to dissolve. Add flour. Make a claw with your hand and circulate your fingertips through it. **3–6 minutes, until no dry flour remains** — any dry flour never ferments. Break up large chunks by hand.
+> Dissolve the yeast first so it spreads evenly. There's no proofing step: a few grams of yeast have to reach every part of a stiff 50% biga that is only mixed to chunks and never kneaded, and the water is what carries it there. Use room-temperature water, neither warm nor cold; cold water damages yeast cells.
 >
-> Cover to prevent drying. Sources differ on venting: Gozney and Ooni say leave a gap, PizzaBlab says it serves no purpose. Either is fine; the thing that matters is that it doesn't dry out.
+> The biga always ferments in the mixer bowl, the same bowl the final mix runs in. Work your fingertips through it in a claw for 3–6 minutes, until no dry flour remains, since dry flour never ferments. Break up large chunks by hand.
 >
-> *A side benefit: hand-mixing means the mixer's 500 g minimum never applies to the biga phase, so no batch is too small.*
-**concepts:** mix-dont-knead
+> Cover it so it doesn't dry out. Gozney and Ooni say to leave a gap for venting; PizzaBlab says venting does nothing. Either works.
+>
+> Because the biga is mixed by hand, the mixer's 500 g minimum doesn't apply to it, so no batch is too small.
+>
+> **The yeast dose is Piergiorgio Giorilli's standard: 1% fresh yeast = 0.30% IDY = 0.375% ADY on biga flour**, the baseline for 16–18 h at 61–65 °F (16–18 °C).
+>
+> Gozney's 100% biga recipe and Baking With Theory give this dose with that window; PizzaBlab gives it with a wider 12–24 h at the same temperature. A longer or warmer ferment needs less yeast. For a time or temperature outside that baseline, use PizzaBlab's dough calculator. These amounts are well above scale resolution, so there's no need to weigh the yeast as a slurry.
+**concepts:** mix-dont-knead, giorilli-standard
 
 ---
 
-#### `biga-4` — Ferment
+#### `biga-4` — Ferment at room temperature
 **phase:** biga
-**summary (retarded):** 2 hours at room temperature, then {bigaFridge} hours in the fridge. Cover so it can't dry out.
-**summary (classic):** {bigaRoomOnly} hours at 61–65 °F. Cover so it can't dry out.
-**timer:** per schedule
+**summary (retarded):** **2 hours** at room temperature in the mixer bowl, covered so it doesn't dry out. Then it goes in the fridge.
+**summary (classic):** At 61–65 °F, covered so it doesn't dry out. The Giorilli window is **16–18 hours**; the timeline plans **{bigaRoomOnly} h**.
+**timer (retarded):** 2 h
+**timer (classic):** 16–18 h
 
 **detail:**
-> **The 61–65 °F band isn't only about speed.** That range produces the right ratio of lactic to acetic acid, which is what gives biga its characteristic sharp, vinegary profile. Ferment much warmer and you get a preferment that is biga-shaped but tastes different.
+> **The retarded schedule**, 2 h at room temperature and then 18–20 h in the fridge, is the one Ooni's professional biga recipe uses. It's the usual choice for a kitchen that won't hold 61–65 °F: the 2 hours start fermentation, and the fridge then holds the biga at a steady temperature instead of wherever the room drifts. You give up a little acid character for control.
 >
-> That's why an unstable kitchen is a real problem here and not just a timing nuisance.
->
-> **The retarded schedule** — 2 h at room temperature, then 18–20 h in the fridge — is what Ooni's own professional biga recipe does, and it's the standard answer for a kitchen that won't hold a band. The 2 hours gets fermentation started; the fridge then holds it somewhere genuinely stable instead of wherever the room happens to drift. It trades a little of the acid character for control.
->
-> **The classic room-temperature version** is the one that produces the truest profile, if you have a wine fridge, a cool basement, or winter.
+> **The classic room-temperature schedule** gives the truest biga flavor, if you have a wine fridge, a cool basement or a winter kitchen that holds the range.
 **concepts:** why-61-65
+
+---
+
+#### `biga-4b` — Refrigerate the biga
+**phase:** biga
+**shown only when:** `schedule === 'retarded'`
+**summary:** Into the fridge, still in the mixer bowl and covered, for **18–20 hours**. The timeline plans {bigaFridge} h.
+**timer:** 18–20 h
+
+**detail:**
+> The 2 hours at room temperature started fermentation; the fridge holds it steady while the biga ripens. Ooni's professional biga recipe uses 18–20 hours, and anywhere in that window works. Judge ripeness by the cue in the next step.
 
 ---
 
 #### `biga-5` — Pull at ~20% rise
 **phase:** biga
-**summary:** Ripe when the chunks have puffed roughly 20%. **It does not double.**
-**watchFor:** Chunks slightly swollen, possibly knitted into a loose block. Smell moderately sharp, alcoholic-sour, and mild — not overpowering.
+**summary:** Ripe when the chunks have puffed about 20%. **It won't double.**
+**watchFor:** Chunks slightly swollen, possibly knitted into a loose block. The smell is moderately sharp, a little sour and alcoholic, but not overpowering.
 
 **detail:**
-> **A ripe biga puffs up roughly 20%. That's it.**
+> A ripe biga rises only about 20%. Habits from poolish and bulk dough say to wait for it to double; with a biga that means waiting well past ripe. If it does double, it was over-mixed and is rising like a dough.
 >
-> This is the cue most people get wrong, because it's the opposite of how a poolish or a bulk dough reads. Waiting for it to double means waiting well past ripe — or it means you over-mixed and it's rising as a dough rather than fermenting as a biga.
+> The window is wide. A biga ferments slowly, makes acid slowly and breaks down little gluten, so an hour either way rarely matters. Go by the cue rather than the clock.
 >
-> The window is genuinely wide. Slower fermentation, slower acid production and less gluten breakdown mean a biga is hard to ruin by an hour either way. **Plan to hit the cue, not the clock.**
->
-> To make this objective rather than a judgment call: fill a small straight-sided jar with biga from the same batch and mark the start level. Now "20%" is a number you read off the glass instead of a feeling.
+> To make the cue objective, fill a small straight-sided jar with biga from the same batch and mark the starting level. Then 20% is a line on the glass.
 
 **troubleshoot:**
 | Symptom | Cause | Fix |
 |---|---|---|
-| Doubled in volume | **Over-mixed** — you developed gluten, so it rose like a dough | Hand-mix only, shorter, to loose chunks. Not a yeast problem. |
-| Strong, sharp acidic or alcoholic smell | Over-fermented | Shorten, or switch to the retarded schedule |
-| No puffing at all | Not ready, ambient colder than assumed, or dead yeast | Give it longer. Probe actual ambient rather than trusting a wall thermometer. Check the yeast. |
-| Dry flour visible in the chunks | Under-mixed | Mix the full 3–6 min next time — dry flour never ferments |
+| Doubled in volume | **Over-mixed**: it developed gluten and rose like a dough | Mix by hand only, for less time, to loose chunks. It isn't a yeast problem. |
+| Strong, sharp acidic or alcoholic smell | Over-fermented | Shorten it, or switch to the retarded schedule |
+| No puffing at all | Not ready, colder than you thought (room or fridge), or dead yeast | Give it longer. Probe the actual temperature where it's fermenting rather than trusting a wall thermometer. Check the yeast. |
+| Dry flour visible in the chunks | Under-mixed | Mix the full 3–6 min next time; dry flour never ferments |
 
 ---
 
@@ -970,91 +994,93 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 **timer:** {bigaTemper} h
 
 **detail:**
-> **This is the most expensive hour in the schedule to skip, and the easiest.** Biga temperature is the single most leveraged number in this recipe: one degree of biga moves the required water by about **two degrees** — 1.9 °F at a 6-ball mix, 2.3 °F at a 3-ball one. Nothing else you measure comes close.
+> This is the easiest hour in the schedule to skip, and skipping it costs the most. Biga temperature affects the water target more than anything else you measure: each degree of biga moves the required water by about **two degrees**, 1.9 °F at a 6-ball mix and 2.3 °F at a 3-ball one.
 >
-> Skip the hour and the calculator will ask you for water hot enough that a tap can't supply it. That isn't the calculator being awkward; it is the arithmetic telling you the biga is too cold to make this dough at the temperature you asked for.
+> Without it, the calculator will ask for water hotter than a tap can supply, because the biga is too cold to reach your target dough temperature any other way.
 >
-> **Leave it in the mixer bowl.** The bowl is {bowlMassG} g of stainless and it is part of the thermal system — the hour warms both together, which is the whole point. Taking the biga out to temper on the counter warms the biga and leaves the bowl behind, which is the opposite of what you want.
+> Leave the biga in the mixer bowl. The {bowlMassG} g stainless bowl is part of the thermal system, and the hour warms bowl and biga together. Tempering the biga on the counter leaves the bowl cold.
 
 ---
 
 #### `mix-1` — Prep the bowl
 **phase:** mix
-**summary:** Break up clumps in {freshFlourPerMix} g of fresh flour. Crumble the biga small — smaller is better. Add flour, toss to coat.
+**summary:** Break up the clumps in {freshFlourPerMix} g of fresh flour. Crumble the biga as small as you can, add the flour, and toss to coat.
 **values:** Fresh flour: {freshFlourPerMix} g
 
 **detail:**
-> The biga is the stiffest thing the machine will face all session. Crumbling it small is the difference between a smooth breakdown and tripping motor protection.
+> The biga is the stiffest thing the mixer handles all session. Crumbled small, it breaks down smoothly; in large pieces it can trip the motor protection.
 >
-> Break up the fresh flour dry for the same reason as the biga flour — this is your last chance before water goes in.
+> Break up the fresh flour dry for the same reason as the biga flour. It's the last chance before the water goes in.
 >
-> **Take both temperatures once the biga is crumbled, not before.** The calculator wants the biga at the moment it meets the water, and crumbling warms it — bake 1 read **53 °F at pull and 58 °F once broken apart**, five degrees from handling alone.
+> **Take both temperatures after you crumble the biga.** The calculator needs the biga's temperature when it meets the water, and handling warms it: on bake 1 the biga read **53 °F at pull and 58 °F once broken up**.
 >
-> **The bowl does not get that five degrees**, which is why it is a separate reading rather than an assumption. One touch against the bowl wall, five seconds. It is worth 0.66 °F of water per degree at a 3-ball mix.
+> The bowl doesn't warm with the biga, so read it separately: hold the probe against the bowl wall for five seconds. Each degree of bowl temperature is worth 0.66 °F of water at a 3-ball mix.
 
 **detail, shown only when `nMix > 1`:**
-> **Weigh out every mix now, before you start the first one.** You are running {nMix} mixes, and the changeover between them is budgeted at five minutes. That is only achievable if the second mix's flour, biga and salt are already sitting in their own containers — if you weigh during the changeover it becomes fifteen or twenty, and every extra five minutes puts another 2½ minutes of uncorrectable fermentation onto the first dough.
+> **Weigh out every mix before you start the first.** You're running {nMix} mixes, with five minutes budgeted for each changeover. That only works if the next mix's flour, biga and salt are already in their own containers. Weighing during the changeover stretches it to fifteen or twenty minutes, and every extra five minutes adds five minutes of fermentation to the first dough that nothing later can correct.
 >
-> Split the tempered biga into {nMix} equal portions by weight, {bigaMassPerMix} g each, and cover them. Do the same with the fresh flour and salt.
+> Split the tempered biga into {nMix} equal portions of {bigaMassPerMix} g and cover them. Do the same with the fresh flour and salt.
 
 ---
 
 #### `mix-2` — Phase A, breakdown
 **phase:** mix
-**summary:** Add **{phaseAWaterPerMix} g** of water ({phaseAPercent}%) with the mixer **off**, then run at **1½ lit segments** (15%, 85 RPM) for 3–4 min until the biga pieces disappear into a rough shaggy mass.
-**values:** Phase A water: {phaseAWaterPerMix} g — weigh it, don't estimate
-**speed:** 15% / 85 RPM, 3–4 min
+**summary:** Add **{phaseAWaterPerMix} g** of water ({phaseAPercent}%) with the mixer **off**, then run at **1½ lit segments** (15%, 85 RPM) for 3–4 min, until the biga pieces disappear into a rough, shaggy mass.
+**values:** Phase A water: {phaseAWaterPerMix} g
+**speed:** 15% / 85 RPM
+**timer:** 3–4 min
 
 **detail:**
-> **Highest-torque phase of the whole session.**
+> This is the highest-torque phase of the session.
 >
-> **Add the water with the mixer off.** The Core's slowest setting is 60 RPM — there is no creep speed to fold liquid in gently, and pouring onto flour at 85 RPM throws it out of the bowl. Add, then dial up.
+> Add the water with the mixer off. The Core's slowest setting is 60 RPM, too fast to fold liquid in, and pouring water in at 85 RPM throws flour out of the bowl. Add it, then start the mixer.
 >
-> *Optional, from PizzaBlab:* soak the crumbled biga in that water for a few minutes first. But only a few — working biga in water alone strips starch off the chunks and leaves hard, sticky gluten lumps that won't disperse.
+> Weigh the water rather than pouring by eye. Bake 1 left open whether the split between Phases A and B is right, and only weighed pours can settle it.
 >
-> If motor protection engages, stop, rest 5 minutes, and resume one step lower. Log it — that's data about your friction factor.
+> Optional, from PizzaBlab: soak the crumbled biga in the water for a few minutes first. Keep it to a few; working biga in plain water strips starch off the chunks and leaves hard, sticky gluten lumps that won't disperse.
 **concepts:** no-creep-speed
 
 ---
 
 #### `mix-3` — Phase B, salt and bassinage
 **phase:** mix
-**summary:** Add {saltPerMix} g salt. Then **{phaseBWaterPerMix} g** (the remaining {phaseBPercent}%) in **3 additions**, each fully absorbed before the next. **2 lit segments** (20%, 98 RPM), 5–6 min.
-**speed:** 20% / 98 RPM, 5–6 min
+**summary:** Add {saltPerMix} g salt, then **{phaseBWaterPerMix} g** of water (the remaining {phaseBPercent}%) in **3 additions**, letting each absorb fully before the next. **2 lit segments** (20%, 98 RPM), 5–6 min.
+**speed:** 20% / 98 RPM
+**timer:** 5–6 min
 **values:** Salt: {saltPerMix} g · Phase B water: {phaseBWaterPerMix} g
 
 **detail:**
-> **Salt goes in here — never in the biga**, where it would suppress the yeast you just spent 20 hours propagating.
+> Salt goes in here and never in the biga, where it would slow the yeast you've spent 20 hours building up.
 >
-> At 2.8% the salt is at the upper end of the Neapolitan range of 2.5–3.0%. That tightens the gluten slightly and slows fermentation a touch, both useful over a long schedule.
+> At 2.8%, the salt is at the top of the Neapolitan range of 2.5–3.0%. It tightens the gluten slightly and slows fermentation a little, which helps over a long schedule.
 >
-> **Pour slowly down the splash-guard spout.** At 98 RPM the hook will sling water if you dump it in. Waiting for each addition to fully absorb before the next is what keeps the dough from breaking into a slurry it then has to recover from.
+> Pour slowly down the splash-guard spout; at 98 RPM the hook slings water that's dumped in. Letting each addition absorb before the next keeps the dough from breaking into a slurry it then has to recover from.
 
 ---
 
 #### `mix-4` — Probe the temperature
 **phase:** mix
-**summary:** Stop and probe. **Target {probeTarget} °F.** You are not aiming at DDT yet.
+**summary:** Stop and probe. **Target {probeTarget} °F**, below DDT on purpose.
 **values:** Probe target: {probeTarget} °F · DDT: {ddt} °F
 
 **detail:**
-> **Why not at DDT.** By the end of Phase B you have absorbed roughly two thirds of the total friction — Phases A and B are long, and the hydration exotherm has already fired.
+> By the end of Phase B the dough has taken about two thirds of its total friction heat: Phases A and B are long, and the heat of hydration has already been released.
 >
-> Still to come, **stated the way the probe will read it** — dough and bowl equilibrated, for your batch in your kitchen: Phases C and D will add about **{frictionRemainingF} °F**, and the 10-minute rest will move the dough **{restExchangeF} °F** toward room temperature. That is why the target above sits **{probeGapPhrase}**.
+> What's still to come, as the probe will read it (dough and bowl together, for your batch in your kitchen): Phases C and D add about **{frictionRemainingF} °F**, and the 10-minute rest moves the dough **{restExchangeF} °F** toward room temperature. That's why the target sits **{probeGapPhrase}**.
 >
-> **There is no fixed "so many degrees low" rule — and your kitchen matters more than your batch size.** That last term, the heat exchanged with the room during the rest, is the one that moves: the rest gives heat back to a cold room and takes it from a warm one.
+> There's no fixed "so many degrees low" rule, and your kitchen matters more than your batch size. During the rest the dough gives heat to a cold room and takes it from a warm one:
 >
-> - **Every degree your kitchen is below 70 °F moves the target 0.2 °F up toward DDT.** A 62 °F kitchen is 1.6 °F closer.
-> - **Every degree above 70 moves it 0.2 °F down.**
+> - **Each degree your kitchen is below 70 °F moves the target 0.2 °F up toward DDT.** A 62 °F kitchen is 1.6 °F closer.
+> - **Each degree above 70 moves it 0.2 °F down.**
 > - **Batch size matters much less.** A 62 °F kitchen against a 78 °F one shifts the target by more than three degrees; going from 3 balls to 9 shifts it by a fraction of that.
 >
-> That is why the target above is computed from the room temperature you entered, and why it is worth measuring the room rather than assuming it. Nothing else in this step moves the number as much.
+> So the target is computed from the room temperature you entered, and the room is worth measuring rather than assuming.
 >
-> The general form:
+> The formula:
 >
 > **Probe target = DDT − 0.33 × FF × Ct/(Ct + C_bowl) + 0.2 × (DDT − T_room)**
 >
-> Remaining friction is diluted by the mixer bowl's thermal mass, and the rest exchanges heat in proportion to the dough-to-room gap.
+> The mixer bowl's thermal mass dilutes the remaining friction, and the rest exchanges heat in proportion to the gap between dough and room.
 
 **troubleshoot:**
 | Probe reads | Do |
@@ -1062,24 +1088,25 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 | Target ±1 °F | Run Phase C as written |
 | 1–2 °F high | Cut Phase C to 2–2.5 min |
 | 1–2 °F low | Extend Phase C to 4.5–5.5 min |
-| More than 2 °F off | Accept the miss — fix the water temperature next batch |
+| More than 2 °F off | Accept the miss and fix the water temperature next batch |
 **concepts:** friction-factor
 
 ---
 
 #### `mix-5` — Phase C, development
 **phase:** mix
-**summary:** **3 lit segments** (30%, 123 RPM), 3–4 min, to smooth and glossy. Adjust duration from the probe: about **{observedRate30} °F per minute** at this speed.
-**speed:** 30% / 123 RPM, 3–4 min
+**summary:** **3 lit segments** (30%, 123 RPM), 3–4 min, until smooth and glossy. Adjust the time from the probe reading: about **{observedRate30} °F per minute** at this speed.
+**speed:** 30% / 123 RPM
+**timer:** 3–4 min
 
 **detail:**
-> **Phase C has limited authority over temperature, and this is the important part.**
+> Phase C can only move the temperature a little.
 >
-> At 6 balls, cutting it to 2 minutes saves only **1.5 °F** and stretching it to 5.5 minutes adds only **1.9 °F**. That's the entire usable range, and it is narrower at 3 balls (−1.3 / +1.8) and slightly wider at 9 (−1.5 / +2.0).
+> At 6 balls, cutting it to 2 minutes saves **1.5 °F** and stretching it to 5.5 minutes adds **1.9 °F**. That's the whole usable range; it's narrower at 3 balls (−1.3 / +1.8) and slightly wider at 9 (−1.5 / +2.0).
 >
-> Outside that window you are trading gluten development for temperature and losing both. **An under-mixed dough at exactly the right temperature is worse than a properly developed one running 2 °F warm.** Temperature misses get fixed upstream in the water calculation, not downstream by mangling the mix.
+> Beyond that you give up gluten development to fix temperature. **A properly developed dough 2 °F warm is better than an under-mixed one at exactly the right temperature.** Fix a temperature miss in the next batch's water calculation instead.
 >
-> Friction per minute at each speed, if you need to correct elsewhere: 15% ≈ 0.75 °F/min · 20% ≈ 0.86 °F/min · 30% ≈ 1.08 °F/min. **Those are dough-only figures.** What a thermometer shows is each of them multiplied by `Ct/(Ct + C_bowl)` — 0.82 at 3 balls, 0.90 at 6, 0.93 at 9 — which at 30% gives an observed 0.89, 0.97 and 1.01 °F per minute. That is where "about a degree a minute" comes from, and it only holds at 6 balls and up.
+> Friction per minute at each speed: 15% ≈ 0.75 °F/min · 20% ≈ 0.86 °F/min · 30% ≈ 1.08 °F/min. These are for the dough alone. A thermometer reads each of them multiplied by `Ct/(Ct + C_bowl)` — 0.82 at 3 balls, 0.90 at 6, 0.93 at 9 — which at 30% gives 0.89, 0.97 and 1.01 °F per minute. So "about a degree a minute" holds at 6 balls and up.
 
 ---
 
@@ -1089,22 +1116,23 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 **timer:** 10 min
 
 **detail:**
-> Relaxes the gluten. The dough smooths out on its own without any further work — this is doing something, even though it looks like nothing is happening.
+> The rest relaxes the gluten, and the dough smooths out on its own.
 >
-> It also breaks up the mixer's continuous run time, which keeps the whole session inside the Halo Core's {maxRunMin}-minute continuous limit.
+> It also breaks up the mixer's run time, keeping each run inside the Halo Core's {maxRunMin}-minute continuous limit.
 
 ---
 
 #### `mix-7` — Phase D, finish
 **phase:** mix
 **summary:** **2 lit segments** (20%, 98 RPM), 45–60 seconds. The dough should pull cleanly off the bowl wall.
-**speed:** 20% / 98 RPM, ~1 min
-**watchFor:** Smooth and glossy, "pumpkin-lattice" surface, cleans the bowl, thin windowpane with only slight tearing — **and at DDT ±1 °F.**
+**speed:** 20% / 98 RPM
+**timer:** 45–60 s
+**watchFor:** Smooth, glossy "pumpkin-lattice" surface, a clean bowl, a thin windowpane with only slight tearing, and **DDT ±1 °F.**
 
 **detail:**
-> **Temperature is a pass/fail gate, not a suggestion.** Record the actual number every time; it's the input to your friction factor and therefore to every future batch.
+> The temperature counts toward done as much as the look and the windowpane. Write down the final dough temperature every time: it's the input to your friction factor, and through it to every future water calculation.
 >
-> **Never above 4 lit segments (40%, 148 RPM) with this dough.** Total run time is about 15 minutes, inside the mixer's {maxRunMin}-minute continuous limit, and the rest breaks it up anyway.
+> **Never above 4 lit segments (40%, 148 RPM) with this dough.** The total run is about 15 minutes, inside the mixer's {maxRunMin}-minute continuous limit, and the rest splits it anyway.
 
 ---
 
@@ -1116,15 +1144,15 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 **timer:** 5 min
 
 **detail:**
-> **Leave the residue.** It costs you nothing and cleaning costs you time. The dough stuck to the bowl is already at your target temperature, so it is thermally neutral — the water target for the next mix is identical whether you leave 0 g or 60 g behind. And because both doughs end up in the same bulk container, whatever transfers forward comes back: mix {mixIndex} loses a little, the next mix gains it, and the batch total is unchanged. Only what stays in the bowl after the *last* mix is a real loss, which is what the 2.2% overage has always covered.
+> Leave the residue in the bowl; cleaning costs time and gains nothing. The dough stuck to it is already at your target temperature, so it doesn't change the next water target, which is the same with 0 g or 60 g left behind. Every mix ends up in the same bulk container, so whatever carries into the next mix still ends up in the batch. Only what's left after the last mix is lost, and the 2.2% overage covers it.
 >
-> **Take two readings before you start the next mix, because both have moved.**
+> Take two readings before the next mix, because both have changed.
 >
-> The **bowl** is no longer cold — it just held a finished dough. It won't be warmer than that dough, but how far it has cooled toward the room in five minutes has never been measured, so read it rather than assume it. The **biga** waiting on the counter has been warming toward the room the whole time mix {mixIndex} ran.
+> The **bowl** just held a finished dough, so it's no longer cold. It won't be warmer than that dough, but how far it cools toward room temperature in five minutes hasn't been measured, so read it. The **biga** waiting on the counter has been warming toward room temperature while mix {mixIndex} ran.
 >
-> They pull the water target in the same direction, and the biga is the bigger term by five to one: about **1.6 °F of water per °F of biga**, against **0.33 °F per °F of bowl** at a 6-ball mix. Neither drift is modelled — there is no data for it — so measure rather than assume. Thirty seconds, and the calculator will give you the next target.
+> Both pull the water target the same way, and the biga has about five times the effect: about **1.6 °F of water per °F of biga**, against **0.33 °F per °F of bowl** at a 6-ball mix. The calculator doesn't model either drift, since there's no data for it. Measure both and it gives you the next target.
 >
-> **If the next target comes out awkward, rinse the bowl.** Thin stainless resets to roughly the rinse temperature in under a minute. It costs changeover time, so it isn't the default, but it is there when you want it.
+> If the next target is awkward, rinse the bowl. Thin stainless reaches roughly the rinse water's temperature in under a minute. It adds time to the changeover, so it isn't the default.
 
 ---
 
@@ -1154,14 +1182,14 @@ WRONG     mix-1#1 mix-1#2 mix-2#1 mix-2#2 … mix-7#1 mix-7#2   mix-8#1
 
 The wrong form has the **same instance count, the same labels, and the same suppression** — 26 instances at 12 balls either way. What it does not have is a procedure: it tells the baker to prep both bowls, then run Phase A twice, then Phase B twice, and it puts the changeover *last*, after both Phase Ds, which is the one position where "changeover to the next mix" means nothing.
 
-**Assert the full rendered id sequence at `nMix` 1, 2 and 3 against an expected sequence written out in the test** — and now **per schedule**, since `biga-6` renders only on the retarded track. Six golden sequences:
+**Assert the full rendered id sequence at `nMix` 1, 2 and 3 against an expected sequence written out in the test** — and now **per schedule**, since `biga-4b` and `biga-6` render only on the retarded track. Six golden sequences:
 
 | | `nMix` 1 | 2 | 3 |
 |---|---:|---:|---:|
 | retarded | **19** | 27 | 35 |
-| classic | **18** | 26 | 34 |
+| classic | **17** | 25 | 33 |
 
-(6 or 5 biga + 7/15/23 mix + 4 bulk + 2 bake.) The previous figures of 18/26/34 were the classic counts, and were correct only because the temper step did not exist. Not the count, not the labels, not "the changeover appears once" — every one of those is true of the wrong form. Where order is the meaning, order is the thing to assert, and a golden sequence is the only assertion a plausible-looking reordering cannot satisfy.
+(6 or 4 biga + 7/15/23 mix + 4 bulk + 2 bake.) Both schedules lost one step when `biga-2` (dissolve the yeast) was folded into `biga-3`; before that retarded was 20 / 28 / 36 and classic 18 / 26 / 34. **The ids are not renumbered: `biga-2` is deliberately absent.** Retarded had gained one step earlier when `biga-4b` split the fridge stage out of `biga-4`; it was 19 / 27 / 35 before that. The figures of 18/26/34 before *that* were the classic counts, and were correct only because the temper step did not exist. Not the count, not the labels, not "the changeover appears once" — every one of those is true of the wrong form. Where order is the meaning, order is the thing to assert, and a golden sequence is the only assertion a plausible-looking reordering cannot satisfy.
 
 **Keep the expansion in its own pure module.** Inside the component that renders it, no test can reach it.
 - **Checkbox and timer state key off the expanded id**, which is the whole point.
@@ -1192,121 +1220,123 @@ A bare token on a per-mix or per-biga step is then a **visible** error rather th
 **timer:** 45–60 min
 
 **detail:**
-> **No folds.** The mixer has already built the gluten network, and the biga contributed a developed one before that. Folding now only tightens the dough further and costs you extensibility.
+> Skip the folds. The mixer has already built the gluten, on top of the structure the biga brought with it, and folding now only tightens the dough and costs extensibility.
 >
-> This is the one place where owning a spiral mixer changes the schedule rather than just the effort — a fold-based bulk would add hours here and actively make the dough worse.
+> With the spiral mixer doing that work, bulk is short and fold-free. A fold-based bulk would add hours here and make this dough worse.
 
 **detail, shown only when `nMix > 1`:**
-> **Start the clock when the last mix comes out, not the first.** Any other anchor leaves the final dough with no bulk at all.
+> **Start the clock when the last mix comes out.** Starting it earlier leaves the last dough with no bulk at all.
 >
-> That means the first dough runs long — {staggerMinutes} minutes long, which is the time the later mixes took. There is no way around it. Both doughs are in the same container now and a container cannot hold two clocks.
+> So the first dough runs {staggerMinutes} minutes long, the time the later mixes took. The doughs share one container now, and one container can't run on separate clocks.
 >
-> **What the calculator does about it, and what it does not.** It takes {staggerHalfMinutes} minutes — half the spread — off the ball room-temperature rise later on. That does not make the batch uniform. It **centres** the error: instead of the first dough running {staggerMinutes} minutes over while the last runs exactly on time, both end up about {staggerHalfMinutes} minutes off, in opposite directions. Halving the worst case is the whole of the gain.
+> To compensate, the calculator takes {staggerHalfMinutes} minutes, half the difference, off the room-temperature rise after balling. The batch still isn't uniform, but the error is split: instead of the first dough running {staggerMinutes} minutes over and the last exactly on time, the first and last end up about {staggerHalfMinutes} minutes off in opposite directions. That halves the worst case.
 >
-> Read that carefully before you judge a result. If the batch comes out slightly over-fermented and you were expecting the correction to have made it uniform, you will reach for the wrong explanation.
+> Keep this in mind when you judge the result. A slightly over-fermented batch doesn't mean the correction failed; it was never meant to make the batch uniform.
 
 **warning, shown when `staggerUncentred > 2`:**
-> **{staggerUncentred} minutes of the spread could not be absorbed.** Your dough is warm enough that the ball rise is already at its 45-minute floor, so there was nothing left to shorten. The first dough will run that much long, and this batch will not be uniform.
+> **{staggerUncentred} minutes of the difference couldn't be absorbed.** Your dough is warm enough that the rise after balling is already at its 45-minute floor, so there was nothing left to shorten. The first dough will run that much long, so this batch won't be uniform.
 >
-> **One thing is still worth doing.** If you can tell the two doughs apart in the tub, divide and ball the **older** one first and get its trays into the fridge as they fill, rather than chilling everything at the end. That claws back roughly the time it takes to ball one mix's worth — about ten minutes at this batch size. It is not in the calculation and it is not precise; it is simply free.
+> If you can tell the doughs apart in the tub, divide and ball the first dough before the rest and put its trays in the fridge as they fill, rather than chilling everything at the end. That recovers roughly the time it takes to ball one mix, about ten minutes at this batch size. It isn't in the calculation, but it costs nothing.
 >
-> **Then read the result correctly.** Expect the older half to be a little further along: slacker on the bench, possibly more open, maybe faintly more acidic. If you see that variation across the batch, this is where it came from. Don't chase it with a formula change — nothing in the recipe is wrong, the batch just ran on one clock when it needed two. Log it and move on.
+> Expect the first dough to be a little further along: slacker on the bench, possibly more open, maybe slightly more acidic. That variation comes from the batch running on one clock. Log it; the formula doesn't need to change.
 
 ---
 
 #### `bulk-2` — Divide and ball
 **phase:** bulk
-**summary:** Divide to {ballWeight} g. Pre-round, rest 10–15 min, then ball tight.
+**summary:** Divide into {ballWeight} g pieces. Pre-round, rest 10–15 min, then ball tight.
 **timer:** 10–15 min between rounds
 **values:** {balls} balls × {ballWeight} g
 
 **detail:**
-> The rest between pre-rounding and final balling lets the gluten relax so you can get a tight ball without fighting it. Balling a tense dough tears the surface, and a torn surface doesn't hold gas.
+> The rest between pre-rounding and final balling relaxes the gluten, so you can shape a tight ball without tearing it. A torn surface doesn't hold gas.
 >
-> At {ballWeight} g, open to about **{openDiameterIn} inches** — the same thickness a {defaultBallG} g ball gives on the full {treadMaxDiameterIn}-inch stone. For a fatter cornicione, open an inch smaller.
+> A {ballWeight} g ball opens to about **{openDiameterIn} inches**, the same thickness a {defaultBallG} g ball gives on the full {treadMaxDiameterIn}-inch stone. For a fatter cornicione, open it an inch smaller.
 
 **detail, shown only when `thickerThanDefault`:**
-> **At this ball weight the oven sets the size, not the dough.** The Tread takes a pizza up to {treadMaxDiameterIn} inches, so a {ballWeight} g ball can't spread any thinner than that allows. It will run about **{thicknessPercentOver}% thicker** than a {defaultBallG} g ball on the same stone — enough to notice. Expect a softer, breadier centre and a little more time on the stone.
+> **At this ball weight the oven limits the size.** The Tread takes pizzas up to {treadMaxDiameterIn} inches, so a {ballWeight} g ball can't be opened any thinner than that. It will be about **{thicknessPercentOver}% thicker** than a {defaultBallG} g ball on the same stone, enough to notice: expect a softer, breadier center and a little more time on the stone.
 
 ---
 
 #### `bulk-3` — Onto trays
 **phase:** bulk
-**summary:** **Very lightly oiled** half-sheet trays with lids — a film wiped with a paper towel, not a pool. Nothing on top of the balls. Room temperature **{roomMin} min**, set by how far the dough you actually hit is from DDT.
-**values:** Room time: {roomMin} min (final dough {finalDoughTemp} °F against DDT {ddt} °F)
+**summary:** Half-sheet trays with lids, very lightly oiled: wipe on a thin film with a paper towel. Nothing on top of the balls. Leave them at room temperature for **{ballRoomMin} min**, set by how far your final dough temperature is from DDT.
+**timer:** {ballRoomMin} min
+**values:** Room time: {ballRoomMin} min (final dough {finalDoughTemp} °F against DDT {ddt} °F)
 
 **detail:**
-> **Oil, not flour.**
+> **Oil the trays; don't flour them.**
 >
-> Flour is hygroscopic. It pulls water out of the dough surface and hydrates into paste. Over 24–36 hours in a fridge — a drying environment even under a lid — you get the worst of both: patches of gluey paste where the flour hydrated, and a dry skin everywhere else. That skin resists opening and tears at the cornicione instead of stretching.
+> Flour absorbs water. It pulls moisture out of the dough surface and turns to paste. Over 24–36 hours in the fridge, which dries things even under a lid, you get gluey patches where the flour hydrated and a dry skin everywhere else. The skin resists opening and tears at the cornicione instead of stretching.
 >
-> The traditional flour dusting comes from **wooden** dough boxes, which breathe and buffer moisture. Aluminum does neither. Flour that lands on aluminum has nowhere to go but into the dough.
+> Flour dusting comes from **wooden** dough boxes, which breathe and buffer moisture. Aluminum does neither, so flour on aluminum has nowhere to go but into the dough.
 >
-> Oil is a barrier rather than an absorbent: it stops the dough bonding to the metal without taking any water out of it, and it prevents skinning over a long cold ferment.
+> Oil keeps the dough from sticking to the metal without drawing water out of it, and stops a skin forming over a long cold ferment.
 >
-> **Keep the two jobs separate:**
+> **Use each for its own job:**
 >
 > | Job | Use |
 > |---|---|
 > | Release from the **tray** | thin oil film |
 > | Release from the **peel** | flour or semolina, at the bench, right before launch |
 >
-> **Keep it to a film.** Too much oil and three things go wrong: the ball slides instead of gripping enough to hold its dome as it relaxes, the base picks up enough oil to fry and over-brown on the stone, and the excess smokes on contact. A neutral oil is marginally better than olive purely on smoke point, though at a wiped film it barely matters.
+> **Keep the oil to a film.** With too much, the ball slides instead of gripping enough to hold its dome as it relaxes, the base picks up oil that fries and over-browns on the stone, and the excess smokes. A neutral oil has a slightly higher smoke point than olive oil, though with a thin film it barely matters.
 >
-> **Nothing on top of the balls.** The lid handles humidity. Oil on the upper surface becomes the cornicione surface and darkens it unevenly.
+> **Put nothing on top of the balls.** The lid handles humidity, and oil on top becomes the cornicione surface and browns it unevenly.
+
+**detail, shown only when `nMix > 1`:**
+> **This rise is shorter than a single mix would get.** At {finalDoughTemp} °F a single mix would rest {roomMin} min; this batch rests {ballRoomMin}. The first mix has been fermenting longer than the last, so the calculator shortens the rise by half that difference to split it (see *Bulk rest*), and never below 45 minutes.
 **concepts:** oil-not-flour
 
 ---
 
 #### `bulk-4` — Refrigerate
 **phase:** bulk
-**summary:** {coldFerment} hours at 38–40 °F. **Spread the trays out for the first 4 hours — do not stack.**
+**summary:** {coldFerment} hours at 38–40 °F. **For the first 4 hours, spread the trays out; don't stack them.**
 **timer:** {coldFerment} h
 
 **detail:**
-> A 265 g ball takes **3–4 hours to reach 40 °F**, and that entire window is warm fermentation you didn't budget for. Stacked trays can double it — the trays in the middle of a stack are insulated by the ones above and below.
+> A 265 g ball takes **3–4 hours to cool to 40 °F**, and it ferments faster the whole time, which the schedule doesn't account for. Stacking can double that time, because the trays in the middle are insulated by the ones above and below.
 >
-> This is also why a warmer dough isn't free. Every degree of starting temperature extends the time spent above 50 °F while the mass cools.
+> This is also the cost of a warmer dough: each extra degree at the start adds time above 50 °F while it cools.
 
 ---
 
 #### `bake-1` — Temper
 **phase:** bake
-**summary:** Out of the fridge {temper} hours before baking. Target **60–65 °F at the core** — measure it, don't guess.
-**timer:** {temper} h
-**watchFor:** Balls relaxed and spread slightly, domed, airy, with a slow incomplete rebound when poked.
+**summary:** Out of the fridge **2–3 hours** before baking; the timeline plans {temper} h. Target **60–65 °F at the core**, measured with a probe.
+**timer:** 2–3 h
+**watchFor:** Balls relaxed and spread slightly, domed and airy, with a slow, incomplete rebound when poked.
 
 **detail:**
-> Below **55 °F** the dough tears on opening and won't spring in the oven. Above **70 °F** it goes slack and sticky and loses its shape on the peel.
+> Below **55 °F** the dough tears when you open it and won't get good oven spring. Above **70 °F** it goes slack and sticky and loses its shape on the peel.
 >
-> The visual cue and the thermometer should agree. If the ball looks ready but reads 52 °F, trust the thermometer — the surface warms long before the core does.
+> The look of the ball and the thermometer should agree. If a ball looks ready but reads 52 °F, trust the thermometer; the surface warms long before the core.
 
 ---
 
 #### `bake-2` — Bake
 **phase:** bake
-**summary:** Preheat until the gauge reads **750 °F**. Launch on **full flame**, 60–90 s, turning every 15–20 s.
+**summary:** Preheat until the gauge reads **750 °F**. Launch on **full flame** and bake 60–90 s, turning every 15–20 s.
 
 **detail:**
-> **Why 750 + full flame is the correct call, not a compromise.**
+> **Why 750 °F and full flame.** A Neapolitan bake depends on the balance between heat from above and heat from below more than on absolute temperature. The stone cooks the base by conduction; the flame cooks the top by radiation. If the base finishes before the top, you need more heat from above relative to below: a cooler stone, more flame, or both.
 >
-> Neapolitan baking is governed by the **ratio of top heat to bottom heat**, not by absolute temperature. The stone cooks the base by conduction; the flame cooks the top by radiation. If the base finishes before the top, you need a *larger* top-to-bottom ratio — which means lowering the stone, raising the flame, or both.
+> A 750 °F stone with full flame gives that balance. Pushing the stone to 800 °F or more shifts it the wrong way and burns the base before the cornicione sets.
 >
-> A 750 °F stone with full flame does exactly that. Pushing the stone to 800 °F+ moves the ratio the wrong way and burns the base before the cornicione has set.
+> **Turn every 15–20 s.** The flame comes from one side of a small chamber, so whichever side faces it scorches fast.
 >
-> **Turn every 15–20 s.** Lateral flame plus a small chamber means a static face scorches fast.
+> **Let the stone recover between pizzas.** The Tread heats and cools quickly because it has little thermal mass, so across 9–18 pizzas the stone limits you more than the dough does.
 >
-> **Let the stone recover between pies.** The Tread heats and cools fast, which is the price of low thermal mass. Across 9–18 pizzas the stone is the limiting variable, not the dough.
->
-> *Worth logging once: the built-in gauge and an IR reading of the stone surface are different measurements and won't agree. If you gun the stone at gauge-750, write down what it says — that's the number that transfers to any other oven.*
+> Worth logging once: the built-in gauge and an IR reading of the stone surface measure different things and won't agree. If you check the stone with an IR thermometer when the gauge reads 750, record the reading. That's the number that carries over to other ovens.
 
 **troubleshoot:**
 | Symptom | Cause | Fix |
 |---|---|---|
-| **Burn ring at the base of the cornicione** | That ring is unsauced *and* usually the thinnest part of the base — no evaporative cooling and no thermal mass, stacked on top of each other | Take the sauce to ~1 cm from the rim · open with a gradual thickness gradient rather than pressing a groove · brush loose flour off the base · first turn at 15 s · lift and dome 5–10 s if the base runs ahead |
-| Pale crust on long ferments | Residual sugars consumed by the yeast | Shorten the cold ferment. **Never bake longer** — it dries the crumb. |
-| Base ahead of the top | Top-to-bottom ratio too low | Lower the stone or raise the flame |
-| Top ahead of the base | Top-to-bottom ratio too high | The only case for nudging the stone up |
+| **Burn ring at the base of the cornicione** | That ring is unsauced and usually the thinnest part of the base, so it has no evaporative cooling and little thermal mass | Stop the sauce ~1 cm from the rim · open with a gradual change in thickness instead of pressing a groove · brush loose flour off the base · make the first turn at 15 s · if the base runs ahead, lift and dome the pizza for 5–10 s |
+| Pale crust on long ferments | The yeast has used up the residual sugars | Shorten the cold ferment. **Don't bake longer**; it dries the crumb. |
+| Base done before the top | Not enough heat from above relative to below | Lower the stone temperature or raise the flame |
+| Top done before the base | Too much heat from above relative to below | The only case for raising the stone temperature |
 **concepts:** burn-ring
 
 ---
@@ -1320,118 +1350,116 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 ```
 
 **`why-biga`** — *Why this recipe uses a 65% biga*
-> Its low water activity suppresses protease mobility, so the gluten survives a long ferment instead of degrading, and it pushes the bacteria toward heterofermentative pathways — more acetic acid, a sharper and more complex aroma, and the big irregular alveoli that define the contemporary Neapolitan cornicione. It is also the more forgiving preferment: slower acid production and a wider usable window than a liquid preferment gives you.
+> Low water activity slows the proteases that break down gluten, so the gluten survives a long ferment. It also pushes the bacteria toward heterofermentative pathways, which make more acetic acid: a sharper, more complex aroma, and the big irregular holes of the contemporary Neapolitan cornicione. A biga is also more forgiving than a liquid preferment, since it makes acid more slowly and has a wider window.
 >
-> **Why 65% and not 100%.** The flavor-versus-preferment-percentage curve flattens sharply above about 60%, while the risks keep climbing. Three reasons to stop at 65%:
+> **Why 65% and not 100%.** Flavor gains flatten sharply above about 60% biga, while the risks keep rising. Three reasons to stop at 65%:
 >
-> - **Flour strength.** Every serious biga source calls for W 300+ / 12.5%+ protein for long ferments. Grain Craft Neapolitan is 12.2–12.8% protein — capable, but at the lower edge. Holding 35% of the flour out of the preferment leaves un-fermented gluten in the final dough as structural margin.
-> - **A live consistency lever.** The reserved water gets added by feel during the mix, so you can correct for a wetter or drier biga instead of committing everything up front.
-> - **Mixer load.** A smaller biga is easier to break down, and the breakdown phase is the hardest work the machine does.
+> - **Flour strength.** Biga sources call for W 300+ / 12.5%+ protein for long ferments. Grain Craft Neapolitan is 12.2–12.8% protein, capable but at the low edge. Keeping 35% of the flour out of the biga leaves unfermented gluten in the final dough as a structural margin.
+> - **Adjustable consistency.** The reserved water goes in by feel during the mix, so you can correct for a wetter or drier biga.
+> - **Mixer load.** A smaller biga is easier to break down, and breakdown is the hardest work the mixer does.
 >
-> Once this has run cleanly three or four times, pushing to 80% or 100% biga is a clean single-variable experiment.
+> Once this has run cleanly three or four times, moving to 80% or 100% biga is a single-variable experiment.
 
 **`formula-rationale`** — *Why 70% hydration, 2.8% salt, no malt*
-> **70% hydration** — enough to get an open, airy crumb and a puffy cornicione in a 60–90 second bake, without exceeding what a 12.5%-protein flour can hold through a long ferment. A biga dough handles drier than the number suggests, because the biga's gluten is already built before the water goes in.
+> **70% hydration** gives an open crumb and a puffy cornicione in a 60–90 second bake without exceeding what a 12.5%-protein flour can hold through a long ferment. A biga dough handles drier than the number suggests, because the biga's gluten is built before the water goes in.
 >
-> **50% biga hydration** — the documented band is 44–50%. Giorilli codified 45% and allows up to 50% for less-refined flours; Grain Craft at 0.55% ash sits just outside true-00 refinement, and 50% hand-mixes more evenly.
+> **50% biga hydration.** The documented band is 44–50%. Giorilli codified 45% and allows up to 50% for less-refined flours; Grain Craft, at 0.55% ash, is slightly less refined than true 00, and 50% mixes more evenly by hand.
 >
-> **2.8% salt** — at the upper end of the Neapolitan range of 2.5–3.0%, which tightens the gluten slightly and slows fermentation a touch, both useful over a long schedule.
+> **2.8% salt** is at the top of the Neapolitan range of 2.5–3.0%. It tightens the gluten slightly and slows fermentation a little, which helps over a long schedule.
 >
-> **No diastatic malt.** At these temperatures added sugars and extra amylase just burn. Grain Craft is unmalted, and that's correct here.
+> **No diastatic malt.** At these oven temperatures, added sugars and extra amylase burn. Grain Craft is unmalted, which suits this recipe.
 
 **`schedule-architecture`** — *Why the cold ferment is 6–36 h and not 72*
-> Classic biga **front-loads the entire fermentation.** At 0.375% ADY on 65% biga flour you carry about 0.244% ADY on total flour — a heavy dose by pizza standards, and deliberately so, because the preferment is meant to do essentially all the work.
+> A classic biga front-loads the fermentation. At 0.375% ADY on 65% biga flour you carry about 0.244% ADY on total flour, a heavy dose by pizza standards and a deliberate one: the biga is meant to do nearly all the work.
 >
-> Every documented biga recipe then gives the final dough a *short* proof: Giorilli and Gozney a few hours, Ooni 2 h at room temperature or 6–36 h in the fridge.
+> Documented biga recipes then give the final dough a *short* proof: Giorilli and Gozney a few hours, Ooni 2 h at room temperature or 6–36 h in the fridge.
 >
-> This is the opposite of a lightly-prefermented dough that gets its character from days in the fridge. **Stack a full-strength classic biga on top of a 50-hour cold ferment and you have specified two complete fermentations.** The dough will blow out.
+> That's the reverse of a lightly prefermented dough that develops its flavor over days in the fridge. **Put a full-strength biga in front of a 50-hour cold ferment and you've scheduled two complete fermentations.** The dough will over-ferment.
 >
-> There's a second thing worth absorbing: **in Italian practice you get more time by lengthening the biga, not the ball proof.** PizzaBlab's range is 12–24 h; "biga lunga" runs 24 h at 39 °F then 24 h at room temperature. The length lives in the preferment.
+> In Italian practice, extra time goes into the biga rather than the ball proof. PizzaBlab's range is 12–24 h, and "biga lunga" runs 24 h at 39 °F, then 24 h at room temperature.
 
 **`thermal-model`** — *How the water temperature is calculated*
-> Standard "multiply DDT by 4" arithmetic breaks down here. It weights the preferment as one of four equal factors, but the biga is **56% of the final dough mass.** So this uses a proper mass-and-specific-heat weighted mix, which resolves to:
->
-> **And it has to include the mixer bowl.** Omitting it made this calculation 5 °F wrong on the first real bake.
+> The common "multiply DDT by 4" method gives the biga the same weight as each of the other three inputs, but the biga is **56% of the final dough mass.** This calculation weights each ingredient by mass and specific heat instead, and it includes the mixer bowl. On bake 1, leaving the bowl out put the water target 5 °F off.
 >
 > **T_water = [ DDT × (Ct + C_bowl) − FF × Ct − Cb·T_biga − Cf·T_flour − Cs·T_room − C_bowl·T_bowl ] ÷ Cw**
 >
-> Specific heats: biga at 50% hydration 0.6133, flour 0.42, water 1.00, salt 0.21, stainless 0.12. A 965 g bowl contributes 115.8 — comparable to the fresh flour, and larger than it below about 5 balls.
+> Specific heats: biga at 50% hydration 0.6133, flour 0.42, water 1.00, salt 0.21, stainless 0.12. A 965 g bowl contributes 115.8, about the same as the fresh flour and more than it below about 5 balls.
 >
-> **Two bowl effects, and both matter — but for different reasons.** Its *mass* is the larger one: friction energy heats whatever is in the bowl, and the bowl is part of "whatever." At a 3-ball mix it absorbs 18% of the mixer's work; at a 9-ball mix, 6.8%.
+> **The bowl matters in two ways.** Its *mass* has the bigger effect: friction heats everything in the bowl, including the bowl. At a 3-ball mix the bowl absorbs 18% of the mixer's work; at a 9-ball mix, 6.8%.
 >
-> Its *temperature* looks negligible and isn't, because there are two coefficients and it is easy to quote the wrong one. What a bowl error costs the **dough** is `C_bowl/(Ct + C_bowl)` — 0.10 °F per 1 °F at 6 balls, 0.18 at 3 — so a 3 °F misestimate costs 0.3 °F at 6 balls. Small. But what it moves in the **water target** is `C_bowl/Cw`, about three times larger because water is under a third of the system: 0.66 °F per °F at a 3-ball mix, 0.33 at 6, 0.22 at 9. The water target is the number you act on, which is why the bowl is worth a five-second measurement even though the dough barely notices.
+> Its *temperature* matters more than it seems, because it has two different coefficients. A bowl error changes the **dough** temperature by `C_bowl/(Ct + C_bowl)`: 0.10 °F per 1 °F at 6 balls, 0.18 at 3, so a 3 °F misreading costs 0.3 °F at 6 balls. It changes the **water target** by `C_bowl/Cw`, about three times as much because water is under a third of the system: 0.66 °F per °F at a 3-ball mix, 0.33 at 6, 0.22 at 9. You act on the water target, which is why the bowl is worth a five-second measurement.
 >
-> **This is why the formula is not scale-independent.** The bowl is fixed mass while the dough scales, so the weights shift with batch size. It also explains why the bowl can't just be folded into FF — the same FF of 14 would appear as 11.5 °F in a 3-ball mix and 13.0 °F in a 9-ball one, drifting for no physical reason.
+> **So the formula depends on scale.** The bowl's mass is fixed while the dough scales, so the weights shift with batch size. That's also why the bowl can't be folded into FF: the same FF of 14 would show up as 11.5 °F in a 3-ball mix and 13.0 °F in a 9-ball one, so FF would appear to change with batch size when nothing about the mixing had.
 >
-> **The scale that matters is the mix, not the batch.** A 12-ball batch runs as two 6-ball mixes, and the bowl faces one of them at a time — so it is a 6-ball thermal system twice over, not a 12-ball one. Computing it as a 12-ball system halves the bowl's apparent share and lands the water target low — by 1.5 to 6.2 °F across the supported range, most with the coldest biga, where the water is already hottest. Your kitchen temperature doesn't change it.
+> **What matters is the mix, not the batch.** A 12-ball batch runs as two 6-ball mixes, and the bowl holds one at a time, so it's two 6-ball systems rather than one 12-ball system. Treating it as one 12-ball system halves the bowl's share and sets the water target too low, by 1.5 to 6.2 °F across the supported range, most with the coldest biga, when the water is already at its hottest. Your kitchen temperature doesn't change it.
 >
-> **The same fixed mass is why small mixes ask for hot water.** At 3 balls the bowl is 18% of the system and only the water can lift it, so the requirement runs to about 107 °F where a 9-ball mix asks for 90 °F. Below 3 balls it leaves the range a tap can reach entirely, which is why 3 is the smallest supported batch. Note this tracks the **mix**: a 12-ball batch is two 6-ball mixes, so it wants *hotter* water than a 9-ball batch does.
+> **The same fixed mass is why small mixes need hot water.** At 3 balls the bowl is 18% of the system and only the water can make up for it, so the requirement reaches about 107 °F, against 90 °F for a 9-ball mix. Below 3 balls it goes beyond what a tap can supply, which is why 3 is the smallest supported batch. This follows the **mix**: a 12-ball batch is two 6-ball mixes, so it needs *hotter* water than a 9-ball batch.
 >
-> **The biga always ferments in the bowl, so there is one lever on it: the temper.** An hour on the counter warms bowl and biga together and lifts the whole cold end of the system. Skipping it is the most expensive shortcut in the schedule — each °F of biga temperature is worth about 2 °F of water, and at 3 balls a skipped temper is what pushes the requirement toward 100 °F.
+> **Because the biga always ferments in the bowl, the temper is the only way to warm the bowl before the first mix.** An hour on the counter brings bowl and biga up together. Skipping it is the costliest shortcut in the schedule: each °F of biga temperature is worth about 2 °F of water, and at 3 balls a skipped temper pushes the requirement toward 100 °F.
 >
-> Note what this implies: with a fridge-retarded biga you need **warm** water. The biga's thermal mass is the dominant term — which is why the schedule, not the water, is the real temperature lever.
+> With a fridge-retarded biga you'll usually need **warm** water. The biga's thermal mass dominates, so the schedule controls dough temperature more than the water does.
 
 **`friction-factor`** — *Measuring your own friction factor*
-> **FF = 14.0 °F, measured** — bake 1, 21 August 2026, 6 balls. Corroborated independently by the Phase C friction rate: 1.00 °F/min observed on the dough-plus-bowl system is 1.11 °F/min dough-only, against 1.08 predicted.
+> **FF = 14.0 °F, measured** on bake 1, 21 August 2026, with 6 balls. The Phase C friction rate agrees: 1.00 °F/min on the dough and bowl together is 1.11 °F/min for the dough alone, against 1.08 predicted.
 >
-> **FF is defined as the rise the mixer produces in the dough alone.** That's why the work term is `FF × Ct` and not `FF × (Ct + C_bowl)`.
+> **FF is the temperature rise the mixer produces in the dough alone.** That's why the work term is `FF × Ct` and not `FF × (Ct + C_bowl)`.
 >
-> **This is a unit convention, and mixing it up is the single easiest mistake to make here.** A thermometer reads the dough after it has come to equilibrium with the bowl, so any dough-only figure — FF itself, or the per-minute friction rates — has to be multiplied by `Ct/(Ct + C_bowl)` before you compare it to something you measured. That factor is 0.82 at 3 balls, 0.90 at 6, 0.93 at 9. Getting this backwards is what produced the old "probe at DDT − 4" rule, which was over a degree wrong at small batches.
+> This is the easiest thing to mix up. A thermometer reads the dough after it has come to equilibrium with the bowl, so any dough-only figure (FF itself, or the per-minute friction rates) has to be multiplied by `Ct/(Ct + C_bowl)` before you compare it with a measurement. That factor is 0.82 at 3 balls, 0.90 at 6, 0.93 at 9.
 >
 > `FF = [ T_final × (Ct + C_bowl) − Cb·T_biga − Cf·T_flour − Cw·T_water − Cs·T_room − C_bowl·T_bowl ] ÷ Ct`
 >
-> For context on plausibility: commercial spirals land 20–26 °F on a full bread mix, and this is a shorter profile on a smaller machine with a 10-minute rest in the middle, so the low end is where it belongs.
+> For comparison, commercial spirals reach 20–26 °F on a full bread mix. This is a shorter profile on a smaller machine with a 10-minute rest in the middle, so a lower figure is expected.
 >
-> **Still one data point.** Bakes at 3 and 9 balls test the bowl model: if it is right, the raw temperature rise differs (11.5 vs 13.0) while the solved FF stays near 14. What a difference in solved FF means depends on which way it goes:
+> **One data point so far.** Bakes at 3 and 9 balls test the bowl model: if it's right, the raw temperature rise differs (11.5 vs 13.0) while the solved FF stays near 14. A difference in solved FF means different things depending on its direction:
 >
-> - **Higher at 3 balls than at 9** — the bowl term is too big. Nothing else predicts FF *falling* as the mix grows, so this result is clean.
-> - **Higher at 9 balls than at 3** — either the bowl term is too small, or FF genuinely rises with mix size (the untested hypothesis below). These two bakes cannot tell those apart.
-> - **About the same** — consistent with the bowl model, and with FF not varying by mix size.
+> - **Higher at 3 balls than at 9**: the bowl term is too big. Nothing else predicts FF falling as the mix grows, so this result is clear.
+> - **Higher at 9 balls than at 3**: either the bowl term is too small, or FF really does rise with mix size (the untested idea below). These two bakes can't tell those apart.
+> - **About the same**: consistent with the bowl model, and with FF not varying by mix size.
 >
-> Protocol: record every input mass and temperature, run the mix profile exactly, probe the dough **immediately** at the end (three spots, center of the mass, averaged), then solve with the formula above. Don't subtract a predicted temperature from the measured one: that difference is the rise *after* the bowl has diluted it, and it reads low by `FF × C_bowl/(Ct + C_bowl)`.
+> To measure it, record every input mass and temperature, run the mix profile exactly, probe the dough **immediately** at the end (three spots in the center of the mass, averaged), then solve with the formula above. Don't subtract a predicted temperature from the measured one: that difference is the rise *after* the bowl has diluted it, and it reads low by `FF × C_bowl/(Ct + C_bowl)`.
 >
-> **Three things that will bite you:**
+> **Three things to watch:**
 >
-> - **FF is a property of the profile, not the machine.** Change speeds or times and it moves. Roughly +1 °F per additional minute at 30%. Re-measure whenever you change the routine.
-> - **FF may differ by mix size — untested.** An earlier recipe session reasoned that a bigger mix should run a higher FF: more total work, less surface area per unit mass to shed it. Nothing has measured it yet. The calculator keeps a separate value for each mix size you measure, so it costs nothing either way; this note gets updated once bakes 2 and 3 are in.
-> - **Heat of hydration is already included.** Flour releases roughly 1.5–3 °F of exothermic heat as it absorbs water. That happens during the mix, so it's already inside the temperature you measured and therefore already inside your FF. It is a single combined number covering mixer friction *and* hydration exotherm. If you meet a calculator asking for friction alongside a *separate* hydration correction, that's a different convention — don't feed it this number.
+> - **FF belongs to the mix profile, not the machine.** Change speeds or times and it changes, by roughly +1 °F per extra minute at 30%. Re-measure whenever you change the routine.
+> - **FF may differ by mix size (untested).** A bigger mix might run a higher FF: more total work, and less surface area per unit mass to lose heat. Nothing has measured this yet. The calculator stores a separate value for each mix size you measure, so nothing is lost if FF turns out not to vary.
+> - **Heat of hydration is already included.** Flour releases roughly 1.5–3 °F as it absorbs water. That happens during the mix, so it's inside the temperature you measure and therefore inside your FF: FF is one number covering both mixer friction and the heat of hydration. If a calculator asks for friction and a *separate* hydration correction, it uses a different convention; don't give it this number.
 
 **`giorilli-standard`** — *Where the yeast number comes from*
 > **1% fresh yeast = 0.30% IDY = 0.375% ADY, on biga flour**, for 16–18 h at 61–65 °F (16–18 °C).
 >
-> This is the dose Piergiorgio Giorilli codified. Gozney's 100% biga recipe gives it with a 16–18 h window at 16–18 °C, and Baking With Theory with 16–20 h at 16–20 °C (ideally 18). PizzaBlab gives the same dose and temperature with a wider window, 12–24 h. Go longer and you cut it; run warmer and you cut it.
+> Piergiorgio Giorilli codified this dose. Gozney's 100% biga recipe gives it with a 16–18 h window at 16–18 °C, and Baking With Theory with 16–20 h at 16–20 °C (ideally 18). PizzaBlab gives the same dose and temperature with a wider window, 12–24 h. A longer or warmer ferment needs less yeast.
 >
-> **Giorilli's biga is 44–45% hydration; this one is 50%.** Giorilli allows up to 50% water only for semolina or less-refined flours, so a 50% biga on 00 sits one step outside the codified formula — and a wetter biga ferments faster. The dose is still the published anchor. It is one more reason to pull the biga on the cue, about 20% rise, rather than on the clock.
+> **Giorilli's biga is 44–45% hydration; this one is 50%.** Giorilli allows up to 50% water only for semolina or less-refined flours, so a 50% biga on 00 is slightly outside his formula, and a wetter biga ferments faster. The dose is still the published starting point. It's another reason to pull the biga by the cue, about 20% rise, rather than by the clock.
 >
-> **The sourced number is the fresh-yeast dose.** Everything after it is unit conversion — fresh to instant at 0.30, instant to active-dry at ×1.25 — which lands on 0.375% exactly. Earlier drafts rounded that to 0.38% in the prose while computing at 0.375%, a 1.3% disagreement the dough would never have noticed but which made the arithmetic uncheckable.
+> **The fresh-yeast dose is the sourced number.** The rest is unit conversion: fresh to instant at 0.30, instant to active dry at ×1.25, which gives exactly 0.375%.
 >
-> For a time or temperature outside that baseline, use PizzaBlab's dough calculator. It's built for exactly this, and it's the same source the rest of this recipe's biga guidance comes from.
+> For a time or temperature outside that baseline, use PizzaBlab's dough calculator. It's built for this, and the rest of this recipe's biga guidance comes from the same source.
 
 **`mix-dont-knead`** — *Mix, don't knead*
-> The goal for a biga is **small-to-medium chunks, like gnocchi** — not a dough. A spiral mixer's entire purpose is building a gluten network, which is precisely what you don't want in a preferment.
+> A biga should be **small-to-medium chunks, like gnocchi**, not a dough. A spiral mixer builds gluten, which a preferment shouldn't have.
 >
-> An over-mixed biga rises like a dough instead of fermenting like a biga. It then doubles in volume, which reads as "ripe" against the usual intuition, and it is not. This single mistake explains most failed bigas.
+> An over-mixed biga rises like a dough. It then doubles in volume, which looks ripe and isn't. This one mistake explains most failed bigas.
 
 **`why-61-65`** — *Why 61–65 °F specifically*
-> It isn't just about speed. That range produces the **right ratio of lactic to acetic acid**, which is what gives biga its characteristic sharp, vinegary profile. Ferment much warmer and you get a preferment that is biga-shaped but tastes different.
+> At 61–65 °F the bacteria produce the **balance of lactic and acetic acid** that gives biga its sharp, vinegary flavor. Much warmer and the biga ferments faster and tastes different.
 >
-> This is why an unstable kitchen is a real problem rather than a timing nuisance, and why the fridge-retarded schedule exists — it trades a little of that acid character for a temperature that actually holds.
+> So an unstable kitchen affects flavor as well as timing, which is why the fridge-retarded schedule exists: it gives up a little acidity for a temperature that holds.
 
 **`no-creep-speed`** — *The mixer has no slow speed*
-> Measured: **5% on the dial = 60 RPM**. With Ooni's published 300 RPM at 100%, that gives `RPM = 47.4 + 2.526 × dial%`. Ooni's published help-center chart claiming 5% = 15 RPM is wrong — the dial maps across a *usable band*, not from zero. The Halo Pro works the same way.
+> Measured: **5% on the dial = 60 RPM**. With Ooni's published 300 RPM at 100%, that gives `RPM = 47.4 + 2.526 × dial%`. Ooni's help-center chart, which puts 5% at 15 RPM, is wrong: the dial covers a usable band that starts at 60 RPM rather than at zero. The Halo Pro works the same way.
 >
-> The practical consequence: **60 RPM is the floor.** You cannot gently fold liquid in. Add water and flour with the mixer off, then bring the dial up, or you'll throw flour out of the bowl and sling bassinage water off the hook.
+> **60 RPM is the slowest the mixer goes**, too fast to fold in liquid gently. Add water and flour with the mixer off, then start it; otherwise flour flies out of the bowl and the hook slings the bassinage water.
 
 **`oil-not-flour`** — *Why the trays get oil*
-> Full explanation is in the `bulk-3` step detail. Short version: flour is hygroscopic and pulls water out of the dough surface, which over a long cold ferment gives you gluey patches and dry skin at the same time. The traditional flour dusting assumes wooden boxes that breathe; aluminum doesn't.
+> The full explanation is in the *Onto trays* step. In short: flour draws water out of the dough surface, so over a long cold ferment you get gluey patches and a dry skin at once. Flour dusting assumes wooden boxes that breathe; aluminum doesn't.
 
 **`burn-ring`** — *The burn ring at the base of the cornicione*
-> That specific pattern is diagnostic, and it's only partly about temperature. The ring where the cornicione meets the flat center is the worst spot on the pizza for base scorching, for two reasons that stack:
+> The ring where the cornicione meets the flat center is where the base is most likely to scorch, and temperature is only part of the reason. Two causes add up:
 >
-> 1. **No moisture buffer.** Sauce and cheese hold the center near 100 °C by evaporative cooling until the water is gone. Sauce normally stops 1–1.5 cm short of the rim, so that ring gets full conductive heat with nothing above it absorbing energy.
-> 2. **It's often the thinnest part of the base.** Pressing hard just inside the rim to define the cornicione thins the dough exactly there. Less mass, less thermal buffer, first to burn.
+> 1. **No moisture buffer.** Sauce and cheese keep the center near 100 °C through evaporation until the water is gone. Sauce usually stops 1–1.5 cm short of the rim, so that ring gets full heat from the stone with nothing above it absorbing energy.
+> 2. **It's often the thinnest part of the base.** Pressing hard just inside the rim to form the cornicione thins the dough there, leaving less mass to absorb heat.
 >
-> Driest contact zone and thinnest cross-section, right on top of each other. Fix the saucing and the opening before you touch the oven temperature.
+> Fix the saucing and the opening before you change the oven temperature.
 
 ---
 
@@ -1466,7 +1494,7 @@ The Core has no number display. Its LED indicator shows the speed in segments: a
 A 12-ball batch runs as two 6-ball mixes and reads the 6 column; 18 balls reads the 9.
 
 ### Water temperature
-Blend fridge-cold water with tap to the target, measuring as you pour. Fridge water reaches ~38 °F; tap covers upward. Across the supported range (3–24 balls, 240–300 g, biga 45–60 °F, room 60–84 °F) the required water spans **53–109 °F**, and **53–107 °F** at the 265 g default — hottest at *small mixes*, not small batches. No ice and no split calculation.
+Blend fridge-cold water with tap water to reach the target, measuring as you pour. Fridge water gets to about 38 °F; the tap covers the warmer end. Across the supported range (3–24 balls, 240–300 g, biga 45–60 °F, room 60–84 °F) the required water spans **53–109 °F**, and **53–107 °F** at the default 265 g ball. It's hottest for *small mixes*, not small batches. You won't need ice, and the app doesn't calculate a blend ratio.
 
 ---
 
@@ -1506,12 +1534,14 @@ Auto-populate the log from the current session's inputs so only the measured val
 
 ## 11. Sources
 
-Link these from an About page. The recipe is built on published practice, not invention.
+Link these from an About page. The recipe draws on these published sources.
 
 - [PizzaBlab — Biga (Preferment)](https://www.pizzablab.com/the-encyclopizza/biga-preferment/) — hydration, yeast, ripeness cues, mixing technique; 1% fresh yeast, 12–24 h at 16–18 °C
 - [PizzaBlab — Dough Calculator](https://www.pizzablab.com/calculators/pizza-dough-calculator/) — for biga yeast off the baseline time/temp
 - [Gozney — 100% Biga Pizza Dough](https://us.gozney.com/blogs/recipes/100-biga-pizza-dough-recipe) — 1% yeast, 16–18 h at 61–64 °F, hand-mixed
 - [Ooni / Marco Fuso — 100% Biga using Halo Pro](https://ooni.com/blogs/recipes/ooni-100-biga-dough-using-halo-pro) — the fridge-retarded schedule
+- [Ooni help center — Halo Core min/max capacity and hydration limits](https://ooni.com/pages/help-center?a=What-are-the-minmax-capacity-and-hydration-limits-for-Ooni-Halo-Core---id--tLwhKnlnR4G9F-kkvNO9Gw) — 0.5–2.5 kg dough, flour caps by hydration, recommended speeds, 20-minute maximum continuous operating time
+- [Ooni help center — Halo Core speed settings](https://ooni.com/pages/help-center?a=Halo-Core-Speed-Settings%3A-Percentage-to-RPM-Explained---id--J1HYTOEHRCiv1ONI2mRgqg) — 5% increments, the lit/half-lit indicator, 300 RPM at 100%. Its low-end RPM chart is wrong; see the mixer speed reference
 - [Stadler Made — Biga](https://www.stadlermade.com/pizza/ingredients/biga/) — warm-kitchen workaround
 - [Baking With Theory — Biga](https://www.bakingwiththeory.com/theory/biga/) — Giorilli formula: 44–45% hydration, 1% fresh yeast, short biga 16–20 h at 16–20 °C (ideally 18)
 - [Italian Pizza Secrets — Essential guide to biga](https://www.italianpizzasecrets.com/essential-guide-to-biga-for-pizza/) — Giorilli's short biga (16–18 h at 16–18 °C) and long biga

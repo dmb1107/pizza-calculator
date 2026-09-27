@@ -43,7 +43,7 @@ describe('recipe text', () => {
   it('shows both bassinage additions as weighable grams', () => {
     // The bake-1 bug: "~60% of the water" caused a guess and cost a data point.
     const out = text();
-    expect(out).toContain('211.6 g (weigh it)');
+    expect(out).toMatch(/^ +Phase A +211\.6 g$/m);
     expect(out).toContain('141.1 g in 3 additions');
   });
 
@@ -64,6 +64,15 @@ describe('recipe text', () => {
     // DDT, that is visible on the line rather than two lines up.
     const nine = text({ balls: 9, finalDoughTempF: 74 });
     expect(nine).toContain('90 min (final dough 74.0 °F against DDT 74.0 °F)');
+  });
+
+  it('prints the rise the timeline plans at a split batch, as bulk-3 does', () => {
+    // MESSAGE-32: the planned rise, not the per-dough one. At 12 balls (nMix 2)
+    // and a 74 °F dough on its DDT of 74, one dough would get 90 min; half the
+    // 35-minute stagger comes off, so the plan is 72.5, printed 73.
+    const twelve = text({ balls: 12, finalDoughTempF: 74 });
+    expect(twelve).toContain('73 min (final dough 74.0 °F against DDT 74.0 °F)');
+    expect(twelve).not.toContain('90 min');
   });
 
   it('records the conditions, so the numbers can be reproduced', () => {
