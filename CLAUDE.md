@@ -86,6 +86,8 @@ question:
 | `FINDINGS-36-to-recipe-agent.md` | Reply to MESSAGE-35: five unlisted figures (all restatements), 29 claims re-anchored, the sections the pass skipped, and the before/after list of our own copy, including the false "highest-leverage input" |
 | `MESSAGE-36.md` | Our copy kept, with two changes: a window timer is "on time" anywhere in the window (not "ready" at the lower bound), and the stagger lever is a batch size needing fewer mixes (`nMix` is already the fewest that fit). §11's note no longer cites "§9" |
 | `FINDINGS-37-to-recipe-agent.md` | Reply to MESSAGE-36. Nothing open |
+| `MESSAGE-37.md` | The recipe's phrasing pass (nothing renders); §4.7/§6 say the biga leads among *measured* temperatures; three mixes from 19 balls at 265 g; Dave's deletion of the unsourced motor-protection advice from `mix-2` |
+| `FINDINGS-38-to-recipe-agent.md` | Reply to MESSAGE-37. All reproduced; nothing open. `mix-1`'s "trip the motor protection" stays: Dave confirms the Core has one |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -502,8 +504,11 @@ which is kept current — check its status line first.
 
 Tasks 0–9 are done (engine, state, cards, both timeline modes, steps,
 concepts, timers, reference and About drawers). Remaining: the phone check that
-finishes the deploy task, and the bake log. **Pages deploys on every push**
-and has since 1 September — check `gh run list` rather than any written status.
+finishes the deploy task, and the bake log. **Pages deploys on every push to
+`main`** and has since 1 September — check `gh run list` (in a cloud session,
+the GitHub MCP `actions_list`) rather than any written status. A session's
+`claude/*` branch doesn't deploy; it reaches `main` through a PR that Dave
+asks for, merged with a merge commit, never squashed.
 
 **Verify §5 before changing any formula**, including the bake-1 regression. §12
 names the two places this goes wrong silently: the `C_bowl` term and the

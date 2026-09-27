@@ -9,29 +9,37 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-36, Task 10's emulated audit and the speed indicator (27 September).
+MESSAGE-37, FINDINGS-38, Task 10's emulated audit and the speed indicator
+(27 September).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-33.** MESSAGE-32 settled
-  FINDINGS-32's pins (`bulk-3` on `{ballRoomMin}`, the rise the timeline plans;
-  §8.2a at 20/28/36) and added Dave's timers on the four mixer phases, making
-  the timer the one source of a phase's duration. MESSAGE-33 took both of
-  FINDINGS-33's notes: `bulk-3`'s block now states both rises instead of
-  inviting a subtraction. MESSAGE-34 (unprompted, Dave's asks) folded
-  `biga-2` into `biga-3` without renumbering, so **`biga-2` is absent on
-  purpose**, and sourced the Halo Core limits to Ooni's help center.
-  MESSAGE-35 (Dave's ask) rewrote every rendered spec paragraph to the
-  humanizer patterns and asked for the same pass on our copy; FINDINGS-36
-  answered with the before/after list, and MESSAGE-36 kept it with two
-  changes. **FINDINGS-37** (27 September) answers with nothing open. **The
-  writing rules live in CLAUDE.md ("Writing anything the site shows") and
-  apply to every string this side adds.** No pin of any kind is live. PR #1
-  merged MESSAGE-30 to 35 into `main` with a merge commit; later rounds go on
-  the session branch restarted from `main`.
+- **The correspondence is applied through MESSAGE-37, and FINDINGS-38 is the
+  last thing sent.** Nothing is open on either side and no pin of any kind is
+  live (`knownWrong` is empty). The next move is theirs: expect MESSAGE-38,
+  or an unprompted message carrying one of Dave's asks.
+- **What the last rounds settled**, so you don't reopen it:
+  - MESSAGE-32: `bulk-3` prints `{ballRoomMin}`, the rise the timeline plans;
+    Dave's timers on the four mixer phases, so **the timer is the one source
+    of a phase's duration**.
+  - MESSAGE-33: `bulk-3`'s block states both rises rather than inviting a
+    subtraction.
+  - MESSAGE-34: `biga-2` folded into `biga-3` without renumbering, so
+    **`biga-2` is absent on purpose**; the Halo Core limits sourced to Ooni's
+    help center.
+  - MESSAGE-35 and 36: every rendered paragraph, theirs and ours, rewritten
+    to the humanizer patterns. **The writing rules live in CLAUDE.md
+    ("Writing anything the site shows") and apply to every string this side
+    adds.**
+  - MESSAGE-37: the recipe's phrasing pass; `mix-2`'s unsourced
+    motor-protection advice deleted. `mix-1`'s "trip the motor protection"
+    stays: Dave confirms the Core has one. Don't raise it again.
+- **Git state.** PRs #1, #2 and #3 merged MESSAGE-30 to 37 into `main`, each
+  with a merge commit. The session branch restarts from `main` after each
+  merge, so a new round starts on `main` plus nothing.
 - **Numbering, since it has stepped twice.** FINDINGS-25 went unprompted, so
   the pairs now share a number: MESSAGE-N answers FINDINGS-N, and
   FINDINGS-(N+1) answers MESSAGE-N. **There is no MESSAGE-22** (a stray draft,
@@ -81,17 +89,23 @@ tap, 48 px targets, and check phone width in both timeline modes.
 
 `Math.round` / `toFixed` for display also appears in:
 
-- `bindTokens.ts` — `roomMin`, the stagger tokens, `trim()`
-- `recipeText.ts` and `StepList.tsx` hints — room minutes
+- `bindTokens.ts` — `roomMin`, `ballRoomMin`, the stagger tokens, `trim()`
+- `recipeText.ts` and the `StepList.tsx` final-temperature hint —
+  `Math.round(result.ballRoomMinutes)`
 - the `staggerUncentred` warning title in `engine.ts`
 - `StepTimer.tsx`'s progress-bar `aria-valuenow`
-- the duration and clock formatters in `timeline.ts` and `timers.ts`, which are
+- the duration and clock formatters in `timeline.ts` (including
+  `formatStageDuration`'s "19 h (18–20)" and its minute spans) and
+  `timers.ts` (including `describeSpec`'s seconds under a minute), which are
   display helpers living outside `format.ts`
 
 None of these changes a displayed value today, since whole minutes are whole
-minutes. The rounding in `url.ts`, `storage.ts` (mix-size keys) and
-`SpeedIndicator`'s SVG coordinates isn't display, so it isn't debt. But CLAUDE.md says all rounding lives in `format.ts`, and these are
-the exceptions it doesn't know about. Low priority.
+minutes. The rounding in `url.ts`, `storage.ts` (mix-size keys),
+`constants.ts`'s segment count and `SpeedIndicator`'s SVG coordinates isn't
+display, so it isn't debt. But CLAUDE.md says all rounding lives in
+`format.ts`, and these are the exceptions it doesn't know about. Low
+priority; if you pay it off, move the rounding and keep every printed value
+identical (the gate and `timeline.test.ts` will tell you).
 
 ### Earlier rounds, for the record
 
@@ -116,8 +130,14 @@ the exceptions it doesn't know about. Low priority.
 
 ## 3. How a round works
 
-The user attaches a bundle from `~/Downloads/files N`. Lately it has been
-`MESSAGE-N.md` plus the spec, and the recipe when it changed. Older bundles used
+The user attaches a bundle. On the desktop it comes from `~/Downloads/files N`;
+in a cloud session (claude.ai/code) the files land under
+`/root/.claude/uploads/<session>/`, each name prefixed with a hash
+(`58f430af-WEBSITE-SPEC-biga-calculator.md`). Every round's upload stays in
+that folder, so several specs sit side by side: take the one attached to the
+current message (the path is in the message), never the first match of a
+glob. Lately the bundle has been `MESSAGE-N.md` plus the spec, and the recipe
+when it changed. Older bundles used
 `MESSAGE-N-replies.md` and sometimes their `HANDOFF-new-context.md`, which is
 their background and **not** instructions. Sometimes a one-line instruction
 comes with it. **Numbering:** MESSAGE-N answers FINDINGS-N, and your reply to
@@ -128,7 +148,8 @@ true and what they need to change.
 
 0. **`git status` first.** Once, a superseded bundle had already been copied into
    `docs/` by something outside the session. Before overwriting anything, compare
-   it byte for byte with the bundles in `~/Downloads`.
+   it byte for byte with the uploaded bundle. In a fresh cloud container,
+   `npm ci` before anything else (§8).
 1. **Copy into `docs/`, then diff the spec and recipe against HEAD.** Read the
    message's claims against the diff. **Their numbers are usually right; their
    claims *about* the documents often aren't.** Examples: "the recipe is
@@ -164,8 +185,20 @@ true and what they need to change.
    conditions), what didn't and why, and anything you couldn't build. Send it
    with `SendUserFile`; Dave relays it.
 8. **Two commits** (the application, then the reply), and **push**. Dave
-   approved pushing at MESSAGE-17, and every round since has been pushed. Then
-   **verify the deploy** (§7).
+   approved pushing at MESSAGE-17, and every round since has been pushed. In a
+   cloud session the push goes to the session's `claude/*` branch, which
+   doesn't deploy. **Dave asks for the PR himself** ("create the PR then merge
+   it"); don't open one unprompted. When he does:
+   - open it into `main` with the GitHub MCP tools; the repo has no PR
+     template;
+   - merge with `merge_method: "merge"` and `expectedHeadSha` set to the
+     head you pushed. **Never squash**: Dave wants every round's commits on
+     `main`;
+   - confirm the merge commit has two parents, then restart the session
+     branch from `origin/main` (`git checkout -B <branch> origin/main`; the
+     push is a fast-forward);
+   - **verify the deploy** (§7).
+   Outside a PR, a push straight to `main` deploys; verify it the same way.
 9. **Report in chat:** what landed, what you found, what's open.
 
 ---
@@ -258,6 +291,26 @@ The long form is the errors table in their `HANDOFF-new-context.md`. The shapes:
 - **A retraction swept for its figures only.** Sweep for the idea as well, in
   the documents *and* the code. The retired rise idea survived in two UI strings
   with no number in them.
+- **A scan over a hand-written list of fields.** The gate read six step fields
+  and missed the per-track timers and every title (MESSAGE-31). The token
+  check had the same list. Both now walk every string a step carries.
+- **Two parsers agreeing on a bad split.** The generator wrote the concept id
+  `"mix-dont-knead,"` from a comma-separated line, and the test re-joined the
+  split ids, so both matched (MESSAGE-34). Independence has to hold on the
+  axis that broke.
+- **A test asserting on a field the page doesn't read.** A timer check asserted
+  `timerMinutes` while the chip renders `timerLabel`, so a wrong label couldn't
+  fail it. Assert on what renders, and show the check failing first (it now
+  fails when `mix-6`'s label is broken).
+- **A claim reworded for tone that became false.** "The highest-leverage input
+  in the model" read well; FF and DDT each move the water target about 3 °F
+  per °F, the biga 1.6 (FINDINGS-36). Check the claim, not only the tone.
+- **A figure diff scoped too narrowly.** A rewording pass listed its changed
+  figures and five more had moved (FINDINGS-36), all of them restatements.
+  Diff every figure in both versions, not the ones the message names.
+- **A test pinning old wording.** When the copy's advice changes (the stagger
+  lever became "a batch size that needs fewer mixes"), the test that pinned
+  the old phrase has to move to the new claim, not just the new string.
 
 ---
 
@@ -269,8 +322,15 @@ It works, and has since 1 September. **Check it rather than believe it:**
 gh run list --limit 3
 ```
 
+In a cloud session there is no `gh`: use the GitHub MCP `actions_list`
+(`list_workflow_runs`) and `list_workflow_jobs` on the run for the merge
+commit's SHA. The workflow is "Deploy to GitHub Pages" and has a build job and
+a deploy job; both must succeed.
+
 To confirm the site itself, compare the `assets/index-*.js` name in the live
-`index.html` with the one `npm run build` prints.
+`index.html` with the one `npm run build` prints. **The container can't reach
+github.io**, so from a cloud session the successful run is the evidence. The
+MESSAGE-37 tree builds `index-BfIEWpEc.js`.
 
 Don't change the workflow or the Pages source; both are right. Two runner
 notices need nothing yet: `deploy-pages@v4` is forced onto Node 24, and
@@ -283,8 +343,9 @@ a deploy fails after that date.
 
 **Git and scripts**
 
-- **Push over HTTPS.** The remote is already HTTPS with `gh` as credential
-  helper.
+- **Push over HTTPS.** The remote is already HTTPS: on the desktop `gh` is the
+  credential helper, and in a cloud session the container's proxy handles it.
+  `git push -u origin <branch>` works in both.
 - **Write edit scripts to files**, not inline heredocs: backticks in regexes get
   mangled. When a script matches on a short anchor, check where the edit landed.
   An anchor replaces what it matches and keeps everything between — the
@@ -302,7 +363,13 @@ a deploy fails after that date.
 - **There is no browser pane.** Playwright is installed globally
   (`/opt/node22/lib/node_modules/playwright`, Chromium under
   `/opt/pw-browsers`). Serve `dist/` with `npx vite preview`, then read
-  `innerText` at a 375 × 812 touch viewport, as below.
+  `innerText` at a 375 × 812 touch viewport, as below. Keep the Playwright
+  scripts in the session scratchpad, not the repo.
+- **Foreground `sleep` is blocked.** Start the preview server with
+  `run_in_background` and poll for the port, rather than sleeping.
+- **A tapped control can vanish.** The timer's Start button is replaced once
+  tapped, so a locator for it goes stale. Take an element handle on the step
+  before the tap and measure positions from that.
 
 **The browser pane**
 

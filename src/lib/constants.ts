@@ -136,8 +136,9 @@ const BASE = {
 
   /**
    * §6. The one biga temperature ever measured (bake 1, after tearing). Was 64,
-   * which was unsourced. This is the highest-leverage input in the model:
-   * d(T_water)/d(T_biga) is -1.92 at 6 balls and -2.25 at 3, so a 6 °F miss
+   * which was unsourced. Of the temperatures the baker measures, this one moves
+   * the water target most (FF and DDT move it more per °F, but aren't measured
+   * at the bench): d(T_water)/d(T_biga) is -1.92 at 6 balls and -2.25 at 3, so a 6 °F miss
    * moves the required water 11.5 °F.
    */
   DEFAULT_BIGA_TEMP_F: 58,

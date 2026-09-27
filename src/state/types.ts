@@ -35,7 +35,8 @@ export interface Inputs {
   flourSameAsRoom: boolean;
   flourTempF: number;
   /**
-   * Measured at mix time, not assumed. The highest-leverage input in the model:
+   * Measured at mix time, not assumed. Of the temperatures the baker measures,
+   * the one that moves the water target most (FF and DDT move it more per °F):
    * d(T_water)/d(T_biga) is −1.92 at 6 balls and −2.25 at 3, so a 6 °F miss
    * moves the required water 11.5 °F and the finished dough 3.5 °F.
    *

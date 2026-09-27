@@ -384,7 +384,7 @@ Note `coldFerment` sits **after** `ballRoomTemp`, not with the other biga stages
 
 ⚠️ **`bigaTemper` had no step.** It has a duration, a place in the sequence, a clock time in the timeline — and nothing in the guided step list told the baker to do it. A baker following the steps went from `biga-5` (pull at ~20% rise) straight to `mix-1` (prep the bowl).
 
-That is the worst possible stage to lose. Biga temperature is the most leveraged input in the model — `d(T_water)/d(T_biga)` runs **−1.92 at a 6-ball mix to −2.25 at a 3-ball** — and a skipped temper is named in the >120 °F warning as the usual cause of an unreachable water target. **The app scheduled the temper, computed from it, and warned about skipping it, while never instructing it.** Fixed by `biga-6`.
+That is the worst possible stage to lose. Of the temperatures the baker measures, biga temperature moves the water target most — `d(T_water)/d(T_biga)` runs **−1.92 at a 6-ball mix to −2.25 at a 3-ball** — and a skipped temper is named in the >120 °F warning as the usual cause of an unreachable water target. **The app scheduled the temper, computed from it, and warned about skipping it, while never instructing it.** Fixed by `biga-6`.
 
 **This is the same shape as `MAX_RUN_MIN` having no reader**, and it deserves the same kind of check: *every timeline stage maps to a step that instructs it, and every step maps to a stage.* Assert the mapping, name the deliberate exceptions, and let an orphan on either side point at whatever went missing.
 
@@ -713,7 +713,7 @@ Group into three panels. **Batch** open by default; the other two collapsed with
 |---|---|---|---|
 | Room temp (°F) | number | 70 | |
 | Flour temp (°F) | number | = room | "same as room" toggle |
-| Biga temp at mix (°F) | number | **58** | ⚠️ **Highest-leverage input in the model.** Was 64, which was unsourced; 58 is the one value ever measured (bake 1, after tearing). `d(T_water)/d(T_biga)` is −1.92 at 6 balls and −2.25 at 3 **on the bowl-tracking basis, `(Cb + C_bowl)/Cw`** — the field's default, where the cold-bowl prefill follows the biga reading — so a 6 °F miss here moves the required water 11.5 °F and the finished dough 3.5 °F. **Once the bowl is measured, or its state is room or warm, the bowl holds and the coefficient is `Cb/Cw` = −1.59 at every mix size (§7.2):** the same miss moves the water 9.6 °F. Mark the field as expecting a measurement and show the sensitivity inline **on whichever basis currently applies** — never a fixed figure. |
+| Biga temp at mix (°F) | number | **58** | ⚠️ **Of the temperatures the baker measures, the one that moves the water target most** (FF and DDT move it more, per °F, but aren't measured at the bench). Was 64, which was unsourced; 58 is the one value ever measured (bake 1, after tearing). `d(T_water)/d(T_biga)` is −1.92 at 6 balls and −2.25 at 3 **on the bowl-tracking basis, `(Cb + C_bowl)/Cw`** — the field's default, where the cold-bowl prefill follows the biga reading — so a 6 °F miss here moves the required water 11.5 °F and the finished dough 3.5 °F. **Once the bowl is measured, or its state is room or warm, the bowl holds and the coefficient is `Cb/Cw` = −1.59 at every mix size (§7.2):** the same miss moves the water 9.6 °F. Mark the field as expecting a measurement and show the sensitivity inline **on whichever basis currently applies** — never a fixed figure. |
 | Bowl state | 3-way selector | *Cold* (mix 1) / *Warm from previous mix* (mix 2+) | Prefills bowl temp from `T_biga`, `T_room` or `DDT` — see §4.2. Show the rinse note beside it |
 | Bowl temp at mix (°F) | number | *(from the selector)* | ⚠️ **Promoted to a real input.** The selector sets a starting value; a measurement always wins. The biga gains ~5 °F from tearing and the bowl does not. Worth 0.66 °F of water per °F at a 3-ball mix, 0.22 at 9. Show that coefficient inline |
 
@@ -1032,8 +1032,6 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 > Weigh the water rather than pouring by eye. Bake 1 left open whether the split between Phases A and B is right, and only weighed pours can settle it.
 >
 > Optional, from PizzaBlab: soak the crumbled biga in the water for a few minutes first. Keep it to a few; working biga in plain water strips starch off the chunks and leaves hard, sticky gluten lumps that won't disperse.
->
-> If motor protection engages, stop, rest 5 minutes, and resume one step lower. Log it; it tells you something about your friction factor.
 **concepts:** no-creep-speed
 
 ---
