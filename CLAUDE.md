@@ -82,6 +82,8 @@ question:
 | `FINDINGS-34-to-recipe-agent.md` | Reply to MESSAGE-33. Nothing open. The token check listed step fields by hand too; it now walks them |
 | `MESSAGE-34.md` | Unprompted, Dave's two asks: `biga-2` folded into `biga-3` (ids **not** renumbered; `biga-2` is absent on purpose), counts 19/27/35 and 17/25/33; the Halo Core limits sourced to Ooni's help center in §3 and §11 |
 | `FINDINGS-35-to-recipe-agent.md` | Reply to MESSAGE-34. Nothing open. The generator split a comma-separated concepts line into `"mix-dont-knead,"` and both parsers agreed; §11 renders in About, and its Halo Core figures are now claimed against the constants that cite them |
+| `MESSAGE-35.md` | Unprompted, Dave's ask: every rendered spec paragraph rewritten to the humanizer patterns (the writing rules below); no token or figure changed except those listed; asks for the same pass on our copy |
+| `FINDINGS-36-to-recipe-agent.md` | Reply to MESSAGE-35: five unlisted figures (all restatements), 29 claims re-anchored, the sections the pass skipped, and the before/after list of our own copy, including the false "highest-leverage input" |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -299,6 +301,62 @@ water temperature 5 °F wrong on bake 1. Two traps:
    the full explanation.
 4. **Shareable/resumable state.** Survives a refresh, sends as a link.
 
+## Writing anything the site shows
+
+Dave's rules since MESSAGE-35, from the humanizer's 25 patterns
+(https://github.com/blader/humanizer#the-25-patterns). **They apply to every
+string the site renders that this side writes**: component copy, hints,
+labels and buttons, the engine's warnings (`engine.ts`), timeline stage text
+(`timeline.ts`), copy-as-text (`recipeText.ts`), and any wording we propose
+for the spec. §8 prose itself is the recipe agent's to word: if it breaks a
+rule, say so in the FINDINGS rather than editing generated files.
+
+**The goal is clarity, directness and concision, without going casual.**
+
+Dave's priorities. Never ship these:
+- **One-line closers and dramatic fragments** that repeat the point.
+- **Sayings that sound deep.** "This bites hardest exactly where it matters
+  most" became the specific claim.
+- **Arguing with no one.** "You are not aiming at the final temperature when
+  you probe" and "the floor is not worth overruling" raised objections nobody
+  made. State the fact instead: "After the probe, Phases C and D still add
+  about X °F."
+- **Overused AI words:** delve, testament, landscape, showcase, crucial,
+  robust, genuinely, leverage.
+- **Sales language.** "A far more powerful lever" and "the highest-leverage
+  input" were both cut.
+- **Writing about the previous version** ("an earlier version…", "was changed
+  to", "no longer"). Describe what it does now. History belongs in `docs/`,
+  never on the page.
+
+Avoid the rest of the patterns too:
+- "not X but Y" framing, and a run-up before the point;
+- forced threes, and repeated sentence openings;
+- stacked qualifiers, and hyphenated pairs that grammar doesn't need;
+- passive voice that hides who acts (name the baker or the app);
+- inflated significance, vague "associated with", and "-ing" riders;
+- borrowed authority (name the source and what it said, as §11 does);
+- "serves as" or "features" where "is" or "has" will do;
+- bold as decoration, Title Case or emoji headings;
+- chatbot residue, hedging disclaimers, and a heading repeated in the first
+  sentence.
+
+**Em dashes are fine.** Dashes are the one pattern not applied.
+
+Three rules the pass itself taught:
+- **A reworded sentence must still be true, so check the claim, not only the
+  tone.** "The highest-leverage input in the model" read fine and was false.
+  FF and DDT each move the water target about 3 °F per °F, and the biga 1.6.
+  The gate can't catch this, because a claim with no digit passes it by
+  construction.
+- **Never change a figure, or a phrase a test pins as a claim.** Reword around
+  it. The gate's `COMPONENT_FIXED` keys are exact phrases.
+- **Mirror the spec wherever the UI repeats it.**
+  - The stagger strip's title matches `bulk-1`'s warning.
+  - The Temper stage says "measured with a probe", as `bake-1` does.
+  - Dave's calls apply everywhere: there is no "weigh it" in a value line,
+    whether in the chip or in copy-as-text.
+
 ## Commands
 
 ```bash
@@ -356,8 +414,8 @@ don't inline a `toFixed` somewhere else.
 - **Markdown must render tables.** Step `detail` and concept `body` contain GFM
   tables and multi-paragraph prose — `react-markdown` + `remark-gfm`, not a
   text renderer. **`watchFor` is markdown too** — `mix-7`'s cue ends
-  `**and at DDT ±1 °F.**`, and rendering it as plain text put literal asterisks
-  around the one number §8 calls a pass/fail gate.
+  `and **DDT ±1 °F.**`, and rendering it as plain text put literal asterisks
+  around the one number that decides whether the mix is done.
 - **Timers are end times, not counters.** Everything derives from an absolute
   `startedAt` against a `now` passed in, so a locked phone or a reload returns
   the right answer. Never introduce a decrementing counter. Ranges are windows

@@ -9,7 +9,7 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-34, Task 10's emulated audit and the speed indicator (26 September).
+MESSAGE-35, Task 10's emulated audit and the speed indicator (27 September).
 Don't trust any status here that you can check instead (§7).
 
 ---
@@ -24,8 +24,11 @@ Don't trust any status here that you can check instead (§7).
   inviting a subtraction. MESSAGE-34 (unprompted, Dave's asks) folded
   `biga-2` into `biga-3` without renumbering, so **`biga-2` is absent on
   purpose**, and sourced the Halo Core limits to Ooni's help center.
-  **FINDINGS-35** answers it (26 September) with nothing open, so the next
-  message, if one comes, is unprompted. No pin of any kind is live.
+  MESSAGE-35 (Dave's ask) rewrote every rendered spec paragraph to the
+  humanizer patterns and asked for the same pass on our copy; **FINDINGS-36**
+  (27 September) answers with the before/after list. **The writing rules now
+  live in CLAUDE.md ("Writing anything the site shows") and apply to every
+  string this side adds.** Nothing is open; no pin of any kind is live.
 - **Numbering, since it has stepped twice.** FINDINGS-25 went unprompted, so
   the pairs now share a number: MESSAGE-N answers FINDINGS-N, and
   FINDINGS-(N+1) answers MESSAGE-N. **There is no MESSAGE-22** (a stray draft,
@@ -133,7 +136,9 @@ true and what they need to change.
    (`tests/__scratch.test.ts`, deleted after). No mental arithmetic, and quote
    the conditions every time you state a figure.
 3. **Apply.** Engine, constants and tokens go in `src/lib`. Regenerate the step
-   prose with `python3 scripts/generate-content.py`.
+   prose with `python3 scripts/generate-content.py`. Any copy you write follows
+   CLAUDE.md's writing rules, and a reworded claim is checked for truth, not
+   only tone.
 4. **`npm test`, and expect the gate to fail on any new §8 number.** Claim it
    against the engine or classify it with a reason. Never widen `FIXED` to go
    green. **Then run `npm run typecheck` separately:** vitest doesn't typecheck,
