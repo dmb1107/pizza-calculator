@@ -219,7 +219,10 @@ const FRESH_FLOUR_FRACTION = 1 - BASE.BIGA_FRACTION;
 const FRESH_WATER_FRACTION = BASE.HYDRATION - BASE.BIGA_FRACTION * BASE.BIGA_HYDRATION;
 
 /**
- * §5. How far below its vector value a rendered water target sits, in °F.
+ * §5. How far below its vector value a rendered water target sits, in °F,
+ * wherever FF falls back to 14.0. At 6 balls per mix the app reads the seeded
+ * 14.03, which adds `(14.03 − 14) × Ct/Cw` on top (engine.test.ts, 'adds the
+ * seeded friction factor').
  *
  * The vectors pin flour at 69 °F so the flour term stays independently
  * observable; the app defaults flour to room (70 °F), which is what a bag of

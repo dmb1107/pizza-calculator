@@ -133,12 +133,16 @@ code-execution surface that grows one convenient ternary at a time. What were
 `{mixIndex + 1}` and a ternary are now `{nextMixIndex}` and `{bigaCountSuffix}`,
 computed in `bindTokens` where every other value lives.
 
-**Rendered numbers sit 0.392 °F below their vector values, and that is not a
-bug.** The §5 vectors pin flour at 69 °F so the flour term stays independently
-observable; the app defaults flour to room (70 °F), which is what a bag of flour
-actually is. The gap is `Cf/Cw`, which has no total-flour term in it — exactly
-0.392 at every batch size and ball weight. **Quote the conditions whenever you
-quote a rendered number**; one without them cost a round of correspondence.
+**Rendered numbers sit below their vector values, and that is not a bug.** The
+§5 vectors pin flour at 69 °F so the flour term stays independently observable;
+the app defaults flour to room (70 °F), which is what a bag of flour actually
+is. That part is `Cf/Cw`, which has no total-flour term in it — exactly 0.392 at
+every batch size and ball weight. **It is the whole gap only where FF falls back
+to 14.0**, the vectors' value. At 6 balls per mix (6 and 12 balls, and 18 from
+272 g) the app reads the seeded 14.03, which adds `0.03 × Ct/Cw`: 0.482 in all,
+so the 12-ball cards print 64.3 and 59.0, not the 64.4 and 59.1 that 0.392
+predicts (FINDINGS-40). **Quote the conditions whenever you quote a rendered
+number**, FF included; one without them cost a round of correspondence.
 
 **Anything derivable from the formula constants is derived, never written down.**
 `C_BIGA`, `ADY_OF_BIGA_FLOUR`, `DIVIDE_BALL_H` (20/60, not 0.33),

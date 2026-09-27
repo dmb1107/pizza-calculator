@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { C, bowlHeatCapacity, defaultDdtF } from '../src/lib/constants';
-import { formatInches, formatWhole } from '../src/lib/format';
+import { formatInches, formatTempF, formatWhole } from '../src/lib/format';
 import {
+  ballsPerMix,
   bigaReadingCost,
   bowlReadingCost,
   calculate,
@@ -38,6 +39,8 @@ import {
   TOL,
   VECTOR_CONDITIONS,
 } from './vectors';
+import { DEFAULT_CALIBRATION } from '../src/state/defaults';
+import { effectiveFriction } from '../src/state/storage';
 
 /**
  * Engine acceptance tests — WEBSITE-SPEC-biga-calculator.md §5.
@@ -970,7 +973,8 @@ describe('§5 the app-default flour offset', () => {
 
   it('is exactly Cf/Cw, and the same at every batch size', () => {
     // This constant is why a rendered water target sits 0.39 °F below its
-    // vector value. It cost a round of correspondence, so it is pinned rather
+    // vector value wherever FF falls back to 14.0; at 6 balls per mix the
+    // seeded FF adds more (below). It cost a round of correspondence, so it is pinned rather
     // than left as a note: the vectors use flour 69, the app defaults it to
     // room (70), and both are deliberate.
     const seen = new Set<string>();
@@ -994,11 +998,53 @@ describe('§5 the app-default flour offset', () => {
   });
 
   it('accounts for the gap between a rendered target and its vector', () => {
-    // The 12-ball case that prompted this: 59.505 at flour 69, 59.113 at 70.
+    // The 12-ball case that prompted this: 59.505 at flour 69, 59.113 at 70,
+    // both at FF 14. The app's default FF at 12 balls is not 14 (next test).
     const at69 = calculate({ ...vectorInputs(12, 265), flourTempF: 69 });
     const at70 = calculate({ ...vectorInputs(12, 265), flourTempF: 70 });
     within(at69.mixes[1]!.waterTempF, 59.505, 0.002, 'mix 2 at vector conditions');
-    within(at70.mixes[1]!.waterTempF, 59.113, 0.002, 'mix 2 at app defaults');
+    within(at70.mixes[1]!.waterTempF, 59.113, 0.002, 'mix 2 at flour 70, FF 14');
+  });
+
+  it('adds the seeded friction factor wherever a mix is 6 balls', () => {
+    // FINDINGS-40. The flour offset is the whole gap only where FF falls back
+    // to 14.0, the vectors' value. At 6 balls per mix the app reads bake 1's
+    // 14.03, and the 0.03 moves the target a further 0.03 × Ct/Cw: 0.482 in
+    // all. That is 6 and 12 balls at every weight, the default page included,
+    // and 18 balls from 272 g, which runs as three 6-ball mixes.
+    const seeded: Record<number, number[]> = {};
+    const gaps = new Set<string>();
+    for (let balls = C.MIN_BALLS; balls <= 24; balls++) {
+      for (let ballG = 240; ballG <= 300; ballG++) {
+        const { ff } = effectiveFriction(DEFAULT_CALIBRATION, ballsPerMix({ balls, ballWeightG: ballG }));
+        const vector = calculate(vectorInputs(balls, ballG));
+        const app = calculate({
+          ...vectorInputs(balls, ballG),
+          flourTempF: VECTOR_CONDITIONS.tRoomF,
+          frictionFactorF: ff,
+        });
+        const expected =
+          C.APP_DEFAULT_FLOUR_OFFSET_F +
+          (ff - VECTOR_CONDITIONS.ff) * (app.thermal.cTotal / app.thermal.cFreshWater);
+        vector.mixes.forEach((m, i) =>
+          within(m.waterTempF - app.mixes[i]!.waterTempF, expected, 1e-9, `${balls} x ${ballG} g, mix ${i + 1}`),
+        );
+        gaps.add(expected.toFixed(3));
+        if (ff !== VECTOR_CONDITIONS.ff) (seeded[balls] ??= []).push(ballG);
+      }
+    }
+    expect([...gaps].sort()).toEqual(['0.392', '0.482']);
+    expect(
+      Object.fromEntries(Object.entries(seeded).map(([b, ws]) => [b, [ws[0], ws[ws.length - 1], ws.length]])),
+    ).toEqual({ 6: [240, 300, 61], 12: [240, 300, 61], 18: [272, 300, 29] });
+
+    // What the 12-ball cards print: §7.2 quotes the vector pair.
+    const cards = (r: ReturnType<typeof calculate>) => r.mixes.map((m) => formatTempF(m.waterTempF));
+    const ff12 = effectiveFriction(DEFAULT_CALIBRATION, ballsPerMix({ balls: 12, ballWeightG: 265 })).ff;
+    expect(cards(calculate(vectorInputs(12, 265)))).toEqual(['64.8', '59.5']);
+    expect(
+      cards(calculate({ ...vectorInputs(12, 265), flourTempF: VECTOR_CONDITIONS.tRoomF, frictionFactorF: ff12 })),
+    ).toEqual(['64.3', '59.0']);
   });
 });
 
