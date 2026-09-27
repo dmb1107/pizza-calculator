@@ -9,17 +9,21 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-43, FINDINGS-44, Task 10 and the speed indicator (27 September).
+MESSAGE-43, FINDINGS-44, Task 10, the speed indicator and FINDINGS-45 (27
+September).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-43, and FINDINGS-44 is the
-  last thing sent.** Nothing is open on either side and no pin of any kind is
-  live (`knownWrong` is empty). The next move is theirs: expect MESSAGE-44,
-  or an unprompted message carrying one of Dave's asks.
+- **The correspondence is applied through MESSAGE-43, and FINDINGS-45 is the
+  last thing sent** (unprompted, after FINDINGS-44 needed no reply). No pin of
+  any kind is live (`knownWrong` is empty). FINDINGS-45 carries Dave's asks
+  for the bake log and is waiting on MESSAGE-45: how history becomes the FF in
+  use, and whether the solve needs each phase's duration. The storage is
+  decided and needs no reply: a private GitHub repo, one JSON file per bake,
+  a per-device token, and browser storage only without one.
 - **What the last rounds settled**, so you don't reopen it:
   - MESSAGE-32: `bulk-3` prints `{ballRoomMin}`, the rise the timeline plans;
     Dave's timers on the four mixer phases, so **the timer is the one source

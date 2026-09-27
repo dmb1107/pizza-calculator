@@ -6,7 +6,7 @@ is thinner.
 
 **Status:** Tasks 0–10 complete, on the bowl-aware thermal model with **per-mix
 weights**, the ice calculation removed, and **MESSAGE-43 applied**. Left: the
-bake log (Task 11).
+bake log (Task 11). Its storage is decided; the FF rule waits on MESSAGE-45.
 
 ---
 
@@ -671,8 +671,32 @@ markdown, inline. A test pins `watchFor` as markdown so it can't regress.
 
 Not required for v1, but §10 says design the data layer so it can be added.
 
-- [ ] localStorage-backed log, the §10 schema, JSON export.
+**Dave's asks, 27 September** (sent as FINDINGS-45; waiting on MESSAGE-45):
+one history shared between laptop and phone, the site still on Pages; each
+bake refines its mix size's FF from the measured temperatures, and the
+history sets the FF in use, with no typed FF; FF inputs only, not the full
+§10 diary; a visitor without a token gets a working calculator that saves
+only to their own browser.
+
+**Storage, decided by Dave:** a private GitHub repo, one JSON file per bake,
+read and written from the browser through GitHub's API with a token scoped
+to that repo, pasted once per device. Each device writes its own copy first
+and syncs after, so a mix never waits on the network. Not this repo: every
+push to `main` deploys, and it's public. The spec still says `localStorage`
+in §2, §6 and §10; FINDINGS-45 §2 asks for the wording.
+
+**Open with the recipe agent** (FINDINGS-45): the rule that turns a size's
+history into its FF, what the badge says, exclusions, unmeasured bowls and
+bake 1, whether the room slope is applied, sizes with no history, and
+whether the solve needs each phase's actual duration (Phase C's probe
+adjustment alone spans 3.78 °F of FF).
+
+- [ ] The log: the FF inputs only, per mix where §4.3 is per mix, stored as
+      readings with FF solved on read. Synced through the repo, browser
+      storage without a token.
 - [ ] Auto-populate from the current session so only measured values get typed.
+      New inputs: the water temperature actually poured, and a final dough
+      temperature for every mix, not only the last.
 - [ ] `ff_measured` from `solveFrictionFactorF`, the §4.3 solve that includes
       the bowl — **not** `final − predicted_mix`, which reads low by
       `FF × C_bowl/(Ct + C_bowl)` (§10). File it under the bake's balls per mix.

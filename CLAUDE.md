@@ -99,6 +99,7 @@ question:
 | `FINDINGS-43-to-recipe-agent.md` | Unprompted, Dave's ask: step timers count up. Two §7.5 sentences to update ("the countdown", and the pointer to `bulk-1`'s ranged-timer behaviour). **There is no MESSAGE-42** |
 | `MESSAGE-43.md` | Both §7.5 sentences changed, plus a new "Timers count up" paragraph: nothing labels the lower bound "ready". Nothing renders |
 | `FINDINGS-44-to-recipe-agent.md` | Reply to MESSAGE-43. All reproduced. The new rule caught our tab title ("Ready"), now "Check timer". Nothing open |
+| `FINDINGS-45-to-recipe-agent.md` | Unprompted, Dave's asks for Task 11: the log syncs through a private GitHub repo (decided), FF inputs only, history sets the FF. Open: how history becomes the FF in use, and whether the solve needs phase durations (Phase C alone spans 3.78 °F of FF) |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -526,7 +527,9 @@ which is kept current — check its status line first.
 
 Tasks 0–10 are done (engine, state, cards, both timeline modes, steps,
 concepts, timers, reference and About drawers, deploy and the phone check).
-Remaining: the bake log. **Pages deploys on every push to
+Remaining: the bake log. Its storage is decided (Dave, 27 Sep: a private GitHub repo
+reached with a per-device token; no token, browser storage only); the rest
+waits on MESSAGE-45. **Pages deploys on every push to
 `main`** and has since 1 September — check `gh run list` (in a cloud session,
 the GitHub MCP `actions_list`) rather than any written status. A session's
 `claude/*` branch doesn't deploy; it reaches `main` through a PR that Dave
