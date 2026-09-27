@@ -830,7 +830,9 @@ Where a stage's duration is a planning point inside a recipe range (§4.7), show
 ### 7.5 Steps
 See §8. Each step: a checkbox that persists, a summary, computed values inlined, an expandable "Why", and a timer where a duration applies.
 
-**Ranges stay ranges.** When the recipe gives a range for a duration — because it reasons that anywhere in the window works, and the cue decides — the step's text and its timer show the range, never a single number picked from it. Use the ranged-timer behaviour `bulk-1`'s 45–60 min already has. A planning point may appear beside the range ("the timeline plans 19 h"), but never instead of it. A single number is right only where the recipe gives one (`biga-6`'s 1 h) or the app computes one (`bulk-3`'s room time). A step with a duration never says "per schedule" — it names the time.
+**Ranges stay ranges.** When the recipe gives a range for a duration — because it reasons that anywhere in the window works, and the cue decides — the step's text and its timer show the range, never a single number picked from it. A planning point may appear beside the range ("the timeline plans 19 h"), but never instead of it. A single number is right only where the recipe gives one (`biga-6`'s 1 h) or the app computes one (`bulk-3`'s room time). A step with a duration never says "per schedule" — it names the time.
+
+**Timers count up.** Every timer counts up from its start, so its large number is always how long the step has been going. A ranged timer shows whether the step is before, in or past the window, and anywhere in the window is on time. Nothing labels the lower bound "ready": a window stage is judged by its cue, not by the clock. A timer with an exact duration shows when that duration is reached. ⚠️ Timers used to count down to the lower bound and then through the window. Dave asked for the count-up (27 Sep 2026) so the elapsed time is always on screen.
 
 **One exception on the classic track:** if the baker has planned `bigaRoomOnly` outside 16–18 h (the calculator allows 12–18, crediting 12–16 to PizzaBlab), `biga-4`'s classic timer uses the planned value instead — they have chosen to run off the Giorilli window, and the timer should follow the plan they made.
 
@@ -849,7 +851,7 @@ See §8. Each step: a checkbox that persists, a summary, computed values inlined
 
 ⚠️ **Corrected:** an earlier version said to draw the half step as a half-filled segment and named neither the ring nor the fill direction.
 
-The same order applies wherever §8 prose gives a speed: **"2 lit segments (20%, 98 RPM)"**. The `speed` field in each step keeps its `dial% / RPM` form — it is data; this section governs how it renders. The step's duration is its `timer`, one source for both the countdown and anything else that needs phase length.
+The same order applies wherever §8 prose gives a speed: **"2 lit segments (20%, 98 RPM)"**. The `speed` field in each step keeps its `dial% / RPM` form — it is data; this section governs how it renders. The step's duration is its `timer`, one source for both the step's timer and anything else that needs phase length.
 
 ⚠️ **Do not show a setting number** ("setting 4 of 20"). A segment count and a dial-click count differ by a factor of two, and at the 40% ceiling a 2× misread is 80%. The drawn indicator is the one form that reads the same whichever way the baker counts.
 

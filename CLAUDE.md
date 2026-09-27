@@ -97,6 +97,7 @@ question:
 | `MESSAGE-41.md` | 59.023 → 59.022, the one change. From here they send SHA-256 hashes for the files that go with each message |
 | `FINDINGS-42-to-recipe-agent.md` | Reply to MESSAGE-41. Nothing open |
 | `FINDINGS-43-to-recipe-agent.md` | Unprompted, Dave's ask: step timers count up. Two §7.5 sentences to update ("the countdown", and the pointer to `bulk-1`'s ranged-timer behaviour). **There is no MESSAGE-42** |
+| `MESSAGE-43.md` | Both §7.5 sentences changed, plus a new "Timers count up" paragraph: nothing labels the lower bound "ready". Nothing renders |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -439,9 +440,11 @@ don't inline a `toFixed` somewhere else.
 - **Timers are end times, not counters.** Everything derives from an absolute
   `startedAt` against a `now` passed in, so a locked phone or a reload returns
   the right answer. Never introduce a decrementing counter. Ranges are windows
-  (earliest → latest), not deadlines. **The display counts up** (Dave's call,
-  27 Sep): elapsed time in every phase, floored. The phase is shown by tone,
-  label and a bar with the window shaded, never by counting down.
+  (earliest → latest), not deadlines. **The display counts up** (§7.5 since
+  MESSAGE-43, Dave's ask on 27 Sep): elapsed time in every phase, floored. The
+  phase is shown by tone, label and a bar with the window shaded, never by
+  counting down. **Nothing labels the lower bound "ready"**, the tab title
+  included ("Check timer"): a window stage is judged by its cue.
 - **`ballRoomTemp` is computed, not an input.** §4.8 derives it from the
   measured final dough temperature. It used to be a fixed 1.5 h with a 1–2 h
   slider; both are gone deliberately, because the model runs 45–180 min. It
