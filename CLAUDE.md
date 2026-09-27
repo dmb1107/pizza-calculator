@@ -98,6 +98,7 @@ question:
 | `FINDINGS-42-to-recipe-agent.md` | Reply to MESSAGE-41. Nothing open |
 | `FINDINGS-43-to-recipe-agent.md` | Unprompted, Dave's ask: step timers count up. Two §7.5 sentences to update ("the countdown", and the pointer to `bulk-1`'s ranged-timer behaviour). **There is no MESSAGE-42** |
 | `MESSAGE-43.md` | Both §7.5 sentences changed, plus a new "Timers count up" paragraph: nothing labels the lower bound "ready". Nothing renders |
+| `FINDINGS-44-to-recipe-agent.md` | Reply to MESSAGE-43. All reproduced. The new rule caught our tab title ("Ready"), now "Check timer". Nothing open |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
