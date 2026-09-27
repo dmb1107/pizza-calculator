@@ -9,17 +9,20 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-41, FINDINGS-42, Task 10 and the speed indicator (27 September).
+MESSAGE-41, FINDINGS-43, Task 10 and the speed indicator (27 September).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-41, and FINDINGS-42 is the
-  last thing sent.** Nothing is open on either side and no pin of any kind is
-  live (`knownWrong` is empty). The next move is theirs: expect MESSAGE-42,
-  or an unprompted message carrying one of Dave's asks.
+- **The correspondence is applied through MESSAGE-41. FINDINGS-43 is the
+  last thing written**, and went to Dave to relay on 27 September. It is
+  unprompted, since FINDINGS-42 needed no reply, so there is no MESSAGE-42. It reports Dave's ask that step timers count up (PR #7)
+  and asks for two §7.5 sentences to change: "the countdown", and the pointer
+  to `bulk-1`'s ranged-timer behaviour. Neither renders. Expect MESSAGE-43,
+  and check that §7.5's new wording matches `StepTimer`. No pin of any kind
+  is live (`knownWrong` is empty).
 - **What the last rounds settled**, so you don't reopen it:
   - MESSAGE-32: `bulk-3` prints `{ballRoomMin}`, the rise the timeline plans;
     Dave's timers on the four mixer phases, so **the timer is the one source
@@ -51,15 +54,16 @@ Don't trust any status here that you can check instead (§7).
     gap there is 0.482. §4.2, §5 and §7.2 now name their conditions.
     MESSAGE-41 corrected its 59.023 to 59.022.
 - **Git state.** PRs #1, #2, #3, #5 and #6 merged MESSAGE-30 to 41 and
-  Task 10's status into `main`, each with a merge commit. PR #4, from
+  Task 10's status into `main`, each with a merge commit. PR #7 made the
+  step timers count up. PR #4, from
   another session, added the pizza icon (`public/`) and CLAUDE.md's rule to
   bring `README.md` current before opening a PR. The session branch restarts from `main` after each
   merge, so a new round starts on `main` plus nothing.
 - **Numbering, since it has stepped twice.** FINDINGS-25 went unprompted, so
   the pairs now share a number: MESSAGE-N answers FINDINGS-N, and
   FINDINGS-(N+1) answers MESSAGE-N. **There is no MESSAGE-22** (a stray draft,
-  superseded by 21 and deleted) and **no MESSAGE-27** (FINDINGS-27 needed no
-  reply).
+  superseded by 21 and deleted), **no MESSAGE-27** (FINDINGS-27 needed no
+  reply) and **no MESSAGE-42** (the same, for FINDINGS-42).
 - **Tasks 0–10 are done:** engine, state, cards, both timeline modes, steps,
   concepts, timers, reference and About drawers, and the deploy. Dave called
   the phone-in-the-kitchen check done on 27 September. The plan's status line

@@ -96,6 +96,7 @@ question:
 | `FINDINGS-41-to-recipe-agent.md` | Reply to MESSAGE-40. All reproduced except §5's 59.023, which is 59.022 (our four-place 59.0225 rounded again). The DDT slip is now pinned on both bases |
 | `MESSAGE-41.md` | 59.023 → 59.022, the one change. From here they send SHA-256 hashes for the files that go with each message |
 | `FINDINGS-42-to-recipe-agent.md` | Reply to MESSAGE-41. Nothing open |
+| `FINDINGS-43-to-recipe-agent.md` | Unprompted, Dave's ask: step timers count up. Two §7.5 sentences to update ("the countdown", and the pointer to `bulk-1`'s ranged-timer behaviour). **There is no MESSAGE-42** |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
