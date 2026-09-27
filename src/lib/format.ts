@@ -110,6 +110,14 @@ export function formatLitSegments(full: number, half: boolean): string {
   return `${count} lit segment${full === 1 && !half || count === '½' ? '' : 's'}`;
 }
 
+/**
+ * §7.5 item 3, the speed chip's smaller line: "20% · 98 RPM". No duration:
+ * since MESSAGE-32 every speed step has its own timer, which carries it.
+ */
+export function formatSpeedDetail(dial: number, rpm: number): string {
+  return `${dial}% · ${rpm} RPM`;
+}
+
 /** "65%" from 0.65. */
 export function formatPercent(fraction: number, decimals = 0): string {
   return `${roundTo(fraction * 100, decimals).toFixed(decimals)}%`;

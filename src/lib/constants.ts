@@ -46,7 +46,8 @@ const BASE = {
    */
   INDICATOR_PCT_PER_SEGMENT: 10,
 
-  // Ooni Halo Core limits
+  // Ooni Halo Core limits — from Ooni's help center, "min/max capacity and
+  // hydration limits" (§3, §11 since MESSAGE-34). MIN_BALLS is ours (§4.4).
   /**
    * §4.4. Smallest supported MACHINE batch. Two independent reasons point here:
    * 2 balls is 542 g, which clears the 500 g floor on paper but won't let a
@@ -60,7 +61,8 @@ const BASE = {
   FLOUR_CAP_66: 1505, // g, at 66%+ hydration (final mix)
   FLOUR_CAP_55: 1610, // g, at 55-59% hydration (biga)
   /**
-   * Continuous run limit, minutes. Read by the profile assertion in
+   * Ooni's published maximum continuous operating time for the spiral hook,
+   * minutes (help center, §11). Read by the profile assertion in
    * `tests/constants.test.ts` and bound into `mix-6` / `mix-7` prose as
    * `{maxRunMin}`, so the number lives in one place.
    */
@@ -302,8 +304,8 @@ export function indicatorSegments(dialPercent: number): SegmentState[] {
 
 /**
  * §7.5. What the Core's LED indicator shows at a dial percentage:
- * `floor(dial / INDICATOR_PCT_PER_SEGMENT)` full segments, one half-lit when
- * the remainder is 5, out of `100 / INDICATOR_PCT_PER_SEGMENT`.
+ * `floor(dial / INDICATOR_PCT_PER_SEGMENT)` segments lit, the next one dimmed
+ * when the remainder is 5, out of `100 / INDICATOR_PCT_PER_SEGMENT`.
  */
 export function indicatorForDial(dialPercent: number): { full: number; half: boolean; total: number } {
   const per = C.INDICATOR_PCT_PER_SEGMENT;

@@ -113,9 +113,12 @@ export function tokenValues(
     // §4.8 — computed from the measured final dough temperature, or from DDT
     // while the calculator is still in planning mode.
     roomMin: String(Math.round(result.roomMinutes)),
+    // The rise the timeline plans: roomMin less half the stagger, floored
+    // (§4.10, MESSAGE-32). What bulk-3 prints and times.
+    ballRoomMin: String(Math.round(result.ballRoomMinutes)),
     finalDoughTemp: formatTempF(result.effectiveFinalTempF),
 
-    // §8.2 per-biga values. `biga-1` and `biga-2` are per-biga steps: at 18
+    // §8.2 per-biga values. `biga-1` and `biga-3` are per-biga steps: at 18
     // balls the batch total is 1833.7 g, which is above the 1610 g the machine
     // handles at this hydration — which is *why* it splits, so showing it as
     // one weight to scale out would be actively wrong.

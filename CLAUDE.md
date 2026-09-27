@@ -72,6 +72,18 @@ question:
 | `FINDINGS-29-to-recipe-agent.md` | Reply to MESSAGE-28 |
 | `MESSAGE-29.md` | Unprompted, Dave's three asks: speed shown as lit LED segments (§7.5), bowl mass a constant, and §7.3 *Capacity* messages that say when and how the batch splits |
 | `FINDINGS-30-to-recipe-agent.md` | Reply to MESSAGE-29, including Dave's indicator geometry (a ring of ten, half steps dimmed) and the §7.5 "half-filled" correction it needs |
+| `MESSAGE-30.md` | §7.5 records Dave's ring and draws the half step dimmed; the chip's minutes and §7.3's severities written into the spec; §7.3's near-limit list across 240–300 g. Nothing renders differently |
+| `FINDINGS-31-to-recipe-agent.md` | Reply to MESSAGE-30. Nothing open. The near-limit ball list can't see the 5% (it holds from 94.03% to 98.11%); the printed-value edge is unreachable from the inputs |
+| `MESSAGE-31.md` | Unprompted, Dave's ask: ranges stay ranges. `biga-4b` (the fridge) split out of `biga-4`, per-track timers, `bake-1` 2–3 h, `bulk-3` timed, the planning point beside its range on the timeline (§7.4) |
+| `FINDINGS-32-to-recipe-agent.md` | Reply to MESSAGE-31. Two pins live: §8.2a's stale retarded counts, and `bulk-3`'s timer running long at split batches. The gate had read neither titles, new step fields nor the timeline's stage text |
+| `MESSAGE-32.md` | Both pins settled: `{ballRoomMin}`, the rise the timeline plans, for `bulk-3`; counts 20/28/36. `biga-4`'s classic summary reworded, `biga-4b` "Refrigerate the biga". Dave's timers on the four mixer phases; `speed` loses its minutes |
+| `FINDINGS-33-to-recipe-agent.md` | Reply to MESSAGE-32. Nothing open; two unpinned notes: at `nMix` 2 `bulk-3`'s block prints 90, 18 and 73 (17.5 rounds up), and the §4.10 ⚠️'s overrun is "up to" at the floor |
+| `MESSAGE-33.md` | `bulk-3`'s block states both rises ("would rest 90 min; this batch rests 73") instead of a subtraction; `{staggerHalfMinutes}` stays in `bulk-1` only. §4.10 ⚠️ says "up to" |
+| `FINDINGS-34-to-recipe-agent.md` | Reply to MESSAGE-33. Nothing open. The token check listed step fields by hand too; it now walks them |
+| `MESSAGE-34.md` | Unprompted, Dave's two asks: `biga-2` folded into `biga-3` (ids **not** renumbered; `biga-2` is absent on purpose), counts 19/27/35 and 17/25/33; the Halo Core limits sourced to Ooni's help center in §3 and §11 |
+| `FINDINGS-35-to-recipe-agent.md` | Reply to MESSAGE-34. Nothing open. The generator split a comma-separated concepts line into `"mix-dont-knead,"` and both parsers agreed; §11 renders in About, and its Halo Core figures are now claimed against the constants that cite them |
+| `MESSAGE-35.md` | Unprompted, Dave's ask: every rendered spec paragraph rewritten to the humanizer patterns (the writing rules below); no token or figure changed except those listed; asks for the same pass on our copy |
+| `FINDINGS-36-to-recipe-agent.md` | Reply to MESSAGE-35: five unlisted figures (all restatements), 29 claims re-anchored, the sections the pass skipped, and the before/after list of our own copy, including the false "highest-leverage input" |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -101,8 +113,10 @@ no persisted checkbox is orphaned.
 **Step tokens are scoped to their step, and getting that wrong is a live
 bug class.** `mix-*` are per-mix steps, so `{phaseAWater}`, `{phaseBWater}` and
 `{salt}` bind to per-mix amounts — a batch total there would have the baker pour
-double into mix 1. `biga-1`/`biga-2` are per-biga, hence `{bigaFlourPerBiga}`.
-The ingredients card still shows batch totals; that is the shopping list. Three
+double into mix 1. `biga-1`/`biga-3` are per-biga, hence `{bigaFlourPerBiga}`.
+The ingredients card still shows batch totals; that is the shopping list.
+(`biga-2` no longer exists — MESSAGE-34 folded it into `biga-3` and kept every
+other id, so the gap is deliberate.) Three
 instances of this have been found in three rounds — check every new token
 against its step's scope.
 
@@ -198,7 +212,11 @@ reproduce-before-adopting step, made mandatory. Reproduce each one and add a
 claim, or classify it with a reason. Never widen `FIXED` just to go green: a
 computed value filed as fixed is the defect this exists to catch. A known
 disagreement the spec author must fix gets `knownWrong`, which is pinned both
-ways.
+ways. **It walks every string a step carries** rather than a list of fields —
+a list of six hid MESSAGE-31's per-track timers and every title — and reads the
+timeline's stage titles and descriptions (`STAGE_INFO` in `timeline.ts`). The
+token check in `bindTokens.test.ts` walks the same way, for the same reason.
+**Any new scan over step content should walk, not list.**
 
 **The same applies to UI copy.** The gate reads §8, so a figure typed into a
 component is invisible to it: the ball-weight hint said "265 g opens to about
@@ -283,6 +301,62 @@ water temperature 5 °F wrong on bake 1. Two traps:
    the full explanation.
 4. **Shareable/resumable state.** Survives a refresh, sends as a link.
 
+## Writing anything the site shows
+
+Dave's rules since MESSAGE-35, from the humanizer's 25 patterns
+(https://github.com/blader/humanizer#the-25-patterns). **They apply to every
+string the site renders that this side writes**: component copy, hints,
+labels and buttons, the engine's warnings (`engine.ts`), timeline stage text
+(`timeline.ts`), copy-as-text (`recipeText.ts`), and any wording we propose
+for the spec. §8 prose itself is the recipe agent's to word: if it breaks a
+rule, say so in the FINDINGS rather than editing generated files.
+
+**The goal is clarity, directness and concision, without going casual.**
+
+Dave's priorities. Never ship these:
+- **One-line closers and dramatic fragments** that repeat the point.
+- **Sayings that sound deep.** "This bites hardest exactly where it matters
+  most" became the specific claim.
+- **Arguing with no one.** "You are not aiming at the final temperature when
+  you probe" and "the floor is not worth overruling" raised objections nobody
+  made. State the fact instead: "After the probe, Phases C and D still add
+  about X °F."
+- **Overused AI words:** delve, testament, landscape, showcase, crucial,
+  robust, genuinely, leverage.
+- **Sales language.** "A far more powerful lever" and "the highest-leverage
+  input" were both cut.
+- **Writing about the previous version** ("an earlier version…", "was changed
+  to", "no longer"). Describe what it does now. History belongs in `docs/`,
+  never on the page.
+
+Avoid the rest of the patterns too:
+- "not X but Y" framing, and a run-up before the point;
+- forced threes, and repeated sentence openings;
+- stacked qualifiers, and hyphenated pairs that grammar doesn't need;
+- passive voice that hides who acts (name the baker or the app);
+- inflated significance, vague "associated with", and "-ing" riders;
+- borrowed authority (name the source and what it said, as §11 does);
+- "serves as" or "features" where "is" or "has" will do;
+- bold as decoration, Title Case or emoji headings;
+- chatbot residue, hedging disclaimers, and a heading repeated in the first
+  sentence.
+
+**Em dashes are fine.** Dashes are the one pattern not applied.
+
+Three rules the pass itself taught:
+- **A reworded sentence must still be true, so check the claim, not only the
+  tone.** "The highest-leverage input in the model" read fine and was false.
+  FF and DDT each move the water target about 3 °F per °F, and the biga 1.6.
+  The gate can't catch this, because a claim with no digit passes it by
+  construction.
+- **Never change a figure, or a phrase a test pins as a claim.** Reword around
+  it. The gate's `COMPONENT_FIXED` keys are exact phrases.
+- **Mirror the spec wherever the UI repeats it.**
+  - The stagger strip's title matches `bulk-1`'s warning.
+  - The Temper stage says "measured with a probe", as `bake-1` does.
+  - Dave's calls apply everywhere: there is no "weigh it" in a value line,
+    whether in the chip or in copy-as-text.
+
 ## Commands
 
 ```bash
@@ -340,8 +414,8 @@ don't inline a `toFixed` somewhere else.
 - **Markdown must render tables.** Step `detail` and concept `body` contain GFM
   tables and multi-paragraph prose — `react-markdown` + `remark-gfm`, not a
   text renderer. **`watchFor` is markdown too** — `mix-7`'s cue ends
-  `**and at DDT ±1 °F.**`, and rendering it as plain text put literal asterisks
-  around the one number §8 calls a pass/fail gate.
+  `and **DDT ±1 °F.**`, and rendering it as plain text put literal asterisks
+  around the one number that decides whether the mix is done.
 - **Timers are end times, not counters.** Everything derives from an absolute
   `startedAt` against a `now` passed in, so a locked phone or a reload returns
   the right answer. Never introduce a decrementing counter. Ranges are windows
@@ -381,13 +455,33 @@ don't inline a `toFixed` somewhere else.
   but the app always passes the constant.
 - **Speeds render as lit LED segments** (§7.5, MESSAGE-29): the Core has no
   number display. `SpeedIndicator` draws the real indicator as Dave describes
-  it (25 Sep): **twelve 30° positions round the knob with the bottom two
-  missing**, the first segment just left of that gap (7–8 o'clock), filling
-  clockwise to 4–5 o'clock; and **a half step is the next segment dimmed**,
-  not half-filled. Then "1½ lit segments", then
-  "15% · 85 RPM" smaller. Never a setting number — a 2× misread at the 40% ceiling is
-  80%. §8 prose leads with the count too, and the gate rebuilds each count as
-  dial ÷ 10 independently of the formatter.
+  it (25 Sep; §7.5 records it since MESSAGE-30): **twelve 30° positions round
+  the knob with the bottom two missing**, the first segment just left of that
+  gap (7–8 o'clock), filling clockwise to 4–5 o'clock; and **a half step is
+  the next segment dimmed**, not half-filled. Then "1½ lit segments", then
+  "15% · 85 RPM" smaller (`formatSpeedDetail`). No minutes: since MESSAGE-32
+  each mixer phase has its own timer, and **the timer is the one source of a
+  phase's duration** — the `speed` field is dial and RPM only, and the
+  `MAX_RUN_MIN` profile reads `timerMinutes`. Phase D's is 45–60 s, which both
+  timer parsers read as 0.75–1 min. Never a setting number — a 2× misread at
+  the 40% ceiling is 80%. §8 prose leads with the count too, and the gate
+  rebuilds each count as dial ÷ 10 independently of the formatter.
+- **Ranges stay ranges** (§7.5, MESSAGE-31). Where the recipe gives a range,
+  the step prints it and its timer is a window; the planning point may sit
+  beside it ("the timeline plans 19 h"), never instead. The four ranges live in
+  one table, `PLANNING_RANGE_H` in `timeline.ts`: the timeline prints "19 h
+  (18–20)" from it when the point lies inside, and the gate claims every step
+  literal against it. `biga-4` times a different stage per track
+  (`timerLabelRetarded`/`timerLabelClassic`); resolve through `timerLabelFor`
+  and `summaryFor`, never in a component. §7.5's one exception: a classic plan
+  below 16 h times the plan.
+- **Two ball-rise figures, and `bulk-3` prints the planned one** (MESSAGE-32).
+  `roomMinutes` / `{roomMin}` is one dough's rise; `ballRoomMinutes` /
+  `{ballRoomMin}` is what the timeline plans, less half the stagger and held
+  at 45 min (`plannedBallRiseH`, the one function both read). They differ only
+  at `nMix` > 1. Anything that tells the baker how long the balls sit —
+  `bulk-3`, copy-as-text, the final-temperature hint — prints the planned one.
+  Printing `{roomMin}` there ran every split batch 17.5–35 min long.
 - **Capacity messages are §7.3's words, decided in `src/lib/capacity.ts`**, not
   the engine: generated content bound through the token table, decided on the
   **printed** per-mix dough (a test pins 2374.96 g → "2375.0" → fires). The

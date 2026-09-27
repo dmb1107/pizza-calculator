@@ -4,6 +4,7 @@ import { BOUNDS } from '../state/defaults';
 import {
   formatClock,
   formatDuration,
+  formatStageDuration,
   fromDatetimeLocal,
   socialWindowPhrase,
   toDatetimeLocal,
@@ -13,7 +14,7 @@ import type { TimelineMode } from '../state/types';
 
 const MODE_OPTIONS: { value: TimelineMode; label: string; description: string }[] = [
   { value: 'forward', label: 'From the biga start', description: 'Pick when it goes in' },
-  { value: 'backward', label: 'From the bake time', description: 'Pick when you bake; get the start' },
+  { value: 'backward', label: 'From the bake time', description: 'Pick the bake time; the app works out the start' },
 ];
 
 const HOUR_MS = 3_600_000;
@@ -134,8 +135,8 @@ export function TimelineCard(s: AppState) {
 
       {timeline.hasUnsocialHours && (
         <p className="mb-4 rounded-lg border border-amber-400 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-200">
-          Some of this schedule wants you awake between midnight and 6 a.m. Moving the{' '}
-          {backward ? 'bake' : 'start'} time moves everything with it.{' '}
+          Some steps fall between midnight and 6 a.m. Moving the{' '}
+          {backward ? 'bake' : 'start'} time moves every step with it.{' '}
           {socialWindowPhrase(daylightWindows, timelineMode)}
         </p>
       )}
@@ -155,7 +156,7 @@ export function TimelineCard(s: AppState) {
               <span className="text-lg font-semibold tabular">{formatClock(stage.startsAt)}</span>
               <span className="text-stone-800 dark:text-stone-200">{stage.title}</span>
               <span className="text-sm text-stone-500 tabular">
-                {formatDuration(stage.durationH)}
+                {formatStageDuration(stage.durationH, stage.range)}
               </span>
               {stage.current && (
                 <span className="rounded-full bg-amber-600 px-2 py-0.5 text-xs font-medium text-white">
@@ -235,8 +236,8 @@ export function TimelineCard(s: AppState) {
               step={BOUNDS.temperH.step}
             />
             <p className="text-sm text-stone-500 dark:text-stone-400">
-              Cold ferment is set in the Batch panel. The balls' room-temperature phase is not
-              adjustable — it is computed from how far the dough you actually hit is from DDT.
+              Set the cold ferment in the Batch panel. The balls' time at room temperature is
+              calculated from how far your dough lands from DDT, so there's no control for it here.
             </p>
           </div>
         )}

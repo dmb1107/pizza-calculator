@@ -14,7 +14,7 @@
  */
 
 import { C } from './constants';
-import { MIX_H, clampRise, mixStaggerH } from './engine';
+import { MIX_H, plannedBallRiseH } from './engine';
 import type { Schedule, TimelineMode } from '../state/types';
 
 export type StageKey =
@@ -70,14 +70,35 @@ export const STAGE_ORDER: readonly StageKey[] = [
   'temper',
 ];
 
-const STAGE_INFO: Record<StageKey, { title: string; description: string }> = {
+/**
+ * §4.7 (MESSAGE-31). Four stages last a planning point inside a range the
+ * recipe reasons for. The timeline needs one number to put a clock time on a
+ * stage, so it uses the point; nothing the baker reads collapses the range
+ * (§7.4, §7.5). Hours, low to high.
+ */
+export const PLANNING_RANGE_H: Partial<Record<StageKey, readonly [number, number]>> = {
+  bigaFridge: [18, 20],
+  // The Giorilli window. The input allows 12–18 (§4.7); §7.5's classic
+  // exception covers a plan outside this.
+  bigaRoomOnly: [16, 18],
+  bulkRest: [45 / 60, 1],
+  temper: [2, 3],
+};
+
+/** The planning point's range, if `hours` lies inside it — §7.4 shows it beside the point. */
+export function planningRangeFor(key: StageKey, hours: number): readonly [number, number] | undefined {
+  const range = PLANNING_RANGE_H[key];
+  return range && hours >= range[0] && hours <= range[1] ? range : undefined;
+}
+
+export const STAGE_INFO: Record<StageKey, { title: string; description: string }> = {
   bigaRoomTemp: {
     title: 'Biga at room temperature',
-    description: 'Gets fermentation started before the fridge takes over.',
+    description: 'Starts fermentation before the biga goes in the fridge.',
   },
   bigaFridge: {
     title: 'Biga in the fridge',
-    description: 'Holds it somewhere genuinely stable instead of wherever the room drifts.',
+    description: 'Holds the biga steady while it ripens.',
   },
   bigaRoomOnly: {
     title: 'Biga ferments',
@@ -85,7 +106,7 @@ const STAGE_INFO: Record<StageKey, { title: string; description: string }> = {
   },
   bigaTemper: {
     title: 'Biga out to temper',
-    description: 'Out of the fridge before mixing. Probe it — this is the number the water calculation needs.',
+    description: 'Out of the fridge before mixing. Probe it: the water target depends on this reading.',
   },
   mix: { title: 'Final mix', description: 'Phases A–D, including the 10-minute rest.' },
   bulkRest: { title: 'Bulk rest', description: 'Lightly oiled container. No folds.' },
@@ -97,15 +118,15 @@ const STAGE_INFO: Record<StageKey, { title: string; description: string }> = {
     title: 'Balls at room temperature',
     // By the OFFSET from DDT, not the thermometer reading alone (MESSAGE-21/23):
     // §4.8's rise depends only on `T_actual − DDT`.
-    description: 'On lightly oiled trays, lids on. Length set by how far the dough landed from DDT.',
+    description: 'On lightly oiled trays, lids on. How long depends on how far the dough landed from DDT.',
   },
   coldFerment: {
     title: 'Cold ferment',
-    description: '38–40 °F. Spread the trays out for the first 4 hours — do not stack.',
+    description: '38–40 °F. Spread the trays out for the first 4 hours; don\'t stack them.',
   },
   temper: {
     title: 'Temper',
-    description: 'Target 60–65 °F at the core. Measure it, do not guess.',
+    description: 'Target 60–65 °F at the core, measured with a probe.',
   },
 };
 
@@ -132,7 +153,6 @@ const STAGE_INFO: Record<StageKey, { title: string; description: string }> = {
 export function stageDurations(schedule: Schedule, a: ScheduleAdjustments): StageDurations {
   const retarded = schedule === 'retarded';
   const nMix = Math.max(1, a.nMix);
-  const stagger = mixStaggerH(nMix);
 
   return {
     bigaRoomTemp: retarded ? 2 : 0,
@@ -142,7 +162,7 @@ export function stageDurations(schedule: Schedule, a: ScheduleAdjustments): Stag
     mix: MIX_H * nMix + C.CHANGEOVER_H * (nMix - 1),
     bulkRest: 1,
     divideBall: C.DIVIDE_BALL_H,
-    ballRoomTemp: clampRise(a.ballRoomTempH - stagger / 2),
+    ballRoomTemp: plannedBallRiseH(a.ballRoomTempH * 60, nMix),
     coldFerment: a.coldFermentH,
     temper: a.temperH,
   };
@@ -153,6 +173,12 @@ export interface TimelineStage {
   title: string;
   description: string;
   durationH: number;
+  /**
+   * §7.4: the recipe's range when `durationH` is a planning point inside it,
+   * shown beside the point. Absent for a stage with no range, or a plan the
+   * baker has moved outside it (§7.5's classic exception).
+   */
+  range?: readonly [number, number];
   startsAt: Date;
   endsAt: Date;
   /**
@@ -229,6 +255,7 @@ export function buildTimeline({
       key,
       ...STAGE_INFO[key],
       durationH,
+      range: planningRangeFor(key, durationH),
       startsAt,
       endsAt,
       unsocialStart: isUnsocialHour(startsAt),
@@ -382,6 +409,22 @@ export function formatDuration(hours: number): string {
   if (h === 0) return `${m} min`;
   if (m === 0) return `${h} h`;
   return `${h} h ${m} min`;
+}
+
+/**
+ * §7.4: the planning point, then the recipe's range beside it — "19 h (18–20)".
+ * The range's unit is left off only when the point already reads in it, so
+ * "1 h (45–60 min)" and "2 h 30 min (2–3 h)" can't be misread.
+ */
+export function formatStageDuration(hours: number, range?: readonly [number, number]): string {
+  const point = formatDuration(hours);
+  if (!range) return point;
+  const [lo, hi] = range;
+  const inHours = Number.isInteger(lo) && Number.isInteger(hi);
+  const unit = inHours ? 'h' : 'min';
+  const span = inHours ? `${lo}–${hi}` : `${Math.round(lo * 60)}–${Math.round(hi * 60)}`;
+  const pointIsOneUnit = !point.includes(' h ') && point.endsWith(` ${unit}`);
+  return `${point} (${span}${pointIsOneUnit ? '' : ` ${unit}`})`;
 }
 
 /** "Sat 3:00 PM" — the weekday matters over a 52-hour schedule. */

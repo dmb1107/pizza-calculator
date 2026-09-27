@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { STEPS } from '../src/content/steps';
-import { expandSteps } from '../src/lib/stepInstances';
-import { STAGE_ORDER, stageDurations, type StageKey } from '../src/lib/timeline';
+import { expandSteps, timerLabelFor } from '../src/lib/stepInstances';
+import { PLANNING_RANGE_H, STAGE_ORDER, stageDurations, type StageKey } from '../src/lib/timeline';
+import { parseTimerLabel } from '../src/lib/timers';
+import { bindTokens, tokenValues } from '../src/lib/bindTokens';
+import { calculate } from '../src/lib/engine';
+import { BOUNDS } from '../src/state/defaults';
 import type { Schedule } from '../src/state/types';
 import type { ScheduleAdjustments } from '../src/lib/timeline';
 
@@ -33,11 +37,11 @@ const DEFAULTS: ScheduleAdjustments = {
 
 /** Which step tells the baker to do each stage. */
 const INSTRUCTED_BY: Record<StageKey, readonly string[]> = {
-  // biga-4's two summaries cover all three fermentation stages: the retarded
-  // one reads "2 hours at room temperature, then {bigaFridge} hours in the
-  // fridge", the classic one "{bigaRoomOnly} hours at 61–65 °F".
+  // §4.7's mapping since MESSAGE-31. biga-4 is the room-temperature stage on
+  // either track; the fridge got its own step so that each timed stage has
+  // its own timer.
   bigaRoomTemp: ['biga-4'],
-  bigaFridge: ['biga-4'],
+  bigaFridge: ['biga-4b'],
   bigaRoomOnly: ['biga-4'],
   bigaTemper: ['biga-6'],
   mix: ['mix-1', 'mix-2', 'mix-3', 'mix-4', 'mix-5', 'mix-6', 'mix-7', 'mix-8'],
@@ -51,7 +55,6 @@ const INSTRUCTED_BY: Record<StageKey, readonly string[]> = {
 /** Steps that deliberately instruct no stage, each with the reason. */
 const NO_STAGE: Record<string, string> = {
   'biga-1': 'making the biga — t = 0, the instant every stage is measured from',
-  'biga-2': 'making the biga — t = 0',
   'biga-3': 'making the biga — t = 0',
   'biga-5': 'the ripeness cue that ENDS fermentation: a moment, not a duration',
   'bake-2': 'the bake itself, after the timeline finishes at `temper`',
@@ -130,4 +133,115 @@ describe('§4.7 every stage maps to a step, and every step to a stage', () => {
       }
     },
   );
+});
+
+describe('§7.5 ranges stay ranges', () => {
+  /** The schedule a stage runs on at the defaults. */
+  const runsOn = (stage: StageKey): Schedule =>
+    stageDurations('retarded', DEFAULTS)[stage] > 0 ? 'retarded' : 'classic';
+
+  it.each(Object.keys(PLANNING_RANGE_H) as StageKey[])(
+    '%s: the step that instructs it times the whole §4.7 range',
+    (stage) => {
+      const [lo, hi] = PLANNING_RANGE_H[stage] as readonly [number, number];
+      const schedule = runsOn(stage);
+      const [id] = INSTRUCTED_BY[stage];
+      const s = STEPS.find((x) => x.id === id)!;
+      const label = timerLabelFor(s, schedule, DEFAULTS.bigaRoomOnlyH);
+      expect(parseTimerLabel(label ?? ''), `${id} on ${schedule}: "${label}"`).toEqual({
+        minMinutes: lo * 60,
+        maxMinutes: hi * 60,
+        isWindow: true,
+      });
+    },
+  );
+
+  it('keeps every planned point inside its range except a classic room ferment', () => {
+    // Why §7.5 needs only one exception: the fridge and temper inputs are
+    // bounded by their own windows, and bulkRest is fixed at 1 h.
+    const inside = (key: StageKey, h: number) => {
+      const [lo, hi] = PLANNING_RANGE_H[key] as readonly [number, number];
+      return h >= lo && h <= hi;
+    };
+    expect(inside('bigaFridge', BOUNDS.bigaFridgeH.min) && inside('bigaFridge', BOUNDS.bigaFridgeH.max)).toBe(true);
+    expect(inside('temper', BOUNDS.temperH.min) && inside('temper', BOUNDS.temperH.max)).toBe(true);
+    expect(inside('bulkRest', stageDurations('retarded', DEFAULTS).bulkRest)).toBe(true);
+    expect(inside('bigaRoomOnly', BOUNDS.bigaRoomOnlyH.min)).toBe(false);
+  });
+
+  it('times a classic room ferment planned off the Giorilli window for the plan', () => {
+    // §7.5's exception: the input allows 12–18 h; 16–18 is the window.
+    const biga4 = STEPS.find((s) => s.id === 'biga-4')!;
+    const shown = [];
+    for (let h = BOUNDS.bigaRoomOnlyH.min; h <= BOUNDS.bigaRoomOnlyH.max; h += BOUNDS.bigaRoomOnlyH.step) {
+      const label = bindTokens(timerLabelFor(biga4, 'classic', h) ?? '', { bigaRoomOnly: String(h) });
+      shown.push(`${h}: ${label}`);
+    }
+    expect(shown).toEqual([
+      '12: 12 h', '12.5: 12.5 h', '13: 13 h', '13.5: 13.5 h', '14: 14 h', '14.5: 14.5 h',
+      '15: 15 h', '15.5: 15.5 h', '16: 16–18 h', '16.5: 16–18 h', '17: 16–18 h',
+      '17.5: 16–18 h', '18: 16–18 h',
+    ]);
+    // The retarded track is untouched by the plan.
+    expect(timerLabelFor(biga4, 'retarded', 12)).toBe('2 h');
+  });
+});
+
+describe('§7.5 a step\'s timer agrees with the stage it times', () => {
+  /**
+   * Every stage timed by one step with a single-number timer: the bound timer
+   * against the duration the timeline plans. A timer that disagrees with its
+   * own stage schedules the baker twice. (Windows are checked above; `mix` is
+   * several steps, none of which times the whole stage.)
+   */
+  const mismatches = (
+    schedule: Schedule,
+    balls: number,
+    bigaRoomOnlyH = DEFAULTS.bigaRoomOnlyH,
+    finalDoughTempF?: number,
+  ) => {
+    const r = calculate({ balls, ballWeightG: 265, roomTempF: 70, flourTempF: 70, bigaTempF: 58, frictionFactorF: 14, finalDoughTempF });
+    const plan = { ...DEFAULTS, bigaRoomOnlyH, ballRoomTempH: r.roomMinutes / 60, nMix: r.capacity.nMix };
+    const durations = stageDurations(schedule, plan);
+    const tokens = tokenValues(r, plan);
+    const rendered = new Set(expandSteps(r.capacity.nMix, schedule).map((i) => i.step.id));
+    const out: string[] = [];
+    for (const stage of STAGE_ORDER) {
+      const steps = INSTRUCTED_BY[stage].filter((id) => rendered.has(id));
+      if (durations[stage] <= 0 || steps.length !== 1) continue;
+      const s = STEPS.find((x) => x.id === steps[0])!;
+      const spec = parseTimerLabel(bindTokens(timerLabelFor(s, schedule, plan.bigaRoomOnlyH) ?? '', tokens));
+      if (!spec || spec.isWindow) continue;
+      const planned = Math.round(durations[stage] * 60 * 10) / 10;
+      if (spec.minMinutes !== Math.round(durations[stage] * 60)) out.push(`${s.id}: ${spec.minMinutes} min, ${stage} ${planned} min`);
+    }
+    return out;
+  };
+
+  it('agrees on every one-mix batch, on both schedules', () => {
+    expect(mismatches('retarded', 6)).toEqual([]);
+    expect(mismatches('classic', 6)).toEqual([]);
+    // §7.5's exception: off the Giorilli window, the timer is the plan.
+    expect(mismatches('classic', 6, 13)).toEqual([]);
+  });
+
+  it('times bulk-3 for the rise the timeline plans at every split batch, and at the floor', () => {
+    // MESSAGE-32: {ballRoomMin}. Until then bulk-3 timed the unshortened
+    // {roomMin}: 90 min against 72.5 at nMix 2 and 55 at nMix 3. Room 70 °F,
+    // biga 58 °F, FF 14, final dough at DDT unless stated.
+    const at = (balls: number) =>
+      calculate({ balls, ballWeightG: 265, roomTempF: 70, flourTempF: 70, bigaTempF: 58, frictionFactorF: 14 }).ballRoomMinutes;
+    expect(at(6)).toBeCloseTo(90, 9);
+    expect(at(12)).toBeCloseTo(72.5, 9);
+    expect(at(24)).toBeCloseTo(55, 9);
+    expect(mismatches('retarded', 12)).toEqual([]);
+    expect(mismatches('classic', 18)).toEqual([]);
+    expect(mismatches('retarded', 24)).toEqual([]);
+    // 24 balls at a measured 76 °F (DDT 74): 71.2 min unshortened, 36.2 after
+    // the correction, held at the 45-minute floor. Asserted to BE at the floor,
+    // so this case can't quietly stop exercising it.
+    const floor = calculate({ balls: 24, ballWeightG: 265, roomTempF: 70, flourTempF: 70, bigaTempF: 58, frictionFactorF: 14, finalDoughTempF: 76 });
+    expect(floor.ballRoomMinutes).toBe(45);
+    expect(mismatches('retarded', 24, DEFAULTS.bigaRoomOnlyH, 76)).toEqual([]);
+  });
 });

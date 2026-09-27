@@ -9,24 +9,26 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-29, Task 10's emulated audit and the speed indicator (25 September).
+MESSAGE-35, Task 10's emulated audit and the speed indicator (27 September).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-29** (unprompted: speed as
-  lit segments, bowl mass a constant, capacity messages). **FINDINGS-30**
-  answers it and went to the recipe agent on 25 September; expect
-  **MESSAGE-30** back. FINDINGS-30 §4 asks them to fix §7.5 to match the real
-  indicator (a ring of ten, bottom two of twelve positions missing, filling
-  clockwise from 7 o'clock; a half step *dimmed*, not half-filled). The app
-  already draws that, so if MESSAGE-30 only rewords §7.5, nothing renders
-  differently: §7.5 is instructions, not generated content. Confirm the
-  wording matches `SpeedIndicator` and reply. §5 of FINDINGS-30 lists three
-  choices they may overrule: minutes in the speed chip, warning severities,
-  and singular "½ lit segment". No `knownWrong` pin is live.
+- **The correspondence is applied through MESSAGE-33.** MESSAGE-32 settled
+  FINDINGS-32's pins (`bulk-3` on `{ballRoomMin}`, the rise the timeline plans;
+  §8.2a at 20/28/36) and added Dave's timers on the four mixer phases, making
+  the timer the one source of a phase's duration. MESSAGE-33 took both of
+  FINDINGS-33's notes: `bulk-3`'s block now states both rises instead of
+  inviting a subtraction. MESSAGE-34 (unprompted, Dave's asks) folded
+  `biga-2` into `biga-3` without renumbering, so **`biga-2` is absent on
+  purpose**, and sourced the Halo Core limits to Ooni's help center.
+  MESSAGE-35 (Dave's ask) rewrote every rendered spec paragraph to the
+  humanizer patterns and asked for the same pass on our copy; **FINDINGS-36**
+  (27 September) answers with the before/after list. **The writing rules now
+  live in CLAUDE.md ("Writing anything the site shows") and apply to every
+  string this side adds.** Nothing is open; no pin of any kind is live.
 - **Numbering, since it has stepped twice.** FINDINGS-25 went unprompted, so
   the pairs now share a number: MESSAGE-N answers FINDINGS-N, and
   FINDINGS-(N+1) answers MESSAGE-N. **There is no MESSAGE-22** (a stray draft,
@@ -134,7 +136,9 @@ true and what they need to change.
    (`tests/__scratch.test.ts`, deleted after). No mental arithmetic, and quote
    the conditions every time you state a figure.
 3. **Apply.** Engine, constants and tokens go in `src/lib`. Regenerate the step
-   prose with `python3 scripts/generate-content.py`.
+   prose with `python3 scripts/generate-content.py`. Any copy you write follows
+   CLAUDE.md's writing rules, and a reworded claim is checked for truth, not
+   only tone.
 4. **`npm test`, and expect the gate to fail on any new §8 number.** Claim it
    against the engine or classify it with a reason. Never widen `FIXED` to go
    green. **Then run `npm run typecheck` separately:** vitest doesn't typecheck,
@@ -167,17 +171,18 @@ true and what they need to change.
 
 | Suite | Guards | Why it exists |
 |---|---|---|
-| `steps.test.ts` | §8 prose verbatim, plus §9, §11 and §7.3's capacity messages (with §6's split hint), each re-derived by a differently shaped parser. The generator and this file parse the same grammar independently. Both refuse unknown `**marker:**` lines, a raw count of conditional markers is taken from the spec itself, and each step ends at the next `###` | Two parsers sharing one condition list dropped `bulk-2`'s capped block, and 42/42 still passed. `mix-8` used to swallow §8.2a |
-| `contentLiterals.test.ts` | Every number in §8, §9, §11 and the capacity messages either rebuilt from the engine (`CLAIMS`) or classified (`FIXED`); `knownWrong` pins a disagreement both ways (none live); numeric copy in **every `.tsx` under `src`**, read from the syntax tree (JSX text, attributes, template text), and a classified phrase excuses only itself. Lit-segment counts are rebuilt as dial ÷ 10 independently of the formatter. A counterfactual can still be a claim: `computeThermal` at `nMix` 1 *is* the batch-total model | `mix-4` showed stale probe values for eight rounds while prose-vs-prose passed. The biga hint's typed figures hid inside a template literal, then behind a classified phrase in the same string. **It checks numbers, not sources:** a worded claim passes by construction |
+| `steps.test.ts` | §8 prose verbatim, plus §9, §11 and §7.3's capacity messages (with §6's split hint), each re-derived by a differently shaped parser. The generator and this file parse the same grammar independently. Both refuse unknown `**marker:**` lines, a raw count of conditional markers is taken from the spec itself, and each step ends at the next `###`. Per-track `timer (retarded\|classic)` since MESSAGE-31. Concepts compared as ids split from the spec line, not re-joined | Two parsers sharing one condition list dropped `bulk-2`'s capped block, and 42/42 still passed. `mix-8` used to swallow §8.2a. Re-joining split ids agreed with the spec when the generator kept a comma in `"mix-dont-knead,"` (MESSAGE-34) |
+| `contentLiterals.test.ts` | Every number in §8, §9, §11 and the capacity messages either rebuilt from the engine (`CLAIMS`) or classified (`FIXED`); `knownWrong` pins a disagreement both ways (none live); numeric copy in **every `.tsx` under `src`**, read from the syntax tree (JSX text, attributes, template text), and a classified phrase excuses only itself. **Every string a step carries**, walked rather than listed, and the timeline's stage text (`STAGE_INFO`). The planning ranges claimed against `PLANNING_RANGE_H`. Lit-segment counts are rebuilt as dial ÷ 10 independently of the formatter. A counterfactual can still be a claim: `computeThermal` at `nMix` 1 *is* the batch-total model | `mix-4` showed stale probe values for eight rounds while prose-vs-prose passed. The biga hint's typed figures hid inside a template literal, then behind a classified phrase in the same string. A list of six step fields hid the per-track timers and every title (MESSAGE-31). **It checks numbers, not sources:** a worded claim passes by construction |
 | `constants.test.ts` | Derived constants recomputed from their inputs; every constant has a **code** read (`C.X` / `BASE.X`, comments stripped) | `divideBall = 0.33`, `ADY 0.0038`. The reader check once counted the comment recording a constant's removal as a read |
-| `stepInstances.test.ts` | Golden step sequences per schedule at `nMix` 1–3. Closed condition sets: detail blocks (`nMix > 1`, `nBiga > 1`, `thickerThanDefault`) and `shownWhen`; both throw on unknown | The expansion repeated templates instead of mixes: same count, same labels, wrong procedure. A component ternary read any unknown condition as `nBiga > 1` |
-| `stageSteps.test.ts` | Every timeline stage has a step rendered on its schedule, and every step maps to a stage | `bigaTemper` had a duration and a clock time but no step |
+| `stepInstances.test.ts` | Golden step sequences per schedule at `nMix` 1–3, and §8.2a's published counts read from the spec. Closed condition sets: detail blocks (`nMix > 1`, `nBiga > 1`, `thickerThanDefault`) and `shownWhen`; both throw on unknown | The expansion repeated templates instead of mixes: same count, same labels, wrong procedure. A component ternary read any unknown condition as `nBiga > 1` |
+| `stageSteps.test.ts` | Every timeline stage has a step rendered on its schedule, and every step maps to a stage. §7.5: each planning-point stage's step times the whole §4.7 range; the classic exception across 12–18 h; a single-number timer equals its stage's planned duration, `bulk-3` included at `nMix` 1–3 and at the 45-minute floor | `bigaTemper` had a duration and a clock time but no step. `bulk-3` timed the unshortened rise for a round: each side right alone, disagreeing |
 | `engine.test.ts` | §5 vectors and the bake-1 regression, **held to printed precision (0.005)**, not `TOL`. Per-mix thermal weights. The panel hints' bases, measured by perturbing `calculate`. Water reachability sweep (samples 257 g for the true corner). Shaped rise **keyed by DDT**. The two biga bases, measured off `computeWaterTempF`. §4.9, §4.10 | Every rise table was keyed on dough temperature, silently assuming DDT 75 — including this suite's own vector. At `TOL.degF` = 0.1 the bake-1 pin couldn't tell 67.97 from 68.00 |
-| `bindTokens.test.ts` | No unbound or unused token. `{probeGapPhrase}` at below / above / right at DDT. The thicker note decided on its **printed** value | A condition decided on unrounded values printed "12.0 rather than 12" |
+| `bindTokens.test.ts` | No unbound or unused token, over every string a step carries (walked, not listed, since FINDINGS-34). `{probeGapPhrase}` at below / above / right at DDT. The thicker note decided on its **printed** value | A condition decided on unrounded values printed "12.0 rather than 12" |
 | `state.test.ts` | URL and storage round-trips. The FF map keyed through `ballsPerMix`, exact-match at 6.5, the old seed replaced on load and nothing else | The map was keyed on total balls, so a 12-ball bake would have filed FF under a size no mix has |
-| `timeline.test.ts` | §4.7 durations, the stage sequence on both schedules, daylight saving. **Backward mode pinned to hand-written clock times** on both schedules and at `nMix` 2; exact landing on the bake across fractional durations; the overnight windows against a brute-force scan | A wrong order sums to the right total. Summing hours × 3.6e6 landed 1 ms early and printed the minute before |
-| `capacity.test.ts` | §7.3: which capacity message fires and when, its bound wording, the binding-limit guards (flour cap never first for a mix, always first for the biga), the below-minimum guard silent across the range, decisions on the **printed** per-mix dough. §7.5 segment states (lit / dim / off) | The spec says conditions are decided on displayed values; 2374.96 g prints 2375.0 and must fire |
+| `timeline.test.ts` | §4.7 durations, the stage sequence on both schedules, daylight saving. §7.4's "19 h (18–20)" on every stage, written out. **Backward mode pinned to hand-written clock times** on both schedules and at `nMix` 2; exact landing on the bake across fractional durations; the overnight windows against a brute-force scan | A wrong order sums to the right total. Summing hours × 3.6e6 landed 1 ms early and printed the minute before |
+| `capacity.test.ts` | §7.3: which capacity message fires and when, its bound wording, the binding-limit guards (flour cap never first for a mix, always first for the biga), the below-minimum guard silent across the range, decisions on the **printed** per-mix dough, the near-limit ball list across 240–300 g. §7.5 segment states (lit / dim / off), and the chip's smaller line for every speed step | The spec says conditions are decided on displayed values; 2374.96 g prints 2375.0 and must fire. **The ball list can't see the 5%**: it holds for any threshold from 94.03% to 98.11%, so the edge test is what pins the threshold |
 | `recipeText.test.ts` | Copy-as-text, and the dough total rounded once (2501.9 at 9 × 272 g, never the 2501.7 its rounded parts sum to) | The gate doesn't read `recipeText.ts` |
+| `timers.test.ts` | Timer state derived from an absolute start and `now`, windows as earliest → latest. Every step's timer, resolved per schedule and bound with the real token table, parses as a duration. The generator's `timerMinutes` and the runtime parser agree on every fixed label (seconds included) | `biga-4` said "per schedule" and had no timer for the longest stage in the recipe. Seconds are where two parsers of one label could part |
 
 The principle underneath all of them: **a check is only independent on the axis
 it was derived on independently.** Two copies of one list are one check run
@@ -283,6 +288,18 @@ a deploy fails after that date.
   counterpart's §4.9 lesson, and it applies to our scripts too.
 - **Scratch tests** go in `tests/__scratch.test.ts`, and get deleted after. The
   scratchpad is wiped between sessions.
+
+**In a cloud session** (claude.ai/code)
+
+- The container is fresh: **`npm ci` first**, or every script fails on a
+  missing `vitest` or `tsc` types.
+- **There is no `gh`**; use the GitHub MCP tools (`actions_list` for the
+  deploy runs). The push goes to the session's `claude/*` branch, which
+  **doesn't deploy**; Pages builds once it reaches `main`.
+- **There is no browser pane.** Playwright is installed globally
+  (`/opt/node22/lib/node_modules/playwright`, Chromium under
+  `/opt/pw-browsers`). Serve `dist/` with `npx vite preview`, then read
+  `innerText` at a 375 × 812 touch viewport, as below.
 
 **The browser pane**
 

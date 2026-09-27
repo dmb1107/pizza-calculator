@@ -606,7 +606,21 @@ export function mixStaggerH(nMix: number): number {
  */
 export function staggerUncentredMin(roomMinutes: number, nMix: number): number {
   const target = roomMinutes / 60 - mixStaggerH(Math.max(1, nMix)) / 2;
-  return (clampRise(target) - target) * 60;
+  return (plannedBallRiseH(roomMinutes, nMix) - target) * 60;
+}
+
+/**
+ * §4.7 / §4.8. The ball rise the timeline plans, in hours: the per-dough rise
+ * less half the stagger, held to the floor. Equal to the per-dough rise at
+ * `nMix = 1`.
+ *
+ * The timeline's `ballRoomTemp` stage and `{ballRoomMin}` both read this, so
+ * `bulk-3` and the schedule cannot part again. They did: until MESSAGE-32
+ * `bulk-3` printed and timed the uncorrected `{roomMin}`, 17.5 min longer than
+ * the plan at `nMix = 2`.
+ */
+export function plannedBallRiseH(roomMinutes: number, nMix: number): number {
+  return clampRise(roomMinutes / 60 - mixStaggerH(Math.max(1, nMix)) / 2);
 }
 
 // ---------------------------------------------------------------------------
@@ -650,7 +664,7 @@ function buildWarnings(
       id: 'water-below-fridge',
       severity: 'warn',
       title: `Target water is below ${C.WATER_MIN_F} °F`,
-      detail: `${formatTempF(waterTempF)} °F is colder than fridge water reaches, so you cannot get there by blending. Chill the biga or the fresh flour instead — the biga is the dominant thermal term and a far more powerful lever. Failing that, this is the one case for ice.`,
+      detail: `${formatTempF(waterTempF)} °F is colder than fridge water gets, so blending can't reach it. Chill the biga or the fresh flour instead; the biga moves the water target more than anything else you measure. If that isn't enough, this is the one case for ice.`,
     });
   }
 
@@ -659,7 +673,7 @@ function buildWarnings(
       id: 'water-above-tap',
       severity: 'warn',
       title: `Target water is above ${C.WATER_MAX_F} °F`,
-      detail: `${formatTempF(waterTempF)} °F is hotter than a domestic tap delivers. Don't heat water to get there — fix it upstream. The cause is almost always a biga that skipped its 1-hour temper: each °F of biga temperature is worth about 2 °F of water, so an hour on the counter closes this faster than anything you can do at the sink.`,
+      detail: `${formatTempF(waterTempF)} °F is hotter than a home tap delivers. Don't heat water to reach it; fix the cause. It's almost always a biga that skipped its 1-hour temper: each °F of biga temperature is worth about 2 °F of water, so an hour on the counter closes the gap faster than anything you can do at the sink.`,
     });
   }
 
@@ -670,9 +684,10 @@ function buildWarnings(
     w.push({
       id: 'stagger-uncentred',
       severity: 'warn',
-      title: `${Math.round(staggerUncentred)} minutes of the spread could not be absorbed`,
+      // Worded as bulk-1's own warning (§8.2), which this strip mirrors.
+      title: `${Math.round(staggerUncentred)} minutes of the difference couldn't be absorbed`,
       detail:
-        'Your dough is warm enough that the ball rise is already at its 45-minute floor, so there is no room left to shorten it. The first dough will run that much long regardless. This bites hardest exactly where it matters most — a warm dough ferments fastest, so a given number of extra minutes costs more here than anywhere else. The floor is not worth overruling for it. If you want the spread back, the lever is upstream: fewer, larger mixes, or a cooler dough temperature.',
+        'Your dough is warm enough that the rise after balling is already at its 45-minute floor, so there was nothing left to shorten, and the first dough will run that much long. A warm dough ferments fastest, so those minutes cost more here than anywhere else. To win the spread back, use fewer, larger mixes or a cooler dough temperature.',
     });
   }
 
@@ -764,6 +779,12 @@ export interface CalculatorResult {
   opening: Opening;
   /** §4.8 room-temperature minutes before the fridge. */
   roomMinutes: number;
+  /**
+   * The ball rise the timeline plans: `roomMinutes` less half the stagger,
+   * floored (`plannedBallRiseH`). Equal to `roomMinutes` at `nMix = 1`. What
+   * `bulk-3`, copy-as-text and the final-temperature hint print (MESSAGE-32).
+   */
+  ballRoomMinutes: number;
   /** True when roomMinutes came from DDT rather than a measurement. */
   roomMinutesIsPlanned: boolean;
   /**
@@ -846,6 +867,7 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
     probe,
     opening: computeOpening(inputs.ballWeightG),
     roomMinutes,
+    ballRoomMinutes: plannedBallRiseH(roomMinutes, capacity.nMix) * 60,
     roomMinutesIsPlanned,
     staggerUncentredMin: uncentred,
     effectiveFinalTempF,

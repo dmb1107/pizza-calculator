@@ -169,7 +169,7 @@ export function StepTimer({
 
       <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
         {spec.isWindow
-          ? `${describeSpec(spec)} — the second number is how long you have, not a deadline you missed.`
+          ? `${describeSpec(spec)}: ready from the first time, and fine until the second.`
           : `${describeSpec(spec)} from ${formatTimeOfDay(new Date(timer.startedAt))}`}
       </p>
       {note && <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">{note}</p>}
