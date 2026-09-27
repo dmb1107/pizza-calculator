@@ -12,9 +12,14 @@
  * whenever you look at it, however long the page was in the background.
  *
  * **Ranges are windows, not deadlines.** "45–60 min" is not a 45-minute timer:
- * it counts down to the earliest moment the dough is ready, then holds a window
- * open until the latest. Collapsing that to one number would throw away the
- * half of the instruction that says how much slack you have.
+ * the dough is ready at the earliest moment, and a window stays open until the
+ * latest. Collapsing that to one number would throw away the half of the
+ * instruction that says how much slack you have.
+ *
+ * **The display counts up** (Dave, 27 September): the big number is how long
+ * the step has been going, in every phase. Before, in or past the window is
+ * shown by the phase — tone, label and a bar with the window marked on it —
+ * rather than by a number that runs down and then flips direction.
  */
 
 /** A duration a step can be timed against, in minutes. */
@@ -80,12 +85,13 @@ export type TimerPhase =
 export interface TimerState {
   phase: TimerPhase;
   elapsedMs: number;
-  /** To the earliest moment. Negative once that has passed. */
-  remainingMs: number;
-  /** To the latest moment. Negative once that has passed. */
-  windowRemainingMs: number;
-  /** 0 to 1 against the earliest moment, clamped. For a progress bar. */
+  /** 0 to 1 against the latest moment, clamped. For a progress bar. */
   progress: number;
+  /**
+   * Where the window opens on that bar, 0 to 1: the earliest moment over the
+   * latest. 1 for an exact duration, which has no window to draw.
+   */
+  windowStart: number;
 }
 
 const MINUTE_MS = 60_000;
@@ -95,17 +101,13 @@ export function timerState(timer: RunningTimer, now: number): TimerState {
   const minMs = timer.minMinutes * MINUTE_MS;
   const maxMs = timer.maxMinutes * MINUTE_MS;
 
-  const remainingMs = minMs - elapsedMs;
-  const windowRemainingMs = maxMs - elapsedMs;
-
-  const phase: TimerPhase = remainingMs > 0 ? 'running' : windowRemainingMs > 0 ? 'window' : 'past';
+  const phase: TimerPhase = elapsedMs < minMs ? 'running' : elapsedMs < maxMs ? 'window' : 'past';
 
   return {
     phase,
     elapsedMs,
-    remainingMs,
-    windowRemainingMs,
-    progress: minMs > 0 ? Math.min(1, Math.max(0, elapsedMs / minMs)) : 1,
+    progress: maxMs > 0 ? Math.min(1, elapsedMs / maxMs) : 1,
+    windowStart: maxMs > 0 ? minMs / maxMs : 1,
   };
 }
 
@@ -115,11 +117,14 @@ export function timerDueAt(timer: RunningTimer): number {
 }
 
 /**
- * "4:32", "1:05:00". Always at least MM:SS so the shape doesn't jump around
- * as the numbers tick, which is hard to read at arm's length.
+ * Elapsed time: "4:32", "1:05:00". Always at least M:SS so the shape doesn't
+ * jump around as the numbers tick, which is hard to read at arm's length.
+ *
+ * Floored, as a stopwatch is: the display reaches "45:00" at the instant the
+ * phase turns to `window`, never half a second before it.
  */
-export function formatCountdown(ms: number): string {
-  const total = Math.max(0, Math.round(Math.abs(ms) / 1000));
+export function formatElapsed(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;

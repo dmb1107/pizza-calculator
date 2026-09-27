@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   describeSpec,
-  formatCountdown,
+  formatElapsed,
   parseTimerLabel,
   timerDueAt,
   timerState,
@@ -61,11 +61,25 @@ describe('timer state is derived from the clock, not a counter', () => {
   const exact: RunningTimer = { stepId: 'mix-6', startedAt: start, minMinutes: 10, maxMinutes: 10 };
   const window: RunningTimer = { stepId: 'bulk-1', startedAt: start, minMinutes: 45, maxMinutes: 60 };
 
-  it('counts down an exact duration', () => {
+  it('counts up through an exact duration', () => {
     const s = timerState(exact, start + 4 * MIN);
     expect(s.phase).toBe('running');
-    expect(s.remainingMs).toBe(6 * MIN);
+    expect(s.elapsedMs).toBe(4 * MIN);
     expect(s.progress).toBeCloseTo(0.4, 6);
+  });
+
+  /**
+   * Dave, 27 September: the number is how long the step has been going, and
+   * it never turns round. The old display counted down to the earliest moment,
+   * then counted down the window, then counted the overrun up.
+   */
+  it('keeps counting up through every phase', () => {
+    const minutes = [0, 20, 44, 45, 50, 59, 60, 75, 200];
+    const elapsed = minutes.map((m) => timerState(window, start + m * MIN).elapsedMs);
+    expect(elapsed).toEqual(minutes.map((m) => m * MIN));
+    expect(minutes.map((m) => timerState(window, start + m * MIN).phase)).toEqual([
+      'running', 'running', 'running', 'window', 'window', 'window', 'past', 'past', 'past',
+    ]);
   });
 
   it('reaches the window exactly at the earliest moment', () => {
@@ -80,11 +94,14 @@ describe('timer state is derived from the clock, not a counter', () => {
     expect(timerState(window, start + 60 * MIN).phase).toBe('past');
   });
 
-  it('reports how much of the window is left', () => {
+  it('places the window on the bar, measured against the latest moment', () => {
+    // 45 of 60: the window is the last quarter of the bar.
+    expect(timerState(window, start).windowStart).toBe(0.75);
     const s = timerState(window, start + 50 * MIN);
     expect(s.phase).toBe('window');
-    expect(s.remainingMs).toBe(-5 * MIN); // past the earliest
-    expect(s.windowRemainingMs).toBe(10 * MIN); // still 10 min of slack
+    expect(s.progress).toBeCloseTo(50 / 60, 9);
+    // An exact duration has no window to draw.
+    expect(timerState(exact, start).windowStart).toBe(1);
   });
 
   /**
@@ -114,6 +131,8 @@ describe('timer state is derived from the clock, not a counter', () => {
     expect(timerState(exact, start).progress).toBe(0);
     expect(timerState(exact, start + 5 * MIN).progress).toBeCloseTo(0.5, 6);
     expect(timerState(exact, start + 99 * MIN).progress).toBe(1);
+    expect(timerState(window, start - 5 * MIN).progress).toBe(0);
+    expect(timerState(window, start + 99 * MIN).progress).toBe(1);
   });
 
   it('reports when it comes due', () => {
@@ -131,11 +150,26 @@ describe('formatting', () => {
     [65 * MIN, '1:05:00'],
     [24 * 60 * MIN, '24:00:00'],
   ])('formats %i ms as %s', (ms, expected) => {
-    expect(formatCountdown(ms)).toBe(expected);
+    expect(formatElapsed(ms)).toBe(expected);
   });
 
-  it('formats an overrun by magnitude, so the caller can add the sign', () => {
-    expect(formatCountdown(-90_000)).toBe('1:30');
+  /**
+   * A stopwatch floors. Rounding showed "45:00" for the last half second
+   * before the phase turned, so the number said "in the window" while the
+   * tone and label still said "before".
+   */
+  it('reaches a bound only when the phase does', () => {
+    const t: RunningTimer = { stepId: 'bulk-1', startedAt: 0, minMinutes: 45, maxMinutes: 60 };
+    const justBefore = timerState(t, 45 * MIN - 1);
+    expect(justBefore.phase).toBe('running');
+    expect(formatElapsed(justBefore.elapsedMs)).toBe('44:59');
+    const atIt = timerState(t, 45 * MIN);
+    expect(atIt.phase).toBe('window');
+    expect(formatElapsed(atIt.elapsedMs)).toBe('45:00');
+  });
+
+  it('never shows a negative time', () => {
+    expect(formatElapsed(-90_000)).toBe('0:00');
   });
 
   it.each([

@@ -90,7 +90,7 @@ function parseFrictionFactors(raw: unknown): Calibration['frictionFactors'] {
  * Started timers, dropping anything malformed.
  *
  * A stored timer is just a timestamp and two bounds, so a corrupt entry can
- * only ever produce a nonsense countdown — cheap to validate, and the
+ * only ever produce a nonsense timer — cheap to validate, and the
  * alternative is a step showing "NaN:NaN" in the middle of a mix.
  */
 function parseTimers(raw: unknown): RunningTimer[] {

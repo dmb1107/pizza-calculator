@@ -560,11 +560,21 @@ phone locks — which it will, mid-mix, every time. Reading the clock means the
 answer is right whenever you look at it. The timer is persisted, so it also
 survives a reload; verified by rewinding a stored start time and reloading.
 
-**Ranges are windows.** "45–60 min" is not a 45-minute timer. It counts down to
-the earliest useful moment, then holds a window open until the latest —
-"Ready — window closes in 9:55" — and only then reads "Over by". Collapsing that
-to one number would throw away the half of the instruction that says how much
-slack you have.
+**Ranges are windows.** "45–60 min" is not a 45-minute timer: the dough is ready
+at the earliest useful moment, and a window stays open until the latest.
+Collapsing that to one number would throw away the half of the instruction that
+says how much slack you have.
+
+**The number counts up** (Dave, 27 September). It first counted down to the
+earliest moment, then down through the window ("Ready — window closes in 9:55"),
+then up again ("Over by"), so it changed direction twice and never said how long
+the step had been going. Now it shows elapsed time in every phase. Before, in or
+past the window is carried by the card's tone, a label ("Before the window", "In
+the window", "Past the window"; "Running" and "Time's up" for an exact duration)
+and a bar that runs to the latest moment with the window shaded on it. The bar
+stays up in every phase, so the card keeps its height as the phase turns.
+Elapsed is floored, as a stopwatch is, so "45:00" appears at the instant the
+phase turns and not half a second before.
 
 ### Durations are parsed from the bound label
 
