@@ -9,17 +9,17 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-40, FINDINGS-41, Task 10 and the speed indicator (27 September).
+MESSAGE-41, FINDINGS-42, Task 10 and the speed indicator (27 September).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-40, and FINDINGS-41 is the
-  last thing sent.** One figure is open on their side: §5's 59.023 should be
-  59.022 (FINDINGS-41 §3). It isn't §8 text, so no pin is live (`knownWrong`
-  is empty). The next move is theirs: expect MESSAGE-41.
+- **The correspondence is applied through MESSAGE-41, and FINDINGS-42 is the
+  last thing sent.** Nothing is open on either side and no pin of any kind is
+  live (`knownWrong` is empty). The next move is theirs: expect MESSAGE-42,
+  or an unprompted message carrying one of Dave's asks.
 - **What the last rounds settled**, so you don't reopen it:
   - MESSAGE-32: `bulk-3` prints `{ballRoomMin}`, the rise the timeline plans;
     Dave's timers on the four mixer phases, so **the timer is the one source
@@ -49,10 +49,11 @@ Don't trust any status here that you can check instead (§7).
   - MESSAGE-40: FINDINGS-40's gap accepted. 0.392 is the flour term; at 6
     balls per mix the seeded FF adds `(14.03 − 14) × Ct/Cw`, so the rendered
     gap there is 0.482. §4.2, §5 and §7.2 now name their conditions.
+    MESSAGE-41 corrected its 59.023 to 59.022.
 - **Git state.** PRs #1, #2, #3 and #5 merged MESSAGE-30 to 38 into `main`,
   each with a merge commit. PR #4, from another session, added the pizza
   icon (`public/`) and CLAUDE.md's rule to bring `README.md` current before
-  opening a PR. Task 10's status and MESSAGE-39 and 40 sit on the session
+  opening a PR. Task 10's status and MESSAGE-39 to 41 sit on the session
   branch until Dave asks for the next PR. The session branch restarts from `main` after each
   merge, so a new round starts on `main` plus nothing.
 - **Numbering, since it has stepped twice.** FINDINGS-25 went unprompted, so
@@ -155,7 +156,9 @@ true and what they need to change.
    it byte for byte with the uploaded bundle. **An empty spec diff when the
    message lists edits means the wrong file:** MESSAGE-39's first spec was
    MESSAGE-38's, byte for byte, and MESSAGE-40's first spec and recipe were
-   the copies already in `docs/`. `sha256sum` the uploads against `docs/`,
+   the copies already in `docs/`. **Since MESSAGE-41 the message lists
+   SHA-256 hashes for its files; check those first.** Without them,
+   `sha256sum` the uploads against `docs/`,
    and ask Dave to re-send. Filing the message alone meanwhile keeps the
    tree clean. In a fresh cloud container,
    `npm ci` before anything else (§8).
