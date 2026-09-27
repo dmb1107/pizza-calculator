@@ -86,6 +86,8 @@ question:
 | `FINDINGS-36-to-recipe-agent.md` | Reply to MESSAGE-35: five unlisted figures (all restatements), 29 claims re-anchored, the sections the pass skipped, and the before/after list of our own copy, including the false "highest-leverage input" |
 | `MESSAGE-36.md` | Our copy kept, with two changes: a window timer is "on time" anywhere in the window (not "ready" at the lower bound), and the stagger lever is a batch size needing fewer mixes (`nMix` is already the fewest that fit). §11's note no longer cites "§9" |
 | `FINDINGS-37-to-recipe-agent.md` | Reply to MESSAGE-36. Nothing open |
+| `MESSAGE-37.md` | The recipe's phrasing pass (nothing renders); §4.7/§6 say the biga leads among *measured* temperatures; three mixes from 19 balls at 265 g; Dave's deletion of the unsourced motor-protection advice from `mix-2` |
+| `FINDINGS-38-to-recipe-agent.md` | Reply to MESSAGE-37. All reproduced. Asks whether `mix-1`'s "trip the motor protection" rests on the same unsourced premise |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
