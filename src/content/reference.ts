@@ -91,7 +91,7 @@ export const SOURCES: readonly Source[] = [
   {
     title: "Ooni help center — Halo Core speed settings",
     url: "https://ooni.com/pages/help-center?a=Halo-Core-Speed-Settings%3A-Percentage-to-RPM-Explained---id--J1HYTOEHRCiv1ONI2mRgqg",
-    note: "5% increments, the lit/half-lit indicator, 300 RPM at 100%. Its low-end RPM chart is wrong (§9)",
+    note: "5% increments, the lit/half-lit indicator, 300 RPM at 100%. Its low-end RPM chart is wrong; see the mixer speed reference",
   },
   {
     title: "Stadler Made — Biga",

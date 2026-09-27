@@ -927,9 +927,9 @@ const FIXED: Record<Loc, readonly string[]> = {
   'reference:friction-rate': ['3', '6', '9'],
   // §11: what each published source states — cited, not computed. Gozney's
   // 61–64 °F is its own conversion of 16–18 °C; "100%" is in recipe titles and
-  // Ooni's 300 RPM anchor; "9" is the section reference "(§9)". The Halo Core
-  // figures are claimed above against the constants that cite them.
-  about: ['1%', '12–24 h', '16–18 °C', '100%', '16–18 h', '61–64 °F', '44–45%', '16–20 h', '16–20 °C', '18', '45%', '50%', '9'],
+  // Ooni's 300 RPM anchor. The Halo Core figures are claimed above against the
+  // constants that cite them.
+  about: ['1%', '12–24 h', '16–18 °C', '100%', '16–18 h', '61–64 °F', '44–45%', '16–20 h', '16–20 °C', '18', '45%', '50%'],
   'concept:burn-ring': ['1', '100 °C', '1–1.5 cm', '2'],
 };
 

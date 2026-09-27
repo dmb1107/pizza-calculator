@@ -809,7 +809,7 @@ The guard cannot fire inside the input ranges: the smallest single mix is 735.8 
 
 | | Read when | Says |
 |---|---|---|
-| **This strip** | choosing a batch size, before committing | the lever is still available: fewer, larger mixes, or a cooler dough |
+| **This strip** | choosing a batch size, before committing | the lever is still available: a batch size that needs fewer mixes, or a cooler dough. For a given batch `nMix` is already the fewest that fit, so "fewer mixes" means choosing a different batch size |
 | **`bulk-1` block** | dough already in the tub | the decision is made — chill the older half first, then don't misread the result |
 
 ⚠️ **Editorial guidance about step content belongs here, not inside §8.2.** An earlier draft put this note between the block marker and its blockquote, which is a parse hazard (a scanner reasonably reads the marker as ending at the first non-quoted line) and mixes spec voice into content that renders verbatim. **§8.2 contains only content.** Anything that tells an implementer *how* to write or place content goes in the section that governs it.
@@ -1537,7 +1537,7 @@ Link these from an About page. The recipe draws on these published sources.
 - [Gozney — 100% Biga Pizza Dough](https://us.gozney.com/blogs/recipes/100-biga-pizza-dough-recipe) — 1% yeast, 16–18 h at 61–64 °F, hand-mixed
 - [Ooni / Marco Fuso — 100% Biga using Halo Pro](https://ooni.com/blogs/recipes/ooni-100-biga-dough-using-halo-pro) — the fridge-retarded schedule
 - [Ooni help center — Halo Core min/max capacity and hydration limits](https://ooni.com/pages/help-center?a=What-are-the-minmax-capacity-and-hydration-limits-for-Ooni-Halo-Core---id--tLwhKnlnR4G9F-kkvNO9Gw) — 0.5–2.5 kg dough, flour caps by hydration, recommended speeds, 20-minute maximum continuous operating time
-- [Ooni help center — Halo Core speed settings](https://ooni.com/pages/help-center?a=Halo-Core-Speed-Settings%3A-Percentage-to-RPM-Explained---id--J1HYTOEHRCiv1ONI2mRgqg) — 5% increments, the lit/half-lit indicator, 300 RPM at 100%. Its low-end RPM chart is wrong (§9)
+- [Ooni help center — Halo Core speed settings](https://ooni.com/pages/help-center?a=Halo-Core-Speed-Settings%3A-Percentage-to-RPM-Explained---id--J1HYTOEHRCiv1ONI2mRgqg) — 5% increments, the lit/half-lit indicator, 300 RPM at 100%. Its low-end RPM chart is wrong; see the mixer speed reference
 - [Stadler Made — Biga](https://www.stadlermade.com/pizza/ingredients/biga/) — warm-kitchen workaround
 - [Baking With Theory — Biga](https://www.bakingwiththeory.com/theory/biga/) — Giorilli formula: 44–45% hydration, 1% fresh yeast, short biga 16–20 h at 16–20 °C (ideally 18)
 - [Italian Pizza Secrets — Essential guide to biga](https://www.italianpizzasecrets.com/essential-guide-to-biga-for-pizza/) — Giorilli's short biga (16–18 h at 16–18 °C) and long biga

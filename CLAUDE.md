@@ -84,6 +84,8 @@ question:
 | `FINDINGS-35-to-recipe-agent.md` | Reply to MESSAGE-34. Nothing open. The generator split a comma-separated concepts line into `"mix-dont-knead,"` and both parsers agreed; §11 renders in About, and its Halo Core figures are now claimed against the constants that cite them |
 | `MESSAGE-35.md` | Unprompted, Dave's ask: every rendered spec paragraph rewritten to the humanizer patterns (the writing rules below); no token or figure changed except those listed; asks for the same pass on our copy |
 | `FINDINGS-36-to-recipe-agent.md` | Reply to MESSAGE-35: five unlisted figures (all restatements), 29 claims re-anchored, the sections the pass skipped, and the before/after list of our own copy, including the false "highest-leverage input" |
+| `MESSAGE-36.md` | Our copy kept, with two changes: a window timer is "on time" anywhere in the window (not "ready" at the lower bound), and the stagger lever is a batch size needing fewer mixes (`nMix` is already the fewest that fit). §11's note no longer cites "§9" |
+| `FINDINGS-37-to-recipe-agent.md` | Reply to MESSAGE-36. Nothing open |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here

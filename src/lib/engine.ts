@@ -687,7 +687,7 @@ function buildWarnings(
       // Worded as bulk-1's own warning (§8.2), which this strip mirrors.
       title: `${Math.round(staggerUncentred)} minutes of the difference couldn't be absorbed`,
       detail:
-        'Your dough is warm enough that the rise after balling is already at its 45-minute floor, so there was nothing left to shorten, and the first dough will run that much long. A warm dough ferments fastest, so those minutes cost more here than anywhere else. To win the spread back, use fewer, larger mixes or a cooler dough temperature.',
+        'Your dough is warm enough that the rise after balling is already at its 45-minute floor, so there was nothing left to shorten, and the first dough will run that much long. A warm dough ferments fastest, so those minutes cost more here than anywhere else. To win those minutes back, choose a batch size that needs fewer mixes, or aim for a cooler dough.',
     });
   }
 

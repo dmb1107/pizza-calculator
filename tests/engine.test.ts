@@ -909,8 +909,9 @@ describe('§4.7 staggerUncentred', () => {
     expect(warning?.severity).toBe('warn');
     // Mirrors bulk-1's warning in §8.2.
     expect(warning?.title).toMatch(/minutes of the difference couldn't be absorbed/);
-    // Points upstream rather than at the floor.
-    expect(warning?.detail).toMatch(/fewer, larger mixes/);
+    // Points upstream rather than at the floor. For a given batch nMix is
+    // already the fewest that fit, so the lever is the batch size (MESSAGE-36).
+    expect(warning?.detail).toMatch(/choose a batch size that needs fewer mixes, or aim for a cooler dough/);
     expect(warning?.detail).not.toMatch(/lower the floor|below 45/i);
   });
 
