@@ -43,9 +43,10 @@ Don't trust any status here that you can check instead (§7).
     lands whole on the first dough. Our gate had filed the old "2½" as half
     an overrun, the same misreading. §4.2's two-mix phrasings and §4.8's
     12-ball text stay as they are (FINDINGS-39 §4).
-- **Git state.** PRs #1, #2 and #3 merged MESSAGE-30 to 37 into `main`, each
-  with a merge commit. MESSAGE-38 sits on the session branch until Dave asks
-  for its PR. The session branch restarts from `main` after each
+- **Git state.** PRs #1, #2, #3 and #5 merged MESSAGE-30 to 38 into `main`,
+  each with a merge commit. PR #4, from another session, added the pizza
+  icon (`public/`) and CLAUDE.md's rule to bring `README.md` current before
+  opening a PR. The session branch restarts from `main` after each
   merge, so a new round starts on `main` plus nothing.
 - **Numbering, since it has stepped twice.** FINDINGS-25 went unprompted, so
   the pairs now share a number: MESSAGE-N answers FINDINGS-N, and
