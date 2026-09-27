@@ -9,18 +9,19 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-38, FINDINGS-39, Task 10's emulated audit and the speed indicator
-(27 September).
+MESSAGE-39, FINDINGS-40, Task 10 and the speed indicator (27 September).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-38, and FINDINGS-39 is the
-  last thing sent.** Nothing is open on either side and no pin of any kind is
-  live (`knownWrong` is empty). The next move is theirs: expect MESSAGE-39,
-  or an unprompted message carrying one of Dave's asks.
+- **The correspondence is applied through MESSAGE-39, and FINDINGS-40 is the
+  last thing sent.** One item is open on their side: §5's "0.392 at every
+  batch size" and §7.2's 12-ball figures need their conditions, because the
+  seeded FF makes the rendered gap 0.482 at 6 balls per mix (FINDINGS-40 §4).
+  Neither is §8 text, so no pin is live (`knownWrong` is empty). The next
+  move is theirs: expect MESSAGE-40.
 - **What the last rounds settled**, so you don't reopen it:
   - MESSAGE-32: `bulk-3` prints `{ballRoomMin}`, the rise the timeline plans;
     Dave's timers on the four mixer phases, so **the timer is the one source
@@ -43,10 +44,15 @@ Don't trust any status here that you can check instead (§7).
     lands whole on the first dough. Our gate had filed the old "2½" as half
     an overrun, the same misreading. §4.2's two-mix phrasings and §4.8's
     12-ball text stay as they are (FINDINGS-39 §4).
+  - MESSAGE-39: the same sweep through the spec's engineering sections;
+    nothing renders. §4.8 now separates correcting `CHANGEOVER` (half on the
+    rise, per changeover) from an overrun on the day (whole, on every dough
+    mixed before it).
 - **Git state.** PRs #1, #2, #3 and #5 merged MESSAGE-30 to 38 into `main`,
   each with a merge commit. PR #4, from another session, added the pizza
   icon (`public/`) and CLAUDE.md's rule to bring `README.md` current before
-  opening a PR. The session branch restarts from `main` after each
+  opening a PR. Task 10's status and MESSAGE-39 sit on the session branch
+  until Dave asks for the next PR. The session branch restarts from `main` after each
   merge, so a new round starts on `main` plus nothing.
 - **Numbering, since it has stepped twice.** FINDINGS-25 went unprompted, so
   the pairs now share a number: MESSAGE-N answers FINDINGS-N, and
@@ -145,7 +151,10 @@ true and what they need to change.
 
 0. **`git status` first.** Once, a superseded bundle had already been copied into
    `docs/` by something outside the session. Before overwriting anything, compare
-   it byte for byte with the uploaded bundle. In a fresh cloud container,
+   it byte for byte with the uploaded bundle. **An empty spec diff when the
+   message lists edits means the wrong file:** MESSAGE-39's first spec was
+   MESSAGE-38's, byte for byte. `sha256sum` the uploads and ask Dave to
+   re-send. In a fresh cloud container,
    `npm ci` before anything else (§8).
 1. **Copy into `docs/`, then diff the spec and recipe against HEAD.** Read the
    message's claims against the diff. **Their numbers are usually right; their
@@ -209,7 +218,7 @@ true and what they need to change.
 | `constants.test.ts` | Derived constants recomputed from their inputs; every constant has a **code** read (`C.X` / `BASE.X`, comments stripped) | `divideBall = 0.33`, `ADY 0.0038`. The reader check once counted the comment recording a constant's removal as a read |
 | `stepInstances.test.ts` | Golden step sequences per schedule at `nMix` 1–3, and §8.2a's published counts read from the spec. Closed condition sets: detail blocks (`nMix > 1`, `nBiga > 1`, `thickerThanDefault`) and `shownWhen`; both throw on unknown | The expansion repeated templates instead of mixes: same count, same labels, wrong procedure. A component ternary read any unknown condition as `nBiga > 1` |
 | `stageSteps.test.ts` | Every timeline stage has a step rendered on its schedule, and every step maps to a stage. §7.5: each planning-point stage's step times the whole §4.7 range; the classic exception across 12–18 h; a single-number timer equals its stage's planned duration, `bulk-3` included at `nMix` 1–3 and at the 45-minute floor | `bigaTemper` had a duration and a clock time but no step. `bulk-3` timed the unshortened rise for a round: each side right alone, disagreeing |
-| `engine.test.ts` | §5 vectors and the bake-1 regression, **held to printed precision (0.005)**, not `TOL`. Per-mix thermal weights. The panel hints' bases, measured by perturbing `calculate`. Water reachability sweep (samples 257 g for the true corner). Shaped rise **keyed by DDT**. The two biga bases, measured off `computeWaterTempF`. §4.9, §4.10 | Every rise table was keyed on dough temperature, silently assuming DDT 75 — including this suite's own vector. At `TOL.degF` = 0.1 the bake-1 pin couldn't tell 67.97 from 68.00 |
+| `engine.test.ts` | §5 vectors and the bake-1 regression, **held to printed precision (0.005)**, not `TOL`. The rendered gap at app defaults: 0.392, or 0.482 at 6 balls per mix where the seeded FF applies, with the 12-ball cards' printed figures. Per-mix thermal weights. The panel hints' bases, measured by perturbing `calculate`. Water reachability sweep (samples 257 g for the true corner). Shaped rise **keyed by DDT**. The two biga bases, measured off `computeWaterTempF`. §4.9, §4.10 | Every rise table was keyed on dough temperature, silently assuming DDT 75 — including this suite's own vector. At `TOL.degF` = 0.1 the bake-1 pin couldn't tell 67.97 from 68.00 |
 | `bindTokens.test.ts` | No unbound or unused token, over every string a step carries (walked, not listed, since FINDINGS-34). `{probeGapPhrase}` at below / above / right at DDT. The thicker note decided on its **printed** value | A condition decided on unrounded values printed "12.0 rather than 12" |
 | `state.test.ts` | URL and storage round-trips. The FF map keyed through `ballsPerMix`, exact-match at 6.5, the old seed replaced on load and nothing else | The map was keyed on total balls, so a 12-ball bake would have filed FF under a size no mix has |
 | `timeline.test.ts` | §4.7 durations, the stage sequence on both schedules, daylight saving. §7.4's "19 h (18–20)" on every stage, written out. The centring at `nMix` 3 (middle dough on time) and a changeover overrun landing whole on the first dough (MESSAGE-38). **Backward mode pinned to hand-written clock times** on both schedules and at `nMix` 2; exact landing on the bake across fractional durations; the overnight windows against a brute-force scan | A wrong order sums to the right total. Summing hours × 3.6e6 landed 1 ms early and printed the minute before |
@@ -250,7 +259,9 @@ The long form is the errors table in their `HANDOFF-new-context.md`. The shapes:
   side's own CLAUDE.md.
 - **A figure without its conditions, or without the axis that moves it:**
   "5 °F error" (a hyperbola in mix size), "2.6 °F low" (2.0–5.3 across the
-  envelope), "30% of the system".
+  envelope), "30% of the system", and "0.392 at every batch size", which
+  held for the flour term and missed FF: at 6 balls per mix the seeded 14.03
+  makes the rendered gap 0.482, the default page included (FINDINGS-40).
 - **A difference tabulated against one of its terms:** the probe gap indexed by
   batch size, the shaped rise indexed by dough temperature.
 - **Two bases in one sentence:** 1.59 against 1.92 for the biga. It came back

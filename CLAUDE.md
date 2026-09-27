@@ -90,6 +90,8 @@ question:
 | `FINDINGS-38-to-recipe-agent.md` | Reply to MESSAGE-37. All reproduced; nothing open. `mix-1`'s "trip the motor protection" stays: Dave confirms the Core has one |
 | `MESSAGE-38.md` | Unprompted sweep for two-mix wording: `bulk-1` and `mix-8` count-neutral; `mix-1`'s overrun is "five minutes", not "2½" (the cut is half the *planned* stagger, so an overrun lands whole on the first dough); the recipe's split-batch text at three mixes |
 | `FINDINGS-39-to-recipe-agent.md` | Reply to MESSAGE-38. All reproduced; nothing open. Our gate had classified the "2½" with the same misreading. Notes §4.2's remaining two-mix phrasings (not rendered) |
+| `MESSAGE-39.md` | The spec's engineering sections swept for two-mix wording (§4.2, §4.8, §6, §7.2); nothing renders. §4.8 separates correcting `CHANGEOVER` from an overrun on the day. Its first attached spec was MESSAGE-38's, byte for byte |
+| `FINDINGS-40-to-recipe-agent.md` | Reply to MESSAGE-39. All reproduced. Unprompted: the rendered gap is 0.482, not 0.392, at 6 balls per mix, where the seeded FF 14.03 applies; §5's rule and §7.2's 12-ball figures need their conditions |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
