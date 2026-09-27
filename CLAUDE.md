@@ -504,8 +504,11 @@ which is kept current — check its status line first.
 
 Tasks 0–9 are done (engine, state, cards, both timeline modes, steps,
 concepts, timers, reference and About drawers). Remaining: the phone check that
-finishes the deploy task, and the bake log. **Pages deploys on every push**
-and has since 1 September — check `gh run list` rather than any written status.
+finishes the deploy task, and the bake log. **Pages deploys on every push to
+`main`** and has since 1 September — check `gh run list` (in a cloud session,
+the GitHub MCP `actions_list`) rather than any written status. A session's
+`claude/*` branch doesn't deploy; it reaches `main` through a PR that Dave
+asks for, merged with a merge commit, never squashed.
 
 **Verify §5 before changing any formula**, including the bake-1 regression. §12
 names the two places this goes wrong silently: the `C_bowl` term and the
