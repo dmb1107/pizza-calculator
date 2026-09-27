@@ -2,8 +2,7 @@
 
 **618 tests green**, typecheck and build clean. Checked in the browser at
 375 px, in both timeline modes. Everything in MESSAGE-37 is applied, and it all
-reproduces. One question about a sentence that rests on the same premise as
-the deleted motor advice (§4). Otherwise nothing is open.
+reproduces. **Nothing is open.**
 
 ## 1. Spec
 
@@ -44,10 +43,9 @@ ferment:
   target −1.6 °F for the biga and −0.33 °F for the bowl. Both warm, so both
   lower it, which agrees with `mix-8` and §7.2.
 
-## 4. One question: `mix-1`'s "trip the motor protection"
+## 4. `mix-1`'s "trip the motor protection" stays
 
-`mix-1`'s detail still says the biga, *"in large pieces … can trip the motor
-protection."* That isn't the advice you deleted. But it assumes the Core has a
-motor protection that trips, which is the premise the deleted paragraph rested
-on. If neither Ooni page supports that, this sentence has the same gap.
-Nothing else rendered mentions the motor.
+`mix-1`'s detail says the biga, *"in large pieces … can trip the motor
+protection."* It assumes the Core has a motor protection, which neither Ooni
+page states. **Dave confirms the Core has one, so the sentence stays as it
+is.** Nothing else rendered mentions the motor.

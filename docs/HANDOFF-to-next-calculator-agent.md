@@ -29,8 +29,8 @@ Don't trust any status here that you can check instead (§7).
   answered with the before/after list, and MESSAGE-36 kept it with two
   changes. FINDINGS-37 answered it; MESSAGE-37 carried the recipe's
   phrasing pass and deleted `mix-2`'s unsourced motor-protection advice.
-  **FINDINGS-38** (27 September) answers with one open question: does
-  `mix-1`'s "trip the motor protection" rest on the same unsourced premise?
+  **FINDINGS-38** (27 September) answers with nothing open. `mix-1`'s "trip
+  the motor protection" stays: Dave confirms the Core has one.
   **The
   writing rules live in CLAUDE.md ("Writing anything the site shows") and
   apply to every string this side adds.** No pin of any kind is live. PRs #1
