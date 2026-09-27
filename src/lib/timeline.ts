@@ -138,17 +138,18 @@ export const STAGE_INFO: Record<StageKey, { title: string; description: string }
  * `mix` scales with the number of mixes plus a changeover between them. A
  * 12-ball batch runs two mixes back to back and the timeline used to count one.
  *
- * `ballRoomTemp` loses half the stagger. Dave bulks both doughs in ONE
- * container, so the batch runs on a single clock while mix 1's dough is
- * genuinely 35 minutes further along. Clocking `bulkRest` from the last mix
- * (which `buildTimeline` does by including the full `mix` span) is the only
- * anchor that gives mix 2 any bulk at all; subtracting half the stagger from
- * the ball rise then centres the remaining error at ±17.5 min instead of
- * leaving all 35 on one dough.
+ * `ballRoomTemp` loses half the stagger. Dave bulks every mix in ONE
+ * container, so the batch runs on a single clock while each dough is 35
+ * minutes further along than the one after it. Clocking `bulkRest` from the
+ * last mix (which `buildTimeline` does by including the full `mix` span) is
+ * the only anchor that gives the last dough any bulk at all; subtracting half
+ * the stagger from the ball rise then centres the remaining error, ±17.5 min
+ * at `nMix` 2 and ±35 at 3 with the middle dough on time, instead of leaving
+ * the whole stagger on the first dough.
  *
  * ⚠️ This CENTRES the spread, it does not remove it. One clock cannot do
  * better, and a user who reads it as making the batch uniform will draw the
- * wrong conclusion from a bad result — §8 `bulk-3` says so in the prose.
+ * wrong conclusion from a bad result — §8 `bulk-1` says so in the prose.
  */
 export function stageDurations(schedule: Schedule, a: ScheduleAdjustments): StageDurations {
   const retarded = schedule === 'retarded';

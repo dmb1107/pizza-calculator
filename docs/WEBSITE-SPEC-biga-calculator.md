@@ -810,7 +810,7 @@ The guard cannot fire inside the input ranges: the smallest single mix is 735.8 
 | | Read when | Says |
 |---|---|---|
 | **This strip** | choosing a batch size, before committing | the lever is still available: a batch size that needs fewer mixes, or a cooler dough. For a given batch `nMix` is already the fewest that fit, so "fewer mixes" means choosing a different batch size |
-| **`bulk-1` block** | dough already in the tub | the decision is made — chill the older half first, then don't misread the result |
+| **`bulk-1` block** | dough already in the tub | the decision is made — chill the first dough before the rest, then don't misread the result |
 
 ⚠️ **Editorial guidance about step content belongs here, not inside §8.2.** An earlier draft put this note between the block marker and its blockquote, which is a parse hazard (a scanner reasonably reads the marker as ending at the first non-quoted line) and mixes spec voice into content that renders verbatim. **§8.2 contains only content.** Anything that tells an implementer *how* to write or place content goes in the section that governs it.
 
@@ -1011,7 +1011,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 > The bowl doesn't warm with the biga, so read it separately: hold the probe against the bowl wall for five seconds. Each degree of bowl temperature is worth 0.66 °F of water at a 3-ball mix.
 
 **detail, shown only when `nMix > 1`:**
-> **Weigh out every mix before you start the first.** You're running {nMix} mixes, with five minutes budgeted for each changeover. That only works if the next mix's flour, biga and salt are already in their own containers. Weighing during the changeover stretches it to fifteen or twenty minutes, and every extra five minutes adds 2½ minutes of fermentation to the first dough that nothing later can correct.
+> **Weigh out every mix before you start the first.** You're running {nMix} mixes, with five minutes budgeted for each changeover. That only works if the next mix's flour, biga and salt are already in their own containers. Weighing during the changeover stretches it to fifteen or twenty minutes, and every extra five minutes adds five minutes of fermentation to the first dough that nothing later can correct.
 >
 > Split the tempered biga into {nMix} equal portions of {bigaMassPerMix} g and cover them. Do the same with the fresh flour and salt.
 
@@ -1138,7 +1138,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 **timer:** 5 min
 
 **detail:**
-> Leave the residue in the bowl; cleaning costs time and gains nothing. The dough stuck to it is already at your target temperature, so it doesn't change the next water target, which is the same with 0 g or 60 g left behind. Both doughs end up in the same bulk container, so whatever carries into the next mix still ends up in the batch. Only what's left after the last mix is lost, and the 2.2% overage covers it.
+> Leave the residue in the bowl; cleaning costs time and gains nothing. The dough stuck to it is already at your target temperature, so it doesn't change the next water target, which is the same with 0 g or 60 g left behind. Every mix ends up in the same bulk container, so whatever carries into the next mix still ends up in the batch. Only what's left after the last mix is lost, and the 2.2% overage covers it.
 >
 > Take two readings before the next mix, because both have changed.
 >
@@ -1221,18 +1221,18 @@ A bare token on a per-mix or per-biga step is then a **visible** error rather th
 **detail, shown only when `nMix > 1`:**
 > **Start the clock when the last mix comes out.** Starting it earlier leaves the last dough with no bulk at all.
 >
-> So the first dough runs {staggerMinutes} minutes long, the time the later mixes took. Both doughs are in one container now, and one container can't run on two clocks.
+> So the first dough runs {staggerMinutes} minutes long, the time the later mixes took. The doughs share one container now, and one container can't run on separate clocks.
 >
-> To compensate, the calculator takes {staggerHalfMinutes} minutes, half the difference, off the room-temperature rise after balling. The batch still isn't uniform, but the error is split: instead of the first dough running {staggerMinutes} minutes over and the last exactly on time, both end up about {staggerHalfMinutes} minutes off in opposite directions. That halves the worst case.
+> To compensate, the calculator takes {staggerHalfMinutes} minutes, half the difference, off the room-temperature rise after balling. The batch still isn't uniform, but the error is split: instead of the first dough running {staggerMinutes} minutes over and the last exactly on time, the first and last end up about {staggerHalfMinutes} minutes off in opposite directions. That halves the worst case.
 >
 > Keep this in mind when you judge the result. A slightly over-fermented batch doesn't mean the correction failed; it was never meant to make the batch uniform.
 
 **warning, shown when `staggerUncentred > 2`:**
 > **{staggerUncentred} minutes of the difference couldn't be absorbed.** Your dough is warm enough that the rise after balling is already at its 45-minute floor, so there was nothing left to shorten. The first dough will run that much long, so this batch won't be uniform.
 >
-> If you can tell the two doughs apart in the tub, divide and ball the older one first and put its trays in the fridge as they fill, rather than chilling everything at the end. That recovers roughly the time it takes to ball one mix, about ten minutes at this batch size. It isn't in the calculation, but it costs nothing.
+> If you can tell the doughs apart in the tub, divide and ball the first dough before the rest and put its trays in the fridge as they fill, rather than chilling everything at the end. That recovers roughly the time it takes to ball one mix, about ten minutes at this batch size. It isn't in the calculation, but it costs nothing.
 >
-> Expect the older half to be a little further along: slacker on the bench, possibly more open, maybe slightly more acidic. That variation comes from the batch running on one clock. Log it; the formula doesn't need to change.
+> Expect the first dough to be a little further along: slacker on the bench, possibly more open, maybe slightly more acidic. That variation comes from the batch running on one clock. Log it; the formula doesn't need to change.
 
 ---
 

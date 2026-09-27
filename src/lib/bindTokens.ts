@@ -104,7 +104,7 @@ export function tokenValues(
     // — hard-coding which ones differ is a trap the next change springs.
     mixIndex: String(mix),
     nextMixIndex: String(mix + 1),
-    /** Mix 2's target while standing at the end of mix 1. */
+    /** The next mix's target, read while standing at the end of this one. */
     waterTempNext: formatTempF(
       (result.mixes[mix] ?? result.mixes[result.mixes.length - 1]!).waterTempF,
     ),

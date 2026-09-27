@@ -55,7 +55,8 @@ export function buildRecipeText(result: CalculatorResult): string {
 
   lines.push('WATER');
   if (result.mixes.length > 1) {
-    // Genuinely different numbers: mix 2 starts in the bowl that ran mix 1.
+    // Genuinely different numbers: every mix after the first starts in the
+    // bowl the previous one left.
     for (const mix of result.mixes) {
       lines.push(row(`Mix ${mix.index}`, `${formatTempF(mix.waterTempF)} °F`));
     }
