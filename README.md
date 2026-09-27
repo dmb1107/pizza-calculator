@@ -29,8 +29,7 @@ their hands.
 
 ## Status
 
-Tasks 0–9 are done and the site is live. Left: the phone-in-the-kitchen check
-(Task 10) and the bake log (Task 11). See
+Tasks 0–10 are done and the site is live. Left: the bake log (Task 11). See
 [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
 ## Home screen icon

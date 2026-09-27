@@ -184,13 +184,13 @@ Keep `T_biga` as the default value so nothing silently moves, but label the fiel
 
 ⚠️ **`DDT` is the one quantity that did not go per-mix**, and that asymmetry is easy to lose now that everything around it did. It is 75 at ≤6 **total** balls and 74 at 7 or more, because the band is about how fast the *bulk mass* sheds heat and the doughs are bulked together (settled in MESSAGE-4 §11).
 
-A 12-ball batch therefore has `DDT` 74, even though it runs as two 6-ball mixes and a lone 6-ball batch would get 75. Applying the ≤6 rule to the per-mix ball count is the natural slip, and it is silent: at 12 balls it moves the warm-bowl prefill from 74 to 75 and the mix-2 water target from **59.5 to 59.2 °F** — small enough to look like rounding.
+A 12-ball batch therefore has `DDT` 74, even though it runs as two 6-ball mixes and a lone 6-ball batch would get 75. Applying the ≤6 rule to the per-mix ball count is the natural slip, and it is silent: at 12 balls it moves the warm-bowl prefill from 74 to 75 and the mix-2 water target from **59.5 to 59.2 °F** at the §5 vector conditions (59.0 to 58.7 at app defaults) — small enough to look like rounding.
 
 **Use the batch `DDT` for:** the target itself, the probe formula's `0.2 × (DDT − T_room)` term, and the *warm* bowl-state prefill. There is no per-mix `DDT` anywhere in this model.
 
 #### Bowl state — a three-way selector, per mix
 
-The bowl is not always cold. A split batch runs the second mix in a bowl that just finished the first, and above one biga only one of them can occupy the bowl at all. Offer a selector whose options **prefill from values already in the model** — no new constants:
+The bowl is not always cold. A split batch runs every mix after the first in a bowl that has just finished the one before, and above one biga only one of the bigas can occupy the bowl at all. Offer a selector whose options **prefill from values already in the model** — no new constants:
 
 | Mode | `T_bowl` prefill | When it applies |
 |---|---|---|
@@ -200,15 +200,15 @@ The bowl is not always cold. A split batch runs the second mix in a bowl that ju
 
 The prefill is a starting point and the field stays editable — a measurement always wins.
 
-**"Warm from the previous mix" is an upper bound, and how far below it the bowl sits is unmeasured.** The bowl can't come off mix 1 warmer than the dough it held, so `DDT` bounds it from above — *provided mix 1 finished at or below `DDT`*; a mix 1 that ran warm leaves a warmer bowl. How much the bowl then sheds toward the room during the 5-minute changeover has never been measured. ⚠️ An earlier version called this prefill "a good estimate" that would "run a degree or two high", on the grounds that five minutes is too short to shed much. Nothing supports either claim — thin stainless in open air may shed a real part of its gap to the room in that time, or may not. The gap it can shed is `DDT − T_room`, so whatever the rate, the prefill matters least in a warm kitchen and most in a cold one. Do not model it: `mix-8` asks for a reading, and the first split bake should log it (§10, `bowl_temp_f` on the `mix_index` 2 row).
+**"Warm from the previous mix" is an upper bound, and how far below it the bowl sits is unmeasured.** The bowl can't come off a mix warmer than the dough it held, so `DDT` bounds it from above — *provided that mix finished at or below `DDT`*; a mix that ran warm leaves a warmer bowl. How much the bowl then sheds toward the room during the 5-minute changeover has never been measured. ⚠️ An earlier version called this prefill "a good estimate" that would "run a degree or two high", on the grounds that five minutes is too short to shed much. Nothing supports either claim — thin stainless in open air may shed a real part of its gap to the room in that time, or may not. The gap it can shed is `DDT − T_room`, so whatever the rate, the prefill matters least in a warm kitchen and most in a cold one. Do not model it: `mix-8` asks for a reading, and the first split bake should log it (§10, `bowl_temp_f` on every row from `mix_index` 2 up).
 
-**Rinsing is available as a lever and is deliberately not used.** Thin stainless resets to about the rinse temperature in under a minute. Surface it only as a fallback if mix 2's target ever comes out awkward — it costs changeover time and the default workflow skips it.
+**Rinsing is available as a lever and is deliberately not used.** Thin stainless resets to about the rinse temperature in under a minute. Surface it only as a fallback if a later mix's target ever comes out awkward — it costs changeover time and the default workflow skips it.
 
 **Leaving dough residue in the bowl is harmless, and worth saying so.** Two reasons, both checked:
 - **Thermally exactly neutral.** The residue is already at `DDT`, so it contributes its own share to both sides of the balance. Required water is unchanged to the decimal at 0 g, 30 g or 60 g of carry-over.
-- **The yield cancels, because the doughs are bulked together.** Residue transfers forward — mix 1 loses it, mix 2 gains it — and both land in the same tub. Only what stays in the bowl after the *final* mix is a real loss, which is what the 2.2% overage has always covered. ⚠️ This cancellation depends on combining the doughs; if that ever changes, mix 1 can run short of its ball count at 50 g of carry-over.
+- **The yield cancels, because the doughs are bulked together.** Residue transfers forward — each mix loses some to the next — and every mix lands in the same tub. Only what stays in the bowl after the *final* mix is a real loss, which is what the 2.2% overage has always covered. ⚠️ This cancellation depends on combining the doughs; if that ever changes, mix 1 can run short of its ball count at 50 g of carry-over.
 
-Spread across the three modes, at the 265 g default:
+Spread across the three modes, at 265 g and the §5 vector conditions (FF 14, biga 58, room 70, flour 69). At app defaults every cell is lower: by 0.392 °F in the 3, 9 and 18 rows and by 0.482 °F in the 6 and 12 rows, for the reason given in §5:
 
 | Batch | Cold (58) | Room (70) | Warm (DDT) |
 |---|---:|---:|---:|
@@ -432,20 +432,20 @@ Fixed overhead outside the cold ferment spans **25.6–30.8 h** across the full 
 
 Assert all three. Treat the bands as range checks, not equalities.
 
-#### Split batches: one clock for two doughs
+#### Split batches: one clock for all the doughs
 
-Dave bulks the two doughs **together in one container** — which settles the DDT question (it cools as one 12-ball mass, so `DDT` stays keyed to **total** balls) and creates a scheduling problem in its place.
+Dave bulks every mix **together in one container** — which settles the DDT question (a 12-ball batch cools as one 12-ball mass, so `DDT` stays keyed to **total** balls) and creates a scheduling problem in its place.
 
-Mix 1's dough finishes **35 minutes** before mix 2's — 30 min of mix plus a 5 min changeover. Once they're in the same tub they are indistinguishable, so the batch runs on one clock and there is no way to give the halves different ones.
+Each mix finishes **35 minutes** after the one before it — 30 min of mix plus a 5 min changeover. That gap is the stagger, and it accumulates: the first dough is 35 min ahead of the last at `nMix = 2` and 70 min at `nMix = 3`. Once the doughs are in the same tub they are indistinguishable, so the batch runs on one clock and there is no way to give them different ones.
 
-**Clock `bulkRest` from the last mix.** That is the only defensible anchor; the alternative gives mix 2 no bulk at all.
+**Clock `bulkRest` from the last mix.** That is the only defensible anchor; the alternative gives the last mix no bulk at all.
 
 **Then subtract half the stagger from `ballRoomTemp`:**
 
 ```
 CHANGEOVER   = 5 / 60                                  // 5 min, bowl not cleaned. NOT 0.0833
-stagger      = (MIX + CHANGEOVER) × (nMix − 1)         // 0.583 h = 35 min at nMix 2
-target       = computed − stagger/2                    // −17.5 min at nMix 2
+stagger      = (MIX + CHANGEOVER) × (nMix − 1)         // 0.583 h = 35 min at nMix 2, 70 min at nMix 3
+target       = computed − stagger/2                    // −17.5 min at nMix 2, −35 min at nMix 3
 ballRoomTemp = clamp(target, 45, 180)
 staggerUncentred = ballRoomTemp − target               // ≥ 0; minutes that could NOT be absorbed
 ```
@@ -465,13 +465,15 @@ staggerUncentred = ballRoomTemp − target               // ≥ 0; minutes that 
 
 This is better than a blanket sentence in the prose because it is quantitative and conditional — the user is told how many minutes are uncorrected, not merely that correction is imperfect.
 
-⚠️ **This does not remove the spread — it centres it.** Mix 1's half is 35 min over and mix 2's is 0; after the correction they are +17.5 and −17.5. That is the best a single clock can do, and it halves the worst-case error rather than leaving it all on one dough.
+⚠️ **This does not remove the spread — it centres it.** Before the correction the first dough is the whole stagger over and the last is on time: +35 and 0 at `nMix = 2`; +70, +35 and 0 at `nMix = 3`. After it they are +17.5 and −17.5, or +35, 0 and −35 — the centring `bulk-1`'s "the first and last" rests on. That is the best a single clock can do, and it halves the worst-case error rather than leaving it all on one dough.
 
-At 12 and 18 balls this takes a 90 min rise to **72.5 min**. `nMix = 1` is untouched.
+At `nMix = 2` (10–18 balls at 265 g) this takes a 90 min rise to **72.5 min**, and at `nMix = 3` (19–24) to **55 min**. `nMix = 1` is untouched.
 
 ⚠️ **`CHANGEOVER` is an estimate from Dave, not a measurement**, and it assumes every mix is weighed out before the first one starts — which `mix-1` now instructs in a block shown only when `nMix > 1`. Time it on the first split bake and correct it.
 
-**The sensitivity runs both ways.** `CHANGEOVER` appears in `mix` *and* in `stagger`, so a 5-minute error is 5 minutes on the schedule and 2½ on the rise, in the same direction. One timing fixes both.
+**The sensitivity runs both ways.** `CHANGEOVER` appears in `mix` *and* in `stagger`, so a 5-minute error is 5 minutes on the schedule and 2½ on the rise **per changeover**, in the same direction — 10 and 5 at `nMix = 3`. One timing fixes both.
+
+⚠️ **That is the effect of changing the constant, not of a changeover that overruns on the day.** With the constant unchanged, the cut stays at half the *planned* stagger, so an overrun lands in full on every dough mixed before it and not at all on the last: five minutes per extra five. The first dough collects every changeover's overrun — at `nMix = 3`, five extra minutes on each changeover puts the doughs at +10, +5 and 0 against plan. `mix-1` once said 2½ for this case, borrowing the figure above.
 
 ⚠️ **This is the one thing in this round that is derived rather than measured.** It rests on a single assumption: that fermentation during bulk and during the ball rise are equivalent at the same temperature. That should hold — same dough, same temperature, and dividing displaces gas without resetting fermentation — but it has not been tested. It is one named term; if the assumption is wrong, set `stagger` to 0 and everything else stands.
 
@@ -561,7 +563,11 @@ Splits are unchanged: `nBiga` = 1 except 18 balls (2); `nMix` = 1 except 12 and 
 
 `T_flour` is pinned at **69 °F** in the vectors while the app defaults it to *"same as room"* = **70 °F**. That is deliberate on both sides: 69 makes the flour term independently observable, so a bug swapping `Cf` and `Cs` fails a test instead of hiding, while 70 is what a bag of flour sitting in the kitchen actually is.
 
-The consequence is that **every water target renders 0.392 °F below its vector value at app defaults** — the same figure at every batch size and every `nMix`, because `Cf/Cw` is scale-invariant. Small enough to read as rounding, which is what makes it worth stating: a 12-ball mix-2 target is 59.505 at vector conditions and 59.113 in the app, and both are correct.
+The consequence is that **the flour default puts every water target 0.392 °F below its vector value** — the same figure at every batch size and every `nMix`, because `Cf/Cw` is scale-invariant.
+
+**That is the whole gap only where FF falls back to 14.0.** The vectors run at FF 14. At 6 balls per mix the app reads bake 1's seeded 14.03 instead (§6, Panel 3), which lowers the target by a further `(14.03 − 14) × Ct/Cw` = 0.090 °F — the same at every 6-ball mix, since `Ct/Cw` (3.0023) is also a dough-only ratio. With only the seed in the calibration map, 3–24 balls × 240–300 g therefore has exactly two gaps: **0.392**, and **0.482 on every 6-ball mix** — 6 and 12 balls at every weight, and 18 balls from 272 g, which runs as three 6-ball mixes. The default page, 6 × 265 g, is one of them. Every FF the baker records adds a gap of its own at that mix size, so derive this term from the stored map, never as a constant 0.090.
+
+Small enough to read as rounding, which is what makes it worth stating. A 12-ball mix-2 target is 59.505 at vector conditions, 59.113 at flour 70 with FF 14, and 59.022 at app defaults, which prints **59.0**. All three are correct under their own conditions. ⚠️ An earlier version called 0.392 the gap "at every batch size and every `nMix`" and 59.113 the app's figure. Both left out the seeded FF, which applies on the default page itself.
 
 **Derive it; do not hardcode 0.392.** It is a ratio of formula constants with no `F` in it, so the per-mix division cancels top and bottom:
 
@@ -723,11 +729,11 @@ Group into three panels. **Batch** open by default; the other two collapsed with
 
 ⚠️ **Biga temperature and bowl temperature become arrays of length `nMix`.** Everything else stays global.
 
-This was under-specified before and the gap was real: `mix-8` tells the user to re-measure both before each subsequent mix, and the mix-2 water card is computed from those readings — but with a single pair of fields there was nowhere to enter them, so the instruction was unactionable and the second card was a prediction the user could not correct.
+This was under-specified before and the gap was real: `mix-8` tells the user to re-measure both before each subsequent mix, and every water card after the first is computed from those readings — but with a single pair of fields there was nowhere to enter them, so the instruction was unactionable and those cards were predictions the user could not correct.
 
 - Render the extra pairs only when `nMix > 1`, labelled by mix.
 - Default mix 1 from the selector as now; default later mixes to *warm* (`T_bowl = DDT`) and to mix 1's biga temperature, so behaviour is unchanged until the user overrides.
-- **Yes, this touches the URL codec.** It is worth it — a shared link for a split batch that silently drops the mix-2 readings is worse than the field not existing. Encode as a delimited list and keep the single-value form parsing as a length-1 array so old links still open.
+- **Yes, this touches the URL codec.** It is worth it — a shared link for a split batch that silently drops the later mixes' readings is worse than the field not existing. Encode as a delimited list and keep the single-value form parsing as a length-1 array so old links still open.
 
 ### Panel 3 — Calibration
 | Field | Type | Default | Note |
@@ -753,7 +759,7 @@ Two columns, **Biga** and **Final mix**, gram weights large enough to read at ar
 
 Nothing else. No split, no grams, no ice, and no commentary about whether the number is warm or cold — the user reads the number and blends to it.
 
-**When `nMix > 1`, render one card per mix.** They are genuinely different numbers, not a repeat: mix 2 starts in a bowl that just ran mix 1, so at 12 balls the targets are 64.8 °F and 59.5 °F on the default prefills. Label them "Mix 1" and "Mix 2". Each card stays bare — the reason lives in `mix-8`, not on the card.
+**When `nMix > 1`, render one card per mix.** They are genuinely different numbers, not a repeat: mix 2 starts in a bowl that just ran mix 1, so at 12 × 265 g the targets are 64.3 °F and 59.0 °F at app defaults (64.8 °F and 59.5 °F at the §5 vector conditions), both on the default bowl prefills. Label them by mix: "Mix 1", "Mix 2", and "Mix 3" at three mixes. Each card stays bare — the reason lives in `mix-8`, not on the card.
 
 Cards after the first recompute from that mix's own biga and bowl readings (§6, per-mix overrides), so the number updates as the user enters what they measured.
 

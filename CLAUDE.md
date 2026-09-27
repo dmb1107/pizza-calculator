@@ -90,6 +90,12 @@ question:
 | `FINDINGS-38-to-recipe-agent.md` | Reply to MESSAGE-37. All reproduced; nothing open. `mix-1`'s "trip the motor protection" stays: Dave confirms the Core has one |
 | `MESSAGE-38.md` | Unprompted sweep for two-mix wording: `bulk-1` and `mix-8` count-neutral; `mix-1`'s overrun is "five minutes", not "2½" (the cut is half the *planned* stagger, so an overrun lands whole on the first dough); the recipe's split-batch text at three mixes |
 | `FINDINGS-39-to-recipe-agent.md` | Reply to MESSAGE-38. All reproduced; nothing open. Our gate had classified the "2½" with the same misreading. Notes §4.2's remaining two-mix phrasings (not rendered) |
+| `MESSAGE-39.md` | The spec's engineering sections swept for two-mix wording (§4.2, §4.8, §6, §7.2); nothing renders. §4.8 separates correcting `CHANGEOVER` from an overrun on the day. Its first attached spec was MESSAGE-38's, byte for byte |
+| `FINDINGS-40-to-recipe-agent.md` | Reply to MESSAGE-39. All reproduced. Unprompted: the rendered gap is 0.482, not 0.392, at 6 balls per mix, where the seeded FF 14.03 applies; §5's rule and §7.2's 12-ball figures need their conditions |
+| `MESSAGE-40.md` | Accepts FINDINGS-40 §4: §5's gap rule rewritten (0.392 is the flour term; the seeded FF adds 0.090 at 6 balls per mix), §7.2 and §4.2's 12-ball figures conditioned, the recipe's example gains FF 14. Nothing renders. Its first attached files were earlier copies |
+| `FINDINGS-41-to-recipe-agent.md` | Reply to MESSAGE-40. All reproduced except §5's 59.023, which is 59.022 (our four-place 59.0225 rounded again). The DDT slip is now pinned on both bases |
+| `MESSAGE-41.md` | 59.023 → 59.022, the one change. From here they send SHA-256 hashes for the files that go with each message |
+| `FINDINGS-42-to-recipe-agent.md` | Reply to MESSAGE-41. Nothing open |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -133,12 +139,16 @@ code-execution surface that grows one convenient ternary at a time. What were
 `{mixIndex + 1}` and a ternary are now `{nextMixIndex}` and `{bigaCountSuffix}`,
 computed in `bindTokens` where every other value lives.
 
-**Rendered numbers sit 0.392 °F below their vector values, and that is not a
-bug.** The §5 vectors pin flour at 69 °F so the flour term stays independently
-observable; the app defaults flour to room (70 °F), which is what a bag of flour
-actually is. The gap is `Cf/Cw`, which has no total-flour term in it — exactly
-0.392 at every batch size and ball weight. **Quote the conditions whenever you
-quote a rendered number**; one without them cost a round of correspondence.
+**Rendered numbers sit below their vector values, and that is not a bug.** The
+§5 vectors pin flour at 69 °F so the flour term stays independently observable;
+the app defaults flour to room (70 °F), which is what a bag of flour actually
+is. That part is `Cf/Cw`, which has no total-flour term in it — exactly 0.392 at
+every batch size and ball weight. **It is the whole gap only where FF falls back
+to 14.0**, the vectors' value. At 6 balls per mix (6 and 12 balls, and 18 from
+272 g) the app reads the seeded 14.03, which adds `0.03 × Ct/Cw`: 0.482 in all,
+so the 12-ball cards print 64.3 and 59.0, not the 64.4 and 59.1 that 0.392
+predicts (FINDINGS-40). **Quote the conditions whenever you quote a rendered
+number**, FF included; one without them cost a round of correspondence.
 
 **Anything derivable from the formula constants is derived, never written down.**
 `C_BIGA`, `ADY_OF_BIGA_FLOUR`, `DIVIDE_BALL_H` (20/60, not 0.33),
@@ -507,9 +517,9 @@ don't inline a `toFixed` somewhere else.
 Follow spec §12. Task list and status: [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md),
 which is kept current — check its status line first.
 
-Tasks 0–9 are done (engine, state, cards, both timeline modes, steps,
-concepts, timers, reference and About drawers). Remaining: the phone check that
-finishes the deploy task, and the bake log. **Pages deploys on every push to
+Tasks 0–10 are done (engine, state, cards, both timeline modes, steps,
+concepts, timers, reference and About drawers, deploy and the phone check).
+Remaining: the bake log. **Pages deploys on every push to
 `main`** and has since 1 September — check `gh run list` (in a cloud session,
 the GitHub MCP `actions_list`) rather than any written status. A session's
 `claude/*` branch doesn't deploy; it reaches `main` through a PR that Dave
