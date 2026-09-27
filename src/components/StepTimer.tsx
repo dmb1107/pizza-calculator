@@ -1,7 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import {
   describeSpec,
-  formatCountdown,
+  formatElapsed,
   timerState,
   type RunningTimer,
   type TimerSpec,
@@ -13,6 +13,11 @@ import { formatTimeOfDay } from '../lib/timeline';
  *
  * Reads a clock rather than counting down, so it stays correct across a screen
  * lock, a backgrounded tab or a reload. See `src/lib/timers.ts`.
+ *
+ * The number counts up — how long the step has been going — in every phase.
+ * Before, in or past the window is carried by the card's tone, the label and
+ * the bar, which marks the window and stays up throughout so the card doesn't
+ * change height as the phase turns.
  */
 
 /**
@@ -120,28 +125,31 @@ export function StepTimer({
         ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-950/40'
         : 'border-amber-500 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/40';
 
+  const fill =
+    state.phase === 'running'
+      ? 'bg-stone-500 dark:bg-stone-400'
+      : state.phase === 'window'
+        ? 'bg-emerald-600 dark:bg-emerald-500'
+        : 'bg-amber-600 dark:bg-amber-500';
+
+  // The phase alone: the bounds are in the line under the bar, and a longer
+  // label wrapped at phone width, so the card changed height as it turned.
+  const label = spec.isWindow
+    ? state.phase === 'running'
+      ? 'Before the window'
+      : state.phase === 'window'
+        ? 'In the window'
+        : 'Past the window'
+    : state.phase === 'running'
+      ? 'Running'
+      : "Time's up";
+
   return (
     <div className={`mt-3 rounded-lg border p-3 ${tone}`}>
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-sm text-stone-600 dark:text-stone-400">
-            {state.phase === 'running'
-              ? spec.isWindow
-                ? 'Ready in'
-                : 'Remaining'
-              : state.phase === 'window'
-                ? 'Ready — window closes in'
-                : 'Over by'}
-          </p>
-          <p className="text-4xl font-bold tabular">
-            {formatCountdown(
-              state.phase === 'running'
-                ? state.remainingMs
-                : state.phase === 'window'
-                  ? state.windowRemainingMs
-                  : -state.windowRemainingMs,
-            )}
-          </p>
+          <p className="text-sm font-medium text-stone-700 dark:text-stone-300">{label}</p>
+          <p className="text-4xl font-bold tabular">{formatElapsed(state.elapsedMs)}</p>
         </div>
         <button
           type="button"
@@ -152,20 +160,24 @@ export function StepTimer({
         </button>
       </div>
 
-      {state.phase === 'running' && (
-        <div
-          className="mt-2 h-2 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-700"
-          role="progressbar"
-          aria-valuenow={Math.round(state.progress * 100)}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        >
+      <div
+        className="relative mt-2 h-2 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-700"
+        role="progressbar"
+        aria-valuenow={Math.round(state.progress * 100)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        {spec.isWindow && (
           <div
-            className="h-full rounded-full bg-amber-600 transition-[width] duration-1000 ease-linear"
-            style={{ width: `${state.progress * 100}%` }}
+            className="absolute inset-y-0 right-0 bg-emerald-200 dark:bg-emerald-900"
+            style={{ left: `${state.windowStart * 100}%` }}
           />
-        </div>
-      )}
+        )}
+        <div
+          className={`relative h-full rounded-full transition-[width] duration-1000 ease-linear ${fill}`}
+          style={{ width: `${state.progress * 100}%` }}
+        />
+      </div>
 
       <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
         {spec.isWindow
