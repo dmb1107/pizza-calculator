@@ -385,6 +385,9 @@ src/lib/          pure calculation — no UI imports, this is what gets unit-tes
 src/content/      step and concept prose (steps.ts, concepts.ts)
 src/components/   React components
 src/state/        URL + localStorage persistence
+public/           icon.svg (browser tab: the pizza alone, transparent) and
+                  apple-touch-icon.png (iOS home screen: on orange, 180 px,
+                  full-bleed square, since iOS rounds it)
 tests/            vitest suites; vectors.ts holds the spec §5 acceptance data
 docs/             the spec, its source recipe, and the correspondence
                   that settled the revisions
@@ -511,6 +514,13 @@ finishes the deploy task, and the bake log. **Pages deploys on every push to
 the GitHub MCP `actions_list`) rather than any written status. A session's
 `claude/*` branch doesn't deploy; it reaches `main` through a PR that Dave
 asks for, merged with a merge commit, never squashed.
+
+**Bring `README.md` current before opening a PR.** Read it against the
+branch's changes and fix whatever they make stale: the status line, the list
+of what the app returns, the deploy notes, the document list, the icon table.
+Put the README change in the same PR. It still read "calculation engine is
+next" and listed the ice/tap split after Task 9 because nothing prompted an
+update.
 
 **Verify §5 before changing any formula**, including the bake-1 regression. §12
 names the two places this goes wrong silently: the `C_bowl` term and the
