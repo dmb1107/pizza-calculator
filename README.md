@@ -1,4 +1,4 @@
-<img src="public/icon.svg" width="96" alt="The app icon: a margherita pizza on an orange square">
+<img src="public/icon.svg" width="96" alt="The app icon: a margherita pizza">
 
 # Biga Neapolitan Dough Calculator
 
@@ -40,8 +40,8 @@ The icon files live in `public/`:
 
 | File | Used by | Shape |
 |---|---|---|
-| `apple-touch-icon.png` | iOS home screen | 180 × 180 px, opaque, full-bleed square |
-| `icon.svg` | Browser tab | Rounded corners, transparent outside them |
+| `apple-touch-icon.png` | iOS home screen | The pizza on orange: 180 × 180 px, opaque, full-bleed square |
+| `icon.svg` | Browser tab | The pizza alone on a transparent background |
 
 iOS rounds the home-screen icon itself, so the PNG must stay a plain square:
 pre-rounded corners can leave slivers of the corner color, and iOS fills
