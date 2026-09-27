@@ -847,10 +847,10 @@ const FIXED: Record<Loc, readonly string[]> = {
   // the stagger is asserted in timeline.test.ts ('subtracts half the stagger').
   'mix-1.detailWhen': ['2'],
 
-  // Procedure: motor-protection rest (Ooni), the three bassinage additions,
-  // the published Neapolitan salt range, and a loose "20 hours" of biga time.
-  // "Bake 1" is the bake's number (MESSAGE-35's weighing sentence).
-  'mix-2.detail': ['5 minutes', '1'],
+  // Procedure: the three bassinage additions, the published Neapolitan salt
+  // range, and a loose "20 hours" of biga time. "Bake 1" is the bake's number
+  // (MESSAGE-35's weighing sentence).
+  'mix-2.detail': ['1'],
   'mix-3.summary': ['3'],
   'mix-3.detail': ['20 hours', '2.5–3.0%'],
 

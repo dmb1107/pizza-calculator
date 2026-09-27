@@ -253,9 +253,7 @@ Add the water with the mixer off. The Core's slowest setting is 60 RPM, too fast
 
 Weigh the water rather than pouring by eye. Bake 1 left open whether the split between Phases A and B is right, and only weighed pours can settle it.
 
-Optional, from PizzaBlab: soak the crumbled biga in the water for a few minutes first. Keep it to a few; working biga in plain water strips starch off the chunks and leaves hard, sticky gluten lumps that won't disperse.
-
-If motor protection engages, stop, rest 5 minutes, and resume one step lower. Log it; it tells you something about your friction factor.`,
+Optional, from PizzaBlab: soak the crumbled biga in the water for a few minutes first. Keep it to a few; working biga in plain water strips starch off the chunks and leaves hard, sticky gluten lumps that won't disperse.`,
     concepts: ["no-creep-speed"],
     repeatsPerMix: true,
   },
