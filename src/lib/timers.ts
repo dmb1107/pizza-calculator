@@ -12,12 +12,13 @@
  * whenever you look at it, however long the page was in the background.
  *
  * **Ranges are windows, not deadlines.** "45–60 min" is not a 45-minute timer:
- * the dough is ready at the earliest moment, and a window stays open until the
- * latest. Collapsing that to one number would throw away the half of the
- * instruction that says how much slack you have.
+ * anywhere from the earliest moment to the latest is on time, and the cue, not
+ * the clock, decides when the stage is done (§7.5, MESSAGE-36). Collapsing that
+ * to one number would throw away the half of the instruction that says how
+ * much slack you have.
  *
- * **The display counts up** (Dave, 27 September): the big number is how long
- * the step has been going, in every phase. Before, in or past the window is
+ * **The display counts up** (§7.5, Dave's ask on 27 September): the big number
+ * is how long the step has been going, in every phase. Before, in or past the window is
  * shown by the phase — tone, label and a bar with the window marked on it —
  * rather than by a number that runs down and then flips direction.
  */
@@ -81,7 +82,7 @@ export interface RunningTimer {
 export type TimerPhase =
   /** Before the earliest moment. */
   | 'running'
-  /** Between the earliest and latest — ready, with slack in hand. */
+  /** Between the earliest and latest — on time, with slack in hand. */
   | 'window'
   /** Past the latest moment. */
   | 'past';

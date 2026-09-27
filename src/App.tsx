@@ -24,16 +24,20 @@ export default function App() {
   const [sheet, setSheet] = useState<'reference' | 'about' | null>(null);
 
   /**
-   * Flag a finished timer in the tab title.
+   * Flag a due timer in the tab title: one past its lower bound, or its
+   * duration for an exact timer.
    *
    * A static page can't wake a locked phone — that needs a service worker and a
    * push server, and §2 rules out a server. This is the honest middle ground:
-   * a backgrounded tab still shows that something came due.
+   * a backgrounded tab still shows that something came due. It says "Check",
+   * never "Ready": §7.5 has nothing label the lower bound ready, since a window
+   * stage is judged by its cue.
    */
   const dueCount = state.dueTimerStepIds.length;
   useEffect(() => {
     const base = 'Biga Calculator';
-    document.title = dueCount > 0 ? `(${dueCount}) Ready — ${base}` : base;
+    document.title =
+      dueCount > 0 ? `(${dueCount}) Check ${dueCount === 1 ? 'timer' : 'timers'} — ${base}` : base;
     return () => {
       document.title = base;
     };

@@ -5,7 +5,7 @@ Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
 **Status:** Tasks 0–10 complete, on the bowl-aware thermal model with **per-mix
-weights**, the ice calculation removed, and **MESSAGE-38 applied**. Left: the
+weights**, the ice calculation removed, and **MESSAGE-43 applied**. Left: the
 bake log (Task 11).
 
 ---
@@ -560,8 +560,8 @@ phone locks — which it will, mid-mix, every time. Reading the clock means the
 answer is right whenever you look at it. The timer is persisted, so it also
 survives a reload; verified by rewinding a stored start time and reloading.
 
-**Ranges are windows.** "45–60 min" is not a 45-minute timer: the dough is ready
-at the earliest useful moment, and a window stays open until the latest.
+**Ranges are windows.** "45–60 min" is not a 45-minute timer: anywhere from the
+earliest useful moment to the latest is on time, and the cue decides.
 Collapsing that to one number would throw away the half of the instruction that
 says how much slack you have.
 
@@ -574,7 +574,9 @@ the window", "Past the window"; "Running" and "Time's up" for an exact duration)
 and a bar that runs to the latest moment with the window shaded on it. The bar
 stays up in every phase, so the card keeps its height as the phase turns.
 Elapsed is floored, as a stopwatch is, so "45:00" appears at the instant the
-phase turns and not half a second before.
+phase turns and not half a second before. MESSAGE-43 wrote the rule into
+§7.5, including that nothing labels the lower bound "ready", so the tab title
+flags a due timer as "Check timer" rather than "Ready".
 
 ### Durations are parsed from the bound label
 
