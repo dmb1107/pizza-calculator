@@ -907,7 +907,8 @@ describe('§4.7 staggerUncentred', () => {
     expect(r.staggerUncentredMin).toBeGreaterThan(2);
     const warning = r.warnings.find((w) => w.id === 'stagger-uncentred');
     expect(warning?.severity).toBe('warn');
-    expect(warning?.title).toMatch(/minutes of the spread could not be absorbed/);
+    // Mirrors bulk-1's warning in §8.2.
+    expect(warning?.title).toMatch(/minutes of the difference couldn't be absorbed/);
     // Points upstream rather than at the floor.
     expect(warning?.detail).toMatch(/fewer, larger mixes/);
     expect(warning?.detail).not.toMatch(/lower the floor|below 45/i);

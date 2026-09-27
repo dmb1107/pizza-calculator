@@ -56,11 +56,11 @@ A 12-ball batch runs as two 6-ball mixes and reads the 6 column; 18 balls reads 
   {
     id: "water-temperature",
     title: "Water temperature",
-    body: `Blend fridge-cold water with tap to the target, measuring as you pour. Fridge water reaches ~38 °F; tap covers upward. Across the supported range (3–24 balls, 240–300 g, biga 45–60 °F, room 60–84 °F) the required water spans **53–109 °F**, and **53–107 °F** at the 265 g default — hottest at *small mixes*, not small batches. No ice and no split calculation.`,
+    body: `Blend fridge-cold water with tap water to reach the target, measuring as you pour. Fridge water gets to about 38 °F; the tap covers the warmer end. Across the supported range (3–24 balls, 240–300 g, biga 45–60 °F, room 60–84 °F) the required water spans **53–109 °F**, and **53–107 °F** at the default 265 g ball. It's hottest for *small mixes*, not small batches. You won't need ice, and the app doesn't calculate a blend ratio.`,
   },
 ];
 
-export const ABOUT_INTRO = "The recipe is built on published practice, not invention.";
+export const ABOUT_INTRO = "The recipe draws on these published sources.";
 
 export const SOURCES: readonly Source[] = [
   {

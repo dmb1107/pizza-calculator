@@ -185,9 +185,9 @@ function StepRow({
             )}
 
             {step.watchFor && (
-              // Markdown, not plain text: mix-7's cue ends "**and at DDT ±1 °F.**"
-              // and rendering it raw put literal asterisks in front of the one
-              // number §8 calls a pass/fail gate.
+              // Markdown, not plain text: mix-7's cue ends "and **DDT ±1 °F.**"
+              // and rendering it raw put literal asterisks around the one number
+              // that decides whether the mix is done.
               <div className="mt-3 rounded-lg border-l-4 border-emerald-500 bg-emerald-50 px-3 py-2 text-sm dark:bg-emerald-950/40">
                 <span className="font-semibold">Watch for: </span>
                 <span className="[&_div]:inline [&_p]:my-0 [&_p]:inline">
@@ -280,7 +280,7 @@ function FinalTempCapture({ state }: { state: AppState }) {
         hint={
           measured === null
             ? `Not measured yet — planning at DDT ${formatTempF(result.ddtF)} °F, which gives ${Math.round(result.ballRoomMinutes)} min at room temperature.`
-            : `Room temperature shortened or extended to ${Math.round(result.ballRoomMinutes)} min to compensate. Every later stage moves with it.`
+            : `The balls now get ${Math.round(result.ballRoomMinutes)} min at room temperature, adjusted for this reading. Every later stage moves with it.`
         }
       />
       {measured !== null && (
@@ -289,7 +289,7 @@ function FinalTempCapture({ state }: { state: AppState }) {
           onClick={() => setInput('finalDoughTempF', null)}
           className="mt-2 min-h-touch text-sm font-medium text-amber-800 underline underline-offset-2 dark:text-amber-400"
         >
-          Clear — back to planning
+          Clear and plan at DDT
         </button>
       )}
     </div>
@@ -370,8 +370,8 @@ export function StepList({
    */
   const timerNote = (
     <>
-      Timers read the clock, so they stay right if your phone locks or you
-      reload. They can only sound while this page is open, though — for a long
+      Timers run from the clock, so they stay correct if the phone locks or the
+      page reloads. They can only sound while this page is open, so for a long
       stage, set a phone alarm as well.
     </>
   );

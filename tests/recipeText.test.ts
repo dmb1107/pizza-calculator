@@ -43,7 +43,7 @@ describe('recipe text', () => {
   it('shows both bassinage additions as weighable grams', () => {
     // The bake-1 bug: "~60% of the water" caused a guess and cost a data point.
     const out = text();
-    expect(out).toContain('211.6 g (weigh it)');
+    expect(out).toMatch(/^ +Phase A +211\.6 g$/m);
     expect(out).toContain('141.1 g in 3 additions');
   });
 

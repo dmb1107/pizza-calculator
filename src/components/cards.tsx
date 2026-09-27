@@ -198,8 +198,8 @@ export function TargetsCard({ result }: { result: CalculatorResult }) {
         </div>
       </div>
       <p className="mt-3 text-sm text-stone-600 dark:text-stone-400">
-        You are not aiming at the final temperature when you probe — Phases C and D still have
-        about {formatTempF(result.probe.frictionRemainingF)} °F to add.
+        After the probe, Phases C and D still add about{' '}
+        {formatTempF(result.probe.frictionRemainingF)} °F.
       </p>
     </Card>
   );

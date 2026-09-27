@@ -94,11 +94,11 @@ export function planningRangeFor(key: StageKey, hours: number): readonly [number
 export const STAGE_INFO: Record<StageKey, { title: string; description: string }> = {
   bigaRoomTemp: {
     title: 'Biga at room temperature',
-    description: 'Gets fermentation started before the fridge takes over.',
+    description: 'Starts fermentation before the biga goes in the fridge.',
   },
   bigaFridge: {
     title: 'Biga in the fridge',
-    description: 'Holds it somewhere genuinely stable instead of wherever the room drifts.',
+    description: 'Holds the biga steady while it ripens.',
   },
   bigaRoomOnly: {
     title: 'Biga ferments',
@@ -106,7 +106,7 @@ export const STAGE_INFO: Record<StageKey, { title: string; description: string }
   },
   bigaTemper: {
     title: 'Biga out to temper',
-    description: 'Out of the fridge before mixing. Probe it — this is the number the water calculation needs.',
+    description: 'Out of the fridge before mixing. Probe it: the water target depends on this reading.',
   },
   mix: { title: 'Final mix', description: 'Phases A–D, including the 10-minute rest.' },
   bulkRest: { title: 'Bulk rest', description: 'Lightly oiled container. No folds.' },
@@ -118,15 +118,15 @@ export const STAGE_INFO: Record<StageKey, { title: string; description: string }
     title: 'Balls at room temperature',
     // By the OFFSET from DDT, not the thermometer reading alone (MESSAGE-21/23):
     // §4.8's rise depends only on `T_actual − DDT`.
-    description: 'On lightly oiled trays, lids on. Length set by how far the dough landed from DDT.',
+    description: 'On lightly oiled trays, lids on. How long depends on how far the dough landed from DDT.',
   },
   coldFerment: {
     title: 'Cold ferment',
-    description: '38–40 °F. Spread the trays out for the first 4 hours — do not stack.',
+    description: '38–40 °F. Spread the trays out for the first 4 hours; don\'t stack them.',
   },
   temper: {
     title: 'Temper',
-    description: 'Target 60–65 °F at the core. Measure it, do not guess.',
+    description: 'Target 60–65 °F at the core, measured with a probe.',
   },
 };
 

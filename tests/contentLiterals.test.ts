@@ -249,8 +249,8 @@ const CLAIMS: readonly Claim[] = [
     ];
   }),
   { at: 'mix-2.detail', restates: 'rpmForDial(5), the dial floor', text: `slowest setting is ${rpm(5)} RPM`, covers: [`${rpm(5)} RPM`] },
-  { at: 'mix-2.detail', restates: 'rpmForDial(15)', text: `onto flour at ${rpm(15)} RPM`, covers: [`${rpm(15)} RPM`] },
-  { at: 'mix-3.detail', restates: 'rpmForDial(20)', text: `At ${rpm(20)} RPM the hook`, covers: [`${rpm(20)} RPM`] },
+  { at: 'mix-2.detail', restates: 'rpmForDial(15)', text: `pouring water in at ${rpm(15)} RPM`, covers: [`${rpm(15)} RPM`] },
+  { at: 'mix-3.detail', restates: 'rpmForDial(20)', text: `at ${rpm(20)} RPM the hook`, covers: [`${rpm(20)} RPM`] },
   {
     at: 'mix-7.detail',
     restates: 'the 40% ceiling as lit segments, and rpmForDial(40)',
@@ -266,7 +266,7 @@ const CLAIMS: readonly Claim[] = [
       `that gives \`RPM = ${fx(C.RPM_INTERCEPT, 1)} + ${fx(C.RPM_SLOPE, 3)} × dial%\``,
     covers: ['5%', `${C.RPM_AT_5_PCT} RPM`, `${C.RPM_AT_100_PCT} RPM`, '100%', fx(C.RPM_INTERCEPT, 1), `${fx(C.RPM_SLOPE, 3)} ×`],
   },
-  { at: 'concept:no-creep-speed', restates: 'rpmForDial(5)', text: `**${rpm(5)} RPM is the floor.**`, covers: [`${rpm(5)} RPM`] },
+  { at: 'concept:no-creep-speed', restates: 'rpmForDial(5)', text: `**5% on the dial = ${rpm(5)} RPM**`, covers: [`${rpm(5)} RPM`] },
 
   // --- mix-4: the probe ----------------------------------------------------
   {
@@ -274,7 +274,7 @@ const CLAIMS: readonly Claim[] = [
     // `{probeGapF}` since MESSAGE-18 — only the rest's length is still typed.
     at: 'mix-4.detail',
     restates: "the rest's length, from mix-6's timer",
-    text: `the ${step('mix-6').timerMinutes}-minute rest will move the dough`,
+    text: `the ${step('mix-6').timerMinutes}-minute rest moves the dough`,
     covers: ['10-minute'],
   },
   {
@@ -325,8 +325,8 @@ const CLAIMS: readonly Claim[] = [
     at: 'mix-5.detail',
     restates: 'observedRate(30) × minutes cut/added from the planned Phase C, at 6 balls',
     text:
-      `At 6 balls, cutting it to 2 minutes saves only **${fx(observedRate(30, thermalAt(6)) * (PHASE_C_MIN - 2), 1)} °F** ` +
-      `and stretching it to ${C.PHASE_C_MAX_MIN} minutes adds only **${fx(observedRate(30, thermalAt(6)) * (C.PHASE_C_MAX_MIN - PHASE_C_MIN), 1)} °F**`,
+      `At 6 balls, cutting it to 2 minutes saves **${fx(observedRate(30, thermalAt(6)) * (PHASE_C_MIN - 2), 1)} °F** ` +
+      `and stretching it to ${C.PHASE_C_MAX_MIN} minutes adds **${fx(observedRate(30, thermalAt(6)) * (C.PHASE_C_MAX_MIN - PHASE_C_MIN), 1)} °F**`,
     covers: ['6 balls', '2 minutes', '1.5 °F', `${C.PHASE_C_MAX_MIN} minutes`, '1.9 °F'],
   },
   {
@@ -349,7 +349,7 @@ const CLAIMS: readonly Claim[] = [
     at: 'mix-5.detail',
     restates: 'Ct/TOT by balls per mix, and observedRate(30) — two indices, stated as such',
     text:
-      `— ${fx(ctOverTot(3), 2)} at 3 balls, ${fx(ctOverTot(6), 2)} at 6, ${fx(ctOverTot(9), 2)} at 9 — which at 30% gives an observed ` +
+      `— ${fx(ctOverTot(3), 2)} at 3 balls, ${fx(ctOverTot(6), 2)} at 6, ${fx(ctOverTot(9), 2)} at 9 — which at 30% gives ` +
       `${fx(observedRate(30, thermalAt(3)), 2)}, ${fx(observedRate(30, thermalAt(6)), 2)} and ${fx(observedRate(30, thermalAt(9)), 2)} °F per minute.`,
     covers: ['0.82', '3 balls', '0.90', '6', '0.93', '9', '30%', '0.89', '0.97', '1.01 °F'],
   },
@@ -365,7 +365,7 @@ const CLAIMS: readonly Claim[] = [
   {
     at: 'mix-7.detail',
     restates: 'A + B + C + D maxima from the timers',
-    text: `Total run time is about ${['mix-2', 'mix-3', 'mix-5', 'mix-7'].reduce((n, id) => n + timerOf(id)[1], 0)} minutes`,
+    text: `The total run is about ${['mix-2', 'mix-3', 'mix-5', 'mix-7'].reduce((n, id) => n + timerOf(id)[1], 0)} minutes`,
     covers: ['15 minutes'],
   },
 
@@ -373,16 +373,16 @@ const CLAIMS: readonly Claim[] = [
   {
     at: 'biga-6.detail',
     restates: '(Cb + C_bowl)/Cw — bowl tracking the biga, which is what the temper does',
-    text: `${fx(bigaSensitivity(6, 'tracking'), 1)} °F at a 6-ball mix, ${fx(bigaSensitivity(3, 'tracking'), 1)} °F at a 3-ball one`,
+    text: `${fx(bigaSensitivity(6, 'tracking'), 1)} °F at a 6-ball mix and ${fx(bigaSensitivity(3, 'tracking'), 1)} °F at a 3-ball one`,
     covers: ['1.9 °F', '6-ball', '2.3 °F', '3-ball'],
   },
   {
     at: 'mix-1.detail',
     restates: 'C_bowl/Cw at 3 balls',
-    text: `It is worth ${fx(bowlOverWater(3), 2)} °F of water per degree at a 3-ball mix.`,
+    text: `Each degree of bowl temperature is worth ${fx(bowlOverWater(3), 2)} °F of water at a 3-ball mix.`,
     covers: ['0.66 °F', '3-ball'],
   },
-  { at: 'mix-1.detail', restates: 'BAKE_1.tBigaF, after tearing', text: `${BAKE_1.tBigaF} °F once broken apart`, covers: [`${BAKE_1.tBigaF} °F`] },
+  { at: 'mix-1.detail', restates: 'BAKE_1.tBigaF, after tearing', text: `${BAKE_1.tBigaF} °F once broken up`, covers: [`${BAKE_1.tBigaF} °F`] },
   {
     at: 'mix-8.detail',
     restates: 'Cb/Cw (bowl held, scale-invariant) against C_bowl/Cw at 6 balls',
@@ -400,9 +400,9 @@ const CLAIMS: readonly Claim[] = [
     covers: ['45-minute'],
   },
   { at: 'biga-1.detailWhen', restates: 'FLOUR_CAP_55', text: `the ${C.FLOUR_CAP_55} g the machine handles`, covers: [`${C.FLOUR_CAP_55} g`] },
-  { at: 'biga-1.detailWhen', restates: 'BIGA_HYDRATION', text: `stiff ${fx(C.BIGA_HYDRATION * 100, 0)}% hydration biga`, covers: ['50%'] },
+  { at: 'biga-1.detail', restates: 'BIGA_HYDRATION', text: `In a stiff ${fx(C.BIGA_HYDRATION * 100, 0)}% biga`, covers: ['50%'] },
   { at: 'biga-3.detail', restates: 'MIN_DOUGH', text: `mixer's ${C.MIN_DOUGH} g minimum`, covers: [`${C.MIN_DOUGH} g`] },
-  { at: 'mix-3.detail', restates: 'SALT', text: `At ${fx(C.SALT * 100, 1)}% the salt`, covers: ['2.8%'] },
+  { at: 'mix-3.detail', restates: 'SALT', text: `At ${fx(C.SALT * 100, 1)}%, the salt`, covers: ['2.8%'] },
 
   // --- biga-3's dissolve paragraph (MESSAGE-34) -----------------------------
   { at: 'biga-3.detail', restates: 'BIGA_HYDRATION', text: `a stiff ${fx(C.BIGA_HYDRATION * 100, 0)}% biga`, covers: ['50%'] },
@@ -446,14 +446,8 @@ const CLAIMS: readonly Claim[] = [
   {
     at: 'concept:giorilli-standard',
     restates: 'FRESH_TO_IDY, IDY_TO_ADY, ADY_OF_BIGA_FLOUR',
-    text: `fresh to instant at ${fx(C.FRESH_TO_IDY, 2)}, instant to active-dry at ×${C.IDY_TO_ADY} — which lands on ${fx(C.ADY_OF_BIGA_FLOUR * 100, 3)}% exactly`,
+    text: `fresh to instant at ${fx(C.FRESH_TO_IDY, 2)}, instant to active dry at ×${C.IDY_TO_ADY}, which gives exactly ${fx(C.ADY_OF_BIGA_FLOUR * 100, 3)}%`,
     covers: ['0.30', '1.25', '0.375%'],
-  },
-  {
-    at: 'concept:giorilli-standard',
-    restates: 'the rounded 0.38% against ADY_OF_BIGA_FLOUR',
-    text: `a ${fx((0.0038 / C.ADY_OF_BIGA_FLOUR - 1) * 100, 1)}% disagreement`,
-    covers: ['1.3%'],
   },
   {
     at: 'concept:schedule-architecture',
@@ -483,12 +477,13 @@ const CLAIMS: readonly Claim[] = [
   {
     at: 'biga-4.detail',
     restates: '§4.7 bigaRoomTemp, then PLANNING_RANGE_H.bigaFridge',
-    text: `${BIGA_ROOM_H} h at room temperature, then ${span('bigaFridge')} h in the fridge`,
+    text: `${BIGA_ROOM_H} h at room temperature and then ${span('bigaFridge')} h in the fridge`,
     covers: ['2 h', '18–20 h', '2 hours'],
   },
   { at: 'biga-4b.summary', restates: 'PLANNING_RANGE_H.bigaFridge', text: `for **${span('bigaFridge')} hours**`, covers: ['18–20 hours'] },
   { at: 'biga-4b.timerLabel', restates: 'PLANNING_RANGE_H.bigaFridge', text: `${span('bigaFridge')} h`, covers: ['18–20 h'] },
-  { at: 'biga-4b.detail', restates: 'PLANNING_RANGE_H.bigaFridge', text: `${span('bigaFridge')} hours is the window`, covers: ['18–20 hours'] },
+  { at: 'biga-4b.detail', restates: 'PLANNING_RANGE_H.bigaFridge', text: `recipe uses ${span('bigaFridge')} hours`, covers: ['18–20 hours'] },
+  { at: 'biga-4b.detail', restates: '§4.7 bigaRoomTemp', text: `The ${BIGA_ROOM_H} hours at room temperature`, covers: ['2 hours'] },
   { at: 'bulk-1.summary', restates: 'PLANNING_RANGE_H.bulkRest', text: `${span('bulkRest', 60)} min at room temperature`, covers: ['45–60 min'] },
   { at: 'bulk-1.timerLabel', restates: 'PLANNING_RANGE_H.bulkRest', text: `${span('bulkRest', 60)} min`, covers: ['45–60 min'] },
   {
@@ -503,9 +498,9 @@ const CLAIMS: readonly Claim[] = [
   // --- concepts: the formula -------------------------------------------------
   { at: 'concept:why-biga', restates: 'BIGA_FRACTION', text: `Why ${fx(C.BIGA_FRACTION * 100, 0)}% and not 100%`, covers: ['65%'] },
   { at: 'concept:why-biga', restates: 'BIGA_FRACTION', text: `stop at ${fx(C.BIGA_FRACTION * 100, 0)}%`, covers: ['65%'] },
-  { at: 'concept:why-biga', restates: '1 − BIGA_FRACTION', text: `Holding ${fx((1 - C.BIGA_FRACTION) * 100, 0)}% of the flour out`, covers: ['35%'] },
+  { at: 'concept:why-biga', restates: '1 − BIGA_FRACTION', text: `Keeping ${fx((1 - C.BIGA_FRACTION) * 100, 0)}% of the flour out`, covers: ['35%'] },
   { at: 'concept:formula-rationale', restates: 'HYDRATION', text: `**${fx(C.HYDRATION * 100, 0)}% hydration**`, covers: ['70%'] },
-  { at: 'concept:formula-rationale', restates: 'BIGA_HYDRATION', text: `**${fx(C.BIGA_HYDRATION * 100, 0)}% biga hydration**`, covers: ['50%'] },
+  { at: 'concept:formula-rationale', restates: 'BIGA_HYDRATION', text: `**${fx(C.BIGA_HYDRATION * 100, 0)}% biga hydration.**`, covers: ['50%'] },
   { at: 'concept:formula-rationale', restates: 'SALT', text: `**${fx(C.SALT * 100, 1)}% salt**`, covers: ['2.8%'] },
 
   // --- concepts: the thermal model ------------------------------------------
@@ -532,13 +527,13 @@ const CLAIMS: readonly Claim[] = [
   {
     at: 'concept:thermal-model',
     restates: 'bowl share C_bowl/TOT at 3 and 9 balls',
-    text: `At a 3-ball mix it absorbs ${fx(thermalAt(3).bowlShare * 100, 0)}% of the mixer's work; at a 9-ball mix, ${fx(thermalAt(9).bowlShare * 100, 1)}%`,
+    text: `At a 3-ball mix the bowl absorbs ${fx(thermalAt(3).bowlShare * 100, 0)}% of the mixer's work; at a 9-ball mix, ${fx(thermalAt(9).bowlShare * 100, 1)}%`,
     covers: ['3-ball', '18%', '9-ball', '6.8%'],
   },
   {
     at: 'concept:thermal-model',
     restates: 'C_bowl/TOT at 6 and 3 balls; the 0.3 is the 6-ball figure',
-    text: `— ${fx(thermalAt(6).bowlShare, 2)} °F per 1 °F at 6 balls, ${fx(thermalAt(3).bowlShare, 2)} at 3 — so a 3 °F misestimate costs ${fx(3 * thermalAt(6).bowlShare, 1)} °F`,
+    text: `: ${fx(thermalAt(6).bowlShare, 2)} °F per 1 °F at 6 balls, ${fx(thermalAt(3).bowlShare, 2)} at 3, so a 3 °F misreading costs ${fx(3 * thermalAt(6).bowlShare, 1)} °F`,
     covers: ['0.10 °F', '1 °F', '6 balls', '0.18', '3', '3 °F', '0.3 °F'],
   },
   {
@@ -566,7 +561,7 @@ const CLAIMS: readonly Claim[] = [
   {
     at: 'concept:thermal-model',
     restates: 'FF 14 × Ct/TOT at 3 and 9 balls',
-    text: `the same FF of 14 would appear as ${fx(14 * ctOverTot(3), 1)} °F in a 3-ball mix and ${fx(14 * ctOverTot(9), 1)} °F in a 9-ball one`,
+    text: `the same FF of 14 would show up as ${fx(14 * ctOverTot(3), 1)} °F in a 3-ball mix and ${fx(14 * ctOverTot(9), 1)} °F in a 9-ball one`,
     covers: ['14', '11.5 °F', '3-ball', '13.0 °F', '9-ball'],
   },
   // MESSAGE-25 offered this as a counterfactual to classify, since no token can
@@ -613,7 +608,7 @@ const CLAIMS: readonly Claim[] = [
           const same = (a: number, b: number) => Math.abs(a - b) < 1e-9;
           return at70.hiBigaF === 45 && same(cold.lo, hot.lo) && same(cold.hi, hot.hi) && same(cold.hi, at70.hi);
         },
-        text: "most with the coldest biga, where the water is already hottest. Your kitchen temperature doesn't change it.",
+        text: "most with the coldest biga, when the water is already at its hottest. Your kitchen temperature doesn't change it.",
         covers: [],
       },
     ] satisfies Claim[];
@@ -624,14 +619,14 @@ const CLAIMS: readonly Claim[] = [
     text: (() => {
       const hot = (b: number) =>
         computeWaterTempF({ ddtF: defaultDdtF(b), frictionFactorF: 14, bigaTempF: 45, flourTempF: 60, roomTempF: 60 }, thermalAt(b));
-      return `runs to about ${fx(hot(3), 0)} °F where a 9-ball mix asks for ${fx(hot(9), 0)} °F`;
+      return `the requirement reaches about ${fx(hot(3), 0)} °F, against ${fx(hot(9), 0)} °F for a 9-ball mix`;
     })(),
     covers: ['107 °F', '9-ball', '90 °F'],
   },
   {
     at: 'concept:thermal-model',
     restates: "bake 1's miss on the day: 67.97 required against 63.0 used (BAKE_1)",
-    text: `made this calculation ${fx(BAKE_1.waterRequiredF - BAKE_1.waterUsedF, 0)} °F wrong on the first real bake`,
+    text: `On bake 1, leaving the bowl out put the water target ${fx(BAKE_1.waterRequiredF - BAKE_1.waterUsedF, 0)} °F off`,
     covers: ['5 °F'],
   },
   {
@@ -647,7 +642,7 @@ const CLAIMS: readonly Claim[] = [
   {
     at: 'concept:friction-factor',
     restates: 'bake 1 observed 1.00 °F/min ÷ Ct/TOT at 6 balls, against FRICTION_RATE[30]',
-    text: `1.00 °F/min observed on the dough-plus-bowl system is ${fx(1.0 / ctOverTot(6), 2)} °F/min dough-only, against ${fx(C.FRICTION_RATE[30], 2)} predicted`,
+    text: `1.00 °F/min on the dough and bowl together is ${fx(1.0 / ctOverTot(6), 2)} °F/min for the dough alone, against ${fx(C.FRICTION_RATE[30], 2)} predicted`,
     covers: ['1.00 °F', '1.11 °F', '1.08'],
   },
   {
@@ -666,7 +661,7 @@ const CLAIMS: readonly Claim[] = [
     at: 'concept:friction-factor',
     restates: 'observedRate(30) rounds to 1 °F/min at 6 balls',
     holds: () => fx(observedRate(30, thermalAt(6)), 0) === '1',
-    text: 'Roughly +1 °F per additional minute at 30%',
+    text: 'roughly +1 °F per extra minute at 30%',
     covers: ['1 °F', '30%'],
   },
   { at: 'concept:friction-factor', restates: 'the 10-minute rest, from mix-6', text: `a ${step('mix-6').timerMinutes}-minute rest`, covers: ['10-minute'] },
@@ -775,7 +770,7 @@ const CLAIMS: readonly Claim[] = [
   {
     at: 'reference:water-temperature',
     restates: 'C.WATER_MIN_F, the cold warning’s threshold',
-    text: `Fridge water reaches ~${C.WATER_MIN_F} °F`,
+    text: `Fridge water gets to about ${C.WATER_MIN_F} °F`,
     covers: ['38 °F'],
   },
   ...(() => {
@@ -808,14 +803,14 @@ const CLAIMS: readonly Claim[] = [
       {
         at: 'reference:water-temperature',
         restates: 'required water across that envelope and at the default ball (53.2–108.7, 53.3–106.6)',
-        text: `spans **${fx(lo, 0)}–${fx(hi, 0)} °F**, and **${fx(lo265, 0)}–${fx(hi265, 0)} °F** at the ${C.DEFAULT_BALL_G} g default`,
+        text: `spans **${fx(lo, 0)}–${fx(hi, 0)} °F**, and **${fx(lo265, 0)}–${fx(hi265, 0)} °F** at the default ${C.DEFAULT_BALL_G} g ball`,
         covers: ['53–109 °F', '53–107 °F', '265 g'],
       },
       {
         at: 'reference:water-temperature',
         restates: 'the hottest water is at the smallest mix',
         holds: () => hiBalls === BOUNDS.balls.min,
-        text: 'hottest at *small mixes*, not small batches',
+        text: 'hottest for *small mixes*, not small batches',
         covers: [],
       },
     ] satisfies Claim[];
@@ -854,7 +849,8 @@ const FIXED: Record<Loc, readonly string[]> = {
 
   // Procedure: motor-protection rest (Ooni), the three bassinage additions,
   // the published Neapolitan salt range, and a loose "20 hours" of biga time.
-  'mix-2.detail': ['5 minutes'],
+  // "Bake 1" is the bake's number (MESSAGE-35's weighing sentence).
+  'mix-2.detail': ['5 minutes', '1'],
   'mix-3.summary': ['3'],
   'mix-3.detail': ['20 hours', '2.5–3.0%'],
 
@@ -904,22 +900,26 @@ const FIXED: Record<Loc, readonly string[]> = {
 
   // Concepts — published sources, the flour's spec, history, and index words.
   'concept:why-biga': ['100%', '60%', '300', '12.5%', '12.2–12.8%', '80%'],
-  'concept:formula-rationale': ['60–90 second', '12.5%', '44–50%', '45%', '0.55%', '2.5–3.0%'],
+  // "00" is the flour grade, as in giorilli-standard.
+  'concept:formula-rationale': ['60–90 second', '12.5%', '44–50%', '45%', '0.55%', '2.5–3.0%', '00'],
   'concept:schedule-architecture': ['2 h', '6–36 h', '50-hour', '12–24 h', '24 h', '39 °F'],
   // "Multiply DDT by 4" is the standard method being rejected. "Toward 100 °F"
   // is directional: it depends on the unmeasured fridge (open item 3) — the
-  // engine gives 102.6 at a 45 °F biga in a 70 °F room.
-  'concept:thermal-model': ['4', '12-ball', '6-ball', '3 balls', '100 °F'],
-  // Bake 1's date and batch; the retired DDT − 4; published spiral friction
-  // and flour exotherm; the bake-2/3 hypothesis "FF holds near 14".
-  // "Bakes 2 and 3" are the planned bakes, by number (§12).
-  'concept:friction-factor': ['1', '21', '2026', '6 balls', '4', '20–26 °F', '14', '3', '9 balls', '2', '1.5–3 °F'],
+  // engine gives 102.6 at a 45 °F biga in a 70 °F room. "Bake 1" is the bake's
+  // number.
+  'concept:thermal-model': ['4', '12-ball', '6-ball', '3 balls', '100 °F', '1'],
+  // Bake 1's date and batch; published spiral friction and flour exotherm;
+  // the hypothesis "FF holds near 14"; "bakes at 3 and 9 balls", the batch
+  // sizes that test it.
+  'concept:friction-factor': ['1', '21', '2026', '6 balls', '20–26 °F', '14', '3', '9 balls', '1.5–3 °F'],
   // All published (§11): Gozney / Italian Pizza Secrets 16–18 h at 16–18 °C,
   // Baking With Theory 16–20 h at 16–20 °C (ideally 18), PizzaBlab 12–24 h;
   // Giorilli's 44–45% and his 50% allowance; "00" is the flour grade; 20% is
   // the biga-5 pull cue.
-  'concept:giorilli-standard': ['61–65 °F', '16–18 °C', '100%', '16–18 h', '16–20 h', '16–20 °C', '18', '12–24 h', '44–45%', '50%', '00', '20%', '0.38%'],
+  'concept:giorilli-standard': ['61–65 °F', '16–18 °C', '100%', '16–18 h', '16–20 h', '16–20 °C', '18', '12–24 h', '44–45%', '50%', '00', '20%'],
   'concept:no-creep-speed': ['15 RPM'], // Ooni's published chart, which is wrong
+  // The published biga band, as in biga-4 (its body names it since MESSAGE-35).
+  'concept:why-61-65': ['61–65 °F'],
   // Ooni's wrong chart, quoted to reject it; Ooni's published guidance for
   // doughs at 66%+ hydration (the same threshold as FLOUR_CAP_66).
   'reference:mixer-speed': ['15 RPM', '66%'],

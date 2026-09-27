@@ -664,7 +664,7 @@ function buildWarnings(
       id: 'water-below-fridge',
       severity: 'warn',
       title: `Target water is below ${C.WATER_MIN_F} °F`,
-      detail: `${formatTempF(waterTempF)} °F is colder than fridge water reaches, so you cannot get there by blending. Chill the biga or the fresh flour instead — the biga is the dominant thermal term and a far more powerful lever. Failing that, this is the one case for ice.`,
+      detail: `${formatTempF(waterTempF)} °F is colder than fridge water gets, so blending can't reach it. Chill the biga or the fresh flour instead; the biga moves the water target more than anything else you measure. If that isn't enough, this is the one case for ice.`,
     });
   }
 
@@ -673,7 +673,7 @@ function buildWarnings(
       id: 'water-above-tap',
       severity: 'warn',
       title: `Target water is above ${C.WATER_MAX_F} °F`,
-      detail: `${formatTempF(waterTempF)} °F is hotter than a domestic tap delivers. Don't heat water to get there — fix it upstream. The cause is almost always a biga that skipped its 1-hour temper: each °F of biga temperature is worth about 2 °F of water, so an hour on the counter closes this faster than anything you can do at the sink.`,
+      detail: `${formatTempF(waterTempF)} °F is hotter than a home tap delivers. Don't heat water to reach it; fix the cause. It's almost always a biga that skipped its 1-hour temper: each °F of biga temperature is worth about 2 °F of water, so an hour on the counter closes the gap faster than anything you can do at the sink.`,
     });
   }
 
@@ -684,9 +684,10 @@ function buildWarnings(
     w.push({
       id: 'stagger-uncentred',
       severity: 'warn',
-      title: `${Math.round(staggerUncentred)} minutes of the spread could not be absorbed`,
+      // Worded as bulk-1's own warning (§8.2), which this strip mirrors.
+      title: `${Math.round(staggerUncentred)} minutes of the difference couldn't be absorbed`,
       detail:
-        'Your dough is warm enough that the ball rise is already at its 45-minute floor, so there is no room left to shorten it. The first dough will run that much long regardless. This bites hardest exactly where it matters most — a warm dough ferments fastest, so a given number of extra minutes costs more here than anywhere else. The floor is not worth overruling for it. If you want the spread back, the lever is upstream: fewer, larger mixes, or a cooler dough temperature.',
+        'Your dough is warm enough that the rise after balling is already at its 45-minute floor, so there was nothing left to shorten, and the first dough will run that much long. A warm dough ferments fastest, so those minutes cost more here than anywhere else. To win the spread back, use fewer, larger mixes or a cooler dough temperature.',
     });
   }
 

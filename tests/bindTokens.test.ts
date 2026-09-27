@@ -216,13 +216,13 @@ describe('step summaries bind to real numbers', () => {
     const step = (id: string) => STEPS.find((s) => s.id === id);
     // MESSAGE-32: worded to hold at a plan outside the window too.
     expect(bindTokens(step('biga-4')?.summaryClassic ?? '', values)).toBe(
-      'At 61–65 °F, covered so it can\'t dry out. The Giorilli window is **16–18 hours**; the timeline plans **16 h**.',
+      'At 61–65 °F, covered so it doesn\'t dry out. The Giorilli window is **16–18 hours**; the timeline plans **16 h**.',
     );
     expect(bindTokens(step('biga-4b')?.summary ?? '', values)).toContain(
       'for **18–20 hours**. The timeline plans 19 h.',
     );
     expect(bindTokens(step('bake-1')?.summary ?? '', values)).toContain(
-      '**2–3 hours** before baking — the timeline plans 2.5 h.',
+      '**2–3 hours** before baking; the timeline plans 2.5 h.',
     );
   });
 
