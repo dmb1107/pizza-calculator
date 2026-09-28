@@ -18,7 +18,15 @@ import {
   type LocalLog,
 } from '../src/state/bakeLogStore';
 import { API, fromBase64, mergeAfterSync, serializeBake, syncLog, toBase64, type FetchLike } from '../src/state/githubSync';
-import { localDate, newBakeId, phaseSeconds, runningPhases, sessionBake } from '../src/state/sessionBake';
+import {
+  firstMixStartedAt,
+  localDate,
+  newBakeId,
+  phaseSeconds,
+  runningPhases,
+  saveConflict,
+  sessionBake,
+} from '../src/state/sessionBake';
 import { DEFAULT_ENTERED, DEFAULT_INPUTS } from '../src/state/defaults';
 import type { StorageLike } from '../src/state/storage';
 import type { Inputs, RunningTimer } from '../src/state/types';
@@ -296,33 +304,34 @@ describe('sync with a private repository', () => {
 
 describe('the session as a bake (§10)', () => {
   const NOW = new Date(2026, 8, 28, 19, 30, 5);
-  const TODAY = localDate(NOW);
+  const SESSION = NOW.getTime() - 3 * 3_600_000; // the reset, three hours before
+  const TYPED = NOW.getTime() - 45 * 60_000; // readings typed during the session
   const START = NOW.getTime() - 30 * 60_000;
 
   /** Timers for each phase of each mix, stopped at the reference times. */
-  const phaseTimers = (nMix: number, skip: string[] = []): RunningTimer[] =>
+  const phaseTimers = (nMix: number, from = START): RunningTimer[] =>
     Array.from({ length: nMix }, (_, i) =>
-      MIX_PHASES.filter((p) => !skip.includes(p.key)).map((p) => ({
+      MIX_PHASES.map((p) => ({
         stepId: nMix === 1 ? p.stepId : `${p.stepId}#${i + 1}`,
-        startedAt: START,
+        startedAt: from,
         minMinutes: p.rangeMin[0],
         maxMinutes: p.rangeMin[1],
-        stoppedAt: START + p.referenceMin * 60_000,
+        stoppedAt: from + p.referenceMin * 60_000,
       })),
     ).flat();
 
-  const everythingEntered = {
-    roomTempF: TODAY,
-    flourTempF: TODAY,
-    bigaTempF: [TODAY, TODAY],
-    bowlTempF: [TODAY, TODAY],
-    waterUsedF: [TODAY, TODAY],
-    finalDoughTempF: [TODAY, TODAY],
+  const everythingTyped = {
+    roomTempF: TYPED,
+    flourTempF: TYPED,
+    bigaTempF: [TYPED, TYPED],
+    bowlTempF: [TYPED, TYPED],
+    waterUsedF: [TYPED, TYPED],
+    finalDoughTempF: [TYPED, TYPED],
   };
 
-  const session = (inputs: Inputs, entered = everythingEntered, timers = phaseTimers(1)) => {
+  const session = (inputs: Inputs, entered = everythingTyped, timers = phaseTimers(1), sessionStartedAt = SESSION) => {
     const result = calculate({ ...inputs, frictionFactorF: 14.03, flourTempF: inputs.flourTempF });
-    return sessionBake({ inputs, result, entered, timers }, NOW, newBakeId(NOW));
+    return sessionBake({ inputs, result, entered, timers, sessionStartedAt }, NOW, newBakeId(NOW));
   };
 
   const measured: Inputs = {
@@ -339,17 +348,46 @@ describe('the session as a bake (§10)', () => {
 
   it('records a fully measured session as a counted mix', () => {
     const b = session(measured);
-    expect(b).toMatchObject({ date: TODAY, balls: 6, ball_g: 265, n_mix: 1, flour_follows_room: true });
+    expect(b).toMatchObject({ date: '2026-09-28', balls: 6, ball_g: 265, n_mix: 1, flour_follows_room: true });
     expect(b.mixes[0]!.phase_seconds).toEqual({ a: 210, b: 330, c: 210, d: 52.5 });
     expect(mixStatus(b, b.mixes[0]!)).toMatchObject({ counted: true, reasons: [] });
   });
 
-  it('marks a reading entered on another day as a prefill', () => {
-    const b = session(measured, { ...everythingEntered, roomTempF: '2026-09-27' });
+  it('treats a reading typed before the session started as a default until retyped', () => {
+    // Carried over from an earlier bake, in storage: typed before the reset.
+    const b = session(measured, { ...everythingTyped, roomTempF: SESSION - 1 });
     expect(b.room_temp_f.entered).toBe(false);
     // Flour follows the room, so it inherits the room's status.
     expect(b.flour_temp_f.entered).toBe(false);
     expect(mixStatus(b, b.mixes[0]!).reasons).toEqual(['room', 'flour']);
+    // A value arriving in a link was never typed on this device at all.
+    expect(session(measured, { ...everythingTyped, roomTempF: 0 }, phaseTimers(1), 0).room_temp_f.entered).toBe(false);
+  });
+
+  it('dates a bake by the day its first mix started, so a split batch past midnight stays on one day', () => {
+    const lateStart = new Date(2026, 8, 27, 23, 50).getTime();
+    const b = session(
+      { ...measured, balls: 12, bowlTempF: [57, 72], waterUsedF: [63, 60], finalDoughTempF: [73, 75] },
+      everythingTyped,
+      phaseTimers(2, lateStart),
+    );
+    expect(b.date).toBe('2026-09-27');
+    // Before Phase A's timer has started, the day it is saved.
+    expect(session(measured, everythingTyped, []).date).toBe('2026-09-28');
+    expect(firstMixStartedAt(phaseTimers(2, lateStart), 2)).toBe(lateStart);
+  });
+
+  it('asks before saving over a bake from an earlier date', () => {
+    const draft = session(measured);
+    const earlier = { ...draft, bake_id: '2026-09-20-190000', date: '2026-09-20' };
+    const log = upsertBake(EMPTY_LOG, earlier);
+    expect(saveConflict(log, earlier.bake_id, draft)).toBe(earlier);
+    // The same day's bake is this session's own: saving again replaces it.
+    const sameDay = { ...draft, bake_id: '2026-09-28-120000' };
+    expect(saveConflict(upsertBake(EMPTY_LOG, sameDay), sameDay.bake_id, draft)).toBeNull();
+    // Nothing saved yet, or the saved bake deleted.
+    expect(saveConflict(log, '', draft)).toBeNull();
+    expect(saveConflict(EMPTY_LOG, earlier.bake_id, draft)).toBeNull();
   });
 
   it('never counts a bowl prefill, however recently the field was touched', () => {
@@ -369,7 +407,11 @@ describe('the session as a bake (§10)', () => {
     expect(phaseSeconds(running, 'mix-5', 1, 2)).toBe(210);
     expect(phaseSeconds(running, 'mix-5', 2, 2)).toBeNull();
     expect(runningPhases(running, 2, 2)).toEqual(['c']);
-    const b = session({ ...measured, balls: 12, bowlTempF: [57, 72], waterUsedF: [63, 60], finalDoughTempF: [73, 75], bigaTempF: [58, 59] }, everythingEntered, running);
+    const b = session(
+      { ...measured, balls: 12, bowlTempF: [57, 72], waterUsedF: [63, 60], finalDoughTempF: [73, 75], bigaTempF: [58, 59] },
+      everythingTyped,
+      running,
+    );
     expect(b.n_mix).toBe(2);
     expect(b.mixes.map((m) => mixStatus(b, m).reasons)).toEqual([[], ['phases']]);
   });
@@ -377,7 +419,7 @@ describe('the session as a bake (§10)', () => {
   it("takes each mix's own biga entry: mix 1's carried reading isn't mix 2's", () => {
     const b = session(
       { ...measured, balls: 12, bowlTempF: [57, 72], waterUsedF: [63, 60], finalDoughTempF: [73, 75] },
-      { ...everythingEntered, bigaTempF: [TODAY] },
+      { ...everythingTyped, bigaTempF: [TYPED] },
       phaseTimers(2),
     );
     expect(b.mixes[1]!.biga_temp_at_mix_f).toEqual({ value: 58, entered: false });

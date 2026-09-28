@@ -190,8 +190,10 @@ describe('localStorage persistence', () => {
         { stepId: 'mix-6', startedAt: 1_700_000_000_000, minMinutes: 10, maxMinutes: 10 },
         { stepId: 'mix-5', startedAt: 1_700_000_000_000, minMinutes: 3, maxMinutes: 4, stoppedAt: 1_700_000_210_000 },
       ],
-      entered: { ...DEFAULT_ENTERED, roomTempF: '2026-09-28', bowlTempF: ['2026-09-28', ''] },
+      entered: { ...DEFAULT_ENTERED, roomTempF: 1_700_000_100_000, bowlTempF: [1_700_000_100_000, 0] },
+      sessionStartedAt: 1_700_000_000_000,
       sessionBakeId: '2026-09-28-193000',
+      sessionSavedAt: 1_700_000_300_000,
     };
     savePersisted(s, value);
     expect(loadPersisted(s)).toEqual(value);
@@ -227,15 +229,18 @@ describe('localStorage persistence', () => {
       expect(typeof loaded.sessionBakeId).toBe('string');
     });
 
-    it('drops a stop recorded before its start, and entry dates it did not write', () => {
+    it('drops a stop recorded before its start, and reads anything but a typing time as never typed', () => {
+      // The dates an earlier build wrote included: "entered" is per bake now (§10).
       const raw = JSON.stringify({
         timers: [{ stepId: 'mix-2', startedAt: 2000, minMinutes: 3, maxMinutes: 4, stoppedAt: 1000 }],
-        entered: { roomTempF: 'yesterday', bigaTempF: ['2026-09-28', 42] },
+        entered: { roomTempF: '2026-09-28', bigaTempF: ['2026-09-28', 42, -5] },
+        sessionStartedAt: 'yesterday',
       });
       const loaded = loadPersisted(fakeStorage({ [STORAGE_KEY]: raw }));
       expect(loaded.timers[0]).not.toHaveProperty('stoppedAt');
-      expect(loaded.entered.roomTempF).toBe('');
-      expect(loaded.entered.bigaTempF).toEqual(['2026-09-28', '']);
+      expect(loaded.entered.roomTempF).toBe(0);
+      expect(loaded.entered.bigaTempF).toEqual([0, 42, 0]);
+      expect(loaded.sessionStartedAt).toBe(0);
     });
 
     it('keeps backward mode only with a bake time to hold', () => {

@@ -1,7 +1,7 @@
 /** Defaults and input bounds — WEBSITE-SPEC-biga-calculator.md §6. */
 
 import { C } from '../lib/constants';
-import type { Calibration, EnteredDates, Inputs, PanelPrefs, Persisted } from './types';
+import type { Calibration, EnteredAt, Inputs, PanelPrefs, Persisted } from './types';
 
 export const DEFAULT_INPUTS: Inputs = {
   balls: 6,
@@ -28,9 +28,9 @@ export const DEFAULT_CALIBRATION: Calibration = {
   ddtOverrideF: null,
 };
 
-export const DEFAULT_ENTERED: EnteredDates = {
-  roomTempF: '',
-  flourTempF: '',
+export const DEFAULT_ENTERED: EnteredAt = {
+  roomTempF: 0,
+  flourTempF: 0,
   bigaTempF: [],
   bowlTempF: [],
   waterUsedF: [],
@@ -53,7 +53,9 @@ export const DEFAULT_PERSISTED: Persisted = {
   checkedSteps: [],
   timers: [],
   entered: DEFAULT_ENTERED,
+  sessionStartedAt: 0,
   sessionBakeId: '',
+  sessionSavedAt: 0,
 };
 
 /**

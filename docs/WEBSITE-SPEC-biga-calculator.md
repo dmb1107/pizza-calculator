@@ -765,6 +765,7 @@ This was under-specified before and the gap was real: `mix-8` tells the user to 
 
 - Render the extra pairs only when `nMix > 1`, labelled by mix.
 - Default mix 1 from the selector as now; default later mixes to *warm* (`T_bowl = DDT`) and to mix 1's biga temperature, so behaviour is unchanged until the user overrides.
+- ⚠️ **Read the bowl by index; never carry it forward.** A later mix with no bowl reading of its own takes its prefill, not an earlier mix's reading. The biga carries forward, the bowl doesn't. The first build carried mix 1's bowl forward, so measuring it at 60 °F on 12 × 265 g set mix 2's water to 63.6 °F against 59.0: `C_bowl/Cw × (DDT − reading)` too warm on every later mix (FINDINGS-46).
 - **Yes, this touches the URL codec.** It is worth it — a shared link for a split batch that silently drops the later mixes' readings is worse than the field not existing. Encode as a delimited list and keep the single-value form parsing as a length-1 array so old links still open.
 
 ### Panel 3 — Calibration
@@ -798,7 +799,7 @@ Steps 2 and 3 borrow across sizes because, under the bowl model, a normalized FF
 | Step 4, `k = 6` | `bake 1, {date} · not yet calibrated` |
 | Step 4, elsewhere | `estimated — not yet calibrated` |
 
-`{spread}` is the highest minus the lowest of the per-bake FFs in the mean, to one decimal. **A size counts as calibrated at three counted bakes**, the upper end of the recipe's two to three per size: three give a mean and a sense of the spread.
+`{spread}` is the highest minus the lowest of the per-bake FFs in the mean, to one decimal. **Print a mix size as a whole number or with ½, ⅓ or ⅔,** here and in Panel 3's label. Every key is one of those, since `nMix` is at most 3. One decimal would print 19 balls in three mixes as 6.3 balls per mix, which is neither the key nor a count anyone mixed. **A size counts as calibrated at three counted bakes**, the upper end of the recipe's two to three per size: three give a mean and a sense of the spread.
 
 **Bake 1's seed** is `{ k: 6, value: 14.03, date: '2026-08-21' }`, shipped in the code rather than in the log's repository, so a new device and a friend's browser both start from it. It isn't a counted bake: its bowl was assumed rather than measured, and of its phase times only Phase C's was recorded. ⚠️ **That Phase C ran 6.5 minutes**, 3 past the reference, which at `FRICTION_RATE[30]` is 3.24 °F of its FF (§5, *Bake log*). The seed stays at 14.03 on purpose. If the nominal figure is lower, a dough mixed on 14.03 comes out cool, which the probe step and the longer rise after balling both correct. A seed set too low would err warm, where the rise has a 45-minute floor and warmth costs this dough more. The first counted bake at any size retires it.
 
@@ -1588,7 +1589,7 @@ Auto-populate each bake from the session's inputs so only the measured values ne
 | Mix | `phase_seconds` | A, B, C and D, each from its phase's timer |
 | Mix | `excluded` | Dave's switch; false by default |
 
-**Every reading records whether it was entered on the day** or left at a default or prefill. A prefill is a guess, and the rules below treat it as one.
+**Every reading records whether it was entered for this bake** or left at a default or prefill (*Capture and saving*, below). A prefill is a guess, and the rules below treat it as one.
 
 **Derived on read, never stored:** the solved FF, its normalized value, and any predicted temperature. Store the readings and solve each time, so a corrected constant corrects every bake. The seed shows why: a stored 14.04 couldn't be reproduced, and re-solving bake 1 from its logged inputs gave 14.031. ⚠️ Earlier versions stored `ff_measured` and `predicted_mix_temp_f`, along with the full bake diary and `bowl_mass_g`, which is a constant (§3).
 
@@ -1598,15 +1599,22 @@ Auto-populate each bake from the session's inputs so only the measured values ne
 
 `solveFrictionFactorF` (§4.3) on the snapshot's per-mix masses and the mix's readings, then `ffNominal` (§4.3) on its phase times.
 
-**Only the 30% rate has been checked against a bake:** late in bake 1's Phase C the dough alone rose 1.11 °F a minute, against 1.08. The 15% and 20% rates are unmeasured, and bake 1 suggests they run high. By its probe at 11 minutes the dough had risen 7.4 °F (dough-only, heat of hydration included), where 0.75 and 0.86 °F a minute alone give about 9.0 for Phases A and B. That is one bake, with Phase A's water guessed. Across their printed ranges A and B move FF by at most 0.375 and 0.43 °F, so a rate a third too high costs under 0.15 °F there; the error grows for a phase that runs well outside its range.
+**Only the 30% rate has been checked against a bake:** late in bake 1's Phase C the dough alone rose 1.11 °F a minute, against 1.08. The 15% and 20% rates are unmeasured, and bake 1 suggests they run high. By its probe at 11 minutes the dough had risen 7.4 °F (dough-only, heat of hydration included), where 0.75 and 0.86 °F a minute alone give 8.25 to 9.46 over those 11 minutes, however the time was split between A and B. That is one bake, with Phase A's water guessed. Across their printed ranges A and B move FF by at most 0.375 and 0.43 °F, so a rate a third too high costs under 0.15 °F there; the error grows for a phase that runs well outside its range.
 
 Pauses aren't normalized. The rest has a fixed timer, and nothing measures what a pause between phases costs.
+
+### Capture and saving
+
+- **"Entered" means typed for this bake.** A reading counts as entered when the baker types it for the current bake, even if the value typed is the one already shown. A value carried over from an earlier bake, in the URL or in storage, is a default until it is retyped; how the app tells the two apart is yours, but a calendar date alone misfiles a split batch that runs past midnight. **The water is the one reading that can be confirmed rather than typed:** "Poured at the target" states a measurement the baker took while blending. Room, biga, bowl and final dough temperature count only when typed. A one-tap confirm of the biga's 58 °F default is how an unmeasured value with the solve's largest ingredient coefficient would get counted.
+- **Phase times come only from the timers.** A timer stops on Stop or when its step is ticked, and the stopped time is the phase time. A phase still running at save isn't captured, there is no manual entry, and times aren't clamped to the printed ranges. The log card shows each phase time beside its range. A timer ticked late inflates its phase at that speed's rate: two minutes of Phase C is 2.16 °F of FF. That stands out on the card, and excluding the mix is the fix.
+- **A session runs from a reset of the steps to the save** on the card after the last mix. Saving again replaces that session's bake. Saving over a bake from an earlier date asks first, so a forgotten reset can't overwrite a finished bake. The bake's date is the day its first mix started.
+- **A bake under another formula** is kept and shown with its reason, and isn't solved until the formula moves and the code to solve it from its snapshot exists.
 
 ### Which mixes count
 
 A mix feeds the FF in use only if:
 
-- room, biga, bowl, water used and final dough temperature were all entered on the day (flour may follow room);
+- room, biga, bowl, water used and final dough temperature were all entered for this bake (flour may follow room);
 - all four phase times were captured;
 - its bake's snapshot matches the current formula and speeds;
 - Dave hasn't excluded it.

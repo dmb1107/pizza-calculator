@@ -3,7 +3,7 @@ import { Drawer } from './Drawer';
 import { Badge, NumberField, ToggleField } from './fields';
 import {
   MIX_PHASES,
-  PHASE_KEYS,
+  type MixPhase,
   bakeFrictionFactorF,
   bakeMixSize,
   ffInUse,
@@ -18,11 +18,11 @@ import {
   type PhaseKey,
 } from '../lib/bakeLog';
 import { formatBallsPerMix, formatCoefficient, formatTempF, roundTo } from '../lib/format';
-import { formatElapsed } from '../lib/timers';
+import { describeSpec, formatElapsed } from '../lib/timers';
 import { formatTimeOfDay } from '../lib/timeline';
 import { BOUNDS } from '../state/defaults';
 import { parseRepoName } from '../state/bakeLogStore';
-import { localDate, runningPhases } from '../state/sessionBake';
+import { runningPhases } from '../state/sessionBake';
 import type { AppState } from '../state/useAppState';
 
 /**
@@ -38,12 +38,12 @@ import type { AppState } from '../state/useAppState';
 const REASON: Record<NotCountedReason, string> = {
   excluded: 'you left it out',
   formula: 'mixed under another formula or other speeds',
-  room: 'room temperature not entered on the day',
-  flour: 'flour temperature not entered on the day',
-  biga: 'biga temperature not entered on the day',
-  bowl: 'bowl temperature not measured',
+  room: 'room temperature not typed for this bake',
+  flour: 'flour temperature not typed for this bake',
+  biga: 'biga temperature not typed for this bake',
+  bowl: 'bowl temperature not measured for this bake',
   water: 'poured water temperature not entered',
-  final: 'final dough temperature not entered',
+  final: 'final dough temperature not typed for this bake',
   phases: 'a phase time is missing',
 };
 
@@ -60,11 +60,11 @@ const smallButtonClass =
 
 /** Phase A: the water temperature actually poured, for the log (§10). */
 export function WaterPouredCapture({ state, mixIndex }: { state: AppState; mixIndex: number }) {
-  const { inputs, result, entered, commitReading, confirmReading, now } = state;
+  const { inputs, result, sessionDraft, commitReading, confirmPouredWater } = state;
   const i = mixIndex - 1;
   const target = result.mixes[i]?.waterTempF ?? result.waterTempF;
   const poured = inputs.waterUsedF[i] ?? null;
-  const enteredToday = poured != null && entered.waterUsedF[i] === localDate(now);
+  const enteredForBake = sessionDraft.mixes[i]?.water_temp_used_f.entered ?? false;
   const many = result.capacity.nMix > 1;
 
   return (
@@ -83,10 +83,10 @@ export function WaterPouredCapture({ state, mixIndex }: { state: AppState; mixIn
       />
       {/* The same height either way, so nothing below the tap moves up or down. */}
       <div className="mt-2 flex min-h-touch items-center">
-        {enteredToday ? (
-          <span className="text-sm text-stone-600 dark:text-stone-400">Entered today.</span>
+        {enteredForBake ? (
+          <span className="text-sm text-stone-600 dark:text-stone-400">Entered for this bake.</span>
         ) : (
-          <button type="button" onClick={() => confirmReading('waterUsedF', target, i)} className={smallButtonClass}>
+          <button type="button" onClick={() => confirmPouredWater(i, target)} className={smallButtonClass}>
             Poured at the target
           </button>
         )}
@@ -161,41 +161,65 @@ function ReadingRow({ label, value, status }: { label: string; value: string; st
   );
 }
 
-const Ok = () => <span className="text-sm text-stone-600 dark:text-stone-400">Entered today</span>;
+const Ok = () => <span className="text-sm text-stone-600 dark:text-stone-400">Entered for this bake</span>;
 const Note = ({ children }: { children: ReactNode }) => (
   <span className="text-sm text-amber-900 dark:text-amber-200">{children}</span>
 );
 
+const TYPE_IT = 'Type it in Today’s temperatures';
+
+/** A phase time beside its printed range (§10), flagged when it falls outside. */
+function PhaseRow({ phase, seconds, running }: { phase: MixPhase; seconds: number | null; running: boolean }) {
+  const range = describeSpec({ minMinutes: phase.rangeMin[0], maxMinutes: phase.rangeMin[1], isWindow: true });
+  const minutes = seconds == null ? null : seconds / 60;
+  const outside = minutes != null && (minutes < phase.rangeMin[0] || minutes > phase.rangeMin[1]);
+  return (
+    <ReadingRow
+      label={phaseName(phase.key)}
+      value={seconds == null ? '–' : formatElapsed(seconds * 1000)}
+      status={
+        running ? (
+          <Note>Still running: stop it when the phase ends</Note>
+        ) : seconds == null ? (
+          <Note>No time: start its timer as the phase starts</Note>
+        ) : outside ? (
+          <Note>{`Outside ${range}`}</Note>
+        ) : (
+          <span className="text-sm text-stone-600 dark:text-stone-400">{range}</span>
+        )
+      }
+    />
+  );
+}
+
 /** What the log will record for this session, and the button that saves it (§10). */
 export function BakeLogCard({ state, onOpenLog }: { state: AppState; onOpenLog: () => void }) {
-  const { sessionDraft: draft, sessionBakeId, saveSessionBake, confirmReading, inputs, log, timers, sync, github } = state;
-  const saved = log.bakes.some((b) => b.bake_id === sessionBakeId);
+  const { sessionDraft: draft, sessionBakeId, saveConflict: conflict, saveSessionBake, confirmPouredWater, inputs, log, timers, sync, github } =
+    state;
+  const saved = !conflict && log.bakes.some((b) => b.bake_id === sessionBakeId);
   const nMix = draft.n_mix;
-  const confirm = (onClick: () => void) => (
-    <button type="button" onClick={onClick} className={smallButtonClass}>
-      Confirm
-    </button>
-  );
 
   return (
     <div className="rounded-xl border border-stone-300 bg-white p-4 dark:border-stone-700 dark:bg-stone-900">
       <h4 className="text-lg font-semibold">Log this bake</h4>
       <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-        A mix feeds the friction factor when every reading below was entered today and all four phase times were
-        captured. The phase timers capture them when you stop them or tick the step.
+        A mix feeds the friction factor when every reading below was typed for this bake and all four phase times
+        were captured. The phase timers capture them when you stop them or tick the step. A phase run to its cue can
+        fall outside its range, and the log corrects for that. If a timer ran on after its phase ended, leave that
+        mix out in the bake log.
       </p>
 
       <ul className="mt-2 divide-y divide-stone-200 dark:divide-stone-800">
         <ReadingRow
           label="Room"
           value={`${formatTempF(draft.room_temp_f.value)} °F`}
-          status={draft.room_temp_f.entered ? <Ok /> : confirm(() => confirmReading('roomTempF', inputs.roomTempF))}
+          status={draft.room_temp_f.entered ? <Ok /> : <Note>{TYPE_IT}</Note>}
         />
         {!draft.flour_follows_room && (
           <ReadingRow
             label="Flour"
             value={`${formatTempF(draft.flour_temp_f.value)} °F`}
-            status={draft.flour_temp_f.entered ? <Ok /> : confirm(() => confirmReading('flourTempF', inputs.flourTempF))}
+            status={draft.flour_temp_f.entered ? <Ok /> : <Note>{TYPE_IT}</Note>}
           />
         )}
       </ul>
@@ -212,13 +236,7 @@ export function BakeLogCard({ state, onOpenLog }: { state: AppState; onOpenLog: 
               <ReadingRow
                 label="Biga"
                 value={`${formatTempF(mix.biga_temp_at_mix_f.value)} °F`}
-                status={
-                  mix.biga_temp_at_mix_f.entered ? (
-                    <Ok />
-                  ) : (
-                    confirm(() => confirmReading('bigaTempF', mix.biga_temp_at_mix_f.value, i))
-                  )
-                }
+                status={mix.biga_temp_at_mix_f.entered ? <Ok /> : <Note>{TYPE_IT}</Note>}
               />
               <ReadingRow
                 label="Bowl"
@@ -226,10 +244,8 @@ export function BakeLogCard({ state, onOpenLog }: { state: AppState; onOpenLog: 
                 status={
                   mix.bowl_temp_f.entered ? (
                     <Ok />
-                  ) : bowlMeasured ? (
-                    confirm(() => confirmReading('bowlTempF', mix.bowl_temp_f.value, i))
                   ) : (
-                    <Note>A prefill: measure it in Today’s temperatures</Note>
+                    <Note>{bowlMeasured ? TYPE_IT : 'A prefill: measure it and type it in Today’s temperatures'}</Note>
                   )
                 }
               />
@@ -240,7 +256,13 @@ export function BakeLogCard({ state, onOpenLog }: { state: AppState; onOpenLog: 
                   mix.water_temp_used_f.entered ? (
                     <Ok />
                   ) : (
-                    confirm(() => confirmReading('waterUsedF', mix.water_temp_used_f.value, i))
+                    <button
+                      type="button"
+                      onClick={() => confirmPouredWater(i, mix.water_temp_used_f.value)}
+                      className={smallButtonClass}
+                    >
+                      Poured at the target
+                    </button>
                   )
                 }
               />
@@ -251,42 +273,54 @@ export function BakeLogCard({ state, onOpenLog }: { state: AppState; onOpenLog: 
                   mix.final_dough_temp_f.entered ? (
                     <Ok />
                   ) : (
-                    <Note>{nMix > 1 ? `Enter it at the end of mix ${mix.mix_index}` : 'Enter it above'}</Note>
+                    <Note>{nMix > 1 ? `Type it at the end of mix ${mix.mix_index}` : 'Type it at the end of the mix'}</Note>
                   )
                 }
               />
-              <ReadingRow
-                label="Phase times"
-                value={PHASE_KEYS.map((k) => {
-                  const s = mix.phase_seconds[k];
-                  return `${k.toUpperCase()} ${s == null ? '–' : formatElapsed(s * 1000)}`;
-                }).join(' · ')}
-                status={
-                  running.length ? (
-                    <Note>{`${running.map(phaseName).join(', ')} still running: stop it when the phase ends`}</Note>
-                  ) : PHASE_KEYS.some((k) => mix.phase_seconds[k] == null) ? (
-                    <Note>Start each phase’s timer as the phase starts</Note>
-                  ) : null
-                }
-              />
+              {MIX_PHASES.map((p) => (
+                <PhaseRow key={p.key} phase={p} seconds={mix.phase_seconds[p.key]} running={running.includes(p.key)} />
+              ))}
             </ul>
             <MixOutcome status={status} />
           </div>
         );
       })}
 
-      <div className="mt-3 flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={saveSessionBake}
-          className="min-h-touch rounded-lg bg-amber-700 px-4 font-medium text-white active:bg-amber-800 dark:bg-amber-600"
-        >
-          {saved ? 'Update the saved bake' : 'Save to the bake log'}
-        </button>
-        <button type="button" onClick={onOpenLog} className={buttonClass}>
-          Open the bake log
-        </button>
-      </div>
+      {conflict ? (
+        // §10: saving over a bake from an earlier date asks first, so a
+        // forgotten reset can't overwrite a finished bake. Asked up front,
+        // in place of the button, so nothing appears above a tap.
+        <div className="mt-3 rounded-lg border border-amber-400 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-950/40">
+          <p className="text-sm text-amber-900 dark:text-amber-200">
+            {`This session already saved the bake from ${conflict.date}, and the steps haven’t been reset since. This one counts only the readings typed after that save.`}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => saveSessionBake('new')}
+              className="min-h-touch rounded-lg bg-amber-700 px-4 font-medium text-white active:bg-amber-800 dark:bg-amber-600"
+            >
+              Save as a new bake
+            </button>
+            <button type="button" onClick={() => saveSessionBake('replace')} className={buttonClass}>
+              {`Replace the bake from ${conflict.date}`}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-3 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => saveSessionBake('replace')}
+            className="min-h-touch rounded-lg bg-amber-700 px-4 font-medium text-white active:bg-amber-800 dark:bg-amber-600"
+          >
+            {saved ? 'Update the saved bake' : 'Save to the bake log'}
+          </button>
+          <button type="button" onClick={onOpenLog} className={buttonClass}>
+            Open the bake log
+          </button>
+        </div>
+      )}
       {saved && (
         <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
           {github

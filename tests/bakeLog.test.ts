@@ -28,6 +28,7 @@ import {
   computeThermal,
   computeWaterTempF,
 } from '../src/lib/engine';
+import { formatBallsPerMix } from '../src/lib/format';
 import { BAKE_1 } from './vectors';
 
 /**
@@ -293,6 +294,26 @@ describe('§6 the badge', () => {
     const two = [...one, bakeAt(6, 265, [11.0])];
     expect(frictionBadge(ffInUse(two, { balls: 6, nMix: 1 })).text).toBe(
       `mean of 2 bakes, latest ${two[1]!.date} · spread 0.4 °F`,
+    );
+  });
+
+  it('prints a mix size as a whole number or with ½, ⅓ or ⅔ (MESSAGE-46)', () => {
+    expect([6, 6.5, 19 / 3, 20 / 3, 4.5, 22 / 3, 23 / 3, 9.5].map(formatBallsPerMix)).toEqual([
+      '6', '6½', '6⅓', '6⅔', '4½', '7⅓', '7⅔', '9½',
+    ]);
+    // Every key the envelope produces is exact, never a decimal.
+    for (let balls = C.MIN_BALLS; balls <= 24; balls++) {
+      for (let ballG = 240; ballG <= 300; ballG++) {
+        const nMix = computeCapacity(computeFormula({ balls, ballWeightG: ballG })).nMix;
+        expect(formatBallsPerMix(balls / nMix), `${balls} balls in ${nMix}`).toMatch(/^\d+[½⅓⅔]?$/);
+      }
+    }
+    // A bake of 19 balls in three mixes lends its FF to 6 balls per mix, and
+    // the badge names its size as 6⅓, not 6.3.
+    const bakes = [bakeAt(19, 265, [11.5])];
+    expect(computeCapacity(computeFormula({ balls: 19, ballWeightG: 265 })).nMix).toBe(3);
+    expect(frictionBadge(ffInUse(bakes, { balls: 6, nMix: 1 })).text).toBe(
+      'from 6⅓ balls per mix, the nearest measured size',
     );
   });
 

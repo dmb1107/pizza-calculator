@@ -110,17 +110,20 @@ export interface RunningTimer {
 export type ReadingField = 'roomTempF' | 'flourTempF' | 'bigaTempF' | 'bowlTempF' | 'waterUsedF' | 'finalDoughTempF';
 
 /**
- * §10: "every reading records whether it was entered on the day". The local
- * date (YYYY-MM-DD) each reading was last typed or confirmed, '' for never.
- * Per mix where the reading is per mix.
+ * §10 *Capture and saving*: a reading counts as entered when it was typed for
+ * the current bake. When each reading was last typed (or, for the water,
+ * confirmed), epoch ms, 0 for never; per mix where the reading is per mix.
+ * The session's start decides which of these belong to this bake, so a value
+ * carried over from an earlier bake stays a default until retyped. A calendar
+ * date alone would misfile a split batch that runs past midnight.
  */
-export interface EnteredDates {
-  roomTempF: string;
-  flourTempF: string;
-  bigaTempF: string[];
-  bowlTempF: string[];
-  waterUsedF: string[];
-  finalDoughTempF: string[];
+export interface EnteredAt {
+  roomTempF: number;
+  flourTempF: number;
+  bigaTempF: number[];
+  bowlTempF: number[];
+  waterUsedF: number[];
+  finalDoughTempF: number[];
 }
 
 /** Which panels are open. Batch is open by default; the others are collapsed. */
@@ -151,12 +154,19 @@ export interface Persisted {
    * reload — or a phone locking its screen mid-mix — doesn't lose one.
    */
   timers: RunningTimer[];
-  /** When each reading was entered, for the bake log's counting rule (§10). */
-  entered: EnteredDates;
+  /** When each reading was typed, for the bake log's counting rule (§10). */
+  entered: EnteredAt;
+  /**
+   * §10: a session runs from a reset of the steps to the save. Epoch ms of the
+   * reset, 0 before the first one. A reading typed before it belongs to an
+   * earlier bake.
+   */
+  sessionStartedAt: number;
   /**
    * The bake this session saved to the log, '' before it saves. Saving again
-   * replaces that bake rather than adding a second; resetting the steps starts
-   * a new session.
+   * replaces that bake rather than adding a second.
    */
   sessionBakeId: string;
+  /** When the session's bake was last saved, epoch ms, 0 before it saves. */
+  sessionSavedAt: number;
 }

@@ -821,7 +821,7 @@ BAKE gauge 750 F, FULL FLAME, 60-90 s, turn every 15-20 s. Do not push to 800+.
 - Rest + Phase D gained +0.5 °F, not the −0.14 predicted → heat lost during the rest scales with the gap between dough and room.
 - **Phase A water was guessed, so the "too dry" observation is confounded.** It's now specified in grams. Needs a clean repeat.
 - Total motor time was 18.5 min, against 13.4 at the middle of every phase's range (15 at the top of each). Phase C alone ran 3 minutes over, 3.2 °F of the 14.03 at 1.08 °F a minute: with a 3.5-minute Phase C, bake 1 solves to 10.8 (§6, *Friction factor: measured*).
-- Phases A and B added less heat than the friction rates predict. By the probe at 11 minutes the dough had risen 7.4 °F (dough alone, heat of hydration included), where 0.75 and 0.86 °F a minute give about 9 before any heat of hydration. One bake, with Phase A's water guessed.
+- Phases A and B added less heat than the friction rates predict. By the probe at 11 minutes the dough had risen 7.4 °F (dough alone, heat of hydration included), where 0.75 and 0.86 °F a minute give 8.25 to 9.46 over those 11 minutes before any heat of hydration, however the time was split between A and B. One bake, with Phase A's water guessed.
 
 ⚠️ **FF = 14.03 was fitted with `T_bowl` assumed equal to 58 °F.** If the bowl was actually nearer the 53 °F pull temperature, the same measurement solves to **FF = 14.58**. Both fits reproduce bake 1 exactly, because the error was absorbed into FF at the batch size it was fitted at, which is why the two separate at other batch sizes:
 

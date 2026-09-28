@@ -43,12 +43,12 @@ import {
   type LocalLog,
 } from './bakeLogStore';
 import { mergeAfterSync, syncLog, type FetchLike } from './githubSync';
-import { localDate, newBakeId, sessionBake } from './sessionBake';
+import { newBakeId, saveConflict, sessionBake } from './sessionBake';
 import { decodeInputs, encodeInputs } from './url';
 import { tokenValues } from '../lib/bindTokens';
 import type {
   Calibration,
-  EnteredDates,
+  EnteredAt,
   Inputs,
   PanelPrefs,
   Persisted,
@@ -119,12 +119,15 @@ export interface AppState {
    * mix (0-based) for per-mix readings.
    */
   commitReading: (field: ReadingField, value: number, index?: number) => void;
-  /** §10: "typed or confirmed on the day" — confirm the value a reading already shows. */
-  confirmReading: (field: ReadingField, value: number, index?: number) => void;
+  /**
+   * §10: the water is the one reading that can be confirmed rather than typed.
+   * "Poured at the target" states a measurement the baker took while blending.
+   */
+  confirmPouredWater: (index: number, targetF: number) => void;
   /** Clear a per-mix reading back to unread (the final temperature's "Clear"). */
   clearReading: (field: PerMixReading, index: number) => void;
-  /** The local date each reading was last entered. */
-  entered: EnteredDates;
+  /** When each reading was last typed, epoch ms. */
+  entered: EnteredAt;
 
   /** The bake log's local copy. */
   log: LocalLog;
@@ -132,8 +135,17 @@ export interface AppState {
   sessionDraft: LoggedBake;
   /** The bake this session saved, '' before it saves. */
   sessionBakeId: string;
-  /** Save the session to the log, replacing its earlier save if there is one. */
-  saveSessionBake: () => void;
+  /**
+   * §10: the session's saved bake when it is dated before the draft, so a save
+   * would overwrite a finished bake after a forgotten reset. The card asks.
+   */
+  saveConflict: LoggedBake | null;
+  /**
+   * Save the session to the log. 'replace' writes over the session's bake if
+   * it has one; 'new' starts a bake of its own, counting only readings typed
+   * since the session's bake was last saved.
+   */
+  saveSessionBake: (mode?: 'replace' | 'new') => void;
   /** §10: Dave's switch. */
   setMixExcluded: (bakeId: string, mixIndex: number, excluded: boolean) => void;
   deleteBake: (bakeId: string) => void;
@@ -236,8 +248,10 @@ export function useAppState(): AppState {
     () => new Set(initial.persisted.checkedSteps),
   );
   const [timers, setTimers] = useState<RunningTimer[]>(initial.persisted.timers);
-  const [entered, setEntered] = useState<EnteredDates>(initial.persisted.entered);
+  const [entered, setEntered] = useState<EnteredAt>(initial.persisted.entered);
+  const [sessionStartedAt, setSessionStartedAt] = useState<number>(initial.persisted.sessionStartedAt);
   const [sessionBakeId, setSessionBakeId] = useState<string>(initial.persisted.sessionBakeId);
+  const [sessionSavedAt, setSessionSavedAt] = useState<number>(initial.persisted.sessionSavedAt);
 
   // §2 / §10: the log's local copy, written first; the repository follows.
   const [log, setLog] = useState<LocalLog>(() => loadLog(storage));
@@ -282,7 +296,9 @@ export function useAppState(): AppState {
       checkedSteps: [...checkedSteps],
       timers,
       entered,
+      sessionStartedAt,
       sessionBakeId,
+      sessionSavedAt,
     };
     savePersisted(storage, value);
   }, [
@@ -295,7 +311,9 @@ export function useAppState(): AppState {
     checkedSteps,
     timers,
     entered,
+    sessionStartedAt,
     sessionBakeId,
+    sessionSavedAt,
   ]);
 
   useEffect(() => {
@@ -342,10 +360,10 @@ export function useAppState(): AppState {
   // --- §10 readings ---------------------------------------------------------
 
   const markEntered = useCallback((field: ReadingField, index: number) => {
-    const today = localDate(new Date());
+    const at = Date.now();
     setEntered((prev) => {
-      if (!isPerMix(field)) return { ...prev, [field]: today };
-      return { ...prev, [field]: withEntry(prev[field], index, today, '') };
+      if (!isPerMix(field)) return { ...prev, [field]: at };
+      return { ...prev, [field]: withEntry(prev[field], index, at, 0) };
     });
   }, []);
 
@@ -372,22 +390,23 @@ export function useAppState(): AppState {
   );
 
   /**
-   * The value shown is written as the reading, so a prefill confirmed becomes
-   * an entry: a poured water that hit its target is the target, to the tenth
-   * a thermometer shows.
+   * The target, to the tenth a thermometer shows, becomes the reading. Only
+   * the water: room, biga, bowl and final count only when typed (§10), since
+   * a one-tap confirm of the biga's 58 °F default would count an unmeasured
+   * value with the solve's largest ingredient coefficient.
    */
-  const confirmReading = useCallback(
-    (field: ReadingField, value: number, index = 0) => {
-      if (!Number.isFinite(value)) return;
-      writeReading(field, roundTo(value, 1), index);
-      markEntered(field, index);
+  const confirmPouredWater = useCallback(
+    (index: number, targetF: number) => {
+      if (!Number.isFinite(targetF)) return;
+      writeReading('waterUsedF', roundTo(targetF, 1), index);
+      markEntered('waterUsedF', index);
     },
     [writeReading, markEntered],
   );
 
   const clearReading = useCallback((field: PerMixReading, index: number) => {
     setInputs((prev) => ({ ...prev, [field]: withEntry<number | null>(prev[field], index, null, null) }));
-    setEntered((prev) => ({ ...prev, [field]: withEntry(prev[field], index, '', '') }));
+    setEntered((prev) => ({ ...prev, [field]: withEntry(prev[field], index, 0, 0) }));
   }, []);
 
   // --- §6 the FF in use, from the log -----------------------------------------
@@ -437,18 +456,36 @@ export function useAppState(): AppState {
 
   // --- §10 the session as a bake, and the log ---------------------------------
 
-  const sessionDraft = useMemo(
-    () => sessionBake({ inputs, result, entered, timers }, now, sessionBakeId || newBakeId(now)),
-    [inputs, result, entered, timers, now, sessionBakeId],
-  );
+  // The draft as the session stands. When saving it would write over a bake
+  // from an earlier date (§10), the card asks, and shows the draft as the new
+  // bake it most likely is: readings typed since that bake was saved.
+  const { sessionDraft, conflict } = useMemo(() => {
+    const session = { inputs, result, entered, timers, sessionStartedAt };
+    const base = sessionBake(session, now, sessionBakeId || newBakeId(now));
+    const earlier = saveConflict(log, sessionBakeId, base);
+    if (!earlier) return { sessionDraft: base, conflict: null };
+    return {
+      sessionDraft: sessionBake({ ...session, sessionStartedAt: sessionSavedAt }, now, newBakeId(now)),
+      conflict: earlier,
+    };
+  }, [inputs, result, entered, timers, sessionStartedAt, sessionSavedAt, now, sessionBakeId, log]);
 
-  const saveSessionBake = useCallback(() => {
-    // The draft's id is the saved one, or a new one minted now.
-    const id = sessionBakeId || newBakeId(new Date());
-    const bake = sessionBake({ inputs, result, entered, timers }, new Date(), id);
-    setLog((prev) => upsertBake(prev, bake));
-    setSessionBakeId(id);
-  }, [inputs, result, entered, timers, sessionBakeId]);
+  const saveSessionBake = useCallback(
+    (mode: 'replace' | 'new' = 'replace') => {
+      const at = new Date();
+      // 'new' after a forgotten reset: the readings typed since the old bake
+      // was saved belong to this one, and the rest were carried over.
+      const fresh = mode === 'new' && sessionBakeId !== '';
+      const start = fresh ? sessionSavedAt : sessionStartedAt;
+      const id = fresh || !sessionBakeId ? newBakeId(at) : sessionBakeId;
+      const bake = sessionBake({ inputs, result, entered, timers, sessionStartedAt: start }, at, id);
+      setLog((prev) => upsertBake(prev, bake));
+      setSessionStartedAt(start);
+      setSessionBakeId(id);
+      setSessionSavedAt(at.getTime());
+    },
+    [inputs, result, entered, timers, sessionStartedAt, sessionBakeId, sessionSavedAt],
+  );
 
   const setMixExcluded = useCallback((bakeId: string, mixIndex: number, excluded: boolean) => {
     setLog((prev) => setLogMixExcluded(prev, bakeId, mixIndex, excluded));
@@ -457,7 +494,10 @@ export function useAppState(): AppState {
   const deleteBake = useCallback(
     (bakeId: string) => {
       setLog((prev) => removeBake(prev, bakeId));
-      if (bakeId === sessionBakeId) setSessionBakeId('');
+      if (bakeId === sessionBakeId) {
+        setSessionBakeId('');
+        setSessionSavedAt(0);
+      }
     },
     [sessionBakeId],
   );
@@ -598,10 +638,13 @@ export function useAppState(): AppState {
     [checkedSteps],
   );
 
-  // Resetting the steps starts a new session: the next save is a new bake.
+  // Resetting the steps starts a new session (§10): the next save is a new
+  // bake, and only readings typed from here on count as entered for it.
   const clearCheckedSteps = useCallback(() => {
     setCheckedSteps(new Set());
+    setSessionStartedAt(Date.now());
     setSessionBakeId('');
+    setSessionSavedAt(0);
   }, []);
 
   const startTimer = useCallback((stepId: string, spec: TimerSpec) => {
@@ -671,12 +714,13 @@ export function useAppState(): AppState {
     mixSizeKey,
     setDdtOverride,
     commitReading,
-    confirmReading,
+    confirmPouredWater,
     clearReading,
     entered,
     log,
     sessionDraft,
     sessionBakeId,
+    saveConflict: conflict,
     saveSessionBake,
     setMixExcluded,
     deleteBake,

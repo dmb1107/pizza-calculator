@@ -15,7 +15,7 @@
  */
 
 import { DEFAULT_CALIBRATION, DEFAULT_ENTERED, DEFAULT_PANELS, DEFAULT_PERSISTED, clampField } from './defaults';
-import type { EnteredDates, PanelPrefs, Persisted, RunningTimer } from './types';
+import type { EnteredAt, PanelPrefs, Persisted, RunningTimer } from './types';
 
 export const STORAGE_KEY = 'biga-calculator:v1';
 
@@ -83,17 +83,17 @@ function parseStringArray(raw: unknown): string[] {
   return raw.filter((v): v is string => typeof v === 'string');
 }
 
-/** A local date we wrote ourselves (YYYY-MM-DD), or '' if it is anything else. */
-function parseLocalDate(raw: unknown): string {
-  return typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : '';
+/** An epoch-ms instant, or 0. Anything else, including the dates an earlier build wrote, reads as never typed. */
+function parseInstant(raw: unknown): number {
+  return typeof raw === 'number' && Number.isFinite(raw) && raw > 0 ? raw : 0;
 }
 
-function parseEntered(raw: unknown): EnteredDates {
+function parseEntered(raw: unknown): EnteredAt {
   if (!isRecord(raw)) return DEFAULT_ENTERED;
-  const list = (v: unknown) => (Array.isArray(v) ? v.map(parseLocalDate) : []);
+  const list = (v: unknown) => (Array.isArray(v) ? v.map(parseInstant) : []);
   return {
-    roomTempF: parseLocalDate(raw['roomTempF']),
-    flourTempF: parseLocalDate(raw['flourTempF']),
+    roomTempF: parseInstant(raw['roomTempF']),
+    flourTempF: parseInstant(raw['flourTempF']),
     bigaTempF: list(raw['bigaTempF']),
     bowlTempF: list(raw['bowlTempF']),
     waterUsedF: list(raw['waterUsedF']),
@@ -160,7 +160,9 @@ export function loadPersisted(storage: StorageLike | null): Persisted {
     checkedSteps: parseStringArray(parsed['checkedSteps']),
     timers: parseTimers(parsed['timers']),
     entered: parseEntered(parsed['entered']),
+    sessionStartedAt: parseInstant(parsed['sessionStartedAt']),
     sessionBakeId: typeof parsed['sessionBakeId'] === 'string' ? parsed['sessionBakeId'] : '',
+    sessionSavedAt: parseInstant(parsed['sessionSavedAt']),
   };
 }
 
