@@ -3,6 +3,7 @@ import { Markdown } from './Markdown';
 import { StepTimer } from './StepTimer';
 import { BakeLogCard, FinalTempCapture, WaterPouredCapture } from './BakeLog';
 import { parseTimerLabel } from '../lib/timers';
+import { loggedTimerTag } from '../lib/bakeLog';
 import { SpeedIndicator } from './SpeedIndicator';
 import {
   PHASE_LABELS,
@@ -304,15 +305,17 @@ export function StepList({
    * first, so `{coldFerment} h` and `{ballRoomMin} min` resolve to real numbers and
    * no step ids need special-casing. A range ("18–20 h") is a window (§7.5).
    */
-  const renderTimer = (label: string | undefined, key: string) => {
+  const renderTimer = (label: string | undefined, key: string, stepId: string) => {
     if (!label) return undefined;
     const spec = parseTimerLabel(label);
     if (!spec) return undefined;
+    const timer = timers.find((t) => t.stepId === key);
     return (
       <StepTimer
         stepId={key}
         spec={spec}
-        timer={timers.find((t) => t.stepId === key)}
+        timer={timer}
+        tag={loggedTimerTag(stepId, timer)}
         note={timers[0]?.stepId === key ? timerNote : undefined}
         now={nowMs}
         onStart={() => startTimer(key, spec)}
@@ -389,7 +392,7 @@ export function StepList({
                         <FinalTempCapture state={state} mixIndex={mixIndex} />
                       ) : undefined
                     }
-                    timer={renderTimer(boundTimer, key)}
+                    timer={renderTimer(boundTimer, key, step.id)}
                   />
                 );
               })}

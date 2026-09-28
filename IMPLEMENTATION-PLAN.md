@@ -5,9 +5,9 @@ Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
 **Status:** Tasks 0–11 complete, on the bowl-aware thermal model with **per-mix
-weights**, the ice calculation removed, and **MESSAGE-49 applied**: the bake
+weights**, the ice calculation removed, and **MESSAGE-50 applied**: the bake
 log, synced through a private GitHub repository, now sets the FF in use.
-FINDINGS-50 is the last thing sent, and nothing is open.
+FINDINGS-51 is the last thing sent, and nothing is open.
 
 ---
 
@@ -712,6 +712,10 @@ has the rules (§4.3 normalization, §4.8 split-batch `T_actual`, §6 Panel 3,
       timers, keeping the batch settings and the log. MESSAGE-48 made it the
       only reset (the Steps header's is gone) and added the DDT override and
       the timeline's anchor to what it resets; a test holds its copy to §10.
+- [x] **The Logged tag** (§7.5, MESSAGE-50): the four mixer-phase timers
+      carry "Logged", "Logged · 3:42" once stopped; no other timer does. The
+      bake is saved at the end of the mix, and nothing on the card waits for
+      a later stage.
 - [x] **§4.8 split batches:** `T_actual` is the mean of the mixes, a mix not
       yet read counting at DDT.
 - [x] **Found in passing:** mix 1's bowl reading carried forward to later

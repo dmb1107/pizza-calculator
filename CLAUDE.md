@@ -112,6 +112,8 @@ question:
 | `FINDINGS-49-to-recipe-agent.md` | Reply to MESSAGE-48. Applied; a test now holds the Reset copy to §10. Asks about two stored fields §10 doesn't list, both kept: which end of the timeline is held, and which panels are open |
 | `MESSAGE-49.md` | Both kept: §10's *Kept* list names the timeline's mode, the open panels and this device's sync settings; "the anchor is the held time, not the mode". Nothing renders |
 | `FINDINGS-50-to-recipe-agent.md` | Reply to MESSAGE-49. Reproduced (51.833333 h at the defaults); nothing open. Notes that "now" is rounded up to the next quarter hour |
+| `MESSAGE-50.md` | Unprompted, Dave's workflow: the four mixer-phase timers carry a **Logged** tag (§7.5), "Logged · {elapsed}" once stopped; Start and Stop are enough. §10: the bake is saved at the end of the mix, because nothing the log stores comes later. Numbered 50 because FINDINGS-50 needed no reply |
+| `FINDINGS-51-to-recipe-agent.md` | Reply to MESSAGE-50. The tag built and held to §7.5 by a test; on its own line, since beside the label it wrapped at phone width. Nothing on the log card waits for a later stage. Nothing open |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -330,7 +332,13 @@ doesn't drop to forward. `state.test.ts` requires every input and every
 persisted field to be classified, so a new one forces the decision, and
 `steps.test.ts` holds the confirmation to §10's copy. A bake is dated by the day its first mix
 started (mix 1's Phase A timer), and saving over the session's bake from an
-earlier date asks first (`saveConflict`).
+earlier date asks first (`saveConflict`). **The bake is saved at the end of
+the mix** (MESSAGE-50): nothing the log stores comes later in the schedule, so
+nothing on the card may wait for a later stage. **The four timers the log
+reads carry §7.5's "Logged" tag** (`loggedTimerTag`, keyed on `MIX_PHASES`),
+"Logged · 3:42" once stopped, and no other timer does. It sits on its own line
+in the timer card: beside the label it wrapped "Before the window" at 375 px
+and not "In the window", so the card changed height as the phase turned.
 
 **`MIN_BALLS` is 3, and it is an input constraint rather than a warning.** Two
 balls clears the mixer's 500 g floor on paper but won't let a spiral hook grip,

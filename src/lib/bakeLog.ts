@@ -15,6 +15,7 @@ import { STEPS } from '../content/steps';
 import { C } from './constants';
 import { computeFormula, computeThermal, solveFrictionFactorF, type BowlState } from './engine';
 import { formatBallsPerMix, formatTempF } from './format';
+import { formatElapsed } from './timers';
 
 // ---------------------------------------------------------------------------
 // §4.3 The mix profile and normalization
@@ -65,6 +66,21 @@ export const MIX_PHASES: readonly MixPhase[] = (() => {
 /** Phase by step id, for the timers that capture them. */
 export function phaseForStep(stepId: string): MixPhase | undefined {
   return MIX_PHASES.find((p) => p.stepId === stepId);
+}
+
+/**
+ * §7.5: "The logged timers are marked." The four mixer phases carry a tag and
+ * no other timer does, the rest and the changeover included. Once stopped, the
+ * tag carries the time the log records, printed as the log card prints it.
+ * Null for a timer the log doesn't read. `stepId` is the template id.
+ */
+export function loggedTimerTag(
+  stepId: string,
+  timer: { startedAt: number; stoppedAt?: number } | undefined,
+): string | null {
+  if (!phaseForStep(stepId)) return null;
+  if (timer?.stoppedAt == null) return 'Logged';
+  return `Logged · ${formatElapsed(timer.stoppedAt - timer.startedAt)}`;
 }
 
 const rateOf = (dial: number): number => C.FRICTION_RATE[dial as keyof typeof C.FRICTION_RATE];

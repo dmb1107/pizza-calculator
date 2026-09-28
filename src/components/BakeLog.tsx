@@ -201,7 +201,7 @@ export function BakeLogCard({ state, onOpenLog }: { state: AppState; onOpenLog: 
       <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
         Saving records every reading below as it stands, defaults included. A mix feeds the friction factor when it
         has a final dough temperature and a water poured, its bowl was measured, and all four phase times were
-        captured. The phase timers capture them when you stop them or tick the step. A phase run to its cue can fall
+        captured. The four timers tagged Logged capture them when you stop them or tick the step. A phase run to its cue can fall
         outside its range, and the log corrects for that. If a timer ran on after its phase ended, leave that mix out
         in the bake log.
       </p>

@@ -9,20 +9,23 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-49, FINDINGS-50 and Task 11 (28 September).
+MESSAGE-50, FINDINGS-51 and Task 11 (28 September).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-49, and FINDINGS-50 is the
+- **The correspondence is applied through MESSAGE-50, and FINDINGS-51 is the
   last thing sent.** Nothing is open, and no pin of any kind is live
   (`knownWrong` is empty). MESSAGE-48 made the page's Reset the only one and
   added the DDT override and the timeline's anchor to what it resets.
   MESSAGE-49 put the rest of the page in §10's *Kept* list: which end of the
   timeline is held, which panels are open and this device's sync settings.
-  The anchor is the held time, not the mode. Task 11, the bake log, is built: readings stored as they stand and
+  The anchor is the held time, not the mode. MESSAGE-50 (Dave's workflow:
+  he starts and stops the mixing timers, doesn't always tick, and times the
+  long stages on his phone) tagged the four mixer-phase timers "Logged" and
+  put in §10 that the bake is saved at the end of the mix. Task 11, the bake log, is built: readings stored as they stand and
   solved on read, normalized to mid-range phase times, §6's four-step FF in
   use, §10's counting rules, and sync through a private GitHub repository
   with a per-device token.
@@ -236,7 +239,7 @@ true and what they need to change.
 | `engine.test.ts` | Each mix's bowl read by index (FINDINGS-46: mix 1's reading printed mix 2's water 4.6 °F warm). §5 vectors and the bake-1 regression, **held to printed precision (0.005)**, not `TOL`. The rendered gap at app defaults: 0.392, or 0.482 at 6 balls per mix where the seeded FF applies, with the 12-ball cards' printed figures. §4.2's per-mix DDT slip, priced at `C_bowl/Cw` on both bases. Per-mix thermal weights. The panel hints' bases, measured by perturbing `calculate`. Water reachability sweep (samples 257 g for the true corner). Shaped rise **keyed by DDT**. The two biga bases, measured off `computeWaterTempF`. §4.9, §4.10 | Every rise table was keyed on dough temperature, silently assuming DDT 75 — including this suite's own vector. At `TOL.degF` = 0.1 the bake-1 pin couldn't tell 67.97 from 68.00 |
 | `bindTokens.test.ts` | No unbound or unused token, over every string a step carries (walked, not listed, since FINDINGS-34). `{probeGapPhrase}` at below / above / right at DDT. The thicker note decided on its **printed** value | A condition decided on unrounded values printed "12.0 rather than 12" |
 | `state.test.ts` | URL and storage round-trips. Final and poured-water readings by index, padded to the mixes (`73~`), and a pre-per-mix `dought` read as the batch reading. A stored FF map ignored. §10's Reset: every input and every persisted field classified as reset, cleared or kept | The map was keyed on total balls, so a 12-ball bake would have filed FF under a size no mix has. Reset's classification fails with the DDT override or the anchor left out (MESSAGE-48) |
-| `bakeLog.test.ts` | §5 *Bake log* pins: bake 1 at 14.031045 and 10.791045, the 0.7075 correction, no `Ct/TOT` factor; the counting rules one reason at a time; the aggregate (10.666667, spread 0.6), interpolation (11.7) and holding (12.2), the seed; **§6's badge table read from the spec**; the room slope; §4.8's mean (74.0 → 72.5, first mix only 77.4); the 120 °F warning at 10.23 | Mutation-checked: a carried-forward final list and a 0.9 factor on the correction both fail it |
+| `bakeLog.test.ts` | §5 *Bake log* pins: bake 1 at 14.031045 and 10.791045, the 0.7075 correction, no `Ct/TOT` factor; the counting rules one reason at a time; the aggregate (10.666667, spread 0.6), interpolation (11.7) and holding (12.2), the seed; **§6's badge table read from the spec**; the room slope; §4.8's mean (74.0 → 72.5, first mix only 77.4); the 120 °F warning at 10.23. §7.5's **Logged** tag: the ids and both wordings read from the spec, the stopped tag equal to the time the log records | Mutation-checked: a carried-forward final list and a 0.9 factor on the correction both fail it, and so do a tag on the rest and a stopped tag without its time |
 | `bakeLogSync.test.ts` | The local log's parsing and edits; sync against a fake repository (push, pull, stale write, deletions both ways, a refused token, an unreachable repo, offline, an unparseable file); `mergeAfterSync`; the session as a bake (entry dates, prefills, phase times by instance) | A sync result applied over edits made while it ran would drop them |
 | `timeline.test.ts` | §4.7 durations, the stage sequence on both schedules, daylight saving. §7.4's "19 h (18–20)" on every stage, written out. The centring at `nMix` 3 (middle dough on time) and a changeover overrun landing whole on the first dough (MESSAGE-38). **Backward mode pinned to hand-written clock times** on both schedules and at `nMix` 2; exact landing on the bake across fractional durations; the overnight windows against a brute-force scan | A wrong order sums to the right total. Summing hours × 3.6e6 landed 1 ms early and printed the minute before |
 | `capacity.test.ts` | §7.3: which capacity message fires and when, its bound wording, the binding-limit guards (flour cap never first for a mix, always first for the biga), the below-minimum guard silent across the range, decisions on the **printed** per-mix dough, the near-limit ball list across 240–300 g. §7.5 segment states (lit / dim / off), and the chip's smaller line for every speed step | The spec says conditions are decided on displayed values; 2374.96 g prints 2375.0 and must fire. **The ball list can't see the 5%**: it holds for any threshold from 94.03% to 98.11%, so the edge test is what pins the threshold |

@@ -21,13 +21,16 @@ cold ferment. The app returns:
   segments, where every step expands into the reasoning behind it;
 - a bake log that solves the mixer's friction factor from each bake's measured
   temperatures and phase times, and sets the friction factor the next water
-  target uses.
+  target uses. The four mixer-phase timers it reads are tagged **Logged**, and
+  the bake is saved from the card after the last mix, once the final dough
+  temperature is in.
 
 The setup survives a refresh, and **Share setup** copies it as a link.
 **Reset**, above the panels, starts a new bake: it clears the day's
 temperatures, any DDT override, the timeline's start or target time, the step
-checkboxes and the timers, and keeps the batch settings and the log. Reference tables, the recipe's sources and the bake log open in
-drawers at the bottom of the page.
+checkboxes and the timers, and keeps the batch settings and the log. Reference
+tables, the recipe's sources and the bake log open in drawers at the bottom of
+the page.
 
 The bake log stays in the browser unless you give it a private GitHub
 repository and a token that can reach only that repository; then each device
@@ -40,7 +43,7 @@ their hands.
 ## Status
 
 Tasks 0–11 are done and the site is live. The bake log (Task 11) was built
-across MESSAGE-45 to MESSAGE-48. See [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
+across MESSAGE-45 to MESSAGE-50. See [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
 ## Home screen icon
 

@@ -12,6 +12,7 @@ import {
   currentFormulaSnapshot,
   ffInUse,
   frictionBadge,
+  loggedTimerTag,
   mixStatus,
   normalizeFrictionFactorF,
   roomSlope,
@@ -29,6 +30,9 @@ import {
   computeWaterTempF,
 } from '../src/lib/engine';
 import { formatBallsPerMix } from '../src/lib/format';
+import { formatElapsed } from '../src/lib/timers';
+import { STEPS } from '../src/content/steps';
+import { phaseSeconds } from '../src/state/sessionBake';
 import { BAKE_1 } from './vectors';
 
 /**
@@ -435,4 +439,42 @@ describe('§4.4 the 120 °F warning under a low logged FF', () => {
 
 it('keeps PHASE_KEYS and MIX_PHASES aligned', () => {
   expect(PHASE_KEYS).toEqual(MIX_PHASES.map((p) => p.key));
+});
+
+describe('§7.5 the logged timers are marked', () => {
+  const para = /^\*\*The logged timers are marked\.\*\*.+$/m.exec(SPEC)?.[0] ?? '';
+  // The ids the paragraph names, the tag's two wordings, and its exclusions.
+  const named = [...para.matchAll(/`(mix-\d+)`/g)].map((m) => m[1]);
+  const [plain, stopped] = [...para.matchAll(/\*\*(Logged[^*]*)\*\*/g)].map((m) => m[1]);
+
+  it('reads the paragraph', () => {
+    expect(named).toEqual(['mix-2', 'mix-3', 'mix-5', 'mix-7']);
+    expect(plain).toBe('Logged');
+    expect(stopped).toBe('Logged · {elapsed}');
+  });
+
+  it('tags the four mixer phases and no other step', () => {
+    // Every step, not only those with a timer: the tag follows the log's phases.
+    const tagged = STEPS.filter((s) => loggedTimerTag(s.id, undefined) !== null).map((s) => s.id);
+    expect(tagged).toEqual(named);
+    expect(tagged).toEqual(MIX_PHASES.map((p) => p.stepId));
+    // "The rest and the changeover included": both have timers and no tag.
+    for (const id of ['mix-6', 'mix-8']) {
+      expect(STEPS.find((s) => s.id === id)?.timerMinutes, id).toBeDefined();
+      expect(loggedTimerTag(id, { startedAt: 0, stoppedAt: 60_000 }), id).toBeNull();
+    }
+  });
+
+  it('reads "Logged" until stopped, then the time the log records', () => {
+    const startedAt = Date.UTC(2026, 8, 28, 18, 0);
+    expect(loggedTimerTag('mix-5', undefined)).toBe(plain);
+    expect(loggedTimerTag('mix-5', { startedAt })).toBe(plain);
+    // Phase C stopped at 3 min 42.9 s: the log stores 222.9 s and the card
+    // prints it floored, as the timer's own number is.
+    const timer = { stepId: 'mix-5#2', startedAt, stoppedAt: startedAt + 222_900, minMinutes: 3, maxMinutes: 4 };
+    const seconds = phaseSeconds([timer], 'mix-5', 2, 2);
+    expect(seconds).toBe(222.9);
+    expect(loggedTimerTag('mix-5', timer)).toBe(stopped!.replace('{elapsed}', formatElapsed(seconds! * 1000)));
+    expect(loggedTimerTag('mix-5', timer)).toBe('Logged · 3:42');
+  });
 });
