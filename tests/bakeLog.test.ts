@@ -43,17 +43,16 @@ const REFERENCE_SECONDS = Object.fromEntries(MIX_PHASES.map((p) => [p.key, p.ref
   number
 >;
 
-const entered = (value: number) => ({ value, entered: true });
-
 /** A mix whose readings all count. */
 function mix(overrides: Partial<LoggedMix> = {}): LoggedMix {
   return {
     mix_index: 1,
-    biga_temp_at_mix_f: entered(58),
+    biga_temp_at_mix_f: 58,
     bowl_state: 'cold',
-    bowl_temp_f: entered(58),
-    water_temp_used_f: entered(63),
-    final_dough_temp_f: entered(73.5),
+    bowl_temp_f: 58,
+    bowl_prefilled: false,
+    water_temp_used_f: 63,
+    final_dough_temp_f: 73.5,
     phase_seconds: { ...REFERENCE_SECONDS },
     excluded: false,
     ...overrides,
@@ -73,8 +72,8 @@ function bake(overrides: Partial<LoggedBake> & { mixes?: LoggedMix[] } = {}): Lo
     ball_g,
     n_mix,
     formula: currentFormulaSnapshot(),
-    room_temp_f: entered(70),
-    flour_temp_f: entered(69),
+    room_temp_f: 70,
+    flour_temp_f: 69,
     flour_follows_room: false,
     mixes: [mix()],
     ...overrides,
@@ -94,7 +93,7 @@ function mixSolvingTo(ff: number, balls: number, ballG: number, index = 1): Logg
     thermal,
     63,
   );
-  return mix({ mix_index: index, final_dough_temp_f: entered(finalTempF) });
+  return mix({ mix_index: index, final_dough_temp_f: finalTempF });
 }
 
 function bakeAt(balls: number, ballG: number, ffs: number[]): LoggedBake {
@@ -150,28 +149,31 @@ describe('§5 Bake log: normalization', () => {
 });
 
 describe('§10 which mixes count', () => {
-  it('counts a mix with every reading entered and all four phase times', () => {
+  it('counts a mix with a final, a water, a measured bowl and all four phase times', () => {
     expect(mixStatus(bake(), mix())).toMatchObject({ counted: true, reasons: [] });
   });
 
   it.each([
-    ['room', { room_temp_f: { value: 70, entered: false } }, {}],
-    ['flour', { flour_temp_f: { value: 69, entered: false } }, {}],
-    ['biga', {}, { biga_temp_at_mix_f: { value: 58, entered: false } }],
-    ['bowl', {}, { bowl_temp_f: { value: 58, entered: false } }],
-    ['water', {}, { water_temp_used_f: { value: 63, entered: false } }],
-    ['final', {}, { final_dough_temp_f: { value: 73.5, entered: false } }],
-    ['phases', {}, { phase_seconds: { ...REFERENCE_SECONDS, d: null } }],
-    ['excluded', {}, { excluded: true }],
-  ] as const)('leaves a mix out for %s', (reason, bakeOver, mixOver) => {
-    const status = mixStatus(bake(bakeOver as Partial<LoggedBake>), mix(mixOver as Partial<LoggedMix>));
+    ['final', { final_dough_temp_f: null }],
+    ['water', { water_temp_used_f: null }],
+    ['bowl', { bowl_prefilled: true }],
+    ['phases', { phase_seconds: { ...REFERENCE_SECONDS, d: null } }],
+    ['excluded', { excluded: true }],
+  ] as const)('leaves a mix out for %s', (reason, mixOver) => {
+    const status = mixStatus(bake(), mix(mixOver as Partial<LoggedMix>));
     expect(status.counted).toBe(false);
     expect(status.reasons).toEqual([reason]);
   });
 
-  it('lets flour follow the room: a room reading entered covers it', () => {
-    const b = bake({ flour_temp_f: { value: 70, entered: false }, flour_follows_room: true });
-    expect(mixStatus(b, mix()).counted).toBe(true);
+  it("counts a default left in place: room 70 and biga 58 are readings (Dave's call, MESSAGE-47)", () => {
+    const b = bake({ room_temp_f: 70, flour_temp_f: 70, flour_follows_room: true });
+    expect(mixStatus(b, mix({ biga_temp_at_mix_f: 58 })).counted).toBe(true);
+  });
+
+  it('lists every reason, in §10 order', () => {
+    const other = { ...currentFormulaSnapshot(), hydration: 0.72 };
+    const all = mix({ final_dough_temp_f: null, water_temp_used_f: null, bowl_prefilled: true, excluded: true, phase_seconds: { a: null, b: null, c: null, d: null } });
+    expect(mixStatus(bake({ formula: other }), all).reasons).toEqual(['final', 'water', 'bowl', 'phases', 'formula', 'excluded']);
   });
 
   it("leaves out a bake mixed under another formula, and doesn't solve it", () => {
@@ -187,17 +189,21 @@ describe('§10 which mixes count', () => {
   });
 
   it('still solves a mix that does not count, so the log can show it', () => {
-    const status = mixStatus(bake(), mix({ bowl_temp_f: { value: 58, entered: false } }));
-    expect(status.ff).toBeCloseTo(14.031045, 6);
+    expect(mixStatus(bake(), mix({ bowl_prefilled: true })).ff).toBeCloseTo(14.031045, 6);
   });
 
-  it('shows why an unmeasured bowl is left out: 5 °F over reads FF 0.55 low at 6 balls, 1.09 at 3', () => {
+  it("can't solve a mix with no final or no water", () => {
+    expect(mixStatus(bake(), mix({ final_dough_temp_f: null })).ff).toBeNull();
+    expect(mixStatus(bake(), mix({ water_temp_used_f: null })).ff).toBeNull();
+  });
+
+  it('shows why a bowl prefill is left out: 5 °F over reads FF 0.55 low at 6 balls, 1.09 at 3', () => {
     for (const [balls, drop] of [
       [6, 0.55],
       [3, 1.09],
     ] as const) {
       const b = bake({ balls });
-      const low = mixStatus(b, mix({ bowl_temp_f: entered(58 + 5) })).ff!;
+      const low = mixStatus(b, mix({ bowl_temp_f: 58 + 5 })).ff!;
       expect(Number((mixStatus(b, mix()).ff! - low).toFixed(2))).toBe(drop);
     }
   });
@@ -353,7 +359,7 @@ describe('§10 the room slope', () => {
         thermal,
         63,
       );
-      return { ...b, room_temp_f: entered(room), mixes: [mix({ final_dough_temp_f: entered(finalTempF) })] };
+      return { ...b, room_temp_f: room, mixes: [mix({ final_dough_temp_f: finalTempF })] };
     });
     const fit = roomSlope(bakes, { balls: 6, nMix: 1 })!;
     expect(fit.a).toBeCloseTo(11, 9);

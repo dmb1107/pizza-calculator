@@ -3,21 +3,19 @@
  *
  * "Auto-populate each bake from the session's inputs so only the measured
  * values need typing." Everything here is read from state the app already
- * holds: the inputs, when each reading was typed, and the timers. Pure, so
- * the rules can be tested without a DOM.
+ * holds: the inputs and the timers. Pure, so the rules can be tested without
+ * a DOM.
  *
- * §10 *Capture and saving*: a session runs from a reset of the steps to the
- * save, and a reading counts as entered when it was typed during it. A value
- * carried over from an earlier bake, in the URL or in storage, was typed
- * before the session started (or not on this device at all), so it stays a
- * default until retyped.
+ * §10 *Capture and saving*: "Save records the inputs as they stand",
+ * including values that arrived in a link. Nothing tracks which values were
+ * typed or when (Dave's call, 28 Sep). The page's Reset starts a new bake.
  */
 
 import { MIX_PHASES, currentFormulaSnapshot, type LoggedBake, type PhaseKey } from '../lib/bakeLog';
 import type { LocalLog } from './bakeLogStore';
 import { atMix, type CalculatorResult } from '../lib/engine';
 import { instanceKey } from '../lib/stepInstances';
-import type { EnteredAt, Inputs, RunningTimer } from './types';
+import type { Inputs, RunningTimer } from './types';
 
 /** YYYY-MM-DD in local time: the baker's day, not UTC's. */
 export function localDate(d: Date): string {
@@ -60,22 +58,18 @@ export function firstMixStartedAt(timers: readonly RunningTimer[], nMix: number)
 export interface SessionState {
   inputs: Inputs;
   result: CalculatorResult;
-  entered: EnteredAt;
   timers: readonly RunningTimer[];
-  /** Epoch ms of the reset that started the session; 0 before the first. */
-  sessionStartedAt: number;
 }
 
 /**
- * The session as it would be logged now. A reading counts as entered when it
- * was typed during the session; anything else goes in as its prefill, marked
- * unentered, so the log shows it and doesn't count the mix (§10).
+ * The session as it would be logged now: the inputs as they stand. A final
+ * or water reading with no value is null, and the bowl records whether its
+ * field still holds the selector's prefill (§10), so the log can leave those
+ * mixes out.
  */
 export function sessionBake(s: SessionState, now: Date, bakeId: string): LoggedBake {
-  const { inputs, result, entered, timers, sessionStartedAt } = s;
-  const typed = (at: number | undefined) => at != null && at > 0 && at >= sessionStartedAt;
+  const { inputs, result, timers } = s;
   const nMix = result.capacity.nMix;
-  const roomEntered = typed(entered.roomTempF);
   const started = firstMixStartedAt(timers, nMix);
 
   return {
@@ -86,37 +80,30 @@ export function sessionBake(s: SessionState, now: Date, bakeId: string): LoggedB
     ball_g: inputs.ballWeightG,
     n_mix: nMix,
     formula: currentFormulaSnapshot(),
-    room_temp_f: { value: inputs.roomTempF, entered: roomEntered },
-    flour_temp_f: inputs.flourSameAsRoom
-      ? { value: inputs.roomTempF, entered: roomEntered }
-      : { value: inputs.flourTempF, entered: typed(entered.flourTempF) },
+    room_temp_f: inputs.roomTempF,
+    flour_temp_f: inputs.flourSameAsRoom ? inputs.roomTempF : inputs.flourTempF,
     flour_follows_room: inputs.flourSameAsRoom,
-    mixes: result.mixes.map((mix, i) => {
-      const water = inputs.waterUsedF[i] ?? null;
-      const final = inputs.finalDoughTempF[i] ?? null;
-      const measuredBowl = inputs.bowlTempF[i] ?? null;
-      return {
-        mix_index: mix.index,
-        // The biga field falls back to mix 1's reading until re-read, so only
-        // this mix's own entry counts.
-        biga_temp_at_mix_f: { value: atMix(inputs.bigaTempF, i), entered: typed(entered.bigaTempF[i]) },
-        bowl_state: mix.bowlState,
-        // A prefill is a guess (§10): only a measurement typed for this bake counts.
-        bowl_temp_f: { value: mix.bowlTempF, entered: measuredBowl != null && typed(entered.bowlTempF[i]) },
-        water_temp_used_f: { value: water ?? mix.waterTempF, entered: water != null && typed(entered.waterUsedF[i]) },
-        final_dough_temp_f: { value: final ?? result.ddtF, entered: final != null && typed(entered.finalDoughTempF[i]) },
-        phase_seconds: Object.fromEntries(
-          MIX_PHASES.map((p) => [p.key, phaseSeconds(timers, p.stepId, mix.index, nMix)]),
-        ) as Record<PhaseKey, number | null>,
-        excluded: false,
-      };
-    }),
+    mixes: result.mixes.map((mix, i) => ({
+      mix_index: mix.index,
+      // The biga carries mix 1's reading forward until re-read (§6).
+      biga_temp_at_mix_f: atMix(inputs.bigaTempF, i),
+      bowl_state: mix.bowlState,
+      bowl_temp_f: mix.bowlTempF,
+      // By index, as the engine reads it: no reading of its own is the prefill.
+      bowl_prefilled: (inputs.bowlTempF[i] ?? null) == null,
+      water_temp_used_f: inputs.waterUsedF[i] ?? null,
+      final_dough_temp_f: inputs.finalDoughTempF[i] ?? null,
+      phase_seconds: Object.fromEntries(
+        MIX_PHASES.map((p) => [p.key, phaseSeconds(timers, p.stepId, mix.index, nMix)]),
+      ) as Record<PhaseKey, number | null>,
+      excluded: false,
+    })),
   };
 }
 
 /**
- * §10: "Saving over a bake from an earlier date asks first, so a forgotten
- * reset can't overwrite a finished bake." The bake this save would replace,
+ * §10: saving over a bake from an earlier date asks first, "as a safety net
+ * for a forgotten Reset". The bake this save would replace,
  * when it is dated before the draft; null when saving needs no question.
  */
 export function saveConflict(log: LocalLog, sessionBakeId: string, draft: LoggedBake): LoggedBake | null {

@@ -14,8 +14,8 @@
  * bad record degrades to defaults rather than breaking the calculator.
  */
 
-import { DEFAULT_CALIBRATION, DEFAULT_ENTERED, DEFAULT_PANELS, DEFAULT_PERSISTED, clampField } from './defaults';
-import type { EnteredAt, PanelPrefs, Persisted, RunningTimer } from './types';
+import { DEFAULT_CALIBRATION, DEFAULT_PANELS, DEFAULT_PERSISTED, clampField } from './defaults';
+import type { PanelPrefs, Persisted, RunningTimer } from './types';
 
 export const STORAGE_KEY = 'biga-calculator:v1';
 
@@ -83,24 +83,6 @@ function parseStringArray(raw: unknown): string[] {
   return raw.filter((v): v is string => typeof v === 'string');
 }
 
-/** An epoch-ms instant, or 0. Anything else, including the dates an earlier build wrote, reads as never typed. */
-function parseInstant(raw: unknown): number {
-  return typeof raw === 'number' && Number.isFinite(raw) && raw > 0 ? raw : 0;
-}
-
-function parseEntered(raw: unknown): EnteredAt {
-  if (!isRecord(raw)) return DEFAULT_ENTERED;
-  const list = (v: unknown) => (Array.isArray(v) ? v.map(parseInstant) : []);
-  return {
-    roomTempF: parseInstant(raw['roomTempF']),
-    flourTempF: parseInstant(raw['flourTempF']),
-    bigaTempF: list(raw['bigaTempF']),
-    bowlTempF: list(raw['bowlTempF']),
-    waterUsedF: list(raw['waterUsedF']),
-    finalDoughTempF: list(raw['finalDoughTempF']),
-  };
-}
-
 /** An ISO instant we wrote ourselves, or '' if it is anything else. */
 function parseIsoInstant(raw: unknown): string {
   if (typeof raw !== 'string' || raw === '') return '';
@@ -159,10 +141,9 @@ export function loadPersisted(storage: StorageLike | null): Persisted {
     ...parseTimelineAnchor(parsed['timelineMode'], parsed['bakeAtIso']),
     checkedSteps: parseStringArray(parsed['checkedSteps']),
     timers: parseTimers(parsed['timers']),
-    entered: parseEntered(parsed['entered']),
-    sessionStartedAt: parseInstant(parsed['sessionStartedAt']),
+    // Typing times stored by an earlier build are ignored: nothing tracks
+    // which values were typed (§10, Dave's call on 28 Sep).
     sessionBakeId: typeof parsed['sessionBakeId'] === 'string' ? parsed['sessionBakeId'] : '',
-    sessionSavedAt: parseInstant(parsed['sessionSavedAt']),
   };
 }
 

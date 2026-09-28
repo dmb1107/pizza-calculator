@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { C } from '../src/lib/constants';
-import { BOUNDS, DEFAULT_ENTERED, DEFAULT_INPUTS, DEFAULT_PERSISTED, clampField } from '../src/state/defaults';
+import { BOUNDS, DEFAULT_INPUTS, DEFAULT_PERSISTED, clampField, inputsForNewBake } from '../src/state/defaults';
 import { decodeInputs, encodeInputs, hasInputs } from '../src/state/url';
 import { STORAGE_KEY, loadPersisted, savePersisted, type StorageLike } from '../src/state/storage';
 import type { Inputs } from '../src/state/types';
@@ -190,10 +190,7 @@ describe('localStorage persistence', () => {
         { stepId: 'mix-6', startedAt: 1_700_000_000_000, minMinutes: 10, maxMinutes: 10 },
         { stepId: 'mix-5', startedAt: 1_700_000_000_000, minMinutes: 3, maxMinutes: 4, stoppedAt: 1_700_000_210_000 },
       ],
-      entered: { ...DEFAULT_ENTERED, roomTempF: 1_700_000_100_000, bowlTempF: [1_700_000_100_000, 0] },
-      sessionStartedAt: 1_700_000_000_000,
       sessionBakeId: '2026-09-28-193000',
-      sessionSavedAt: 1_700_000_300_000,
     };
     savePersisted(s, value);
     expect(loadPersisted(s)).toEqual(value);
@@ -224,44 +221,19 @@ describe('localStorage persistence', () => {
       expect(typeof loaded.panels.batch).toBe('boolean');
       expect(Array.isArray(loaded.checkedSteps)).toBe(true);
       expect(Array.isArray(loaded.timers)).toBe(true);
-
-      expect(Array.isArray(loaded.entered.bigaTempF)).toBe(true);
       expect(typeof loaded.sessionBakeId).toBe('string');
     });
 
-    it('drops a stop recorded before its start, and reads anything but a typing time as never typed', () => {
-      // The dates an earlier build wrote included: "entered" is per bake now (§10).
+    it('drops a stop recorded before its start, and ignores typing times an earlier build stored', () => {
       const raw = JSON.stringify({
         timers: [{ stepId: 'mix-2', startedAt: 2000, minMinutes: 3, maxMinutes: 4, stoppedAt: 1000 }],
-        entered: { roomTempF: '2026-09-28', bigaTempF: ['2026-09-28', 42, -5] },
-        sessionStartedAt: 'yesterday',
+        entered: { roomTempF: 1_700_000_000_000 },
+        sessionStartedAt: 1_700_000_000_000,
       });
       const loaded = loadPersisted(fakeStorage({ [STORAGE_KEY]: raw }));
       expect(loaded.timers[0]).not.toHaveProperty('stoppedAt');
-      expect(loaded.entered.roomTempF).toBe(0);
-      expect(loaded.entered.bigaTempF).toEqual([0, 42, 0]);
-      expect(loaded.sessionStartedAt).toBe(0);
-    });
-
-    it('keeps backward mode only with a bake time to hold', () => {
-      const load = (extra: object) =>
-        loadPersisted(fakeStorage({ [STORAGE_KEY]: JSON.stringify(extra) }));
-      expect(load({ timelineMode: 'backward', bakeAtIso: '2026-10-03T22:00:00.000Z' }).timelineMode).toBe('backward');
-      expect(load({ timelineMode: 'backward' }).timelineMode).toBe('forward');
-      expect(load({ timelineMode: 'backward', bakeAtIso: 'Saturday' }).timelineMode).toBe('forward');
-      expect(load({ timelineMode: 'sideways', bakeAtIso: '2026-10-03T22:00:00.000Z' }).timelineMode).toBe('forward');
-      expect(load({}).timelineMode).toBe('forward');
-    });
-
-    it('ignores a bowl mass stored before MESSAGE-29 made it a constant', () => {
-      const loaded = loadPersisted(fakeStorage({ [STORAGE_KEY]: JSON.stringify({ bowlMassG: 1100 }) }));
-      expect('bowlMassG' in loaded).toBe(false);
-    });
-
-    it('decodes an old link carrying a bowl mass, and ignores it', () => {
-      const decoded = decodeInputs('balls=9&bowl=1100');
-      expect(decoded.balls).toBe(9);
-      expect('bowlMassG' in decoded).toBe(false);
+      expect(loaded).not.toHaveProperty('entered');
+      expect(loaded).not.toHaveProperty('sessionStartedAt');
     });
 
     it('ignores a friction map stored before the log (§6: the FF is never typed)', () => {
@@ -271,6 +243,37 @@ describe('localStorage persistence', () => {
       const loaded = loadPersisted(fakeStorage({ [STORAGE_KEY]: raw }));
       expect(loaded.calibration).toEqual({ ddtOverrideF: 73 });
     });
+  });
+});
+
+describe('§10 Reset starts a new bake', () => {
+  it("puts the day's temperatures back to their defaults and keeps the batch settings", () => {
+    const next = inputsForNewBake(CUSTOM);
+    // The day's temperatures: Panel 2, the water poured, the final readings.
+    expect(next).toMatchObject({
+      roomTempF: DEFAULT_INPUTS.roomTempF,
+      flourSameAsRoom: DEFAULT_INPUTS.flourSameAsRoom,
+      flourTempF: DEFAULT_INPUTS.flourTempF,
+      bigaTempF: DEFAULT_INPUTS.bigaTempF,
+      bowlState: DEFAULT_INPUTS.bowlState,
+      bowlTempF: DEFAULT_INPUTS.bowlTempF,
+      finalDoughTempF: DEFAULT_INPUTS.finalDoughTempF,
+      waterUsedF: DEFAULT_INPUTS.waterUsedF,
+    });
+    // Balls, ball weight, schedule, cold ferment, and the schedule's adjustments.
+    expect(next).toMatchObject({
+      balls: CUSTOM.balls,
+      ballWeightG: CUSTOM.ballWeightG,
+      schedule: CUSTOM.schedule,
+      coldFermentH: CUSTOM.coldFermentH,
+      bigaFridgeH: CUSTOM.bigaFridgeH,
+      bigaRoomOnlyH: CUSTOM.bigaRoomOnlyH,
+      temperH: CUSTOM.temperH,
+    });
+    // Nothing else: every key of the inputs is one of the two lists above.
+    const reset = ['roomTempF', 'flourSameAsRoom', 'flourTempF', 'bigaTempF', 'bowlState', 'bowlTempF', 'finalDoughTempF', 'waterUsedF'];
+    const kept = ['balls', 'ballWeightG', 'schedule', 'coldFermentH', 'bigaFridgeH', 'bigaRoomOnlyH', 'temperH'];
+    expect(Object.keys(DEFAULT_INPUTS).sort()).toEqual([...reset, ...kept].sort());
   });
 });
 

@@ -5,9 +5,9 @@ Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
 **Status:** Tasks 0–11 complete, on the bowl-aware thermal model with **per-mix
-weights**, the ice calculation removed, and **MESSAGE-46 applied**: the bake
+weights**, the ice calculation removed, and **MESSAGE-47 applied**: the bake
 log, synced through a private GitHub repository, now sets the FF in use.
-FINDINGS-47 is the last thing sent.
+FINDINGS-48 is the last thing sent.
 
 ---
 
@@ -682,10 +682,10 @@ has the rules (§4.3 normalization, §4.8 split-batch `T_actual`, §6 Panel 3,
       solved on read (§4.3), then normalized to the middle of every phase's
       range, the references derived from the step timers (A 3.5, B 5.5, C 3.5,
       D 52.5 s). A formula snapshot per bake; only a matching one counts.
-- [x] **Which mixes count** (§10): room, biga, bowl, water poured and final
-      typed for this bake (flour may follow room), all four phase times, a
-      matching snapshot, not excluded. Every mix stays in the log with its
-      reasons.
+- [x] **Which mixes count** (§10, as MESSAGE-47 left it): a final and a water
+      reading, a bowl that isn't the prefill, all four phase times, a
+      matching snapshot, not excluded. Defaults left in place are readings.
+      Every mix stays in the log with its reasons.
 - [x] **The FF in use** (§6): the mean of the last three counted bakes at the
       size, a split batch counting once; else interpolated between counted
       sizes, or the nearest held flat; else bake 1's seed at 6 and 14.0
@@ -700,12 +700,15 @@ has the rules (§4.3 normalization, §4.8 split-batch `T_actual`, §6 Panel 3,
       repository.
 - [x] **Capture without typing:** the phase timers stop (Stop, or ticking the
       step) and the stopped time is the phase time; poured water in Phase A
-      (with "Poured at the target", the one reading that can be confirmed),
-      a final temperature at the end of every mix. "Entered" means typed
-      since the steps were last reset (MESSAGE-46), and a bake is dated by
-      its first mix. The card after the last mix shows every phase time
-      beside its range, what counts, and saves; saving over an earlier-date
-      bake asks first. Mix sizes print with ½, ⅓, ⅔.
+      (with "Poured at the target"), a final temperature at the end of every
+      mix. Save records the inputs as they stand (MESSAGE-47: no tracking of
+      what was typed), and a bake is dated by its first mix. The card after
+      the last mix shows every phase time beside its range, what counts, and
+      saves; saving over an earlier-date bake asks first. Mix sizes print
+      with ½, ⅓, ⅔.
+- [x] **Reset** above the panels starts a new bake (MESSAGE-47): it asks,
+      then resets the day's temperatures and clears the checkboxes and
+      timers, keeping the batch settings and the log.
 - [x] **§4.8 split batches:** `T_actual` is the mean of the mixes, a mix not
       yet read counting at DDT.
 - [x] **Found in passing:** mix 1's bowl reading carried forward to later

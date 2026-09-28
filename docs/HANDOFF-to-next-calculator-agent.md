@@ -9,20 +9,21 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-46, FINDINGS-47 and Task 11 (28 September).
+MESSAGE-47, FINDINGS-48 and Task 11 (28 September).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-46, and FINDINGS-47 is the
-  last thing sent.** Nothing is open on either side and no pin of any kind is
-  live (`knownWrong` is empty). Task 11, the bake log, is built: readings
-  stored and solved on read, normalized to mid-range phase times, §6's
-  four-step FF in use, §10's counting and capture rules ("entered" means
-  typed since the last reset of the steps), and sync through a private GitHub
-  repository with a per-device token. The next move is theirs.
+- **The correspondence is applied through MESSAGE-47, and FINDINGS-48 is the
+  last thing sent.** No pin of any kind is live (`knownWrong` is empty).
+  FINDINGS-48 asks one thing: whether the Steps header's "Reset" (checkboxes
+  only) should be relabelled now that the page has a Reset that starts a new
+  bake. Task 11, the bake log, is built: readings stored as they stand and
+  solved on read, normalized to mid-range phase times, §6's four-step FF in
+  use, §10's counting rules, and sync through a private GitHub repository
+  with a per-device token.
 - **What the last rounds settled**, so you don't reopen it:
   - MESSAGE-32: `bulk-3` prints `{ballRoomMin}`, the rise the timeline plans;
     Dave's timers on the four mixer phases, so **the timer is the one source

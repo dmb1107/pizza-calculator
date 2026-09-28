@@ -3,6 +3,7 @@ import { ConceptDrawer } from './components/ConceptDrawer';
 import { CopyButton } from './components/CopyButton';
 import { AboutDrawer, ReferenceDrawer } from './components/ReferenceDrawers';
 import { BakeLogDrawer } from './components/BakeLog';
+import { NewBakeReset } from './components/NewBakeReset';
 import { StepList } from './components/StepList';
 import { IngredientsCard, TargetsCard, WarningsList, WaterCard } from './components/cards';
 import { BatchPanel, CalibrationPanel, TemperaturesPanel } from './components/panels';
@@ -65,6 +66,8 @@ export default function App() {
           its widest card's min-content, and the timeline's date field plus
           "Now" pushed the whole page 15 px past a 375 px phone. */}
       <div className="grid grid-cols-[minmax(0,1fr)] gap-3">
+        {/* §10: Reset starts a new bake, above the panels it clears. */}
+        <NewBakeReset onReset={state.startNewBake} />
         <BatchPanel {...state} />
         <TemperaturesPanel {...state} />
         <CalibrationPanel {...state} onOpenLog={openLog} />

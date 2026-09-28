@@ -54,10 +54,6 @@ export function NumberField({
 }) {
   const id = useId();
   const [draft, setDraft] = useState(String(value));
-  // Whether the baker typed since the last commit. Typing the value already
-  // shown is still a reading taken today (§10), so it commits; tapping in and
-  // out without typing doesn't.
-  const [typed, setTyped] = useState(false);
 
   // Follow the value when it changes elsewhere (a link, the room-temp toggle),
   // but never while the field is being typed into.
@@ -66,8 +62,6 @@ export function NumberField({
   }, [value]);
 
   const commit = () => {
-    const wasTyped = typed;
-    setTyped(false);
     const parsed = Number(draft);
     if (draft.trim() === '' || !Number.isFinite(parsed)) {
       setDraft(String(value));
@@ -75,7 +69,7 @@ export function NumberField({
     }
     const clamped = Math.min(max, Math.max(min, parsed));
     setDraft(String(clamped));
-    if (clamped !== value || wasTyped) onCommit(clamped);
+    if (clamped !== value) onCommit(clamped);
   };
 
   return (
@@ -94,10 +88,7 @@ export function NumberField({
           max={max}
           step={step}
           disabled={disabled}
-          onChange={(e) => {
-            setDraft(e.target.value);
-            setTyped(true);
-          }}
+          onChange={(e) => setDraft(e.target.value)}
           onBlur={commit}
           onKeyDown={(e) => {
             if (e.key === 'Enter') e.currentTarget.blur();

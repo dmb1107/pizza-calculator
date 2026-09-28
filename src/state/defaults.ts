@@ -1,7 +1,7 @@
 /** Defaults and input bounds — WEBSITE-SPEC-biga-calculator.md §6. */
 
 import { C } from '../lib/constants';
-import type { Calibration, EnteredAt, Inputs, PanelPrefs, Persisted } from './types';
+import type { Calibration, Inputs, PanelPrefs, Persisted } from './types';
 
 export const DEFAULT_INPUTS: Inputs = {
   balls: 6,
@@ -23,18 +23,29 @@ export const DEFAULT_INPUTS: Inputs = {
   waterUsedF: [null],
 };
 
+/**
+ * §10: Reset starts a new bake. "The day's temperatures" go back to their
+ * defaults: everything in Panel 2, the water poured and the final readings.
+ * The batch settings stay (balls, ball weight, schedule, cold ferment), and so
+ * do the schedule's adjustments, which are settings rather than readings.
+ */
+export function inputsForNewBake(prev: Inputs): Inputs {
+  return {
+    ...prev,
+    roomTempF: DEFAULT_INPUTS.roomTempF,
+    flourSameAsRoom: DEFAULT_INPUTS.flourSameAsRoom,
+    flourTempF: DEFAULT_INPUTS.flourTempF,
+    bigaTempF: DEFAULT_INPUTS.bigaTempF,
+    bowlState: DEFAULT_INPUTS.bowlState,
+    bowlTempF: DEFAULT_INPUTS.bowlTempF,
+    finalDoughTempF: DEFAULT_INPUTS.finalDoughTempF,
+    waterUsedF: DEFAULT_INPUTS.waterUsedF,
+  };
+}
+
 /** No DDT override. The FF isn't stored: bake 1's seed lives in `bakeLog.ts`. */
 export const DEFAULT_CALIBRATION: Calibration = {
   ddtOverrideF: null,
-};
-
-export const DEFAULT_ENTERED: EnteredAt = {
-  roomTempF: 0,
-  flourTempF: 0,
-  bigaTempF: [],
-  bowlTempF: [],
-  waterUsedF: [],
-  finalDoughTempF: [],
 };
 
 /** §6: Batch open by default, the other two collapsed with a summary line. */
@@ -52,10 +63,7 @@ export const DEFAULT_PERSISTED: Persisted = {
   bakeAtIso: '',
   checkedSteps: [],
   timers: [],
-  entered: DEFAULT_ENTERED,
-  sessionStartedAt: 0,
   sessionBakeId: '',
-  sessionSavedAt: 0,
 };
 
 /**

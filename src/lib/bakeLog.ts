@@ -82,12 +82,6 @@ export function normalizeFrictionFactorF(ff: number, phaseMinutes: Readonly<Reco
 // §10 What a bake stores
 // ---------------------------------------------------------------------------
 
-/** A reading, and whether it was entered on the day or left at a default or prefill. */
-export interface Reading {
-  value: number;
-  entered: boolean;
-}
-
 /**
  * §10. The formula the bake was mixed under. Physical constants re-solve from
  * current code; these don't, because they set what was in the bowl.
@@ -102,16 +96,29 @@ export interface FormulaSnapshot {
   speeds: Record<PhaseKey, number>;
 }
 
+/**
+ * §10: "Save records the inputs as they stand." Every temperature is the
+ * value the field held at the save, whether typed, left at its default or
+ * arrived in a link (Dave's call, 28 Sep: nothing tracks which values were
+ * typed). Two exceptions: a reading with no value is null, and the bowl
+ * records whether its field still held the selector's prefill.
+ */
 export interface LoggedMix {
   /** 1-based. */
   mix_index: number;
   /** After tearing: the model's `T_biga`. */
-  biga_temp_at_mix_f: Reading;
+  biga_temp_at_mix_f: number;
   bowl_state: BowlState;
-  bowl_temp_f: Reading;
-  /** What was poured, not the target. */
-  water_temp_used_f: Reading;
-  final_dough_temp_f: Reading;
+  bowl_temp_f: number;
+  /**
+   * True while the bowl field held the selector's prefill. A prefill is a
+   * guess biased high, so the mix doesn't count (§10).
+   */
+  bowl_prefilled: boolean;
+  /** What was poured, not the target. Null if nothing was poured or filled. */
+  water_temp_used_f: number | null;
+  /** Null until read. */
+  final_dough_temp_f: number | null;
   /** Each phase's time from its timer, seconds. Null where none was captured. */
   phase_seconds: Record<PhaseKey, number | null>;
   /** Dave's switch. */
@@ -128,9 +135,9 @@ export interface LoggedBake {
   /** Stored, not recomputed: it depends on the capacity constants. */
   n_mix: number;
   formula: FormulaSnapshot;
-  room_temp_f: Reading;
-  flour_temp_f: Reading;
-  /** "Flour may follow room" (§10): then its reading is the room's. */
+  room_temp_f: number;
+  /** The flour temperature the mix used: the room's while it follows the room. */
+  flour_temp_f: number;
   flour_follows_room: boolean;
   mixes: LoggedMix[];
 }
@@ -163,14 +170,14 @@ export function snapshotMatches(a: FormulaSnapshot, b: FormulaSnapshot): boolean
 // §10 Solving a mix, and which mixes count
 // ---------------------------------------------------------------------------
 
-/** Why a mix doesn't feed the FF in use, in the order the log lists them. */
-export type NotCountedReason = 'excluded' | 'formula' | 'room' | 'flour' | 'biga' | 'bowl' | 'water' | 'final' | 'phases';
+/** Why a mix doesn't feed the FF in use, in §10's order. */
+export type NotCountedReason = 'final' | 'water' | 'bowl' | 'phases' | 'formula' | 'excluded';
 
 export interface MixStatus {
   /**
-   * The §4.3 solve on the mix's readings. Null only when the formula differs
-   * from today's: the masses come from the formula, so solving under today's
-   * would compute a mix nobody made.
+   * The §4.3 solve on the mix's readings. Null without a final or water
+   * reading, and when the formula differs from today's: the masses come from
+   * the formula, so solving under today's would compute a mix nobody made.
    */
   ff: number | null;
   /** `ff` normalized to the reference profile; null without all four phase times. */
@@ -178,9 +185,6 @@ export interface MixStatus {
   counted: boolean;
   reasons: NotCountedReason[];
 }
-
-const flourReading = (bake: LoggedBake): Reading =>
-  bake.flour_follows_room ? bake.room_temp_f : bake.flour_temp_f;
 
 /** The four phase times in minutes, or null if any is missing. */
 export function phaseMinutes(mix: LoggedMix): Record<PhaseKey, number> | null {
@@ -193,33 +197,37 @@ export function phaseMinutes(mix: LoggedMix): Record<PhaseKey, number> | null {
   return out;
 }
 
+/**
+ * §10 *Which mixes count*: a final and a water reading, a bowl that isn't the
+ * prefill, all four phase times, the current formula and speeds, and not
+ * excluded. A default left in place (room 70, biga 58) is a reading.
+ */
 export function mixStatus(bake: LoggedBake, mix: LoggedMix, current: FormulaSnapshot = currentFormulaSnapshot()): MixStatus {
   const reasons: NotCountedReason[] = [];
-  if (mix.excluded) reasons.push('excluded');
-  const sameFormula = snapshotMatches(bake.formula, current);
-  if (!sameFormula) reasons.push('formula');
-  if (!bake.room_temp_f.entered) reasons.push('room');
-  if (!flourReading(bake).entered) reasons.push('flour');
-  if (!mix.biga_temp_at_mix_f.entered) reasons.push('biga');
-  if (!mix.bowl_temp_f.entered) reasons.push('bowl');
-  if (!mix.water_temp_used_f.entered) reasons.push('water');
-  if (!mix.final_dough_temp_f.entered) reasons.push('final');
+  const final = mix.final_dough_temp_f;
+  const water = mix.water_temp_used_f;
+  if (final == null) reasons.push('final');
+  if (water == null) reasons.push('water');
+  if (mix.bowl_prefilled) reasons.push('bowl');
   const minutes = phaseMinutes(mix);
   if (!minutes) reasons.push('phases');
+  const sameFormula = snapshotMatches(bake.formula, current);
+  if (!sameFormula) reasons.push('formula');
+  if (mix.excluded) reasons.push('excluded');
 
   let ff: number | null = null;
-  if (sameFormula) {
+  if (sameFormula && final != null && water != null) {
     const formula = computeFormula({ balls: bake.balls, ballWeightG: bake.ball_g });
     const thermal = computeThermal(formula, C.BOWL_MASS_G, bake.n_mix);
     ff = solveFrictionFactorF(
       {
-        bigaTempF: mix.biga_temp_at_mix_f.value,
-        flourTempF: flourReading(bake).value,
-        roomTempF: bake.room_temp_f.value,
-        bowlTempF: mix.bowl_temp_f.value,
+        bigaTempF: mix.biga_temp_at_mix_f,
+        flourTempF: bake.flour_temp_f,
+        roomTempF: bake.room_temp_f,
+        bowlTempF: mix.bowl_temp_f,
       },
       thermal,
-      { waterTempF: mix.water_temp_used_f.value, finalTempF: mix.final_dough_temp_f.value },
+      { waterTempF: water, finalTempF: final },
     );
   }
   const ffNominal = ff != null && minutes ? normalizeFrictionFactorF(ff, minutes) : null;
@@ -422,7 +430,7 @@ export interface RoomSlope {
 export function roomSlope(bakes: readonly LoggedBake[], k: MixSize, current: FormulaSnapshot = currentFormulaSnapshot()): RoomSlope | null {
   const points = bakes
     .filter((b) => sameMixSize(bakeMixSize(b), k))
-    .map((b) => ({ x: b.room_temp_f.value - 70, y: bakeFrictionFactorF(b, current) }))
+    .map((b) => ({ x: b.room_temp_f - 70, y: bakeFrictionFactorF(b, current) }))
     .filter((p): p is { x: number; y: number } => p.y != null);
   if (points.length < C.REGRESSION_MIN_BAKES) return null;
   const n = points.length;

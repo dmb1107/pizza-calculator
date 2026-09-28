@@ -109,9 +109,9 @@ export function TemperaturesPanel(s: AppState) {
   const bowlCost = bowlReadingCost(thermal);
   const bigaAt = (i: number) => inputs.bigaTempF[i] ?? inputs.bigaTempF[0]!;
 
-  // Every field here is a §10 reading: committing it records that it was
-  // entered today, which the bake log's counting rule reads. Per-mix lists
-  // grow on first edit, so a single-mix setup keeps serializing as one value.
+  // Every field here is a §10 reading, saved with the bake as it stands.
+  // Per-mix lists grow on first edit, so a single-mix setup keeps serializing
+  // as one value.
 
   return (
     <Panel

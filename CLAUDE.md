@@ -106,6 +106,8 @@ question:
 | `FINDINGS-46-to-recipe-agent.md` | Reply to MESSAGE-45. All reproduced; the log built. Found in passing: mix 1's bowl reading overrode later mixes' warm prefill (mix 2's water 4.6 °F warm at 12 × 265 g), fixed |
 | `MESSAGE-46.md` | FINDINGS-46 accepted. §6: read the bowl by index; mix sizes print with ½, ⅓, ⅔. §10 *Capture and saving*: "entered" is per bake, only the water can be confirmed, phase times beside their ranges, saving over an earlier-date bake asks, a bake is dated by its first mix. Nothing in §8 changes |
 | `FINDINGS-47-to-recipe-agent.md` | Reply to MESSAGE-46. All applied; nothing open |
+| `MESSAGE-47.md` | Dave's change: no tracking of which values were typed. Save records the inputs as they stand; a Reset button above the panels starts a new bake (rendered copy in §10); a bowl at its prefill still doesn't count |
+| `FINDINGS-48-to-recipe-agent.md` | Reply to MESSAGE-47. Applied; asks about the two buttons labelled Reset and suggests `bowl_prefilled` in §10's table |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -306,19 +308,21 @@ for the log. `atMix` carried mix 1's bowl forward and printed mix 2's water
 that can't recur. Only the biga carries forward, because it is the same biga
 until re-read (§6).
 
-**"Entered" means typed for this bake** (§10 *Capture and saving*,
-MESSAGE-46), never a calendar date: a date misfiles a split batch past
-midnight. `entered` holds when each reading was last typed (epoch ms), and a
-reading counts when it was typed after `sessionStartedAt`, the last reset of
-the steps. A value carried over in the URL or storage stays a default until
-retyped. Typing the value already shown counts, so `NumberField` commits on
-any typing. **Only the poured water can be confirmed** ("Poured at the
-target"); room, flour, biga, bowl and final count only when typed. A one-tap
-confirm of the biga's 58 °F default would count an unmeasured value with the
-solve's largest ingredient coefficient. A bake is dated by the day its first
-mix started (mix 1's Phase A timer). **Saving over the session's bake from an
-earlier date asks first** (`saveConflict`): "Save as a new bake" counts only
-readings typed after that bake was last saved.
+**Save records the inputs as they stand** (§10 *Capture and saving*, Dave's
+call in MESSAGE-47). Nothing tracks which values were typed or when: a
+default left in place (room 70, biga 58) and a value from a link are
+readings. A bake stores plain temperatures, with `null` for a water or final
+that has no value, and `bowl_prefilled` from the bowl field's own prefill
+state (§6), because a prefill is biased high and the mix mustn't count. **The
+page's Reset starts a new bake** (`NewBakeReset`, above the panels): it asks,
+then `inputsForNewBake` puts the day's temperatures back to their defaults
+(Panel 2, water poured, final readings) and the checkboxes, timers and
+session bake are cleared; batch settings, schedule adjustments, the DDT
+override and the log stay. A test requires every input to be classified as
+reset or kept, so a new field forces the decision. The Steps header's own
+Reset clears the checkboxes only. A bake is dated by the day its first mix
+started (mix 1's Phase A timer), and saving over the session's bake from an
+earlier date asks first (`saveConflict`).
 
 **`MIN_BALLS` is 3, and it is an input constraint rather than a warning.** Two
 balls clears the mixer's 500 g floor on paper but won't let a spiral hook grip,

@@ -736,7 +736,7 @@ Same discipline as the 0.392 flour offset: none of them is wrong, and quoting on
 
 ## 6. Inputs
 
-Group into three panels. **Batch** open by default; the other two collapsed with a summary line, since most sessions only touch the first.
+Group into three panels. **Batch** open by default; the other two collapsed with a summary line, since most sessions only touch the first. A **Reset** button sits above them, near the top of the page (§10, *Capture and saving*).
 
 ### Panel 1 — Batch
 | Field | Type | Default | Range |
@@ -1589,7 +1589,7 @@ Auto-populate each bake from the session's inputs so only the measured values ne
 | Mix | `phase_seconds` | A, B, C and D, each from its phase's timer |
 | Mix | `excluded` | Dave's switch; false by default |
 
-**Every reading records whether it was entered for this bake** or left at a default or prefill (*Capture and saving*, below). A prefill is a guess, and the rules below treat it as one.
+**Save records the inputs as they stand** (*Capture and saving*, below). The bowl also records whether its field still holds the selector's prefill, which §6 already shows beside the field. A prefill is a guess, and the rules below treat it as one.
 
 **Derived on read, never stored:** the solved FF, its normalized value, and any predicted temperature. Store the readings and solve each time, so a corrected constant corrects every bake. The seed shows why: a stored 14.04 couldn't be reproduced, and re-solving bake 1 from its logged inputs gave 14.031. ⚠️ Earlier versions stored `ff_measured` and `predicted_mix_temp_f`, along with the full bake diary and `bowl_mass_g`, which is a constant (§3).
 
@@ -1605,25 +1605,32 @@ Pauses aren't normalized. The rest has a fixed timer, and nothing measures what 
 
 ### Capture and saving
 
-- **"Entered" means typed for this bake.** A reading counts as entered when the baker types it for the current bake, even if the value typed is the one already shown. A value carried over from an earlier bake, in the URL or in storage, is a default until it is retyped; how the app tells the two apart is yours, but a calendar date alone misfiles a split batch that runs past midnight. **The water is the one reading that can be confirmed rather than typed:** "Poured at the target" states a measurement the baker took while blending. Room, biga, bowl and final dough temperature count only when typed. A one-tap confirm of the biga's 58 °F default is how an unmeasured value with the solve's largest ingredient coefficient would get counted.
+- **Reset starts a new bake.** A **Reset** button near the top of the page asks first, then puts the day's temperatures back to their defaults and clears the step checkboxes and the timers. The batch settings stay: balls, ball weight, schedule and cold ferment. The baker presses it when starting a new bake. Copy (rendered):
+
+  > **Start a new bake?** This clears today's temperatures, the step checkboxes and the timers. Your batch settings and saved bakes stay.
+  >
+  > [Reset] [Cancel]
+
+- **Save records the inputs as they stand**, from the card after the last mix, including values that arrived in a link. Saving again replaces this bake. Saving over a bake from an earlier date asks first, with "Save as a new bake" (the current inputs) or "Replace the bake from {date}", as a safety net for a forgotten Reset. The bake's date is the day mix 1's Phase A timer started. ⚠️ **Dave's call (28 Sep 2026): no tracking of which values were typed, and when.** An earlier version counted a reading only if it had been typed since the last reset, treated values from a link as defaults, and let only the water be confirmed.
+- **The water poured** is asked for at Phase A; "Poured at the target" fills it with the target.
 - **Phase times come only from the timers.** A timer stops on Stop or when its step is ticked, and the stopped time is the phase time. A phase still running at save isn't captured, there is no manual entry, and times aren't clamped to the printed ranges. The log card shows each phase time beside its range. A timer ticked late inflates its phase at that speed's rate: two minutes of Phase C is 2.16 °F of FF. That stands out on the card, and excluding the mix is the fix.
-- **A session runs from a reset of the steps to the save** on the card after the last mix. Saving again replaces that session's bake. Saving over a bake from an earlier date asks first, so a forgotten reset can't overwrite a finished bake. The bake's date is the day its first mix started.
 - **A bake under another formula** is kept and shown with its reason, and isn't solved until the formula moves and the code to solve it from its snapshot exists.
 
 ### Which mixes count
 
 A mix feeds the FF in use only if:
 
-- room, biga, bowl, water used and final dough temperature were all entered for this bake (flour may follow room);
+- its final dough temperature and water poured have values;
+- its bowl holds a reading, not the selector's prefill;
 - all four phase times were captured;
 - its bake's snapshot matches the current formula and speeds;
 - Dave hasn't excluded it.
 
-Every mix stays in the log whether it counts or not, and the log shows which don't and why.
+Every mix stays in the log whether it counts or not, and the log shows which don't and why. The card lists every reading before saving, so a default left in place (room 70, biga 58) is visible there; it saves as a reading.
 
-**Why those five readings.** A 1 °F error moves the solved FF by `TOT/Ct` for the final reading (1.22, 1.11 and 1.07 °F at 3, 6 and 9 balls per mix), by `Cb/Ct` = 0.53 for the biga, `Cw/Ct` = 0.33 for the water, `C_bowl/Ct` for the bowl (0.22, 0.11, 0.07) and `Cf/Ct` = 0.13 for the flour. Room moves it only 0.005 through the salt, but it is the regression's variable, so it has to be real.
+**What each reading is worth.** A 1 °F error moves the solved FF by `TOT/Ct` for the final reading (1.22, 1.11 and 1.07 °F at 3, 6 and 9 balls per mix), by `Cb/Ct` = 0.53 for the biga, `Cw/Ct` = 0.33 for the water, `C_bowl/Ct` for the bowl (0.22, 0.11, 0.07) and `Cf/Ct` = 0.13 for the flour. Room moves it only 0.005 through the salt, but it is the regression's variable.
 
-**An unmeasured bowl leaves the mix out, and weighting can't fix it,** because the error has a direction. The cold prefill is the biga's post-tearing reading, and bake 1 showed the biga gains about 5 °F in tearing that the bowl doesn't share. The warm prefill is `DDT`, an upper bound. Both overstate the bowl, and an overstated bowl understates FF: 5 °F is 0.55 °F of FF at 6 balls per mix and 1.09 at 3.
+**A bowl left at its prefill leaves the mix out, and weighting can't fix it,** because the error has a direction. The cold prefill is the biga's post-tearing reading, and bake 1 showed the biga gains about 5 °F in tearing that the bowl doesn't share. The warm prefill is `DDT`, an upper bound. Both overstate the bowl, and an overstated bowl understates FF: 5 °F is 0.55 °F of FF at 6 balls per mix and 1.09 at 3. A bowl value that arrived in a link is a reading, not a prefill.
 
 **Nothing else is excluded automatically.** With FF inputs only there's no motor-protection or overrun field; Dave's switch covers the odd mix, such as one where the motor protection tripped.
 

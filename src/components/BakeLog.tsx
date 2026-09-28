@@ -36,16 +36,16 @@ import type { AppState } from '../state/useAppState';
  */
 
 const REASON: Record<NotCountedReason, string> = {
-  excluded: 'you left it out',
-  formula: 'mixed under another formula or other speeds',
-  room: 'room temperature not typed for this bake',
-  flour: 'flour temperature not typed for this bake',
-  biga: 'biga temperature not typed for this bake',
-  bowl: 'bowl temperature not measured for this bake',
-  water: 'poured water temperature not entered',
-  final: 'final dough temperature not typed for this bake',
+  final: 'no final dough temperature',
+  water: 'no water poured',
+  bowl: 'the bowl is a prefill, not a reading',
   phases: 'a phase time is missing',
+  formula: 'mixed under another formula or other speeds',
+  excluded: 'you left it out',
 };
+
+/** A temperature that may be absent, as the card and the log print it. */
+const tempOrDash = (t: number | null) => (t == null ? '–' : `${formatTempF(t)} °F`);
 
 const phaseName = (k: PhaseKey) => `Phase ${k.toUpperCase()}`;
 
@@ -60,11 +60,10 @@ const smallButtonClass =
 
 /** Phase A: the water temperature actually poured, for the log (§10). */
 export function WaterPouredCapture({ state, mixIndex }: { state: AppState; mixIndex: number }) {
-  const { inputs, result, sessionDraft, commitReading, confirmPouredWater } = state;
+  const { inputs, result, commitReading, pourAtTarget } = state;
   const i = mixIndex - 1;
   const target = result.mixes[i]?.waterTempF ?? result.waterTempF;
   const poured = inputs.waterUsedF[i] ?? null;
-  const enteredForBake = sessionDraft.mixes[i]?.water_temp_used_f.entered ?? false;
   const many = result.capacity.nMix > 1;
 
   return (
@@ -83,10 +82,10 @@ export function WaterPouredCapture({ state, mixIndex }: { state: AppState; mixIn
       />
       {/* The same height either way, so nothing below the tap moves up or down. */}
       <div className="mt-2 flex min-h-touch items-center">
-        {enteredForBake ? (
-          <span className="text-sm text-stone-600 dark:text-stone-400">Entered for this bake.</span>
+        {poured != null ? (
+          <span className="text-sm text-stone-600 dark:text-stone-400">The log records this reading.</span>
         ) : (
-          <button type="button" onClick={() => confirmPouredWater(i, target)} className={smallButtonClass}>
+          <button type="button" onClick={() => pourAtTarget(i, target)} className={smallButtonClass}>
             Poured at the target
           </button>
         )}
@@ -161,12 +160,9 @@ function ReadingRow({ label, value, status }: { label: string; value: string; st
   );
 }
 
-const Ok = () => <span className="text-sm text-stone-600 dark:text-stone-400">Entered for this bake</span>;
 const Note = ({ children }: { children: ReactNode }) => (
   <span className="text-sm text-amber-900 dark:text-amber-200">{children}</span>
 );
-
-const TYPE_IT = 'Type it in Today’s temperatures';
 
 /** A phase time beside its printed range (§10), flagged when it falls outside. */
 function PhaseRow({ phase, seconds, running }: { phase: MixPhase; seconds: number | null; running: boolean }) {
@@ -192,9 +188,9 @@ function PhaseRow({ phase, seconds, running }: { phase: MixPhase; seconds: numbe
   );
 }
 
-/** What the log will record for this session, and the button that saves it (§10). */
+/** What the log will record, and the button that saves it (§10). */
 export function BakeLogCard({ state, onOpenLog }: { state: AppState; onOpenLog: () => void }) {
-  const { sessionDraft: draft, sessionBakeId, saveConflict: conflict, saveSessionBake, confirmPouredWater, inputs, log, timers, sync, github } =
+  const { sessionDraft: draft, sessionBakeId, saveConflict: conflict, saveSessionBake, pourAtTarget, result, log, timers, sync, github } =
     state;
   const saved = !conflict && log.bakes.some((b) => b.bake_id === sessionBakeId);
   const nMix = draft.n_mix;
@@ -203,24 +199,17 @@ export function BakeLogCard({ state, onOpenLog }: { state: AppState; onOpenLog: 
     <div className="rounded-xl border border-stone-300 bg-white p-4 dark:border-stone-700 dark:bg-stone-900">
       <h4 className="text-lg font-semibold">Log this bake</h4>
       <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-        A mix feeds the friction factor when every reading below was typed for this bake and all four phase times
-        were captured. The phase timers capture them when you stop them or tick the step. A phase run to its cue can
-        fall outside its range, and the log corrects for that. If a timer ran on after its phase ended, leave that
-        mix out in the bake log.
+        Saving records every reading below as it stands, defaults included. A mix feeds the friction factor when it
+        has a final dough temperature and a water poured, its bowl was measured, and all four phase times were
+        captured. The phase timers capture them when you stop them or tick the step. A phase run to its cue can fall
+        outside its range, and the log corrects for that. If a timer ran on after its phase ended, leave that mix out
+        in the bake log.
       </p>
 
       <ul className="mt-2 divide-y divide-stone-200 dark:divide-stone-800">
-        <ReadingRow
-          label="Room"
-          value={`${formatTempF(draft.room_temp_f.value)} °F`}
-          status={draft.room_temp_f.entered ? <Ok /> : <Note>{TYPE_IT}</Note>}
-        />
+        <ReadingRow label="Room" value={`${formatTempF(draft.room_temp_f)} °F`} status={null} />
         {!draft.flour_follows_room && (
-          <ReadingRow
-            label="Flour"
-            value={`${formatTempF(draft.flour_temp_f.value)} °F`}
-            status={draft.flour_temp_f.entered ? <Ok /> : <Note>{TYPE_IT}</Note>}
-          />
+          <ReadingRow label="Flour" value={`${formatTempF(draft.flour_temp_f)} °F`} status={null} />
         )}
       </ul>
 
@@ -228,53 +217,35 @@ export function BakeLogCard({ state, onOpenLog }: { state: AppState; onOpenLog: 
         const i = mix.mix_index - 1;
         const status = mixStatus(draft, mix);
         const running = runningPhases(timers, mix.mix_index, nMix);
-        const bowlMeasured = inputs.bowlTempF[i] != null;
+        const target = result.mixes[i]?.waterTempF ?? result.waterTempF;
         return (
           <div key={mix.mix_index} className="mt-3">
             {nMix > 1 && <h5 className="text-sm font-semibold">{`Mix ${mix.mix_index}`}</h5>}
             <ul className="divide-y divide-stone-200 dark:divide-stone-800">
-              <ReadingRow
-                label="Biga"
-                value={`${formatTempF(mix.biga_temp_at_mix_f.value)} °F`}
-                status={mix.biga_temp_at_mix_f.entered ? <Ok /> : <Note>{TYPE_IT}</Note>}
-              />
+              <ReadingRow label="Biga" value={`${formatTempF(mix.biga_temp_at_mix_f)} °F`} status={null} />
               <ReadingRow
                 label="Bowl"
-                value={`${formatTempF(mix.bowl_temp_f.value)} °F`}
-                status={
-                  mix.bowl_temp_f.entered ? (
-                    <Ok />
-                  ) : (
-                    <Note>{bowlMeasured ? TYPE_IT : 'A prefill: measure it and type it in Today’s temperatures'}</Note>
-                  )
-                }
+                value={`${formatTempF(mix.bowl_temp_f)} °F`}
+                status={mix.bowl_prefilled ? <Note>A prefill: measure it in Today’s temperatures</Note> : null}
               />
               <ReadingRow
                 label="Water poured"
-                value={`${formatTempF(mix.water_temp_used_f.value)} °F`}
+                value={tempOrDash(mix.water_temp_used_f)}
                 status={
-                  mix.water_temp_used_f.entered ? (
-                    <Ok />
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => confirmPouredWater(i, mix.water_temp_used_f.value)}
-                      className={smallButtonClass}
-                    >
+                  mix.water_temp_used_f == null ? (
+                    <button type="button" onClick={() => pourAtTarget(i, target)} className={smallButtonClass}>
                       Poured at the target
                     </button>
-                  )
+                  ) : null
                 }
               />
               <ReadingRow
                 label="Final dough"
-                value={`${formatTempF(mix.final_dough_temp_f.value)} °F`}
+                value={tempOrDash(mix.final_dough_temp_f)}
                 status={
-                  mix.final_dough_temp_f.entered ? (
-                    <Ok />
-                  ) : (
+                  mix.final_dough_temp_f == null ? (
                     <Note>{nMix > 1 ? `Type it at the end of mix ${mix.mix_index}` : 'Type it at the end of the mix'}</Note>
-                  )
+                  ) : null
                 }
               />
               {MIX_PHASES.map((p) => (
@@ -292,7 +263,7 @@ export function BakeLogCard({ state, onOpenLog }: { state: AppState; onOpenLog: 
         // in place of the button, so nothing appears above a tap.
         <div className="mt-3 rounded-lg border border-amber-400 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-950/40">
           <p className="text-sm text-amber-900 dark:text-amber-200">
-            {`This session already saved the bake from ${conflict.date}, and the steps haven’t been reset since. This one counts only the readings typed after that save.`}
+            {`The bake from ${conflict.date} is saved already, and the page hasn’t been reset since. Save this one as a new bake, or replace that one?`}
           </p>
           <div className="mt-2 flex flex-wrap gap-3">
             <button
@@ -335,15 +306,14 @@ export function BakeLogCard({ state, onOpenLog }: { state: AppState; onOpenLog: 
 }
 
 function MixOutcome({ status }: { status: ReturnType<typeof mixStatus> }) {
-  if (status.ff == null) return <p className="mt-1 text-sm">{`Not solved: ${REASON.formula}.`}</p>;
+  const why = status.reasons.map((r) => REASON[r]).join('; ');
+  if (status.ff == null) return <p className="mt-1 text-sm text-amber-900 dark:text-amber-200">{`Not solved yet: ${why}.`}</p>;
   const solved = `solves to ${formatTempF(status.ff)} °F`;
   const nominal = status.ffNominal == null ? '' : `, ${formatTempF(status.ffNominal)} °F at the middle of every phase range`;
   return status.counted ? (
     <p className="mt-1 text-sm text-emerald-800 dark:text-emerald-300">{`Counts. This mix ${solved}${nominal}.`}</p>
   ) : (
-    <p className="mt-1 text-sm text-amber-900 dark:text-amber-200">
-      {`Won't count: ${status.reasons.map((r) => REASON[r]).join('; ')}. It ${solved}${nominal}.`}
-    </p>
+    <p className="mt-1 text-sm text-amber-900 dark:text-amber-200">{`Won't count: ${why}. It ${solved}${nominal}.`}</p>
   );
 }
 
@@ -472,7 +442,7 @@ function MixItem({ bake, mix, state }: { bake: LoggedBake; mix: LoggedMix; state
     <li className="text-sm">
       {bake.n_mix > 1 && <p className="font-medium">{`Mix ${mix.mix_index}`}</p>}
       <p className="text-stone-600 dark:text-stone-400">
-        {`Biga ${formatTempF(mix.biga_temp_at_mix_f.value)} · bowl ${formatTempF(mix.bowl_temp_f.value)} · water ${formatTempF(mix.water_temp_used_f.value)} · final ${formatTempF(mix.final_dough_temp_f.value)} °F · ${times}`}
+        {`Biga ${formatTempF(mix.biga_temp_at_mix_f)} °F · bowl ${formatTempF(mix.bowl_temp_f)} °F${mix.bowl_prefilled ? ' (prefill)' : ''} · water ${tempOrDash(mix.water_temp_used_f)} · final ${tempOrDash(mix.final_dough_temp_f)} · ${times}`}
       </p>
       <MixOutcome status={status} />
       <ToggleField

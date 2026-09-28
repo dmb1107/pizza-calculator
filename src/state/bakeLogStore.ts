@@ -17,7 +17,6 @@ import {
   type LoggedBake,
   type LoggedMix,
   type PhaseKey,
-  type Reading,
 } from '../lib/bakeLog';
 import type { BowlState } from '../lib/engine';
 import type { StorageLike } from './storage';
@@ -48,11 +47,6 @@ const isRecord = (v: unknown): v is Record<string, unknown> =>
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const BOWL_STATES: readonly BowlState[] = ['cold', 'room', 'warm'];
 
-function parseReading(raw: unknown): Reading | null {
-  if (!isRecord(raw) || !isNum(raw['value']) || typeof raw['entered'] !== 'boolean') return null;
-  return { value: raw['value'], entered: raw['entered'] };
-}
-
 function parseSnapshot(raw: unknown): FormulaSnapshot | null {
   if (!isRecord(raw) || !isRecord(raw['speeds'])) return null;
   const speeds = raw['speeds'];
@@ -68,23 +62,28 @@ function parseSnapshot(raw: unknown): FormulaSnapshot | null {
   };
 }
 
+/** A temperature that may be absent: null, or a finite number. Anything else is malformed. */
+const optionalNum = (v: unknown): number | null | undefined => (v === null ? null : isNum(v) ? v : undefined);
+
 function parseMix(raw: unknown): LoggedMix | null {
   if (!isRecord(raw) || !isNum(raw['mix_index']) || !isRecord(raw['phase_seconds'])) return null;
-  const readings = (['biga_temp_at_mix_f', 'bowl_temp_f', 'water_temp_used_f', 'final_dough_temp_f'] as const).map(
-    (f) => parseReading(raw[f]),
-  );
-  if (readings.some((r) => r === null)) return null;
+  const { biga_temp_at_mix_f: biga, bowl_temp_f: bowl, bowl_prefilled: prefilled } = raw;
+  const water = optionalNum(raw['water_temp_used_f']);
+  const final = optionalNum(raw['final_dough_temp_f']);
+  if (!isNum(biga) || !isNum(bowl) || typeof prefilled !== 'boolean' || water === undefined || final === undefined) {
+    return null;
+  }
   const bowlState = raw['bowl_state'];
   if (!BOWL_STATES.includes(bowlState as BowlState)) return null;
   const seconds = raw['phase_seconds'];
-  const [biga, bowl, water, final] = readings as Reading[];
   return {
     mix_index: raw['mix_index'],
-    biga_temp_at_mix_f: biga!,
+    biga_temp_at_mix_f: biga,
     bowl_state: bowlState as BowlState,
-    bowl_temp_f: bowl!,
-    water_temp_used_f: water!,
-    final_dough_temp_f: final!,
+    bowl_temp_f: bowl,
+    bowl_prefilled: prefilled,
+    water_temp_used_f: water,
+    final_dough_temp_f: final,
     // A phase time that isn't a positive number is a phase not captured.
     phase_seconds: Object.fromEntries(
       PHASE_KEYS.map((k) => [k, isNum(seconds[k]) && seconds[k] > 0 ? seconds[k] : null]),
@@ -101,9 +100,9 @@ export function parseBake(raw: unknown): LoggedBake | null {
   if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
   if (!isNum(balls) || !isNum(ball_g) || !isNum(n_mix) || balls <= 0 || ball_g <= 0 || n_mix < 1) return null;
   const formula = parseSnapshot(raw['formula']);
-  const room = parseReading(raw['room_temp_f']);
-  const flour = parseReading(raw['flour_temp_f']);
-  if (!formula || !room || !flour || !Array.isArray(raw['mixes'])) return null;
+  const room = raw['room_temp_f'];
+  const flour = raw['flour_temp_f'];
+  if (!formula || !isNum(room) || !isNum(flour) || !Array.isArray(raw['mixes'])) return null;
   const mixes = raw['mixes'].map(parseMix);
   if (mixes.length === 0 || mixes.some((m) => m === null)) return null;
   return {
