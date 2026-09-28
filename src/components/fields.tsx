@@ -304,7 +304,9 @@ export function Badge({ tone, children }: { tone: 'estimate' | 'measured'; child
       ? 'border-amber-400 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-200'
       : 'border-stone-300 bg-stone-100 text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-300';
   return (
-    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${styles}`}>
+    // max-w-full: the §6 badges run long, and at phone width one must wrap
+    // inside the card rather than push it sideways.
+    <span className={`max-w-full shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${styles}`}>
       {children}
     </span>
   );

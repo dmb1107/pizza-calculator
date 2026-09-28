@@ -10,7 +10,9 @@ Neapolitan 00 flour, an Ooni Halo Core spiral mixer, a Gozney Tread oven, and a
 length; the app returns gram weights, a target water temperature, a clock-time
 timeline, and a guided step list.
 
-Deployed to GitHub Pages. No server, no API, no runtime data fetching.
+Deployed to GitHub Pages. No server of its own and no build-time data
+fetching. The one runtime network call is the bake log's sync to a private
+GitHub repository, and only on a device where a token is set (§2).
 
 ## The documents
 
@@ -99,6 +101,19 @@ question:
 | `FINDINGS-43-to-recipe-agent.md` | Unprompted, Dave's ask: step timers count up. Two §7.5 sentences to update ("the countdown", and the pointer to `bulk-1`'s ranged-timer behaviour). **There is no MESSAGE-42** |
 | `MESSAGE-43.md` | Both §7.5 sentences changed, plus a new "Timers count up" paragraph: nothing labels the lower bound "ready". Nothing renders |
 | `FINDINGS-44-to-recipe-agent.md` | Reply to MESSAGE-43. All reproduced. The new rule caught our tab title ("Ready"), now "Check timer". Nothing open |
+| `FINDINGS-45-to-recipe-agent.md` | Unprompted, Dave's asks for Task 11: the log syncs through a private GitHub repo (decided), FF inputs only, history sets the FF. Open: how history becomes the FF in use, and whether the solve needs phase durations (Phase C alone spans 3.78 °F of FF) |
+| `MESSAGE-45.md` | Every FINDINGS-45 question answered: normalize a solved FF to mid-range phase times (A 3.5, B 5.5, C 3.5, D 52.5 s); mean of the last three counted bakes, interpolation across sizes, the seed stays 14.03; §10's counting rules; §4.8's `T_actual` is the mean of the mixes; no typed FF. Bake 1's Phase C ran 6.5 min (10.791045 once corrected) |
+| `FINDINGS-46-to-recipe-agent.md` | Reply to MESSAGE-45. All reproduced; the log built. Found in passing: mix 1's bowl reading overrode later mixes' warm prefill (mix 2's water 4.6 °F warm at 12 × 265 g), fixed |
+| `MESSAGE-46.md` | FINDINGS-46 accepted. §6: read the bowl by index; mix sizes print with ½, ⅓, ⅔. §10 *Capture and saving*: "entered" is per bake, only the water can be confirmed, phase times beside their ranges, saving over an earlier-date bake asks, a bake is dated by its first mix. Nothing in §8 changes |
+| `FINDINGS-47-to-recipe-agent.md` | Reply to MESSAGE-46. All applied; nothing open |
+| `MESSAGE-47.md` | Dave's change: no tracking of which values were typed. Save records the inputs as they stand; a Reset button above the panels starts a new bake (rendered copy in §10); a bowl at its prefill still doesn't count |
+| `FINDINGS-48-to-recipe-agent.md` | Reply to MESSAGE-47. Applied; asks about the two buttons labelled Reset and suggests `bowl_prefilled` in §10's table |
+| `MESSAGE-48.md` | The Steps header's Reset dropped: the page's Reset is the only one. It also resets the DDT override (to auto) and the timeline's anchor; §10 lists reset / cleared / kept, and its copy names both. §10's table gains `bowl_prefilled` and `null` |
+| `FINDINGS-49-to-recipe-agent.md` | Reply to MESSAGE-48. Applied; a test now holds the Reset copy to §10. Asks about two stored fields §10 doesn't list, both kept: which end of the timeline is held, and which panels are open |
+| `MESSAGE-49.md` | Both kept: §10's *Kept* list names the timeline's mode, the open panels and this device's sync settings; "the anchor is the held time, not the mode". Nothing renders |
+| `FINDINGS-50-to-recipe-agent.md` | Reply to MESSAGE-49. Reproduced (51.833333 h at the defaults); nothing open. Notes that "now" is rounded up to the next quarter hour |
+| `MESSAGE-50.md` | Unprompted, Dave's workflow: the four mixer-phase timers carry a **Logged** tag (§7.5), "Logged · {elapsed}" once stopped; Start and Stop are enough. §10: the bake is saved at the end of the mix, because nothing the log stores comes later. Numbered 50 because FINDINGS-50 needed no reply |
+| `FINDINGS-51-to-recipe-agent.md` | Reply to MESSAGE-50. The tag built and held to §7.5 by a test; on its own line, since beside the label it wrapped at phone width. Nothing on the log card waits for a later stage. Nothing open |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -147,8 +162,9 @@ computed in `bindTokens` where every other value lives.
 the app defaults flour to room (70 °F), which is what a bag of flour actually
 is. That part is `Cf/Cw`, which has no total-flour term in it — exactly 0.392 at
 every batch size and ball weight. **It is the whole gap only where FF falls back
-to 14.0**, the vectors' value. At 6 balls per mix (6 and 12 balls, and 18 from
-272 g) the app reads the seeded 14.03, which adds `0.03 × Ct/Cw`: 0.482 in all,
+to 14.0**, the vectors' value, and only while the log has no counted bake. At 6
+balls per mix (6 and 12 balls, and 18 from 272 g) the app reads the seeded
+14.03, which adds `0.03 × Ct/Cw`: 0.482 in all,
 so the 12-ball cards print 64.3 and 59.0, not the 64.4 and 59.1 that 0.392
 predicts (FINDINGS-40). **Quote the conditions whenever you quote a rendered
 number**, FF included; one without them cost a round of correspondence.
@@ -279,6 +295,51 @@ needs `× Ct/TOT`. Everything routes through `observedRate()` so the two cannot
 drift apart — conflating them is what produced the old `DDT − 4` rule, wrong by
 1.2 °F at 3 balls, in two documents across several review rounds.
 
+**The bake log stores readings, never an FF** (§10, MESSAGE-45). Every FF is
+solved on read (§4.3) and normalized to the middle of each phase's range at
+its speed's `FRICTION_RATE`, with no `Ct/TOT` factor (both sides are
+dough-only). The references come from the step timers (`MIX_PHASES` in
+`bakeLog.ts`), so a moved range re-normalizes every bake. A bake mixed under
+another formula (its snapshot) isn't solved or counted. The FF in use is §6's
+four-step rule, keyed on the `(balls, nMix)` pair compared by
+cross-multiplication, never a rounded float. **There is no typed FF and no
+override**: a typed value would outrank the measurements. `BAKE_1_SEED` ships
+in code, so a new device and a friend's browser start from it.
+
+**Per-mix readings are read by index, except the biga.** `bowlTempF`,
+`finalDoughTempF` and `waterUsedF` hold one entry per mix, and a missing entry
+is that mix unread: the bowl's warm prefill, DDT in §4.8's mean, the target
+for the log. `atMix` carried mix 1's bowl forward and printed mix 2's water
+4.6 °F too warm (FINDINGS-46); `bowlReadingAt` and `finalReadings` exist so
+that can't recur. Only the biga carries forward, because it is the same biga
+until re-read (§6).
+
+**Save records the inputs as they stand** (§10 *Capture and saving*, Dave's
+call in MESSAGE-47). Nothing tracks which values were typed or when: a
+default left in place (room 70, biga 58) and a value from a link are
+readings. A bake stores plain temperatures, with `null` for a water or final
+that has no value, and `bowl_prefilled` from the bowl field's own prefill
+state (§6), because a prefill is biased high and the mix mustn't count. **The
+page's Reset starts a new bake, and it is the only reset** (`NewBakeReset`,
+above the panels; MESSAGE-48 removed the Steps header's). It asks, then
+`inputsForNewBake` and `persistedForNewBake` decide every field: today's
+temperatures (Panel 2, water poured, final readings), the DDT override and
+the timeline's anchor go back to their defaults; the checkboxes, timers and
+session bake are cleared; batch settings, schedule adjustments, the timeline
+mode, the open panels and the log stay. In backward mode the hook then takes
+the bake time the reset start implies, as a mode switch does, so a reload
+doesn't drop to forward. `state.test.ts` requires every input and every
+persisted field to be classified, so a new one forces the decision, and
+`steps.test.ts` holds the confirmation to §10's copy. A bake is dated by the day its first mix
+started (mix 1's Phase A timer), and saving over the session's bake from an
+earlier date asks first (`saveConflict`). **The bake is saved at the end of
+the mix** (MESSAGE-50): nothing the log stores comes later in the schedule, so
+nothing on the card may wait for a later stage. **The four timers the log
+reads carry §7.5's "Logged" tag** (`loggedTimerTag`, keyed on `MIX_PHASES`),
+"Logged · 3:42" once stopped, and no other timer does. It sits on its own line
+in the timer card: beside the label it wrapped "Before the window" at 375 px
+and not "In the window", so the card changed height as the phase turned.
+
 **`MIN_BALLS` is 3, and it is an input constraint rather than a warning.** Two
 balls clears the mixer's 500 g floor on paper but won't let a spiral hook grip,
 *and* asks for 116 °F water. The arithmetic still scales below 3 for hand
@@ -394,10 +455,13 @@ src/lib/          pure calculation — no UI imports, this is what gets unit-tes
                   engine.ts (§4 formulas incl. the bowl), timeline.ts (§4.7),
                   timers.ts (§7.5), bindTokens.ts ({token} substitution),
                   recipeText.ts (copy-as-text), format.ts (display rounding),
-                  constants.ts (§3)
+                  constants.ts (§3), bakeLog.ts (§4.3 normalization, §6's FF
+                  in use, §10's counting rules)
 src/content/      step and concept prose (steps.ts, concepts.ts)
 src/components/   React components
-src/state/        URL + localStorage persistence
+src/state/        URL + browser-storage persistence; the bake log's local copy
+                  (bakeLogStore.ts), its GitHub sync (githubSync.ts) and the
+                  session as a bake (sessionBake.ts)
 public/           icon.svg (browser tab: the pizza alone, transparent) and
                   apple-touch-icon.png (iOS home screen: on orange, 180 px,
                   full-bleed square, since iOS rounds it)
@@ -440,7 +504,10 @@ don't inline a `toFixed` somewhere else.
   around the one number that decides whether the mix is done.
 - **Timers are end times, not counters.** Everything derives from an absolute
   `startedAt` against a `now` passed in, so a locked phone or a reload returns
-  the right answer. Never introduce a decrementing counter. Ranges are windows
+  the right answer. Never introduce a decrementing counter. **A timer stops**
+  (`stoppedAt`): Stop, or ticking its step, freezes it, and a stopped mixer
+  phase is the phase time the log records. Clear removes it. A stopped timer
+  never beeps and never counts as due. Ranges are windows
   (earliest → latest), not deadlines. **The display counts up** (§7.5 since
   MESSAGE-43, Dave's ask on 27 Sep): elapsed time in every phase, floored. The
   phase is shown by tone, label and a bar with the window shaded, never by
@@ -463,11 +530,11 @@ don't inline a `toFixed` somewhere else.
   375 px phone from Task 4 until Task 9. **Check phone width in both timeline
   modes** — the Task 8 check ran in backward mode only and missed it.
 - **Nothing may appear above the point of a tap.** Content that shows up in
-  response to a tap goes at or below it: the Reset button pushed every step
-  28 px on the first tick, and the timer note pushed the tapped step 118 px on
-  Start, both moving the next target out from under a floury finger. Reserve
-  the space (`min-h-touch` on the Steps header) or render below (the note now
-  sits inside the running timer). **Touch targets are 48 px** (`min-h-touch`);
+  response to a tap goes at or below it: the Steps header's old Reset pushed
+  every step 28 px on the first tick, and the timer note pushed the tapped step
+  118 px on Start, both moving the next target out from under a floury finger.
+  Reserve the space or render below: the note sits inside the running timer,
+  and the page Reset's question takes the button's place and grows down. **Touch targets are 48 px** (`min-h-touch`);
   a small control gets a label around it, pinned with `self-start` so flex
   stretch doesn't turn a whole card edge into the target.
 - **Number fields commit on blur, not on keystroke.** Clamping mid-type makes a
@@ -512,21 +579,23 @@ don't inline a `toFixed` somewhere else.
   the engine: generated content bound through the token table, decided on the
   **printed** per-mix dough (a test pins 2374.96 g → "2375.0" → fires). The
   engine's old hand-worded capacity warnings are gone.
-- **The friction-factor map ships seeded** with `{6: 14.03, measured 2026-08-21}`
-  from bake 1 — re-solved from its logged inputs in MESSAGE-25; a stored copy
-  of the old 14.04 seed is replaced on load. **It is keyed on balls per mix**
-  (`ballsPerMix` in the engine), not total balls: 12 balls reads the 6 entry,
-  and 13 balls is 6.5, exact-match only. Other sizes fall back to 14.0 and
-  badge as estimated.
+- **The FF comes from the bake log** (§6, MESSAGE-45). With nothing counted it
+  is bake 1's seed, 14.03 at 6 balls per mix, and 14.0 elsewhere; the first
+  counted bake at any size retires the seed (a size without its own bakes
+  borrows by interpolation, or the nearest size held flat). A stored
+  `frictionFactors` map from before is ignored. **Keyed on balls per mix** as
+  the `(balls, nMix)` pair: 12 balls in two mixes reads 6. **The token goes
+  nowhere but api.github.com**, and a shared link never carries the log or the
+  token.
 
 ## Build order
 
 Follow spec §12. Task list and status: [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md),
 which is kept current — check its status line first.
 
-Tasks 0–10 are done (engine, state, cards, both timeline modes, steps,
-concepts, timers, reference and About drawers, deploy and the phone check).
-Remaining: the bake log. **Pages deploys on every push to
+Tasks 0–11 are done (engine, state, cards, both timeline modes, steps,
+concepts, timers, reference and About drawers, deploy and the phone check,
+and the bake log with its GitHub sync). **Pages deploys on every push to
 `main`** and has since 1 September — check `gh run list` (in a cloud session,
 the GitHub MCP `actions_list`) rather than any written status. A session's
 `claude/*` branch doesn't deploy; it reaches `main` through a PR that Dave

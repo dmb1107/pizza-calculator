@@ -86,10 +86,24 @@ export function formatCoefficient(value: number, decimals: number): string {
 }
 
 /**
- * §6 balls per mix, for the friction-factor label: "6", or "6.5" on an odd
- * split. The stored key stays exact (20/3 is not 6.7) — only the label rounds.
+ * §6 balls per mix, for Panel 3's label, the badges and the log: a whole
+ * number or with ½, ⅓ or ⅔ (MESSAGE-46). Every key is one of those, since
+ * `nMix` is at most 3, so the fraction is exact where one decimal printed 19
+ * balls in three mixes as "6.3". Anything else, which no batch produces,
+ * falls back to one decimal rather than inventing a fraction.
  */
+const MIX_FRACTIONS: Record<string, string> = { '1/2': '½', '1/3': '⅓', '2/3': '⅔' };
+
 export function formatBallsPerMix(value: number): string {
+  for (const d of [1, 2, 3]) {
+    const n = Math.round(value * d);
+    if (Math.abs(value * d - n) > 1e-9) continue;
+    const whole = Math.floor(n / d);
+    const rest = n - whole * d;
+    if (rest === 0) return String(whole);
+    const glyph = MIX_FRACTIONS[`${rest}/${d}`];
+    if (glyph) return `${whole === 0 ? '' : whole}${glyph}`;
+  }
   return String(roundTo(value, 1));
 }
 

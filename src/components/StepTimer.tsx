@@ -18,7 +18,21 @@ import { formatTimeOfDay } from '../lib/timeline';
  * Before, in or past the window is carried by the card's tone, the label and
  * the bar, which marks the window and stays up throughout so the card doesn't
  * change height as the phase turns.
+ *
+ * Stop freezes the time where it is; Clear removes the timer. A stopped mixer
+ * phase is the phase time the bake log records (§10), and ticking the step
+ * off stops its timer too, so the time is captured without a second tap.
+ * Those four timers carry the "Logged" tag (§7.5); no other timer does.
  */
+
+/** §7.5's tag: which timers the bake log reads. Not a control. */
+function LoggedTag({ text }: { text: string }) {
+  return (
+    <span className="shrink-0 whitespace-nowrap rounded-full bg-sky-100 px-2 py-0.5 text-sm font-medium text-sky-900 tabular dark:bg-sky-950 dark:text-sky-200">
+      {text}
+    </span>
+  );
+}
 
 /**
  * A short two-tone beep, synthesised rather than loaded.
@@ -72,24 +86,33 @@ export function StepTimer({
   now,
   onStart,
   onStop,
+  onClear,
   note,
+  tag,
 }: {
   stepId: string;
   spec: TimerSpec;
   timer: RunningTimer | undefined;
   now: number;
   onStart: () => void;
+  /** Freeze the time. */
   onStop: () => void;
+  /** Remove the timer. */
+  onClear: () => void;
   /** Shown under a running timer's controls — growth below the tap point, never above it. */
   note?: ReactNode;
+  /** §7.5: "Logged", or "Logged · 3:42" once stopped, on the timers the log reads. */
+  tag?: string | null;
 }) {
   const state = timer ? timerState(timer, now) : null;
   const phase = state?.phase;
 
   // Beep once, on the transition out of `running`.
   const alerted = useRef<string | null>(null);
+  const stopped = state?.stopped ?? false;
   useEffect(() => {
-    if (!timer || !phase) return;
+    // A stopped timer is finished with: it never beeps, even on a reload.
+    if (!timer || !phase || stopped) return;
     const key = `${stepId}:${timer.startedAt}`;
     if (phase === 'running') {
       if (alerted.current === key) alerted.current = null;
@@ -99,11 +122,11 @@ export function StepTimer({
       alerted.current = key;
       beep();
     }
-  }, [stepId, timer, phase]);
+  }, [stepId, timer, phase, stopped]);
 
   if (!timer || !state) {
     return (
-      <div className="mt-3 flex items-center gap-3">
+      <div className="mt-3 flex flex-wrap items-center gap-3">
         <button
           type="button"
           onClick={() => {
@@ -114,12 +137,14 @@ export function StepTimer({
         >
           Start {describeSpec(spec)} timer
         </button>
+        {tag && <LoggedTag text={tag} />}
       </div>
     );
   }
 
-  const tone =
-    state.phase === 'running'
+  const tone = state.stopped
+    ? 'border-stone-300 bg-white dark:border-stone-700 dark:bg-stone-900'
+    : state.phase === 'running'
       ? 'border-stone-300 bg-stone-50 dark:border-stone-700 dark:bg-stone-800/50'
       : state.phase === 'window'
         ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-950/40'
@@ -134,7 +159,9 @@ export function StepTimer({
 
   // The phase alone: the bounds are in the line under the bar, and a longer
   // label wrapped at phone width, so the card changed height as it turned.
-  const label = spec.isWindow
+  const label = state.stopped
+    ? 'Stopped'
+    : spec.isWindow
     ? state.phase === 'running'
       ? 'Before the window'
       : state.phase === 'window'
@@ -146,6 +173,14 @@ export function StepTimer({
 
   return (
     <div className={`mt-3 rounded-lg border p-3 ${tone}`}>
+      {/* Its own line: beside the label it wrapped "Before the window" at
+          phone width and not "In the window", so the card changed height as
+          the phase turned. One line in every state keeps the height fixed. */}
+      {tag && (
+        <div className="mb-2 flex">
+          <LoggedTag text={tag} />
+        </div>
+      )}
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-stone-700 dark:text-stone-300">{label}</p>
@@ -153,10 +188,10 @@ export function StepTimer({
         </div>
         <button
           type="button"
-          onClick={onStop}
-          className="min-h-touch shrink-0 rounded-lg border border-stone-400 px-3 text-sm font-medium active:bg-stone-100 dark:border-stone-500 dark:active:bg-stone-800"
+          onClick={state.stopped ? onClear : onStop}
+          className="min-h-touch shrink-0 rounded-lg border border-stone-400 px-4 text-sm font-medium active:bg-stone-100 dark:border-stone-500 dark:active:bg-stone-800"
         >
-          {state.phase === 'running' ? 'Cancel' : 'Clear'}
+          {state.stopped ? 'Clear' : 'Stop'}
         </button>
       </div>
 

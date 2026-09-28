@@ -19,16 +19,33 @@ export const DEFAULT_INPUTS: Inputs = {
   bigaFridgeH: 19,
   bigaRoomOnlyH: 16,
   temperH: 2.5,
-  finalDoughTempF: null,
+  finalDoughTempF: [null],
+  waterUsedF: [null],
 };
 
 /**
- * §6: seed the friction map with the one real measurement.
- * FF 14.03 °F at 6 balls per mix, bake 1, 21 Aug 2026 — solved from the
- * logged inputs (§5; 14.04 before MESSAGE-25). Other sizes fall back to 14.0.
+ * §10: Reset starts a new bake. Today's temperatures go back to their
+ * defaults: everything in Panel 2, the water poured and the final readings.
+ * The batch settings stay (balls, ball weight, schedule, cold ferment), and so
+ * do the schedule's adjustments, which are how the baker plans rather than
+ * what they measured. `persistedForNewBake` covers the rest of the page.
  */
+export function inputsForNewBake(prev: Inputs): Inputs {
+  return {
+    ...prev,
+    roomTempF: DEFAULT_INPUTS.roomTempF,
+    flourSameAsRoom: DEFAULT_INPUTS.flourSameAsRoom,
+    flourTempF: DEFAULT_INPUTS.flourTempF,
+    bigaTempF: DEFAULT_INPUTS.bigaTempF,
+    bowlState: DEFAULT_INPUTS.bowlState,
+    bowlTempF: DEFAULT_INPUTS.bowlTempF,
+    finalDoughTempF: DEFAULT_INPUTS.finalDoughTempF,
+    waterUsedF: DEFAULT_INPUTS.waterUsedF,
+  };
+}
+
+/** No DDT override. The FF isn't stored: bake 1's seed lives in `bakeLog.ts`. */
 export const DEFAULT_CALIBRATION: Calibration = {
-  frictionFactors: { 6: { ff: 14.03, measuredAt: '2026-08-21' } },
   ddtOverrideF: null,
 };
 
@@ -47,7 +64,33 @@ export const DEFAULT_PERSISTED: Persisted = {
   bakeAtIso: '',
   checkedSteps: [],
   timers: [],
+  sessionBakeId: '',
 };
+
+/**
+ * §10: the rest of Reset. The DDT override goes back to auto and the
+ * timeline's anchor to its default, since both are per-bake choices: a stale
+ * override moves the water target and the rise, and a stale anchor puts every
+ * stage in the past. The biga start's default is '', read as "now" the same
+ * way a fresh session reads it. The checkboxes, the timers and the link to the
+ * saved bake are cleared, so the next save is a new bake.
+ *
+ * Kept (§10, MESSAGE-49): which panels are open, and which end of the
+ * timeline is held. The anchor is the held time, not the mode, so in backward
+ * mode the hook takes the bake time the reset start implies, as switching
+ * modes does.
+ */
+export function persistedForNewBake(prev: Persisted): Persisted {
+  return {
+    ...prev,
+    calibration: DEFAULT_CALIBRATION,
+    bigaStartAtIso: DEFAULT_PERSISTED.bigaStartAtIso,
+    bakeAtIso: DEFAULT_PERSISTED.bakeAtIso,
+    checkedSteps: [],
+    timers: [],
+    sessionBakeId: '',
+  };
+}
 
 /**
  * Input bounds.
@@ -68,7 +111,6 @@ export const BOUNDS = {
   bigaTempF: { min: 32, max: 120, step: 0.5 },
   bowlTempF: { min: 32, max: 120, step: 0.5 },
 
-  frictionFactorF: { min: 0, max: 40, step: 0.1 },
   ddtOverrideF: { min: 60, max: 90, step: 0.5 },
 
   // §4.7 states each of these ranges explicitly. `ballRoomTemp` is absent
@@ -79,6 +121,8 @@ export const BOUNDS = {
 
   /** Wide: this is a reading off a probe, and a wild one should be visible. */
   finalDoughTempF: { min: 55, max: 95, step: 0.1 },
+  /** What was poured: wide enough for the whole blend, fridge to hot tap. */
+  waterUsedF: { min: 32, max: 140, step: 0.1 },
 } as const;
 
 export type BoundedField = keyof typeof BOUNDS;

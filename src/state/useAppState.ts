@@ -7,7 +7,17 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ballsPerMix, calculate, type CalculatorResult, type Warning } from '../lib/engine';
+import { calculate, computeCapacity, computeFormula, type CalculatorResult, type Warning } from '../lib/engine';
+import {
+  ffInUse,
+  frictionBadge,
+  mixSizeValue,
+  type BadgeTone,
+  type FfInUse,
+  type LoggedBake,
+  type MixSize,
+} from '../lib/bakeLog';
+import { roundTo } from '../lib/format';
 import { capacityAlerts, splitHint } from '../lib/capacity';
 import { defaultDdtF } from '../lib/constants';
 import {
@@ -19,25 +29,69 @@ import {
   type Timeline,
 } from '../lib/timeline';
 import { timerDueAt, type RunningTimer, type TimerSpec } from '../lib/timers';
-import { DEFAULT_INPUTS, clampField, type BoundedField } from './defaults';
+import { DEFAULT_INPUTS, clampField, inputsForNewBake, persistedForNewBake, type BoundedField } from './defaults';
+import { browserStorage, loadPersisted, savePersisted } from './storage';
 import {
-  browserStorage,
-  clearFriction,
-  effectiveFriction,
-  loadPersisted,
-  recordFriction,
-  savePersisted,
-} from './storage';
+  loadGitHubConfig,
+  loadLog,
+  removeBake,
+  saveGitHubConfig,
+  saveLog,
+  setMixExcluded as setLogMixExcluded,
+  upsertBake,
+  type GitHubConfig,
+  type LocalLog,
+} from './bakeLogStore';
+import { mergeAfterSync, syncLog, type FetchLike } from './githubSync';
+import { newBakeId, saveConflict, sessionBake } from './sessionBake';
 import { decodeInputs, encodeInputs } from './url';
 import { tokenValues } from '../lib/bindTokens';
-import type { Calibration, EffectiveFriction, Inputs, PanelPrefs, Persisted, TimelineMode } from './types';
+import type {
+  Calibration,
+  Inputs,
+  PanelPrefs,
+  Persisted,
+  ReadingField,
+  TimelineMode,
+} from './types';
 
 function currentSearch(): string {
   return typeof window === 'undefined' ? '' : window.location.search;
 }
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+/** The FF in use and the badge Panel 3 shows for it (§6). */
+export type FrictionInUse = FfInUse & { badge: { text: string; tone: BadgeTone } };
+
+export type SyncState =
+  /** No token on this device: the log stays in browser storage. */
+  | { state: 'off' }
+  | { state: 'idle' }
+  | { state: 'syncing' }
+  | { state: 'error'; message: string };
+
+/** Per-mix readings, as opposed to the two that belong to the whole bake. */
+type PerMixReading = Exclude<ReadingField, 'roomTempF' | 'flourTempF'>;
+const isPerMix = (f: ReadingField): f is PerMixReading => f !== 'roomTempF' && f !== 'flourTempF';
+
+/**
+ * Set one entry of a per-mix list, padding any gap with `blank`. Biga readings
+ * pad by carrying the last entry forward (§6: the same biga, until re-read);
+ * the rest are read by index, so a gap stays unread.
+ */
+function withEntry<T>(list: readonly T[], index: number, value: T, blank: T, carry = false): T[] {
+  const next = [...list];
+  while (next.length <= index) next.push(carry && next.length > 0 ? next[next.length - 1]! : blank);
+  next[index] = value;
+  return next;
+}
+
+/**
+ * The biga start a stored value names, or now if it names none: a resumed
+ * session keeps the time the biga actually went in, and a fresh one (or one
+ * just Reset) starts from now, since that is when the baker is at the counter.
+ */
+function bigaStartFrom(iso: string): Date {
+  return iso ? new Date(iso) : roundToNextQuarterHour(new Date());
 }
 
 /** Push the inputs into the address bar without adding a history entry. */
@@ -57,16 +111,54 @@ export interface AppState {
   commitNumber: (key: BoundedField & keyof Inputs, value: number) => void;
   /** Nudge a numeric field by a delta, applied to current state and clamped. */
   stepNumber: (key: BoundedField & keyof Inputs, delta: number) => void;
-  resetInputs: () => void;
 
   calibration: Calibration;
-  /** The friction factor in use for the current mix size, and its provenance. */
-  friction: EffectiveFriction;
-  /** §6: the key `friction` was looked up under — balls per mix, possibly fractional. */
+  /** §6: the FF in use for the current mix size, from the bake log, with its badge. */
+  friction: FrictionInUse;
+  /** §6: balls per mix, possibly fractional. For labels; compare `mixSizeKey`. */
   mixSize: number;
-  setFrictionForCurrentMix: (ff: number) => void;
-  clearFrictionForCurrentMix: () => void;
+  /** §6: the mix size as the pair it comes from, compared exactly. */
+  mixSizeKey: MixSize;
   setDdtOverride: (ddtF: number | null) => void;
+
+  /** §10: set a reading. `index` is the mix (0-based) for per-mix readings. */
+  commitReading: (field: ReadingField, value: number, index?: number) => void;
+  /** §10: "Poured at the target" fills the water poured with the mix's target. */
+  pourAtTarget: (index: number, targetF: number) => void;
+  /** Clear a per-mix reading back to unread (the final temperature's "Clear"). */
+  clearReading: (field: PerMixReading, index: number) => void;
+  /**
+   * §10: the page's Reset, and its only one. Puts today's temperatures, the
+   * DDT override and the timeline's anchor back to their defaults and clears
+   * the step checkboxes and the timers; the batch settings and the saved bakes
+   * stay, and the next save is a new bake.
+   */
+  startNewBake: () => void;
+
+  /** The bake log's local copy. */
+  log: LocalLog;
+  /** The session as it would be logged now (§10). */
+  sessionDraft: LoggedBake;
+  /** The bake saved since the last Reset, '' before it saves. */
+  sessionBakeId: string;
+  /**
+   * §10: the saved bake when it is dated before the draft, so a save would
+   * overwrite a finished bake after a forgotten Reset. The card asks.
+   */
+  saveConflict: LoggedBake | null;
+  /**
+   * Save the inputs as they stand. 'replace' writes over the bake saved since
+   * the last Reset, if there is one; 'new' saves a bake of its own.
+   */
+  saveSessionBake: (mode?: 'replace' | 'new') => void;
+  /** §10: Dave's switch. */
+  setMixExcluded: (bakeId: string, mixIndex: number, excluded: boolean) => void;
+  deleteBake: (bakeId: string) => void;
+  /** This device's repository and token, or null for browser storage only. */
+  github: GitHubConfig | null;
+  setGitHub: (config: GitHubConfig | null) => void;
+  sync: SyncState;
+  syncNow: () => void;
   /** The DDT actually in use, whether overridden or automatic. */
   ddtF: number;
   autoDdtF: number;
@@ -79,14 +171,16 @@ export interface AppState {
   /** Timers the user has started, keyed by step. */
   timers: RunningTimer[];
   startTimer: (stepId: string, spec: TimerSpec) => void;
+  /** Freeze a running timer. A stopped mixer phase is a logged phase time (§10). */
   stopTimer: (stepId: string) => void;
+  /** Remove a timer, running or stopped. */
+  clearTimer: (stepId: string) => void;
   /** Step ids whose timer has passed its earliest moment since being started. */
   dueTimerStepIds: string[];
 
   /** Step ids ticked off, persisted across reloads. */
   checkedSteps: ReadonlySet<string>;
   toggleStep: (id: string) => void;
-  clearCheckedSteps: () => void;
   /** {token} bindings for step and concept prose. */
   tokens: Record<string, string>;
   /** §7.3 capacity messages, then the engine's warnings — what the strip shows, in order. */
@@ -142,12 +236,7 @@ export function useAppState(): AppState {
   const [inputs, setInputs] = useState<Inputs>(initial.inputs);
   const [calibration, setCalibration] = useState<Calibration>(initial.persisted.calibration);
   const [panels, setPanels] = useState<PanelPrefs>(initial.persisted.panels);
-  const [bigaStartAt, setBigaStartAt] = useState<Date>(() => {
-    const stored = initial.persisted.bigaStartAtIso;
-    // A resumed session keeps the time the biga actually went in; a fresh one
-    // starts from now, since that is when you are standing at the counter.
-    return stored ? new Date(stored) : roundToNextQuarterHour(new Date());
-  });
+  const [bigaStartAt, setBigaStartAt] = useState<Date>(() => bigaStartFrom(initial.persisted.bigaStartAtIso));
 
   const [timelineMode, setTimelineModeRaw] = useState<TimelineMode>(initial.persisted.timelineMode);
   const [bakeAt, setBakeAt] = useState<Date | null>(() =>
@@ -158,6 +247,12 @@ export function useAppState(): AppState {
     () => new Set(initial.persisted.checkedSteps),
   );
   const [timers, setTimers] = useState<RunningTimer[]>(initial.persisted.timers);
+  const [sessionBakeId, setSessionBakeId] = useState<string>(initial.persisted.sessionBakeId);
+
+  // §2 / §10: the log's local copy, written first; the repository follows.
+  const [log, setLog] = useState<LocalLog>(() => loadLog(storage));
+  const [github, setGitHubState] = useState<GitHubConfig | null>(() => loadGitHubConfig(storage));
+  const [sync, setSync] = useState<SyncState>(() => (github ? { state: 'idle' } : { state: 'off' }));
 
   /**
    * The clock everything time-based reads from.
@@ -168,7 +263,8 @@ export function useAppState(): AppState {
    * days.
    */
   const [now, setNow] = useState<Date>(() => new Date());
-  const hasTimers = timers.length > 0;
+  // A stopped timer holds its time, so only a running one needs the fast tick.
+  const hasTimers = timers.some((t) => t.stoppedAt == null);
   useEffect(() => {
     const period = hasTimers ? 1_000 : 60_000;
     const id = setInterval(() => setNow(new Date()), period);
@@ -182,12 +278,8 @@ export function useAppState(): AppState {
     syncUrl(inputs);
   }, [inputs]);
 
-  useEffect(() => {
-    if (!hydrated.current) {
-      hydrated.current = true;
-      return;
-    }
-    const value: Persisted = {
+  const persisted = useMemo<Persisted>(
+    () => ({
       calibration,
       panels,
       bigaStartAtIso: bigaStartAt.toISOString(),
@@ -195,18 +287,22 @@ export function useAppState(): AppState {
       bakeAtIso: bakeAt ? bakeAt.toISOString() : '',
       checkedSteps: [...checkedSteps],
       timers,
-    };
-    savePersisted(storage, value);
-  }, [
-    storage,
-    calibration,
-    panels,
-    bigaStartAt,
-    timelineMode,
-    bakeAt,
-    checkedSteps,
-    timers,
-  ]);
+      sessionBakeId,
+    }),
+    [calibration, panels, bigaStartAt, timelineMode, bakeAt, checkedSteps, timers, sessionBakeId],
+  );
+
+  useEffect(() => {
+    if (!hydrated.current) {
+      hydrated.current = true;
+      return;
+    }
+    savePersisted(storage, persisted);
+  }, [storage, persisted]);
+
+  useEffect(() => {
+    saveLog(storage, log);
+  }, [storage, log]);
 
   const setInput = useCallback(<K extends keyof Inputs>(key: K, value: Inputs[K]) => {
     setInputs((prev) => {
@@ -239,29 +335,58 @@ export function useAppState(): AppState {
     });
   }, []);
 
-  const resetInputs = useCallback(() => {
-    setInputs(DEFAULT_INPUTS);
+  // --- §10 readings ---------------------------------------------------------
+
+  const writeReading = useCallback((field: ReadingField, value: number, index: number) => {
+    const v = clampField(field, value);
+    setInputs((prev) => {
+      if (!isPerMix(field)) {
+        const next = { ...prev, [field]: v };
+        if (field === 'roomTempF' && next.flourSameAsRoom) next.flourTempF = v;
+        return next;
+      }
+      if (field === 'bigaTempF') return { ...prev, bigaTempF: withEntry(prev.bigaTempF, index, v, v, true) };
+      return { ...prev, [field]: withEntry<number | null>(prev[field], index, v, null) };
+    });
   }, []);
 
-  // §6: FF is looked up and filed by balls per mix, not total balls.
-  const mixSize = useMemo(
-    () => ballsPerMix({ balls: inputs.balls, ballWeightG: inputs.ballWeightG }),
+  const commitReading = useCallback(
+    (field: ReadingField, value: number, index = 0) => {
+      if (!Number.isFinite(value)) return;
+      writeReading(field, value, index);
+    },
+    [writeReading],
+  );
+
+  /** The target, to the tenth a thermometer shows, becomes the water poured. */
+  const pourAtTarget = useCallback(
+    (index: number, targetF: number) => {
+      if (!Number.isFinite(targetF)) return;
+      writeReading('waterUsedF', roundTo(targetF, 1), index);
+    },
+    [writeReading],
+  );
+
+  const clearReading = useCallback((field: PerMixReading, index: number) => {
+    setInputs((prev) => ({ ...prev, [field]: withEntry<number | null>(prev[field], index, null, null) }));
+  }, []);
+
+  // --- §6 the FF in use, from the log -----------------------------------------
+
+  // Keyed on the pair, compared exactly: 12 balls in two mixes reads the 6 entry.
+  const mixSizeKey = useMemo<MixSize>(
+    () => ({
+      balls: inputs.balls,
+      nMix: computeCapacity(computeFormula({ balls: inputs.balls, ballWeightG: inputs.ballWeightG })).nMix,
+    }),
     [inputs.balls, inputs.ballWeightG],
   );
+  const mixSize = mixSizeValue(mixSizeKey);
 
-  const friction = useMemo(() => effectiveFriction(calibration, mixSize), [calibration, mixSize]);
-
-  const setFrictionForCurrentMix = useCallback(
-    (ff: number) => {
-      if (!Number.isFinite(ff)) return;
-      setCalibration((prev) => recordFriction(prev, mixSize, ff, todayIso()));
-    },
-    [mixSize],
-  );
-
-  const clearFrictionForCurrentMix = useCallback(() => {
-    setCalibration((prev) => clearFriction(prev, mixSize));
-  }, [mixSize]);
+  const friction = useMemo<FrictionInUse>(() => {
+    const inUse = ffInUse(log.bakes, mixSizeKey);
+    return { ...inUse, badge: frictionBadge(inUse) };
+  }, [log.bakes, mixSizeKey]);
 
   const setDdtOverride = useCallback((ddtF: number | null) => {
     setCalibration((prev) => ({
@@ -290,6 +415,103 @@ export function useAppState(): AppState {
       }),
     [inputs, friction.ff, calibration.ddtOverrideF],
   );
+
+  // --- §10 the session as a bake, and the log ---------------------------------
+
+  // The draft is the inputs as they stand (§10). When saving it would write
+  // over a bake from an earlier date, the card asks first.
+  const sessionDraft = useMemo(
+    () => sessionBake({ inputs, result, timers }, now, sessionBakeId || newBakeId(now)),
+    [inputs, result, timers, now, sessionBakeId],
+  );
+  const conflict = useMemo(() => saveConflict(log, sessionBakeId, sessionDraft), [log, sessionBakeId, sessionDraft]);
+
+  const saveSessionBake = useCallback(
+    (mode: 'replace' | 'new' = 'replace') => {
+      const at = new Date();
+      const id = mode === 'new' || !sessionBakeId ? newBakeId(at) : sessionBakeId;
+      const bake = sessionBake({ inputs, result, timers }, at, id);
+      setLog((prev) => upsertBake(prev, bake));
+      setSessionBakeId(id);
+    },
+    [inputs, result, timers, sessionBakeId],
+  );
+
+  const setMixExcluded = useCallback((bakeId: string, mixIndex: number, excluded: boolean) => {
+    setLog((prev) => setLogMixExcluded(prev, bakeId, mixIndex, excluded));
+  }, []);
+
+  const deleteBake = useCallback(
+    (bakeId: string) => {
+      setLog((prev) => removeBake(prev, bakeId));
+      if (bakeId === sessionBakeId) setSessionBakeId('');
+    },
+    [sessionBakeId],
+  );
+
+  // --- §2 sync ----------------------------------------------------------------
+
+  const logRef = useRef(log);
+  logRef.current = log;
+  const githubRef = useRef(github);
+  githubRef.current = github;
+  const syncing = useRef(false);
+  const syncAgain = useRef(false);
+
+  const syncNow = useCallback(async () => {
+    const cfg = githubRef.current;
+    if (!cfg) return;
+    if (syncing.current) {
+      syncAgain.current = true;
+      return;
+    }
+    syncing.current = true;
+    setSync({ state: 'syncing' });
+    const started = logRef.current;
+    const fetchFn: FetchLike = (url, init) => globalThis.fetch(url, init);
+    const { log: synced, error } = await syncLog(cfg, started, fetchFn);
+    // A token forgotten mid-sync keeps whatever the sync fetched, and stops.
+    setLog((current) => mergeAfterSync(current, started, synced));
+    setSync(githubRef.current ? (error ? { state: 'error', message: error.message } : { state: 'idle' }) : { state: 'off' });
+    syncing.current = false;
+    if (syncAgain.current) {
+      syncAgain.current = false;
+      void syncNow();
+    }
+  }, []);
+
+  const setGitHub = useCallback(
+    (config: GitHubConfig | null) => {
+      saveGitHubConfig(storage, config);
+      setGitHubState(config);
+      githubRef.current = config;
+      setSync(config ? { state: 'idle' } : { state: 'off' });
+      if (config) void syncNow();
+    },
+    [storage, syncNow],
+  );
+
+  // Pull on load, and whenever the page comes back into view: the other
+  // device may have logged a bake since.
+  useEffect(() => {
+    if (!github) return;
+    void syncNow();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void syncNow();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+    // Once per token; syncNow is stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [github?.token, github?.owner, github?.repo]);
+
+  // Push local changes shortly after they happen, so a burst of edits is one sync.
+  const pending = log.dirty.length + log.deleted.length;
+  useEffect(() => {
+    if (!github || pending === 0) return;
+    const id = setTimeout(() => void syncNow(), 1500);
+    return () => clearTimeout(id);
+  }, [github, pending, log, syncNow]);
 
   const adjustments = useMemo<ScheduleAdjustments>(
     () => ({
@@ -337,21 +559,55 @@ export function useAppState(): AppState {
     [timelineMode, timeline.bakeAt, timeline.startsAt],
   );
 
+  // Backward mode holds a bake time. Reset clears it, so take the one the reset
+  // start implies, exactly as switching to backward mode hands it over.
+  useEffect(() => {
+    if (timelineMode === 'backward' && bakeAt === null) setBakeAt(timeline.bakeAt);
+  }, [timelineMode, bakeAt, timeline.bakeAt]);
+
   const startNow = useCallback(() => {
     setBigaStartAt(roundToNextQuarterHour(new Date()));
     setTimelineModeRaw('forward');
   }, []);
 
-  const toggleStep = useCallback((id: string) => {
-    setCheckedSteps((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
+  const toggleStep = useCallback(
+    (id: string) => {
+      // Read from the render's set, not inside the updater: React runs an
+      // updater later, so a flag set there is still false when read here.
+      const checking = !checkedSteps.has(id);
+      setCheckedSteps((prev) => {
+        const next = new Set(prev);
+        if (checking) next.add(id);
+        else next.delete(id);
+        return next;
+      });
+      // Ticking a step off ends it: a running timer stops there, which is how
+      // a mixer phase's time reaches the log without a second tap.
+      if (checking) {
+        const at = Date.now();
+        setTimers((prev) => prev.map((t) => (t.stepId === id && t.stoppedAt == null ? { ...t, stoppedAt: at } : t)));
+      }
+    },
+    [checkedSteps],
+  );
 
-  const clearCheckedSteps = useCallback(() => setCheckedSteps(new Set()), []);
+  /**
+   * §10: Reset starts a new bake. `inputsForNewBake` and `persistedForNewBake`
+   * decide every field; this applies all of them, kept ones included, so the
+   * decision lives in one place. The log stays.
+   */
+  const startNewBake = useCallback(() => {
+    const next = persistedForNewBake(persisted);
+    setInputs(inputsForNewBake);
+    setCalibration(next.calibration);
+    setPanels(next.panels);
+    setBigaStartAt(bigaStartFrom(next.bigaStartAtIso));
+    setTimelineModeRaw(next.timelineMode);
+    setBakeAt(next.bakeAtIso ? new Date(next.bakeAtIso) : null);
+    setCheckedSteps(new Set(next.checkedSteps));
+    setTimers(next.timers);
+    setSessionBakeId(next.sessionBakeId);
+  }, [persisted]);
 
   const startTimer = useCallback((stepId: string, spec: TimerSpec) => {
     setTimers((prev) => [
@@ -366,11 +622,17 @@ export function useAppState(): AppState {
   }, []);
 
   const stopTimer = useCallback((stepId: string) => {
+    const at = Date.now();
+    setTimers((prev) => prev.map((t) => (t.stepId === stepId && t.stoppedAt == null ? { ...t, stoppedAt: at } : t)));
+  }, []);
+
+  const clearTimer = useCallback((stepId: string) => {
     setTimers((prev) => prev.filter((t) => t.stepId !== stepId));
   }, []);
 
+  // A stopped timer is done with: the tab title shouldn't ask for it.
   const dueTimerStepIds = useMemo(
-    () => timers.filter((t) => now.getTime() >= timerDueAt(t)).map((t) => t.stepId),
+    () => timers.filter((t) => t.stoppedAt == null && now.getTime() >= timerDueAt(t)).map((t) => t.stepId),
     [timers, now],
   );
 
@@ -407,13 +669,26 @@ export function useAppState(): AppState {
     setInput,
     commitNumber,
     stepNumber,
-    resetInputs,
     calibration,
     friction,
     mixSize,
-    setFrictionForCurrentMix,
-    clearFrictionForCurrentMix,
+    mixSizeKey,
     setDdtOverride,
+    commitReading,
+    pourAtTarget,
+    clearReading,
+    startNewBake,
+    log,
+    sessionDraft,
+    sessionBakeId,
+    saveConflict: conflict,
+    saveSessionBake,
+    setMixExcluded,
+    deleteBake,
+    github,
+    setGitHub,
+    sync,
+    syncNow: () => void syncNow(),
     ddtF: result.ddtF,
     autoDdtF: defaultDdtF(inputs.balls),
     panels,
@@ -422,10 +697,10 @@ export function useAppState(): AppState {
     timers,
     startTimer,
     stopTimer,
+    clearTimer,
     dueTimerStepIds,
     checkedSteps,
     toggleStep,
-    clearCheckedSteps,
     tokens,
     alerts,
     ballsSplitHint,

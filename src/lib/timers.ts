@@ -77,6 +77,11 @@ export interface RunningTimer {
   startedAt: number;
   minMinutes: number;
   maxMinutes: number;
+  /**
+   * Epoch ms, once stopped. The elapsed time then holds, and for a mixer
+   * phase it is the phase time the bake log records (§10).
+   */
+  stoppedAt?: number;
 }
 
 export type TimerPhase =
@@ -89,6 +94,8 @@ export type TimerPhase =
 
 export interface TimerState {
   phase: TimerPhase;
+  /** True once stopped: the clock no longer advances it. */
+  stopped: boolean;
   elapsedMs: number;
   /** 0 to 1 against the latest moment, clamped. For a progress bar. */
   progress: number;
@@ -102,7 +109,8 @@ export interface TimerState {
 const MINUTE_MS = 60_000;
 
 export function timerState(timer: RunningTimer, now: number): TimerState {
-  const elapsedMs = Math.max(0, now - timer.startedAt);
+  const stopped = timer.stoppedAt != null;
+  const elapsedMs = Math.max(0, (timer.stoppedAt ?? now) - timer.startedAt);
   const minMs = timer.minMinutes * MINUTE_MS;
   const maxMs = timer.maxMinutes * MINUTE_MS;
 
@@ -110,6 +118,7 @@ export function timerState(timer: RunningTimer, now: number): TimerState {
 
   return {
     phase,
+    stopped,
     elapsedMs,
     progress: maxMs > 0 ? Math.min(1, elapsedMs / maxMs) : 1,
     windowStart: maxMs > 0 ? minMs / maxMs : 1,

@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { parseAst } from 'vite';
 import { describe, expect, it } from 'vitest';
 import { CONCEPTS } from '../src/content/concepts';
 import { ABOUT_INTRO, REFERENCE, SOURCES } from '../src/content/reference';
@@ -433,6 +434,48 @@ describe('§7.3 capacity messages are reproduced verbatim', () => {
     // Four conditions carry a blockquote; a fifth would be a message nothing renders.
     expect((section.match(/^> /gm) ?? []).length).toBe(4);
     expect(Object.keys(CAPACITY)).toHaveLength(7);
+  });
+});
+
+describe("§10's Reset copy is reproduced verbatim", () => {
+  // Rendered copy the spec words, typed into a component rather than
+  // generated. MESSAGE-48 changed it, and nothing compared the two.
+  const section = SPEC.slice(SPEC.indexOf('### Capture and saving'), SPEC.indexOf('### Which mixes count'));
+  const quoted = /^ *> (\*\*Start a new bake\?\*\*.+)$/m.exec(section)?.[1];
+  const buttons = /^ *> (\[.+\])$/m.exec(section)?.[1];
+
+  /** The component's JSX text, in source order, one string per text node. */
+  function jsxText(file: string): string[] {
+    const out: string[] = [];
+    const visit = (node: unknown): void => {
+      if (Array.isArray(node)) return node.forEach(visit);
+      if (typeof node !== 'object' || node === null) return;
+      const n = node as { type?: string; value?: unknown };
+      if (n.type === 'JSXText' && typeof n.value === 'string') {
+        const t = n.value.replace(/&apos;/g, "'").replace(/\s+/g, ' ').trim();
+        if (t) out.push(t);
+        return;
+      }
+      Object.values(node).forEach(visit);
+    };
+    visit(parseAst(readFileSync(file, 'utf8'), { lang: 'tsx' }));
+    return out;
+  }
+
+  const text = jsxText('src/components/NewBakeReset.tsx');
+
+  it('asks in §10\'s words', () => {
+    expect(quoted, 'the copy not found in §10').toBeDefined();
+    const spec = quoted!.replace(/\*\*/g, '');
+    // The question is a <strong> and the rest follows it: two text nodes.
+    const at = text.indexOf('Start a new bake?');
+    expect(at, 'the question not found in NewBakeReset').toBeGreaterThanOrEqual(0);
+    expect(`${text[at]} ${text[at + 1]}`).toBe(spec);
+  });
+
+  it('offers §10\'s two buttons', () => {
+    expect(buttons).toBe('[Reset] [Cancel]');
+    for (const label of buttons!.match(/[^[\] ]+/g)!) expect(text, label).toContain(label);
   });
 });
 

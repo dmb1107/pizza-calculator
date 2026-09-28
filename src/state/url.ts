@@ -2,13 +2,14 @@
  * URL query-param serialization — WEBSITE-SPEC-biga-calculator.md §2.
  *
  * "Inputs serialize to URL query params (shareable)." Only inputs: derived
- * values are recomputed, and calibration lives in localStorage because a
- * friction factor belongs to your mixer rather than to the recipe.
+ * values are recomputed, and the FF comes from the bake log, which belongs to
+ * your mixer rather than to the recipe.
  *
  * Keys are short but readable — these links get pasted into messages and
  * sometimes read by a person.
  */
 
+import { computeCapacity, computeFormula } from '../lib/engine';
 import { BOUNDS, DEFAULT_INPUTS, clampField } from './defaults';
 import type { BowlState, Inputs, Schedule } from './types';
 
@@ -27,7 +28,23 @@ const KEYS = {
   bigaRoomOnlyH: 'bigart',
   temperH: 'temper',
   finalDoughTempF: 'dought',
+  waterUsedF: 'water',
 } as const satisfies Record<keyof Inputs, string>;
+
+/** How many mixes the batch runs as — the length a by-index list is padded to. */
+function nMixOf(inputs: Pick<Inputs, 'balls' | 'ballWeightG'>): number {
+  return computeCapacity(computeFormula(inputs)).nMix;
+}
+
+/**
+ * A by-index list (§4.8's final readings, §10's poured water), padded with
+ * empties to `nMix`. Padding keeps "read mix 1 only" as `73~` on a two-mix
+ * batch, which can't be mistaken for a bare value.
+ */
+function encodeIndexedList(values: readonly (number | null)[], nMix: number): string {
+  const padded = Array.from({ length: Math.max(nMix, values.length) }, (_, i) => values[i] ?? null);
+  return encodeList(padded);
+}
 
 const SCHEDULE_CODE: Record<Schedule, string> = { retarded: 'r', classic: 'c' };
 
@@ -102,13 +119,16 @@ export function encodeInputs(inputs: Inputs): string {
     encodeList(inputs.bowlTempF),
     inputs.bowlTempF.every((v) => v == null),
   );
-  // A measured dough temperature belongs to one session, so it travels in the
-  // link the same way the rest of the inputs do.
+  // Measured dough and water temperatures belong to one session, so they
+  // travel in the link the same way the rest of the inputs do. By index, and
+  // padded, so an unread mix stays unread on the other end.
+  const nMix = nMixOf(inputs);
   put(
     KEYS.finalDoughTempF,
-    inputs.finalDoughTempF === null ? '' : num(inputs.finalDoughTempF),
-    inputs.finalDoughTempF === null,
+    encodeIndexedList(inputs.finalDoughTempF, nMix),
+    inputs.finalDoughTempF.every((v) => v == null),
   );
+  put(KEYS.waterUsedF, encodeIndexedList(inputs.waterUsedF, nMix), inputs.waterUsedF.every((v) => v == null));
 
   return p.toString();
 }
@@ -171,6 +191,27 @@ function readNumber(
   return clampField(field, parsed);
 }
 
+/**
+ * A by-index list. A bare value with no delimiter is a link from before §4.8
+ * read each mix: it was the batch's one reading, so it applies to every mix
+ * and the rise it times is unchanged.
+ */
+function readIndexedList(
+  p: URLSearchParams,
+  key: string,
+  field: Parameters<typeof clampField>[0],
+  nMix: number,
+  fallback: (number | null)[],
+): (number | null)[] {
+  const raw = p.get(key);
+  if (raw === null || raw.trim() === '') return fallback;
+  if (!raw.includes(PER_MIX_SEP)) {
+    const one = readOptionalNumber(p, key, field, null);
+    return one === null ? fallback : Array.from({ length: nMix }, () => one);
+  }
+  return readOptionalNumberList(p, key, field, fallback);
+}
+
 /** Like readNumber, but absence means "not measured yet" rather than a default. */
 function readOptionalNumber(
   p: URLSearchParams,
@@ -202,10 +243,13 @@ export function decodeInputs(search: string, base: Inputs = DEFAULT_INPUTS): Inp
   const flourSameAsRoom = sameRaw === null ? base.flourSameAsRoom : sameRaw !== '0';
 
   const roomTempF = readNumber(p, KEYS.roomTempF, 'roomTempF', base.roomTempF);
+  const balls = Math.round(readNumber(p, KEYS.balls, 'balls', base.balls));
+  const ballWeightG = readNumber(p, KEYS.ballWeightG, 'ballWeightG', base.ballWeightG);
+  const nMix = nMixOf({ balls, ballWeightG });
 
   return {
-    balls: Math.round(readNumber(p, KEYS.balls, 'balls', base.balls)),
-    ballWeightG: readNumber(p, KEYS.ballWeightG, 'ballWeightG', base.ballWeightG),
+    balls,
+    ballWeightG,
     coldFermentH: readNumber(p, KEYS.coldFermentH, 'coldFermentH', base.coldFermentH),
     schedule,
     roomTempF,
@@ -220,7 +264,8 @@ export function decodeInputs(search: string, base: Inputs = DEFAULT_INPUTS): Inp
     temperH: readNumber(p, KEYS.temperH, 'temperH', base.temperH),
     bowlState: BOWL_STATE_BY_CODE[p.get(KEYS.bowlState) ?? ''] ?? base.bowlState,
     bowlTempF: readOptionalNumberList(p, KEYS.bowlTempF, 'bowlTempF', base.bowlTempF),
-    finalDoughTempF: readOptionalNumber(p, KEYS.finalDoughTempF, 'finalDoughTempF', base.finalDoughTempF),
+    finalDoughTempF: readIndexedList(p, KEYS.finalDoughTempF, 'finalDoughTempF', nMix, base.finalDoughTempF),
+    waterUsedF: readIndexedList(p, KEYS.waterUsedF, 'waterUsedF', nMix, base.waterUsedF),
   };
 }
 

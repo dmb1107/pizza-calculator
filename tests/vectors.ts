@@ -83,6 +83,11 @@ export const BAKE_1 = {
   waterRequiredF: 68.0,
   /** Predicted, and measured on the day. */
   finalTempF: 73.5,
+  /**
+   * Recipe §12: Phase C ran 14 → 20.5 min. The only phase time logged; A, B
+   * and D ran 2⅛ min over between them, split unrecorded (MESSAGE-45).
+   */
+  phaseCMin: 6.5,
 } as const;
 
 /**

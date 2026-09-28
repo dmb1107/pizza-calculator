@@ -4,9 +4,10 @@ Derived from [`docs/WEBSITE-SPEC-biga-calculator.md`](docs/WEBSITE-SPEC-biga-cal
 Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
-**Status:** Tasks 0–10 complete, on the bowl-aware thermal model with **per-mix
-weights**, the ice calculation removed, and **MESSAGE-43 applied**. Left: the
-bake log (Task 11).
+**Status:** Tasks 0–11 complete, on the bowl-aware thermal model with **per-mix
+weights**, the ice calculation removed, and **MESSAGE-50 applied**: the bake
+log, synced through a private GitHub repository, now sets the FF in use.
+FINDINGS-51 is the last thing sent, and nothing is open.
 
 ---
 
@@ -485,7 +486,8 @@ those pointing at nothing would have been worse than doing both.
 - [x] All 18 §8.2 steps, all 12 §8.3 concepts, verbatim
 - [x] `{brace}` bindings for all 16 tokens
 - [x] GFM markdown with real tables
-- [x] Per-step checkbox, persisted; progress counter and a reset
+- [x] Per-step checkbox, persisted; progress counter and a reset (the
+      reset moved to the page's Reset in MESSAGE-48)
 - [x] `watchFor` and `troubleshoot` rendered distinctly from `detail`
 - [x] `biga-4`'s two schedule-dependent summaries
 - [x] Concept drawer, reachable from step links
@@ -667,19 +669,61 @@ markdown, inline. A test pins `watchFor` as markdown so it can't regress.
 
 ---
 
-## Task 11 — Bake log (phase 2)
+## Task 11 — Bake log ✅
 
-Not required for v1, but §10 says design the data layer so it can be added.
+Dave's asks (27 September, FINDINGS-45): one history shared between laptop
+and phone, the site still on Pages; each bake refines its mix size's FF from
+the measured temperatures, and the history, not a typed value, sets the FF in
+use; FF inputs only; a visitor without a token gets a working calculator that
+saves only to their own browser. MESSAGE-45 answered every question; the spec
+has the rules (§4.3 normalization, §4.8 split-batch `T_actual`, §6 Panel 3,
+§10, and §5's *Bake log* pins).
 
-- [ ] localStorage-backed log, the §10 schema, JSON export.
-- [ ] Auto-populate from the current session so only measured values get typed.
-- [ ] `ff_measured` from `solveFrictionFactorF`, the §4.3 solve that includes
-      the bowl — **not** `final − predicted_mix`, which reads low by
-      `FF × C_bowl/(Ct + C_bowl)` (§10). File it under the bake's balls per mix.
-- [ ] The payoff: with 8–10 logged bakes, regress
-      `FF = a + b × (room_temp_f − 70)` per mix size — both effects are
-      untested hypotheses, and this is how they get tested. Generic calculators use
-      one fixed FF; modeling it is the thing this app can do that they can't.
+- [x] **The log** (`src/lib/bakeLog.ts`): readings, never an FF. Each mix is
+      solved on read (§4.3), then normalized to the middle of every phase's
+      range, the references derived from the step timers (A 3.5, B 5.5, C 3.5,
+      D 52.5 s). A formula snapshot per bake; only a matching one counts.
+- [x] **Which mixes count** (§10, as MESSAGE-47 left it): a final and a water
+      reading, a bowl that isn't the prefill, all four phase times, a
+      matching snapshot, not excluded. Defaults left in place are readings.
+      Every mix stays in the log with its reasons.
+- [x] **The FF in use** (§6): the mean of the last three counted bakes at the
+      size, a split batch counting once; else interpolated between counted
+      sizes, or the nearest held flat; else bake 1's seed at 6 and 14.0
+      elsewhere. Keys compared as the `(balls, nMix)` pair. The badge table
+      is read from the spec by a test.
+- [x] **No typed FF.** Panel 3 shows the value and its badge; a stored map
+      from before is ignored.
+- [x] **Storage** (§2): browser storage first, then a private GitHub
+      repository, one JSON file per bake, through the contents API with a
+      per-device token (`src/state/githubSync.ts`). A stale write re-reads
+      and writes again; deletions travel both ways. Tested against a fake
+      repository.
+- [x] **Capture without typing:** the phase timers stop (Stop, or ticking the
+      step) and the stopped time is the phase time; poured water in Phase A
+      (with "Poured at the target"), a final temperature at the end of every
+      mix. Save records the inputs as they stand (MESSAGE-47: no tracking of
+      what was typed), and a bake is dated by its first mix. The card after
+      the last mix shows every phase time beside its range, what counts, and
+      saves; saving over an earlier-date bake asks first. Mix sizes print
+      with ½, ⅓, ⅔.
+- [x] **Reset** above the panels starts a new bake (MESSAGE-47): it asks,
+      then resets the day's temperatures and clears the checkboxes and
+      timers, keeping the batch settings and the log. MESSAGE-48 made it the
+      only reset (the Steps header's is gone) and added the DDT override and
+      the timeline's anchor to what it resets; a test holds its copy to §10.
+- [x] **The Logged tag** (§7.5, MESSAGE-50): the four mixer-phase timers
+      carry "Logged", "Logged · 3:42" once stopped; no other timer does. The
+      bake is saved at the end of the mix, and nothing on the card waits for
+      a later stage.
+- [x] **§4.8 split batches:** `T_actual` is the mean of the mixes, a mix not
+      yet read counting at DDT.
+- [x] **Found in passing:** mix 1's bowl reading carried forward to later
+      mixes and overrode their warm prefill, printing mix 2's water 4.6 °F
+      too warm at 12 × 265 g (FINDINGS-46 §3). Now read by index, pinned.
+- [x] **The room slope** (§10): fitted over every counted bake at a size once
+      there are 8, and shown in the log drawer with its count and room range.
+      Reported, never applied.
 
 ---
 

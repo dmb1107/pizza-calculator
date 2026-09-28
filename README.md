@@ -18,19 +18,32 @@ cold ferment. The app returns:
 - a timeline with real clock times, planned forward from the biga start or
   backward from the bake time;
 - a guided step list with timers and mixer speeds drawn as the Core's lit
-  segments, where every step expands into the reasoning behind it.
+  segments, where every step expands into the reasoning behind it;
+- a bake log that solves the mixer's friction factor from each bake's measured
+  temperatures and phase times, and sets the friction factor the next water
+  target uses. The four mixer-phase timers it reads are tagged **Logged**, and
+  the bake is saved from the card after the last mix, once the final dough
+  temperature is in.
 
 The setup survives a refresh, and **Share setup** copies it as a link.
-Reference tables and the recipe's sources open in drawers at the bottom of the
-page.
+**Reset**, above the panels, starts a new bake: it clears the day's
+temperatures, any DDT override, the timeline's start or target time, the step
+checkboxes and the timers, and keeps the batch settings and the log. Reference
+tables, the recipe's sources and the bake log open in drawers at the bottom of
+the page.
+
+The bake log stays in the browser unless you give it a private GitHub
+repository and a token that can reach only that repository; then each device
+syncs one JSON file per bake through GitHub's API. A shared link carries the
+setup, never the log or the token.
 
 Built to be read on a phone propped against a mixer, by someone with flour on
 their hands.
 
 ## Status
 
-Tasks 0–10 are done and the site is live. Left: the bake log (Task 11). See
-[`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
+Tasks 0–11 are done and the site is live. The bake log (Task 11) was built
+across MESSAGE-45 to MESSAGE-50. See [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
 ## Home screen icon
 

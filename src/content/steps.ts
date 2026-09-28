@@ -261,7 +261,7 @@ Optional, from PizzaBlab: soak the crumbled biga in the water for a few minutes 
     id: "mix-3",
     phase: "mix",
     title: `Phase B, salt and bassinage`,
-    summary: `Add {saltPerMix} g salt, then **{phaseBWaterPerMix} g** of water (the remaining {phaseBPercent}%) in **3 additions**, letting each absorb fully before the next. **2 lit segments** (20%, 98 RPM), 5–6 min.`,
+    summary: `Add {saltPerMix} g salt, then **{phaseBWaterPerMix} g** of water (the remaining {phaseBPercent}%) in **3 additions**, letting each absorb fully before the next and the last before you stop. **2 lit segments** (20%, 98 RPM), 5–6 min.`,
     values: [`Salt: {saltPerMix} g`, `Phase B water: {phaseBWaterPerMix} g`],
     timerLabel: `5–6 min`,
     timerMinutes: [5, 6],
@@ -271,6 +271,7 @@ Optional, from PizzaBlab: soak the crumbled biga in the water for a few minutes 
 At 2.8%, the salt is at the top of the Neapolitan range of 2.5–3.0%. It tightens the gluten slightly and slows fermentation a little, which helps over a long schedule.
 
 Pour slowly down the splash-guard spout; at 98 RPM the hook slings water that's dumped in. Letting each addition absorb before the next keeps the dough from breaking into a slurry it then has to recover from.`,
+    watchFor: `No free water, no dry flour, one cohesive mass.`,
     repeatsPerMix: true,
   },
   {
@@ -302,7 +303,7 @@ The mixer bowl's thermal mass dilutes the remaining friction, and the rest excha
         [`Target ±1 °F`, `Run Phase C as written`],
         [`1–2 °F high`, `Cut Phase C to 2–2.5 min`],
         [`1–2 °F low`, `Extend Phase C to 4.5–5.5 min`],
-        [`More than 2 °F off`, `Accept the miss and fix the water temperature next batch`],
+        [`More than 2 °F off`, `Use Phase C's full range: 2 min if high (longer if it isn't smooth and glossy yet), 5.5 min if low. Accept what's left and fix the water temperature next batch`],
       ],
     },
     concepts: ["friction-factor"],
@@ -321,6 +322,8 @@ The mixer bowl's thermal mass dilutes the remaining friction, and the rest excha
 At 6 balls, cutting it to 2 minutes saves **1.5 °F** and stretching it to 5.5 minutes adds **1.9 °F**. That's the whole usable range; it's narrower at 3 balls (−1.3 / +1.8) and slightly wider at 9 (−1.5 / +2.0).
 
 Beyond that you give up gluten development to fix temperature. **A properly developed dough 2 °F warm is better than an under-mixed one at exactly the right temperature.** Fix a temperature miss in the next batch's water calculation instead.
+
+**So the look sets the shortest Phase C, and 5.5 minutes the longest.** The probe picks the time in between. Don't stop before the dough is smooth and glossy, however warm it reads, and don't run past 5.5 minutes to warm it.
 
 Friction per minute at each speed: 15% ≈ 0.75 °F/min · 20% ≈ 0.86 °F/min · 30% ≈ 1.08 °F/min. These are for the dough alone. A thermometer reads each of them multiplied by \`Ct/(Ct + C_bowl)\` — 0.82 at 3 balls, 0.90 at 6, 0.93 at 9 — which at 30% gives 0.89, 0.97 and 1.01 °F per minute. So "about a degree a minute" holds at 6 balls and up.`,
     repeatsPerMix: true,
@@ -443,7 +446,9 @@ Oil keeps the dough from sticking to the metal without drawing water out of it, 
 **Put nothing on top of the balls.** The lid handles humidity, and oil on top becomes the cornicione surface and browns it unevenly.`,
     detailWhen: {
       condition: "nMix > 1",
-      detail: `**This rise is shorter than a single mix would get.** At {finalDoughTemp} °F a single mix would rest {roomMin} min; this batch rests {ballRoomMin}. The first mix has been fermenting longer than the last, so the calculator shortens the rise by half that difference to split it (see *Bulk rest*), and never below 45 minutes.`,
+      detail: `**This rise is shorter than a single mix would get.** At {finalDoughTemp} °F a single mix would rest {roomMin} min; this batch rests {ballRoomMin}. The first mix has been fermenting longer than the last, so the calculator shortens the rise by half that difference to split it (see *Bulk rest*), and never below 45 minutes.
+
+The final dough temperature here is the average of every mix's reading, since the doughs share one tub.`,
     },
     concepts: ["oil-not-flour"],
   },

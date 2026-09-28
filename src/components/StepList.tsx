@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Markdown } from './Markdown';
-import { NumberField } from './fields';
 import { StepTimer } from './StepTimer';
-import { BOUNDS } from '../state/defaults';
-import { formatTempF } from '../lib/format';
+import { BakeLogCard, FinalTempCapture, WaterPouredCapture } from './BakeLog';
 import { parseTimerLabel } from '../lib/timers';
+import { loggedTimerTag } from '../lib/bakeLog';
 import { SpeedIndicator } from './SpeedIndicator';
 import {
   PHASE_LABELS,
@@ -255,63 +254,24 @@ function StepRow({
   );
 }
 
-/**
- * Records the final dough temperature at the end of the mix.
- *
- * One number, two uses: it shapes the balls' room-temperature phase (§4.8) and
- * it is the input the bake log needs to solve for a real friction factor.
- * Placed here rather than in an input panel because this is the moment the
- * probe comes out of the dough.
- */
-function FinalTempCapture({ state }: { state: AppState }) {
-  const { inputs, setInput, result } = state;
-  const measured = inputs.finalDoughTempF;
-
-  return (
-    <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/40">
-      <NumberField
-        label="Final dough temperature"
-        unit="°F"
-        value={measured ?? result.ddtF}
-        onCommit={(v) => setInput('finalDoughTempF', v)}
-        min={BOUNDS.finalDoughTempF.min}
-        max={BOUNDS.finalDoughTempF.max}
-        step={BOUNDS.finalDoughTempF.step}
-        hint={
-          measured === null
-            ? `Not measured yet — planning at DDT ${formatTempF(result.ddtF)} °F, which gives ${Math.round(result.ballRoomMinutes)} min at room temperature.`
-            : `The balls now get ${Math.round(result.ballRoomMinutes)} min at room temperature, adjusted for this reading. Every later stage moves with it.`
-        }
-      />
-      {measured !== null && (
-        <button
-          type="button"
-          onClick={() => setInput('finalDoughTempF', null)}
-          className="mt-2 min-h-touch text-sm font-medium text-amber-800 underline underline-offset-2 dark:text-amber-400"
-        >
-          Clear and plan at DDT
-        </button>
-      )}
-    </div>
-  );
-}
-
 export function StepList({
   state,
   onOpenConcept,
+  onOpenLog,
 }: {
   state: AppState;
   onOpenConcept: (id: string) => void;
+  onOpenLog: () => void;
 }) {
   const {
     tokens,
     checkedSteps,
     toggleStep,
-    clearCheckedSteps,
     inputs,
     timers,
     startTimer,
     stopTimer,
+    clearTimer,
     nowMs,
   } = state;
   const nMix = state.result.capacity.nMix;
@@ -345,19 +305,22 @@ export function StepList({
    * first, so `{coldFerment} h` and `{ballRoomMin} min` resolve to real numbers and
    * no step ids need special-casing. A range ("18–20 h") is a window (§7.5).
    */
-  const renderTimer = (label: string | undefined, key: string) => {
+  const renderTimer = (label: string | undefined, key: string, stepId: string) => {
     if (!label) return undefined;
     const spec = parseTimerLabel(label);
     if (!spec) return undefined;
+    const timer = timers.find((t) => t.stepId === key);
     return (
       <StepTimer
         stepId={key}
         spec={spec}
-        timer={timers.find((t) => t.stepId === key)}
+        timer={timer}
+        tag={loggedTimerTag(stepId, timer)}
         note={timers[0]?.stepId === key ? timerNote : undefined}
         now={nowMs}
         onStart={() => startTimer(key, spec)}
         onStop={() => stopTimer(key)}
+        onClear={() => clearTimer(key)}
       />
     );
   };
@@ -378,27 +341,15 @@ export function StepList({
 
   return (
     <section>
-      {/* min-h-touch: the Reset button appears with the first tick. Without a
-          reserved height it pushed every step down 28 px at the moment of the
-          tap, moving the next checkbox out from under the finger. */}
-      <div className="mb-3 flex min-h-touch items-center justify-between gap-3">
+      {/* §10: no Reset here. The page's Reset, above the panels, clears the
+          checkboxes along with the rest of the bake. */}
+      <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="text-sm font-medium uppercase tracking-wide text-stone-500 dark:text-stone-400">
           Steps
         </h2>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-stone-500 tabular">
-            {doneCount} / {instances.length} done
-          </span>
-          {doneCount > 0 && (
-            <button
-              type="button"
-              onClick={clearCheckedSteps}
-              className="min-h-touch rounded-lg border border-stone-300 px-3 text-sm font-medium active:bg-stone-100 dark:border-stone-600 dark:active:bg-stone-800"
-            >
-              Reset
-            </button>
-          )}
-        </div>
+        <span className="text-sm text-stone-500 tabular">
+          {doneCount} / {instances.length} done
+        </span>
       </div>
 
       {phases.map((phase) => (
@@ -431,17 +382,27 @@ export function StepList({
                     checked={checkedSteps.has(key)}
                     onToggleChecked={() => toggleStep(key)}
                     onOpenConcept={onOpenConcept}
-                    // The final-temperature capture belongs to the LAST mix —
-                    // it is the dough that goes into the bulk tub last.
+                    // §10: each reading is captured in the step where it is
+                    // taken — the poured water in Phase A, each mix's final
+                    // temperature at its end.
                     extra={
-                      step.id === 'mix-7' && mixIndex === nMix ? (
-                        <FinalTempCapture state={state} />
+                      step.id === 'mix-2' ? (
+                        <WaterPouredCapture state={state} mixIndex={mixIndex} />
+                      ) : step.id === 'mix-7' ? (
+                        <FinalTempCapture state={state} mixIndex={mixIndex} />
                       ) : undefined
                     }
-                    timer={renderTimer(boundTimer, key)}
+                    timer={renderTimer(boundTimer, key, step.id)}
                   />
                 );
               })}
+            {/* The log card follows the last mix, once every mix has been
+                read. Its own item, so ticking mix-7 doesn't dim it. */}
+            {phase === 'mix' && (
+              <li className="min-w-0">
+                <BakeLogCard state={state} onOpenLog={onOpenLog} />
+              </li>
+            )}
           </ol>
         </div>
       ))}

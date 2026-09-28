@@ -93,6 +93,15 @@ export interface StepInstance {
 }
 
 /**
+ * §8.2a. The instance key for a repeated step's pass: `mix-2#2`, or the bare
+ * template id at `nMix = 1`. Checkbox and timer state key off this, and the
+ * bake log reads each mix's phase times by it.
+ */
+export function instanceKey(stepId: string, mixIndex: number, nMix: number): string {
+  return Math.max(1, nMix) === 1 ? stepId : `${stepId}#${mixIndex}`;
+}
+
+/**
  * §8.2a. Expand the templates to one instance per mix.
  *
  * At `nMix = 2` the baker runs `mix-1` through `mix-7`, changes over, then runs
@@ -143,7 +152,7 @@ export function expandSteps(
         out.push({
           // At nMix 1 the key is the bare template id, so nothing changes for
           // 3, 6 or 9 balls and no persisted checkbox is orphaned.
-          key: passes === 1 ? inner.id : `${inner.id}#${mix}`,
+          key: instanceKey(inner.id, mix, passes),
           step: inner,
           mixIndex: mix,
         });
