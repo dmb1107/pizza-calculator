@@ -1583,9 +1583,9 @@ Auto-populate each bake from the session's inputs so only the measured values ne
 | Bake | `room_temp_f`, `flour_temp_f` | |
 | Mix | `mix_index` | 1-based; a split batch logs one row per mix |
 | Mix | `biga_temp_at_mix_f` | after tearing: what the model calls `T_biga` |
-| Mix | `bowl_state`, `bowl_temp_f` | cold / room / warm, and the temperature at mix start |
-| Mix | `water_temp_used_f` | what was poured, not the target |
-| Mix | `final_dough_temp_f` | every mix, not only the last |
+| Mix | `bowl_state`, `bowl_temp_f`, `bowl_prefilled` | cold / room / warm; the temperature at mix start; whether the field still held the selector's prefill |
+| Mix | `water_temp_used_f` | what was poured, not the target; `null` if empty |
+| Mix | `final_dough_temp_f` | every mix, not only the last; `null` if empty |
 | Mix | `phase_seconds` | A, B, C and D, each from its phase's timer |
 | Mix | `excluded` | Dave's switch; false by default |
 
@@ -1605,9 +1605,14 @@ Pauses aren't normalized. The rest has a fixed timer, and nothing measures what 
 
 ### Capture and saving
 
-- **Reset starts a new bake.** A **Reset** button near the top of the page asks first, then puts the day's temperatures back to their defaults and clears the step checkboxes and the timers. The batch settings stay: balls, ball weight, schedule and cold ferment. The baker presses it when starting a new bake. Copy (rendered):
+- **Reset starts a new bake.** A **Reset** button near the top of the page asks first. The baker presses it when starting a new bake, and it is the page's only reset: ⚠️ the Steps header's own Reset, which cleared the checkboxes alone, is removed, so no two controls share the label. Every input is classified, and a test keeps it that way:
+  - **Reset to defaults:** everything in Today's temperatures (room, flour and its "Same as room" switch, biga, the bowl state and readings), each mix's water poured and final reading, the DDT override (back to auto) and the timeline's anchor. The last two are per-bake choices: a stale override silently moves the water target and the rise, and a stale anchor puts every stage in the past.
+  - **Cleared:** the step checkboxes, the timers, and the link to the saved bake, so the next save is a new bake.
+  - **Kept:** balls, ball weight, schedule and cold ferment, the schedule's adjustments (fridge hours, the classic biga's room hours, temper), and saved bakes.
 
-  > **Start a new bake?** This clears today's temperatures, the step checkboxes and the timers. Your batch settings and saved bakes stay.
+  Copy (rendered):
+
+  > **Start a new bake?** This clears today's temperatures, any DDT override, the timeline's start or target time, the step checkboxes and the timers. Your batch settings and saved bakes stay.
   >
   > [Reset] [Cancel]
 

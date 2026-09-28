@@ -24,10 +24,11 @@ export const DEFAULT_INPUTS: Inputs = {
 };
 
 /**
- * §10: Reset starts a new bake. "The day's temperatures" go back to their
+ * §10: Reset starts a new bake. Today's temperatures go back to their
  * defaults: everything in Panel 2, the water poured and the final readings.
  * The batch settings stay (balls, ball weight, schedule, cold ferment), and so
- * do the schedule's adjustments, which are settings rather than readings.
+ * do the schedule's adjustments, which are how the baker plans rather than
+ * what they measured. `persistedForNewBake` covers the rest of the page.
  */
 export function inputsForNewBake(prev: Inputs): Inputs {
   return {
@@ -65,6 +66,30 @@ export const DEFAULT_PERSISTED: Persisted = {
   timers: [],
   sessionBakeId: '',
 };
+
+/**
+ * §10: the rest of Reset. The DDT override goes back to auto and the
+ * timeline's anchor to its default, since both are per-bake choices: a stale
+ * override moves the water target and the rise, and a stale anchor puts every
+ * stage in the past. The biga start's default is '', read as "now" the same
+ * way a fresh session reads it. The checkboxes, the timers and the link to the
+ * saved bake are cleared, so the next save is a new bake.
+ *
+ * Kept, though §10 doesn't name them: which panels are open, and which end of
+ * the timeline is held. In backward mode the hook takes the bake time the reset
+ * start implies, as switching modes does.
+ */
+export function persistedForNewBake(prev: Persisted): Persisted {
+  return {
+    ...prev,
+    calibration: DEFAULT_CALIBRATION,
+    bigaStartAtIso: DEFAULT_PERSISTED.bigaStartAtIso,
+    bakeAtIso: DEFAULT_PERSISTED.bakeAtIso,
+    checkedSteps: [],
+    timers: [],
+    sessionBakeId: '',
+  };
+}
 
 /**
  * Input bounds.

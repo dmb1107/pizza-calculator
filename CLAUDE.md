@@ -108,6 +108,8 @@ question:
 | `FINDINGS-47-to-recipe-agent.md` | Reply to MESSAGE-46. All applied; nothing open |
 | `MESSAGE-47.md` | Dave's change: no tracking of which values were typed. Save records the inputs as they stand; a Reset button above the panels starts a new bake (rendered copy in §10); a bowl at its prefill still doesn't count |
 | `FINDINGS-48-to-recipe-agent.md` | Reply to MESSAGE-47. Applied; asks about the two buttons labelled Reset and suggests `bowl_prefilled` in §10's table |
+| `MESSAGE-48.md` | The Steps header's Reset dropped: the page's Reset is the only one. It also resets the DDT override (to auto) and the timeline's anchor; §10 lists reset / cleared / kept, and its copy names both. §10's table gains `bowl_prefilled` and `null` |
+| `FINDINGS-49-to-recipe-agent.md` | Reply to MESSAGE-48. Applied; a test now holds the Reset copy to §10. Asks about two stored fields §10 doesn't list, both kept: which end of the timeline is held, and which panels are open |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -314,13 +316,17 @@ default left in place (room 70, biga 58) and a value from a link are
 readings. A bake stores plain temperatures, with `null` for a water or final
 that has no value, and `bowl_prefilled` from the bowl field's own prefill
 state (§6), because a prefill is biased high and the mix mustn't count. **The
-page's Reset starts a new bake** (`NewBakeReset`, above the panels): it asks,
-then `inputsForNewBake` puts the day's temperatures back to their defaults
-(Panel 2, water poured, final readings) and the checkboxes, timers and
-session bake are cleared; batch settings, schedule adjustments, the DDT
-override and the log stay. A test requires every input to be classified as
-reset or kept, so a new field forces the decision. The Steps header's own
-Reset clears the checkboxes only. A bake is dated by the day its first mix
+page's Reset starts a new bake, and it is the only reset** (`NewBakeReset`,
+above the panels; MESSAGE-48 removed the Steps header's). It asks, then
+`inputsForNewBake` and `persistedForNewBake` decide every field: today's
+temperatures (Panel 2, water poured, final readings), the DDT override and
+the timeline's anchor go back to their defaults; the checkboxes, timers and
+session bake are cleared; batch settings, schedule adjustments, the timeline
+mode, the open panels and the log stay. In backward mode the hook then takes
+the bake time the reset start implies, as a mode switch does, so a reload
+doesn't drop to forward. `state.test.ts` requires every input and every
+persisted field to be classified, so a new one forces the decision, and
+`steps.test.ts` holds the confirmation to §10's copy. A bake is dated by the day its first mix
 started (mix 1's Phase A timer), and saving over the session's bake from an
 earlier date asks first (`saveConflict`).
 
@@ -514,11 +520,11 @@ don't inline a `toFixed` somewhere else.
   375 px phone from Task 4 until Task 9. **Check phone width in both timeline
   modes** — the Task 8 check ran in backward mode only and missed it.
 - **Nothing may appear above the point of a tap.** Content that shows up in
-  response to a tap goes at or below it: the Reset button pushed every step
-  28 px on the first tick, and the timer note pushed the tapped step 118 px on
-  Start, both moving the next target out from under a floury finger. Reserve
-  the space (`min-h-touch` on the Steps header) or render below (the note now
-  sits inside the running timer). **Touch targets are 48 px** (`min-h-touch`);
+  response to a tap goes at or below it: the Steps header's old Reset pushed
+  every step 28 px on the first tick, and the timer note pushed the tapped step
+  118 px on Start, both moving the next target out from under a floury finger.
+  Reserve the space or render below: the note sits inside the running timer,
+  and the page Reset's question takes the button's place and grows down. **Touch targets are 48 px** (`min-h-touch`);
   a small control gets a label around it, pinned with `self-start` so flex
   stretch doesn't turn a whole card edge into the target.
 - **Number fields commit on blur, not on keystroke.** Clamping mid-type makes a

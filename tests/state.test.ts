@@ -1,9 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { C } from '../src/lib/constants';
-import { BOUNDS, DEFAULT_INPUTS, DEFAULT_PERSISTED, clampField, inputsForNewBake } from '../src/state/defaults';
+import {
+  BOUNDS,
+  DEFAULT_CALIBRATION,
+  DEFAULT_INPUTS,
+  DEFAULT_PERSISTED,
+  clampField,
+  inputsForNewBake,
+  persistedForNewBake,
+} from '../src/state/defaults';
 import { decodeInputs, encodeInputs, hasInputs } from '../src/state/url';
 import { STORAGE_KEY, loadPersisted, savePersisted, type StorageLike } from '../src/state/storage';
-import type { Inputs } from '../src/state/types';
+import type { Inputs, Persisted } from '../src/state/types';
 
 /** In-memory Storage stand-in, so these run without a DOM. */
 function fakeStorage(seed: Record<string, string> = {}): StorageLike & { data: Map<string, string> } {
@@ -274,6 +282,44 @@ describe('§10 Reset starts a new bake', () => {
     const reset = ['roomTempF', 'flourSameAsRoom', 'flourTempF', 'bigaTempF', 'bowlState', 'bowlTempF', 'finalDoughTempF', 'waterUsedF'];
     const kept = ['balls', 'ballWeightG', 'schedule', 'coldFermentH', 'bigaFridgeH', 'bigaRoomOnlyH', 'temperH'];
     expect(Object.keys(DEFAULT_INPUTS).sort()).toEqual([...reset, ...kept].sort());
+  });
+
+  // A session mid-bake: overridden DDT, both anchors set, ticks, a stopped
+  // timer, a saved bake, and panels that differ from their defaults.
+  const MID_BAKE: Persisted = {
+    calibration: { ddtOverrideF: 73 },
+    panels: { batch: false, temperatures: true, calibration: true },
+    bigaStartAtIso: '2026-09-26T15:00:00.000Z',
+    timelineMode: 'backward',
+    bakeAtIso: '2026-09-28T23:30:00.000Z',
+    checkedSteps: ['biga-1', 'mix-2#1'],
+    timers: [{ stepId: 'mix-3#1', startedAt: 1_000, minMinutes: 3, maxMinutes: 4, stoppedAt: 200_000 }],
+    sessionBakeId: 'bake-2026-09-28-1',
+  };
+
+  it('puts the DDT override and the timeline anchor back to their defaults, and clears the bake in progress', () => {
+    const next = persistedForNewBake(MID_BAKE);
+    // Reset to defaults (MESSAGE-48): per-bake choices. '' is the biga start a
+    // fresh session reads as now.
+    expect(next.calibration).toEqual(DEFAULT_CALIBRATION);
+    expect(next.calibration.ddtOverrideF).toBeNull();
+    expect(next.bigaStartAtIso).toBe(DEFAULT_PERSISTED.bigaStartAtIso);
+    expect(next.bakeAtIso).toBe(DEFAULT_PERSISTED.bakeAtIso);
+    // Cleared.
+    expect(next.checkedSteps).toEqual([]);
+    expect(next.timers).toEqual([]);
+    expect(next.sessionBakeId).toBe('');
+    // Kept, though §10 doesn't name them: which panels are open, and which end
+    // of the timeline is held.
+    expect(next.panels).toEqual(MID_BAKE.panels);
+    expect(next.timelineMode).toBe(MID_BAKE.timelineMode);
+    // Nothing else: every persisted field is in one of the three lists, and
+    // the calibration holds the override alone.
+    const resetToDefault = ['calibration', 'bigaStartAtIso', 'bakeAtIso'];
+    const cleared = ['checkedSteps', 'timers', 'sessionBakeId'];
+    const kept = ['panels', 'timelineMode'];
+    expect(Object.keys(DEFAULT_PERSISTED).sort()).toEqual([...resetToDefault, ...cleared, ...kept].sort());
+    expect(Object.keys(DEFAULT_CALIBRATION)).toEqual(['ddtOverrideF']);
   });
 });
 

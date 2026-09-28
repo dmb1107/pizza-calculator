@@ -266,7 +266,6 @@ export function StepList({
     tokens,
     checkedSteps,
     toggleStep,
-    clearCheckedSteps,
     inputs,
     timers,
     startTimer,
@@ -339,27 +338,15 @@ export function StepList({
 
   return (
     <section>
-      {/* min-h-touch: the Reset button appears with the first tick. Without a
-          reserved height it pushed every step down 28 px at the moment of the
-          tap, moving the next checkbox out from under the finger. */}
-      <div className="mb-3 flex min-h-touch items-center justify-between gap-3">
+      {/* §10: no Reset here. The page's Reset, above the panels, clears the
+          checkboxes along with the rest of the bake. */}
+      <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="text-sm font-medium uppercase tracking-wide text-stone-500 dark:text-stone-400">
           Steps
         </h2>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-stone-500 tabular">
-            {doneCount} / {instances.length} done
-          </span>
-          {doneCount > 0 && (
-            <button
-              type="button"
-              onClick={clearCheckedSteps}
-              className="min-h-touch rounded-lg border border-stone-300 px-3 text-sm font-medium active:bg-stone-100 dark:border-stone-600 dark:active:bg-stone-800"
-            >
-              Reset
-            </button>
-          )}
-        </div>
+        <span className="text-sm text-stone-500 tabular">
+          {doneCount} / {instances.length} done
+        </span>
       </div>
 
       {phases.map((phase) => (

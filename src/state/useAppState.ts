@@ -29,7 +29,7 @@ import {
   type Timeline,
 } from '../lib/timeline';
 import { timerDueAt, type RunningTimer, type TimerSpec } from '../lib/timers';
-import { DEFAULT_INPUTS, clampField, inputsForNewBake, type BoundedField } from './defaults';
+import { DEFAULT_INPUTS, clampField, inputsForNewBake, persistedForNewBake, type BoundedField } from './defaults';
 import { browserStorage, loadPersisted, savePersisted } from './storage';
 import {
   loadGitHubConfig,
@@ -85,6 +85,15 @@ function withEntry<T>(list: readonly T[], index: number, value: T, blank: T, car
   return next;
 }
 
+/**
+ * The biga start a stored value names, or now if it names none: a resumed
+ * session keeps the time the biga actually went in, and a fresh one (or one
+ * just Reset) starts from now, since that is when the baker is at the counter.
+ */
+function bigaStartFrom(iso: string): Date {
+  return iso ? new Date(iso) : roundToNextQuarterHour(new Date());
+}
+
 /** Push the inputs into the address bar without adding a history entry. */
 function syncUrl(inputs: Inputs): void {
   if (typeof window === 'undefined') return;
@@ -102,7 +111,6 @@ export interface AppState {
   commitNumber: (key: BoundedField & keyof Inputs, value: number) => void;
   /** Nudge a numeric field by a delta, applied to current state and clamped. */
   stepNumber: (key: BoundedField & keyof Inputs, delta: number) => void;
-  resetInputs: () => void;
 
   calibration: Calibration;
   /** §6: the FF in use for the current mix size, from the bake log, with its badge. */
@@ -120,9 +128,10 @@ export interface AppState {
   /** Clear a per-mix reading back to unread (the final temperature's "Clear"). */
   clearReading: (field: PerMixReading, index: number) => void;
   /**
-   * §10: the page's Reset. Puts the day's temperatures back to their defaults
-   * and clears the step checkboxes and the timers; the batch settings and the
-   * saved bakes stay, and the next save is a new bake.
+   * §10: the page's Reset, and its only one. Puts today's temperatures, the
+   * DDT override and the timeline's anchor back to their defaults and clears
+   * the step checkboxes and the timers; the batch settings and the saved bakes
+   * stay, and the next save is a new bake.
    */
   startNewBake: () => void;
 
@@ -172,7 +181,6 @@ export interface AppState {
   /** Step ids ticked off, persisted across reloads. */
   checkedSteps: ReadonlySet<string>;
   toggleStep: (id: string) => void;
-  clearCheckedSteps: () => void;
   /** {token} bindings for step and concept prose. */
   tokens: Record<string, string>;
   /** §7.3 capacity messages, then the engine's warnings — what the strip shows, in order. */
@@ -228,12 +236,7 @@ export function useAppState(): AppState {
   const [inputs, setInputs] = useState<Inputs>(initial.inputs);
   const [calibration, setCalibration] = useState<Calibration>(initial.persisted.calibration);
   const [panels, setPanels] = useState<PanelPrefs>(initial.persisted.panels);
-  const [bigaStartAt, setBigaStartAt] = useState<Date>(() => {
-    const stored = initial.persisted.bigaStartAtIso;
-    // A resumed session keeps the time the biga actually went in; a fresh one
-    // starts from now, since that is when you are standing at the counter.
-    return stored ? new Date(stored) : roundToNextQuarterHour(new Date());
-  });
+  const [bigaStartAt, setBigaStartAt] = useState<Date>(() => bigaStartFrom(initial.persisted.bigaStartAtIso));
 
   const [timelineMode, setTimelineModeRaw] = useState<TimelineMode>(initial.persisted.timelineMode);
   const [bakeAt, setBakeAt] = useState<Date | null>(() =>
@@ -275,12 +278,8 @@ export function useAppState(): AppState {
     syncUrl(inputs);
   }, [inputs]);
 
-  useEffect(() => {
-    if (!hydrated.current) {
-      hydrated.current = true;
-      return;
-    }
-    const value: Persisted = {
+  const persisted = useMemo<Persisted>(
+    () => ({
       calibration,
       panels,
       bigaStartAtIso: bigaStartAt.toISOString(),
@@ -289,19 +288,17 @@ export function useAppState(): AppState {
       checkedSteps: [...checkedSteps],
       timers,
       sessionBakeId,
-    };
-    savePersisted(storage, value);
-  }, [
-    storage,
-    calibration,
-    panels,
-    bigaStartAt,
-    timelineMode,
-    bakeAt,
-    checkedSteps,
-    timers,
-    sessionBakeId,
-  ]);
+    }),
+    [calibration, panels, bigaStartAt, timelineMode, bakeAt, checkedSteps, timers, sessionBakeId],
+  );
+
+  useEffect(() => {
+    if (!hydrated.current) {
+      hydrated.current = true;
+      return;
+    }
+    savePersisted(storage, persisted);
+  }, [storage, persisted]);
 
   useEffect(() => {
     saveLog(storage, log);
@@ -336,10 +333,6 @@ export function useAppState(): AppState {
       if (typeof current !== 'number') return prev;
       return { ...prev, [key]: clampField(key, current + delta) };
     });
-  }, []);
-
-  const resetInputs = useCallback(() => {
-    setInputs(DEFAULT_INPUTS);
   }, []);
 
   // --- §10 readings ---------------------------------------------------------
@@ -566,6 +559,12 @@ export function useAppState(): AppState {
     [timelineMode, timeline.bakeAt, timeline.startsAt],
   );
 
+  // Backward mode holds a bake time. Reset clears it, so take the one the reset
+  // start implies, exactly as switching to backward mode hands it over.
+  useEffect(() => {
+    if (timelineMode === 'backward' && bakeAt === null) setBakeAt(timeline.bakeAt);
+  }, [timelineMode, bakeAt, timeline.bakeAt]);
+
   const startNow = useCallback(() => {
     setBigaStartAt(roundToNextQuarterHour(new Date()));
     setTimelineModeRaw('forward');
@@ -592,19 +591,23 @@ export function useAppState(): AppState {
     [checkedSteps],
   );
 
-  // The Steps header's own Reset: the checkboxes only.
-  const clearCheckedSteps = useCallback(() => setCheckedSteps(new Set()), []);
-
   /**
-   * §10: Reset starts a new bake. The day's temperatures go back to their
-   * defaults (`inputsForNewBake`); the DDT override and the log stay.
+   * §10: Reset starts a new bake. `inputsForNewBake` and `persistedForNewBake`
+   * decide every field; this applies all of them, kept ones included, so the
+   * decision lives in one place. The log stays.
    */
   const startNewBake = useCallback(() => {
+    const next = persistedForNewBake(persisted);
     setInputs(inputsForNewBake);
-    setCheckedSteps(new Set());
-    setTimers([]);
-    setSessionBakeId('');
-  }, []);
+    setCalibration(next.calibration);
+    setPanels(next.panels);
+    setBigaStartAt(bigaStartFrom(next.bigaStartAtIso));
+    setTimelineModeRaw(next.timelineMode);
+    setBakeAt(next.bakeAtIso ? new Date(next.bakeAtIso) : null);
+    setCheckedSteps(new Set(next.checkedSteps));
+    setTimers(next.timers);
+    setSessionBakeId(next.sessionBakeId);
+  }, [persisted]);
 
   const startTimer = useCallback((stepId: string, spec: TimerSpec) => {
     setTimers((prev) => [
@@ -666,7 +669,6 @@ export function useAppState(): AppState {
     setInput,
     commitNumber,
     stepNumber,
-    resetInputs,
     calibration,
     friction,
     mixSize,
@@ -699,7 +701,6 @@ export function useAppState(): AppState {
     dueTimerStepIds,
     checkedSteps,
     toggleStep,
-    clearCheckedSteps,
     tokens,
     alerts,
     ballsSplitHint,

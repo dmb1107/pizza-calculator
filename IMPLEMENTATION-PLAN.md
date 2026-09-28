@@ -5,9 +5,9 @@ Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
 **Status:** Tasks 0–11 complete, on the bowl-aware thermal model with **per-mix
-weights**, the ice calculation removed, and **MESSAGE-47 applied**: the bake
+weights**, the ice calculation removed, and **MESSAGE-48 applied**: the bake
 log, synced through a private GitHub repository, now sets the FF in use.
-FINDINGS-48 is the last thing sent.
+FINDINGS-49 is the last thing sent.
 
 ---
 
@@ -486,7 +486,8 @@ those pointing at nothing would have been worse than doing both.
 - [x] All 18 §8.2 steps, all 12 §8.3 concepts, verbatim
 - [x] `{brace}` bindings for all 16 tokens
 - [x] GFM markdown with real tables
-- [x] Per-step checkbox, persisted; progress counter and a reset
+- [x] Per-step checkbox, persisted; progress counter and a reset (the
+      reset moved to the page's Reset in MESSAGE-48)
 - [x] `watchFor` and `troubleshoot` rendered distinctly from `detail`
 - [x] `biga-4`'s two schedule-dependent summaries
 - [x] Concept drawer, reachable from step links
@@ -708,7 +709,9 @@ has the rules (§4.3 normalization, §4.8 split-batch `T_actual`, §6 Panel 3,
       with ½, ⅓, ⅔.
 - [x] **Reset** above the panels starts a new bake (MESSAGE-47): it asks,
       then resets the day's temperatures and clears the checkboxes and
-      timers, keeping the batch settings and the log.
+      timers, keeping the batch settings and the log. MESSAGE-48 made it the
+      only reset (the Steps header's is gone) and added the DDT override and
+      the timeline's anchor to what it resets; a test holds its copy to §10.
 - [x] **§4.8 split batches:** `T_actual` is the mean of the mixes, a mix not
       yet read counting at DDT.
 - [x] **Found in passing:** mix 1's bowl reading carried forward to later
