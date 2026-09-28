@@ -24,8 +24,10 @@ cold ferment. The app returns:
   target uses.
 
 The setup survives a refresh, and **Share setup** copies it as a link.
-Reference tables, the recipe's sources and the bake log open in drawers at the
-bottom of the page.
+**Reset**, above the panels, starts a new bake: it clears the day's
+temperatures, the step checkboxes and the timers, and keeps the batch settings
+and the log. Reference tables, the recipe's sources and the bake log open in
+drawers at the bottom of the page.
 
 The bake log stays in the browser unless you give it a private GitHub
 repository and a token that can reach only that repository; then each device
@@ -37,8 +39,8 @@ their hands.
 
 ## Status
 
-Tasks 0–11 are done and the site is live: the bake log (Task 11) landed with
-MESSAGE-45. See [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
+Tasks 0–11 are done and the site is live. The bake log (Task 11) was built
+across MESSAGE-45 to MESSAGE-47. See [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
 ## Home screen icon
 
