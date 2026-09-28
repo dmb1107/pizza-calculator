@@ -1,19 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { C } from '../src/lib/constants';
-import { BOUNDS, DEFAULT_INPUTS, DEFAULT_PERSISTED, clampField } from '../src/state/defaults';
+import { BOUNDS, DEFAULT_ENTERED, DEFAULT_INPUTS, DEFAULT_PERSISTED, clampField } from '../src/state/defaults';
 import { decodeInputs, encodeInputs, hasInputs } from '../src/state/url';
-import { ballsPerMix } from '../src/lib/engine';
-import {
-  STORAGE_KEY,
-  clearFriction,
-  effectiveFriction,
-  isMixSizeKey,
-  loadPersisted,
-  recordFriction,
-  savePersisted,
-  type StorageLike,
-} from '../src/state/storage';
-import { DEFAULT_CALIBRATION } from '../src/state/defaults';
+import { STORAGE_KEY, loadPersisted, savePersisted, type StorageLike } from '../src/state/storage';
 import type { Inputs } from '../src/state/types';
 
 /** In-memory Storage stand-in, so these run without a DOM. */
@@ -42,7 +31,8 @@ const CUSTOM: Inputs = {
   bigaFridgeH: 18.5,
   bigaRoomOnlyH: 14,
   temperH: 3,
-  finalDoughTempF: 73.5,
+  finalDoughTempF: [73.5, 74],
+  waterUsedF: [64.2, null],
 };
 
 describe('URL serialization', () => {
@@ -58,6 +48,25 @@ describe('URL serialization', () => {
     // Links shared before the per-mix fields existed carry a bare value.
     expect(decodeInputs('biga=57').bigaTempF).toEqual([57]);
     expect(decodeInputs('bowlt=66').bowlTempF).toEqual([66]);
+  });
+
+  it('reads final and poured-water readings by index, padded to the mixes', () => {
+    // 12 × 265 g is two mixes. Mix 1 read, mix 2 not yet: "73~", which can't
+    // be mistaken for a bare value.
+    const twoMix = { ...DEFAULT_INPUTS, balls: 12, finalDoughTempF: [73], waterUsedF: [null, 60.5] };
+    const encoded = encodeInputs(twoMix);
+    expect(new URLSearchParams(encoded).get('dought')).toBe('73~');
+    expect(new URLSearchParams(encoded).get('water')).toBe('~60.5');
+    const decoded = decodeInputs(encoded);
+    expect(decoded.finalDoughTempF).toEqual([73, null]);
+    expect(decoded.waterUsedF).toEqual([null, 60.5]);
+  });
+
+  it('reads a link from before per-mix finals as the batch reading, so its rise is unchanged', () => {
+    // It was the one reading §4.8 used; at two mixes it applies to both, and
+    // their mean is the same value.
+    expect(decodeInputs('balls=12&dought=73.5').finalDoughTempF).toEqual([73.5, 73.5]);
+    expect(decodeInputs('dought=73.5').finalDoughTempF).toEqual([73.5]);
   });
 
   it('clamps and rejects garbage inside a list without dropping the rest', () => {
@@ -171,16 +180,18 @@ describe('localStorage persistence', () => {
   it('round-trips', () => {
     const s = fakeStorage();
     const value = {
-      calibration: {
-        frictionFactors: { 6: { ff: 13.2, measuredAt: '2026-08-21' } },
-        ddtOverrideF: 73,
-      },
+      calibration: { ddtOverrideF: 73 },
       panels: { batch: true, temperatures: true, calibration: false },
       bigaStartAtIso: '2026-08-21T13:00:00.000Z',
       timelineMode: 'backward' as const,
       bakeAtIso: '2026-08-23T22:00:00.000Z',
       checkedSteps: ['biga-1', 'biga-2'],
-          timers: [{ stepId: 'mix-6', startedAt: 1_700_000_000_000, minMinutes: 10, maxMinutes: 10 }],
+      timers: [
+        { stepId: 'mix-6', startedAt: 1_700_000_000_000, minMinutes: 10, maxMinutes: 10 },
+        { stepId: 'mix-5', startedAt: 1_700_000_000_000, minMinutes: 3, maxMinutes: 4, stoppedAt: 1_700_000_210_000 },
+      ],
+      entered: { ...DEFAULT_ENTERED, roomTempF: '2026-09-28', bowlTempF: ['2026-09-28', ''] },
+      sessionBakeId: '2026-09-28-193000',
     };
     savePersisted(s, value);
     expect(loadPersisted(s)).toEqual(value);
@@ -212,15 +223,19 @@ describe('localStorage persistence', () => {
       expect(Array.isArray(loaded.checkedSteps)).toBe(true);
       expect(Array.isArray(loaded.timers)).toBe(true);
 
-      // Whatever survives must be well-formed. Note the map is NOT required to
-      // be empty: a record too broken to parse falls back to DEFAULT_PERSISTED,
-      // which carries the seeded bake-1 measurement — losing a real calibration
-      // because localStorage got scrambled would be the worse failure.
-      for (const [size, entry] of Object.entries(loaded.calibration.frictionFactors)) {
-        expect(isMixSizeKey(Number(size))).toBe(true);
-        expect(Number.isFinite(entry.ff)).toBe(true);
-        expect(typeof entry.measuredAt).toBe('string');
-      }
+      expect(Array.isArray(loaded.entered.bigaTempF)).toBe(true);
+      expect(typeof loaded.sessionBakeId).toBe('string');
+    });
+
+    it('drops a stop recorded before its start, and entry dates it did not write', () => {
+      const raw = JSON.stringify({
+        timers: [{ stepId: 'mix-2', startedAt: 2000, minMinutes: 3, maxMinutes: 4, stoppedAt: 1000 }],
+        entered: { roomTempF: 'yesterday', bigaTempF: ['2026-09-28', 42] },
+      });
+      const loaded = loadPersisted(fakeStorage({ [STORAGE_KEY]: raw }));
+      expect(loaded.timers[0]).not.toHaveProperty('stoppedAt');
+      expect(loaded.entered.roomTempF).toBe('');
+      expect(loaded.entered.bigaTempF).toEqual(['2026-09-28', '']);
     });
 
     it('keeps backward mode only with a bake time to hold', () => {
@@ -244,152 +259,13 @@ describe('localStorage persistence', () => {
       expect('bowlMassG' in decoded).toBe(false);
     });
 
-    it('drops corrupt friction entries but keeps the good ones', () => {
+    it('ignores a friction map stored before the log (§6: the FF is never typed)', () => {
       const raw = JSON.stringify({
-        calibration: {
-          frictionFactors: {
-            6: { ff: 13.5, measuredAt: '2026-08-01' },
-            9: { ff: 'hot' },
-            0: { ff: 12 },
-            99: { ff: 12 },
-            abc: { ff: 12 },
-          },
-          ddtOverrideF: null,
-        },
+        calibration: { frictionFactors: { 6: { ff: 13.2, measuredAt: '2026-08-01' } }, ddtOverrideF: 73 },
       });
-      const { frictionFactors } = loadPersisted(fakeStorage({ [STORAGE_KEY]: raw })).calibration;
-      expect(Object.keys(frictionFactors)).toEqual(['6']);
-      expect(frictionFactors[6]?.ff).toBe(13.5);
+      const loaded = loadPersisted(fakeStorage({ [STORAGE_KEY]: raw }));
+      expect(loaded.calibration).toEqual({ ddtOverrideF: 73 });
     });
-
-    it('clamps a stored friction factor into range', () => {
-      const raw = JSON.stringify({
-        calibration: { frictionFactors: { 6: { ff: 9999, measuredAt: '2026-08-01' } } },
-      });
-      const { frictionFactors } = loadPersisted(fakeStorage({ [STORAGE_KEY]: raw })).calibration;
-      expect(frictionFactors[6]?.ff).toBe(BOUNDS.frictionFactorF.max);
-    });
-  });
-});
-
-describe('§6 friction factor is per mix size', () => {
-  it('ships the bake-1 measurement for 6 balls per mix', () => {
-    // §6: seed with {6: {value: 14.03, date: '2026-08-21'}} — 14.04 before
-    // MESSAGE-25 re-solved bake 1 from its logged inputs.
-    const f = effectiveFriction(DEFAULT_CALIBRATION, 6);
-    expect(f.ff).toBe(14.03);
-    expect(f.isEstimate).toBe(false);
-    expect(f.measuredAt).toBe('2026-08-21');
-  });
-
-  it('falls back to 14.0 and badges it as an estimate at uncalibrated sizes', () => {
-    for (const balls of [3, 9, 6.5, 9.5]) {
-      const f = effectiveFriction(DEFAULT_CALIBRATION, balls);
-      expect(f.ff, `${balls} balls`).toBe(C.DEFAULT_FF);
-      expect(f.isEstimate, `${balls} balls`).toBe(true);
-      expect(f.measuredAt).toBeUndefined();
-    }
-  });
-
-  it('uses a measurement for that batch size and reports its date', () => {
-    const cal = recordFriction(DEFAULT_CALIBRATION, 9, 16.4, '2026-08-21');
-    const f = effectiveFriction(cal, 9);
-    expect(f.ff).toBe(16.4);
-    expect(f.isEstimate).toBe(false);
-    expect(f.measuredAt).toBe('2026-08-21');
-  });
-
-  it('does not apply one mix size’s measurement to another', () => {
-    // Whether FF varies with mix size is untested (§6, MESSAGE-25); keeping a
-    // value per size is how the bake log finds out, so one size's measurement
-    // must not leak into another's.
-    const cal = recordFriction(DEFAULT_CALIBRATION, 9, 16.4, '2026-08-21');
-    expect(effectiveFriction(cal, 3).ff).toBe(C.DEFAULT_FF);
-    expect(effectiveFriction(cal, 3).isEstimate).toBe(true);
-    expect(effectiveFriction(cal, 9).ff).toBe(16.4);
-  });
-
-  it('keeps separate measurements side by side', () => {
-    let cal = recordFriction(DEFAULT_CALIBRATION, 3, 12.1, '2026-08-01');
-    cal = recordFriction(cal, 9, 16.4, '2026-08-21');
-    expect(effectiveFriction(cal, 3).ff).toBe(12.1);
-    expect(effectiveFriction(cal, 9).ff).toBe(16.4);
-  });
-
-  it('overwrites a measurement for the same size', () => {
-    let cal = recordFriction(DEFAULT_CALIBRATION, 6, 12, '2026-08-01');
-    cal = recordFriction(cal, 6, 13.8, '2026-08-21');
-    expect(effectiveFriction(cal, 6)).toEqual({ ff: 13.8, isEstimate: false, measuredAt: '2026-08-21' });
-  });
-
-  it('returns to the estimate when cleared', () => {
-    const cal = recordFriction(DEFAULT_CALIBRATION, 6, 13.8, '2026-08-21');
-    expect(effectiveFriction(clearFriction(cal, 6), 6).isEstimate).toBe(true);
-  });
-
-  it('treats calibration as immutable', () => {
-    const before = structuredClone(DEFAULT_CALIBRATION);
-    recordFriction(DEFAULT_CALIBRATION, 6, 13.8, '2026-08-21');
-    expect(DEFAULT_CALIBRATION).toEqual(before);
-  });
-
-  it('clamps a recorded value into range', () => {
-    const cal = recordFriction(DEFAULT_CALIBRATION, 6, -20, '2026-08-21');
-    expect(effectiveFriction(cal, 6).ff).toBe(BOUNDS.frictionFactorF.min);
-  });
-
-  // The key is what the engine says the batch's mix size is — so these go
-  // through `ballsPerMix`, the function the app actually looks up with.
-  const key = (balls: number, ballWeightG = 265) => ballsPerMix({ balls, ballWeightG });
-
-  it('reads the 6 entry for a 12-ball batch, and files a 12-ball bake under 6', () => {
-    expect(key(12)).toBe(6);
-    expect(effectiveFriction(DEFAULT_CALIBRATION, key(12))).toEqual(effectiveFriction(DEFAULT_CALIBRATION, 6));
-    const cal = recordFriction(DEFAULT_CALIBRATION, key(12), 14.6, '2026-10-01');
-    expect(effectiveFriction(cal, key(6)).ff).toBe(14.6);
-    expect(Object.keys(cal.frictionFactors)).toEqual(['6']);
-  });
-
-  it('keys on the mix, so ball weight can move a batch to another entry', () => {
-    // 9 balls is one mix at 265 g and two at 280 g.
-    expect(key(9, 265)).toBe(9);
-    expect(key(9, 280)).toBe(4.5);
-  });
-
-  it('matches a fractional mix size exactly and never interpolates', () => {
-    // §6: 13 balls -> 6.5 falls back rather than borrowing from 6 or 7.
-    let cal = recordFriction(DEFAULT_CALIBRATION, 7, 15.0, '2026-10-01');
-    expect(key(13)).toBe(6.5);
-    expect(effectiveFriction(cal, key(13))).toEqual({ ff: C.DEFAULT_FF, isEstimate: true });
-    // A bake at 13 balls files under 6.5 and is found there next time.
-    cal = recordFriction(cal, key(13), 14.4, '2026-10-02');
-    expect(effectiveFriction(cal, key(13)).ff).toBe(14.4);
-    expect(effectiveFriction(cal, 6).ff).toBe(14.03);
-  });
-
-  it('round-trips a fractional key through localStorage', () => {
-    const storage = fakeStorage();
-    const cal = recordFriction(DEFAULT_CALIBRATION, 20 / 3, 14.2, '2026-10-01');
-    savePersisted(storage, { ...DEFAULT_PERSISTED, calibration: cal });
-    const loaded = loadPersisted(storage).calibration;
-    expect(effectiveFriction(loaded, key(20, 265)).ff).toBe(14.2);
-    expect(key(20, 265)).toBe(20 / 3);
-  });
-
-  it('replaces the untouched 14.04 seed on load, and nothing else', () => {
-    const stored = (entry: object) =>
-      loadPersisted(
-        fakeStorage({ [STORAGE_KEY]: JSON.stringify({ calibration: { frictionFactors: { 6: entry }, ddtOverrideF: null } }) }),
-      ).calibration.frictionFactors[6];
-    expect(stored({ ff: 14.04, measuredAt: '2026-08-21' })).toEqual({ ff: 14.03, measuredAt: '2026-08-21' });
-    // Typed by the baker — same value on another day, or another value on the seed's day.
-    expect(stored({ ff: 14.04, measuredAt: '2026-09-30' })).toEqual({ ff: 14.04, measuredAt: '2026-09-30' });
-    expect(stored({ ff: 14.1, measuredAt: '2026-08-21' })).toEqual({ ff: 14.1, measuredAt: '2026-08-21' });
-  });
-
-  it('accepts exactly the keys a batch can produce', () => {
-    for (const k of [3, 6, 6.5, 9.5, 20 / 3, 8, 10]) expect(isMixSizeKey(k), String(k)).toBe(true);
-    for (const k of [0, -6, 99, 6.4, NaN, Infinity]) expect(isMixSizeKey(k), String(k)).toBe(false);
   });
 });
 

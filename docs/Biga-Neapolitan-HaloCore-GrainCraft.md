@@ -343,7 +343,11 @@ At 12 balls that's a 5.3 °F spread in the water target between mix 1 and mix 2 
 
 Bake 1 gave 14.03 °F. The Phase C friction rate agrees: 1.00 °F/min on the dough and bowl together is 1.11 °F/min for the dough alone, against 1.08 predicted.
 
-**One data point so far.** Bakes at 3 and 9 balls test the bowl model: if it's right, the *raw temperature rise* differs (11.5 vs 13.0) while the solved FF stays near 14. A difference in solved FF means different things depending on its direction:
+⚠️ **Bake 1 ran long, so 14.03 is the FF of its mix, not of the one in §8.** Its Phase C took 6.5 minutes against 3.5 at the middle of the range, and the whole mix 18.5 motor minutes against 13.4. At 1.08 °F a minute, Phase C's extra 3 minutes are 3.2 °F of the 14.03: with a 3.5-minute Phase C, bake 1 solves to **10.8**. Phases A, B and D ran another 2⅛ minutes over between them, split unrecorded, so even 10.8 is high by an amount bake 1 can't give. If that's right, a 6-ball dough mixed on 14.03 with §8's times finishes about 2.9 °F under DDT before the probe step, whose longest Phase C recovers 1.9 of it.
+
+The calculator keeps 14.03 until the first bake logged with its phase times, on purpose. A figure that's too high errs cool, which the probe step and the longer rise after balling both correct; one that's too low errs warm, where the rise has a 45-minute floor and warmth costs this dough more. From then on it works from the log, which corrects every bake to the middle of each phase's range (§12, *Log schema*).
+
+**One data point so far.** Bakes at 3 and 9 balls test the bowl model: if it's right, the solved FF comes out the same at both, while the *raw temperature rise* differs (at FF 14, 11.5 vs 13.0). Compare them only once both are corrected to the same mix times; a Phase C stretched or cut at the probe would otherwise look like a size effect. A difference in solved FF means different things depending on its direction:
 
 - **Higher at 3 balls than at 9**: the bowl term is too big. Nothing else predicts FF *falling* as the mix grows, so this result is clear.
 - **Higher at 9 balls than at 3**: either the bowl term is too small, or FF really does rise with mix size (the untested idea under *Measuring your friction factor*). These two bakes can't tell those apart.
@@ -389,17 +393,17 @@ Keep it under ~35% of the water and make sure every gram melts before you take a
 
 ### Measuring your friction factor
 
-**14.0 °F is a measured value** (above). For comparison, commercial spirals typically reach 20–26 °F on a full bread mix. This is a shorter profile on a smaller machine with a 10-minute rest in the middle, so a lower figure is expected.
+**14.0 °F is a measured value** (above), from a mix that ran long. For comparison, commercial spirals typically reach 20–26 °F on a full bread mix. This is a shorter profile on a smaller machine with a 10-minute rest in the middle, so a lower figure is expected.
 
 To measure it:
 1. Record every input mass and temperature.
-2. Run the mix profile in §8 exactly.
+2. Run the mix profile in §8, each phase to its cue, and record how long each phase took (the step timers do this). A phase that runs off the middle of its range is corrected for (§12, *Log schema*), so don't cut one short to fit the table.
 3. Probe the dough **immediately** at the end: three spots in the center of the mass, averaged.
 4. Solve for FF with the formula under *Friction factor: measured* above; it includes the bowl. Don't subtract a predicted temperature from the measured one: that difference is the rise after the bowl has diluted it, and it reads low by `FF × C_bowl/(Ct + C_bowl)`, about 2.5 °F at a 3-ball mix and 1.4 °F at 6. Use the solved value next time.
 
 **Four things to watch:**
 
-- **FF belongs to the mix profile, not the machine.** Change speeds or times and it changes. Rough scaling: **+1 °F per extra minute at 30%** (0.75 °F/min at 15%, 0.86 at 20%). Re-measure whenever you change the routine.
+- **FF belongs to the mix profile, not the machine.** Change speeds or times and it changes. Rough scaling: **+1 °F per extra minute at 30%** (0.75 °F/min at 15%, 0.86 at 20%). The calculator handles time within a mix: it corrects each logged bake to the middle of every phase's range at these rates, so a Phase C stretched or cut at the probe doesn't end up in your FF. Only the 30% rate has been checked against a bake, and bake 1 suggests the other two run high (§12). A change of speeds needs new bakes.
 - ⚠️ **Those per-minute rates are for the dough alone, like FF itself.** A thermometer reads the dough after it has come to equilibrium with the bowl, so what you *observe* is the rate times `Ct/(Ct + C_bowl)`: 0.82 at 3 balls, 0.90 at 6, 0.93 at 9. Multiply before you compare a rate with a measurement.
 - **FF may differ by mix size (untested).** On top of the bowl dilution, a bigger mix might run a higher FF: more total work, and less surface area per unit mass to lose heat. Nothing has measured this yet. **Keep a separate FF per mix size** (3, 6 and 9 balls per mix) so the data can show it.
 - **Heat of hydration is already included; don't add it again.** Flour releases roughly 1.5–3 °F as it absorbs water. That happens during the mix, so it's inside the final temperature you measure and therefore inside your FF: FF is one number covering both mixer friction and the heat of hydration. If a calculator asks for a friction factor and a separate hydration correction, it uses a different convention; don't give it this number.
@@ -449,6 +453,7 @@ Every mix goes into **one bulk container**, so the batch cools as a single mass,
 
 - **Clock the bulk rest from the last mix.** It's the only starting point that gives the last dough any bulk at all. The earlier doughs run long by design.
 - **Then take half the stagger off the ball room-temperature rise**: 17½ minutes at two mixes, 35 at three. For a dough on target, that turns the 90-minute rise into **72½** at two mixes and **55** at three.
+- **Time that rise from the average of the mixes' final temperatures.** The doughs share one tub, so the average is the tub's temperature; the last mix's reading alone ignores the others.
 
 ⚠️ **This splits the error rather than removing it.** Before the correction, the first dough is the whole stagger over and the last exactly on time. After it, the first and last sit half the stagger either side: +17½ and −17½ at two mixes, +35 and −35 at three, with the middle dough on time. One clock can't do better, and halving the worst case is worth twenty seconds of arithmetic.
 
@@ -500,13 +505,15 @@ Have everything weighed before you start, and the water already blended to tempe
 |---|---:|---:|---|
 | **Prep** | — | — | Break up clumps in the fresh flour while it's dry, as with the biga flour. Crumble the biga as small as you can; it's the stiffest thing the mixer handles. Add the flour and toss to coat. |
 | **A: breakdown** | **1½** · 15% / 85 RPM | 3–4 min | Add **60% of the final water** by weight (3 balls 105.8 g · 6 balls 211.6 g · 9 balls 317.4 g) **with the mixer off**, then bring the dial up. Run until the biga pieces disappear into a rough, shaggy mass. This is the highest-torque phase. *Optional (PizzaBlab): soak the crumbled biga in that water for a few minutes first, but only a few. Working biga in plain water strips starch off the chunks and leaves hard, sticky gluten lumps.* |
-| **B: bassinage** | **2** · 20% / 98 RPM | 5–6 min | Add the salt, then the remaining 40% of the water (3 balls 70.5 g · 6 balls 141.1 g · 9 balls 211.6 g) in **3 additions**, letting each absorb fully before the next. Pour **slowly down the splash-guard spout**; at 98 RPM the hook slings water that's dumped in. |
+| **B: bassinage** | **2** · 20% / 98 RPM | 5–6 min | Add the salt, then the remaining 40% of the water (3 balls 70.5 g · 6 balls 141.1 g · 9 balls 211.6 g) in **3 additions**, letting each absorb fully before the next. Pour **slowly down the splash-guard spout**; at 98 RPM the hook slings water that's dumped in. **Done when** the last addition has absorbed: no free water, no dry flour, one cohesive mass. |
 | **Probe** | 0% | — | **Target: 3 balls 72.2 °F · 6 balls 71.8 °F · 9 balls 70.5 °F** (at FF 14 in a 70 °F room). It's below DDT on purpose: about a third of the friction is still to come. General form below. |
-| **C: development** | **3** · 30% / 123 RPM | 3–4 min | Run until smooth and glossy. Adjust the time from the probe reading: **~1 °F per minute** at 6 balls or larger, **~0.9 at 3 balls**. |
+| **C: development** | **3** · 30% / 123 RPM | 3–4 min | Run until smooth and glossy. That look sets the shortest Phase C and 5.5 min the longest; within those, adjust the time from the probe reading: **~1 °F per minute** at 6 balls or larger, **~0.9 at 3 balls**. |
 | **Rest** | 0% | 10 min | Bowl covered, mixer off. The gluten relaxes, and the dough smooths out on its own. |
 | **D: finish** | **2** · 20% / 98 RPM | 45–60 s | Final smoothing. The dough should pull cleanly off the bowl wall. |
 
 **Never above 40% (148 RPM) with this dough.** The total run is about 15 min, inside the 20-minute continuous limit, and the rest splits it anyway.
+
+**The times are what each phase is expected to take, not when to stop.** Run A, B and D to their cues. Bake 1 needed about 11 minutes for A and B together against 8–10 here, with Phase A's water guessed and the dough running cold; bakes 2 and 3 decide whether those two ranges move. Phase C is different, because its time is also the temperature lever (*Reading the probe*).
 
 #### Reading the probe
 
@@ -537,7 +544,7 @@ It reflects two findings from bake 1: the bowl dilutes the friction still to com
 
 At FF 14 in a 70 °F room: **3 balls → 72.2 °F · 6 balls → 71.8 °F · 9 balls → 70.5 °F**
 
-The 0.33 assumes nominal phase durations. If Phase A or B runs long, more of the friction is already in the dough, so the probe should read higher.
+The 0.33 assumes nominal phase durations and an FF near 14: at the middle of each range, Phases C and D add 4.5 °F by the friction rates below, a third of 14. If the logged FF settles well below 14, this term will need rederiving from those rates. If Phase A or B runs long, more of the friction is already in the dough, so the probe should read higher.
 
 **Acting on the reading** (nominal Phase C is 3.5 min):
 
@@ -546,9 +553,13 @@ The 0.33 assumes nominal phase durations. If Phase A or B runs long, more of the
 | **Target ±1 °F** | Run Phase C as written |
 | **1–2 °F high** | Cut Phase C to 2–2.5 min |
 | **1–2 °F low** | Extend Phase C to 4.5–5.5 min |
-| **More than 2 °F off** | Accept the miss and fix the water temperature next batch |
+| **More than 2 °F off** | Use Phase C's full range: 2 min if high (longer if it isn't smooth and glossy yet), 5.5 min if low. Accept what's left and fix the water temperature next batch |
 
 **Phase C can only move the temperature a little.** At 6 balls, cutting it to 2 min saves **1.5 °F** and stretching it to 5.5 min adds **1.9 °F**; the range is narrower at 3 balls (−1.3 / +1.8) and slightly wider at 9 (−1.5 / +2.0). Beyond that you give up gluten development to fix temperature, and a properly developed dough 2 °F warm is better than an under-mixed one at exactly the right temperature. Fix a temperature miss in the next batch's water calculation instead.
+
+**So the look sets the shortest Phase C, and 5.5 minutes the longest.** The probe picks the time in between. Don't stop before the dough is smooth and glossy, however warm it reads, and don't run past 5.5 minutes to warm it.
+
+**How much warmth the schedule absorbs.** A warm dough gets a shorter rise after balling, down to the 45-minute floor. The floor arrives about 5 °F over DDT with one mix, 3 °F with two and 1 °F with three, because a split batch's rise is already shortened for the stagger (§7). Past that, nothing in the schedule compensates for the extra warmth. That's a reason to fix the water next batch, not to stop mixing early: stopping only stops adding about a degree a minute, and it costs development.
 
 **Friction per minute at each speed**, if you need to correct in a different phase: 15% ≈ 0.75 °F/min · 20% ≈ 0.86 °F/min · 30% ≈ 1.08 °F/min. **These are for the dough alone.** A thermometer shows each of them × `Ct/(Ct + C_bowl)`: 0.82 at 3 balls, 0.90 at 6, 0.93 at 9. At 30% that works out to an observed 0.89 / 0.97 / 1.01 °F per minute, which is where the "about a degree a minute" rule of thumb comes from.
 
@@ -744,7 +755,8 @@ WATER TEMP (includes the bowl; no fixed multiplier works)
   Rinse the bowl to set it - faster than chasing it with the water.
   T_water = [ DDT x (Ct+C_bowl) - FF x Ct - Cb.Tbiga - Cf.Tflour
               - Cs.Troom - C_bowl.Tbowl ] / Cw
-  FF = 14.0 F MEASURED (bake 1). FF is the rise in the DOUGH ALONE.
+  FF = 14.0 F MEASURED (bake 1; its Phase C ran 6.5 min, ~10.8 at 3.5 min).
+  FF is the rise in the DOUGH ALONE.
 WATER = blend fridge-cold + tap to the target, measure as you pour.
         Retarded biga -> usually WARM water. Span 53-107 F over 3-24 balls;
         hottest at SMALL MIXES, and mix size != batch size:
@@ -798,7 +810,7 @@ BAKE gauge 750 F, FULL FLAME, 60-90 s, turn every 15-20 s. Do not push to 800+.
 | Room / flour | 70 / 69 °F |
 | Water used | 63.0 °F, 352 g — **should have been 68.0 °F** (the model without the bowl was 5 °F off) |
 | Probe @ 11 min | 67.5 °F |
-| Phase C | 14 → 20.5 min (6.5 min @ 30%) |
+| Phase C | 14 → 20.5 min (6.5 min @ 30%). Probably stretched because the probe read low: 4.3 °F under the 71.8 °F target today's formula gives (Dave's recollection; not logged) |
 | **Final dough** | **73.5 °F**, 1.5 °F under: exactly the water error |
 | **FF measured** | **14.03 °F** ✅ (solved from the inputs above) |
 | Bowl | 965 g stainless |
@@ -808,7 +820,8 @@ BAKE gauge 750 F, FULL FLAME, 60-90 s, turn every 15-20 s. Do not push to 800+.
 - The Phase C rate climbed 0.82 → 1.00 °F/min as the bowl equilibrated. **That's evidence the bowl started colder than the dough**, consistent with the biga gaining 5 °F from tearing while the bowl stayed at pull temperature.
 - Rest + Phase D gained +0.5 °F, not the −0.14 predicted → heat lost during the rest scales with the gap between dough and room.
 - **Phase A water was guessed, so the "too dry" observation is confounded.** It's now specified in grams. Needs a clean repeat.
-- Total motor time was 18.5 min against ~15 nominal.
+- Total motor time was 18.5 min, against 13.4 at the middle of every phase's range (15 at the top of each). Phase C alone ran 3 minutes over, 3.2 °F of the 14.03 at 1.08 °F a minute: with a 3.5-minute Phase C, bake 1 solves to 10.8 (§6, *Friction factor: measured*).
+- Phases A and B added less heat than the friction rates predict. By the probe at 11 minutes the dough had risen 7.4 °F (dough alone, heat of hydration included), where 0.75 and 0.86 °F a minute give about 9 before any heat of hydration. One bake, with Phase A's water guessed.
 
 ⚠️ **FF = 14.03 was fitted with `T_bowl` assumed equal to 58 °F.** If the bowl was actually nearer the 53 °F pull temperature, the same measurement solves to **FF = 14.58**. Both fits reproduce bake 1 exactly, because the error was absorbed into FF at the batch size it was fitted at, which is why the two separate at other batch sizes:
 
@@ -821,7 +834,7 @@ BAKE gauge 750 F, FULL FLAME, 60-90 s, turn every 15-20 s. Do not push to 800+.
 
 Two rows are checks rather than results. **6 balls is exactly zero** because that's where FF was fitted, so both fits reproduce bake 1 there by construction. **18 balls equals 9** because 18 runs as two 9-ball mixes. Both fits are solved the same way from the logged inputs; bake 1 solves to 14.031, which also makes this log's "should have been 68.0 °F" exact.
 
-**Next:** run 3 balls and 9 balls. If the bowl model is right, the raw rise differs (11.5 vs 13.0 °F) while the solved FF stays near 14. How to read a difference in FF, including the one result these two bakes can't settle, is in §6, *Friction factor: measured*.
+**Next:** run 3 balls and 9 balls. If the bowl model is right, the solved FF comes out the same at both once each is corrected to the same mix times, while the raw rise differs (at FF 14, 11.5 vs 13.0 °F). How to read a difference in FF, including the one result these two bakes can't settle, is in §6, *Friction factor: measured*.
 
 **Measure the bowl on both:** one reading against the bowl wall at mix start. Without it the 3-ball bake can't be read cleanly: a bowl-temperature error and a wrong FF both show up as the same 1.6 °F in the same direction, and there's no way to tell them apart afterwards.
 
@@ -832,7 +845,7 @@ Two rows are checks rather than results. **6 balls is exactly zero** because tha
 | **FF at 3, 6, 9 balls** | Log all inputs, run §8 exactly, probe immediately, solve with the §6 formula (below) | 2–3 each |
 | **Tap water temp** | Thermometer. Make it a form field, not a constant; it swings with the seasons | ongoing |
 | **Bowl mass** | Kitchen scale, once | ✅ 965 g → C = 115.8 |
-| **FF at 6 balls** | Bake 1 | ✅ 14.03 °F |
+| **FF at 6 balls** | Bake 1 | ✅ 14.03 °F, on a 6.5-min Phase C |
 | **FF at 3 and 9 balls** | The falsifiable test of the bowl model | ⬜ next |
 | **Actual fridge temp** | Probe on the shelf you use, not the dial | once, then spot-check |
 
@@ -845,7 +858,7 @@ One rep gets most of the value. Three give you a mean and a sense of the spread,
 - **It may scale with mix size (untested).** More mass might mean more total work and less surface area per unit mass to lose heat. There's no data yet, and no basis for estimating the size of the effect.
 - **It may drift with room temperature (untested).** Heat lost to the room during a 15-minute mix scales with the gap between the dough and the air, so the same profile might read a higher effective FF in a 78 °F kitchen than in a 64 °F one. Not yet observed.
 
-So log **room temperature on every mix**; that's what tests both. After 8–10 logged batches, regress `FF = a + b × (T_room − 70)` per mix size. If either effect is real, that's a model no generic calculator has, and the main reason to build your own.
+So log **room temperature on every bake**; that's what tests both. After 8–10 logged batches, regress `FF = a + b × (T_room − 70)` per mix size, on FFs corrected to the middle of each phase's range. If either effect is real, that's a model no generic calculator has, and the main reason to build your own.
 
 **Also worth one afternoon:** probe a ball core every 30 min after it goes in the fridge, once spread out and once stacked. That gives the real time-above-50 °F figure instead of an estimate. Home Assistant could log this continuously and turn it into a curve.
 
@@ -860,24 +873,30 @@ Then log yeast %, the actual temperature profile, and hours to +20%. Realistical
 ### Log schema
 
 ```
-batch_id, date, balls, ball_g, total_flour_g
+batch_id, date, balls, ball_g, n_mix, total_flour_g
 biga_ady_pct, biga_water_temp_f, biga_start_time, biga_rt_hours, biga_fridge_hours
-biga_pct_rise_at_pull, biga_temp_at_mix_f
-bowl_mass_g
-bowl_temp_f                         <- MEASURE at mix start; do not default
-biga_temp_at_pull_f                 <- before tearing; the bowl's likely temperature
-biga_temp_at_mix_f                  <- after tearing; the value the model calls T_biga
-phase_a_water_g, phase_c_seconds_actual
-room_temp_f, flour_temp_f, water_temp_used_f
-ddt_target_f, probe_temp_f, phase_c_seconds, final_dough_temp_f
-ff_predicted_mix_temp_f, ff_measured        <- the payload
-motor_protection_engaged (y/n, which phase)
+biga_pct_rise_at_pull
+room_temp_f, flour_temp_f
+per mix (mix_index 1, 2, ...):
+  biga_temp_at_pull_f               <- before tearing; the bowl's likely temperature
+  biga_temp_at_mix_f                <- after tearing; the value the model calls T_biga
+  bowl_state, bowl_temp_f           <- MEASURE at mix start; do not default
+  phase_a_water_g, water_temp_used_f
+  phase_a/b/c/d_seconds             <- actual time of each phase
+  ddt_target_f, probe_temp_f, final_dough_temp_f
+  motor_protection_engaged (y/n, which phase)
 ball_temp_into_fridge_f, fridge_temp_f, cold_hours
 temper_hours, ball_core_at_launch_f
 gauge_temp_f, stone_ir_f, bake_seconds
 notes_crumb, notes_cornicione, notes_base
 ```
 
-`ff_measured = [ final_dough_temp_f × (Ct + C_bowl) − Cb·T_biga − Cf·T_flour − Cw·T_water − Cs·T_room − C_bowl·T_bowl ] ÷ Ct` (§6). Log the component heat capacities alongside, or recompute them from the batch size.
+**Solve FF from the readings every time rather than storing it,** so a corrected constant corrects every bake. Per mix, from that mix's readings and per-mix masses:
+
+`FF = [ final_dough_temp_f × (Ct + C_bowl) − Cb·T_biga − Cf·T_flour − Cw·T_water − Cs·T_room − C_bowl·T_bowl ] ÷ Ct` (§6)
+
+**Then correct it to the middle of each phase's range:** subtract `rate × (actual − mid-range)` for each phase, at 0.75 °F/min for A, 0.86 for B and D and 1.08 for C, with mid-range at A 3.5 min, B 5.5, C 3.5 and D 52½ s. A mix run at mid-range needs no correction; one whose Phase C was stretched to 5.5 minutes at the probe loses 2.2 °F.
+
+The calculator logs only the FF inputs: per bake the batch, formula, room and flour; per mix the biga, bowl, water used, final dough temperature and phase times. The rest of this list is for your own notes.
 
 Capture `gauge_temp_f` alongside `stone_ir_f` at least a few times. The built-in gauge and the stone surface measure different things, and the mapping between them is the one bake number that carries over to any other oven.

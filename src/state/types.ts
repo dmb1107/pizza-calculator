@@ -70,33 +70,28 @@ export interface Inputs {
   temperH: number;
 
   /**
-   * Final dough temperature measured after mixing, §4.8. null before the mix,
-   * which puts the calculator in planning mode at DDT. One number, two uses:
-   * it also drives the room-temperature phase and the bake log.
+   * Final dough temperature measured after each mix, §4.8. null before a mix
+   * is read. Two uses: §4.8 times the ball rise from the mean of the mixes, a
+   * mix not yet read counting at DDT, and the bake log solves each mix's FF
+   * from its own reading.
+   *
+   * ⚠️ Read by index (`finalReadings` in the engine): a short list leaves the
+   * later mixes unread rather than copying its last entry forward.
    */
-  finalDoughTempF: number | null;
-}
-
-/** One recorded friction-factor measurement. */
-export interface FrictionMeasurement {
-  ff: number;
-  /** ISO date (YYYY-MM-DD) the measurement was recorded. */
-  measuredAt: string;
+  finalDoughTempF: (number | null)[];
+  /**
+   * §10. The water temperature actually poured, per mix. null until entered;
+   * the log then records the mix's target as an unentered prefill.
+   */
+  waterUsedF: (number | null)[];
 }
 
 /**
- * Calibration and preferences. These persist to localStorage rather than the
- * URL (§2) — a friction factor is a property of your mixer, your profile and
- * your room, so it shouldn't ride along on a shared link.
+ * Preferences that aren't inputs. These persist to browser storage rather than
+ * the URL (§2). The FF isn't here: it is computed from the bake log each time
+ * (§6, Panel 3), and a map stored by an earlier version is ignored.
  */
 export interface Calibration {
-  /**
-   * §6: keyed by balls per mix (`ballsPerMix`), because FF is per-mix by
-   * definition — a 12-ball batch is two 6-ball mixes and reads the 6 entry.
-   * Whether FF varies with mix size at all is an untested hypothesis; a
-   * value per size costs nothing if it doesn't and is needed if it does.
-   */
-  frictionFactors: Record<number, FrictionMeasurement>;
   /** null uses the §4.3 default: 75 °F for <=6 balls, 74 °F for 7+. */
   ddtOverrideF: number | null;
 }
@@ -107,6 +102,25 @@ export interface RunningTimer {
   startedAt: number;
   minMinutes: number;
   maxMinutes: number;
+  /** When it was stopped, epoch ms. A stopped mixer phase is a logged phase time (§10). */
+  stoppedAt?: number;
+}
+
+/** A reading that §10 asks to be entered on the day. */
+export type ReadingField = 'roomTempF' | 'flourTempF' | 'bigaTempF' | 'bowlTempF' | 'waterUsedF' | 'finalDoughTempF';
+
+/**
+ * §10: "every reading records whether it was entered on the day". The local
+ * date (YYYY-MM-DD) each reading was last typed or confirmed, '' for never.
+ * Per mix where the reading is per mix.
+ */
+export interface EnteredDates {
+  roomTempF: string;
+  flourTempF: string;
+  bigaTempF: string[];
+  bowlTempF: string[];
+  waterUsedF: string[];
+  finalDoughTempF: string[];
 }
 
 /** Which panels are open. Batch is open by default; the others are collapsed. */
@@ -137,13 +151,12 @@ export interface Persisted {
    * reload — or a phone locking its screen mid-mix — doesn't lose one.
    */
   timers: RunningTimer[];
-}
-
-/** The resolved friction factor and where it came from. */
-export interface EffectiveFriction {
-  ff: number;
-  /** true when falling back to 14 — badge it "estimated — not yet calibrated". */
-  isEstimate: boolean;
-  /** Set when measured: the date it was recorded. */
-  measuredAt?: string;
+  /** When each reading was entered, for the bake log's counting rule (§10). */
+  entered: EnteredDates;
+  /**
+   * The bake this session saved to the log, '' before it saves. Saving again
+   * replaces that bake rather than adding a second; resetting the steps starts
+   * a new session.
+   */
+  sessionBakeId: string;
 }

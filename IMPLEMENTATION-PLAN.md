@@ -4,9 +4,10 @@ Derived from [`docs/WEBSITE-SPEC-biga-calculator.md`](docs/WEBSITE-SPEC-biga-cal
 Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
-**Status:** Tasks 0–10 complete, on the bowl-aware thermal model with **per-mix
-weights**, the ice calculation removed, and **MESSAGE-43 applied**. Left: the
-bake log (Task 11). Its storage is decided; the FF rule waits on MESSAGE-45.
+**Status:** Tasks 0–11 complete, on the bowl-aware thermal model with **per-mix
+weights**, the ice calculation removed, and **MESSAGE-45 applied**: the bake
+log, synced through a private GitHub repository, now sets the FF in use.
+FINDINGS-46 is the last thing sent.
 
 ---
 
@@ -667,43 +668,49 @@ markdown, inline. A test pins `watchFor` as markdown so it can't regress.
 
 ---
 
-## Task 11 — Bake log (phase 2)
+## Task 11 — Bake log ✅
 
-Not required for v1, but §10 says design the data layer so it can be added.
+Dave's asks (27 September, FINDINGS-45): one history shared between laptop
+and phone, the site still on Pages; each bake refines its mix size's FF from
+the measured temperatures, and the history, not a typed value, sets the FF in
+use; FF inputs only; a visitor without a token gets a working calculator that
+saves only to their own browser. MESSAGE-45 answered every question; the spec
+has the rules (§4.3 normalization, §4.8 split-batch `T_actual`, §6 Panel 3,
+§10, and §5's *Bake log* pins).
 
-**Dave's asks, 27 September** (sent as FINDINGS-45; waiting on MESSAGE-45):
-one history shared between laptop and phone, the site still on Pages; each
-bake refines its mix size's FF from the measured temperatures, and the
-history sets the FF in use, with no typed FF; FF inputs only, not the full
-§10 diary; a visitor without a token gets a working calculator that saves
-only to their own browser.
-
-**Storage, decided by Dave:** a private GitHub repo, one JSON file per bake,
-read and written from the browser through GitHub's API with a token scoped
-to that repo, pasted once per device. Each device writes its own copy first
-and syncs after, so a mix never waits on the network. Not this repo: every
-push to `main` deploys, and it's public. The spec still says `localStorage`
-in §2, §6 and §10; FINDINGS-45 §2 asks for the wording.
-
-**Open with the recipe agent** (FINDINGS-45): the rule that turns a size's
-history into its FF, what the badge says, exclusions, unmeasured bowls and
-bake 1, whether the room slope is applied, sizes with no history, and
-whether the solve needs each phase's actual duration (Phase C's probe
-adjustment alone spans 3.78 °F of FF).
-
-- [ ] The log: the FF inputs only, per mix where §4.3 is per mix, stored as
-      readings with FF solved on read. Synced through the repo, browser
-      storage without a token.
-- [ ] Auto-populate from the current session so only measured values get typed.
-      New inputs: the water temperature actually poured, and a final dough
-      temperature for every mix, not only the last.
-- [ ] `ff_measured` from `solveFrictionFactorF`, the §4.3 solve that includes
-      the bowl — **not** `final − predicted_mix`, which reads low by
-      `FF × C_bowl/(Ct + C_bowl)` (§10). File it under the bake's balls per mix.
-- [ ] The payoff: with 8–10 logged bakes, regress
-      `FF = a + b × (room_temp_f − 70)` per mix size — both effects are
-      untested hypotheses, and this is how they get tested. Generic calculators use
-      one fixed FF; modeling it is the thing this app can do that they can't.
+- [x] **The log** (`src/lib/bakeLog.ts`): readings, never an FF. Each mix is
+      solved on read (§4.3), then normalized to the middle of every phase's
+      range, the references derived from the step timers (A 3.5, B 5.5, C 3.5,
+      D 52.5 s). A formula snapshot per bake; only a matching one counts.
+- [x] **Which mixes count** (§10): room, biga, bowl, water poured and final
+      entered on the day (flour may follow room), all four phase times, a
+      matching snapshot, not excluded. Every mix stays in the log with its
+      reasons.
+- [x] **The FF in use** (§6): the mean of the last three counted bakes at the
+      size, a split batch counting once; else interpolated between counted
+      sizes, or the nearest held flat; else bake 1's seed at 6 and 14.0
+      elsewhere. Keys compared as the `(balls, nMix)` pair. The badge table
+      is read from the spec by a test.
+- [x] **No typed FF.** Panel 3 shows the value and its badge; a stored map
+      from before is ignored.
+- [x] **Storage** (§2): browser storage first, then a private GitHub
+      repository, one JSON file per bake, through the contents API with a
+      per-device token (`src/state/githubSync.ts`). A stale write re-reads
+      and writes again; deletions travel both ways. Tested against a fake
+      repository.
+- [x] **Capture without typing:** the phase timers stop (Stop, or ticking the
+      step) and the stopped time is the phase time; poured water in Phase A
+      (with "Poured at the target"), a final temperature at the end of every
+      mix; "entered on the day" is the date each reading was typed or
+      confirmed. The card after the last mix shows what counts and saves.
+- [x] **§4.8 split batches:** `T_actual` is the mean of the mixes, a mix not
+      yet read counting at DDT.
+- [x] **Found in passing:** mix 1's bowl reading carried forward to later
+      mixes and overrode their warm prefill, printing mix 2's water 4.6 °F
+      too warm at 12 × 265 g (FINDINGS-46 §3). Now read by index, pinned.
+- [x] **The room slope** (§10): fitted over every counted bake at a size once
+      there are 8, and shown in the log drawer with its count and room range.
+      Reported, never applied.
 
 ---
 

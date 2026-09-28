@@ -9,21 +9,19 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-43, FINDINGS-44, Task 10, the speed indicator and FINDINGS-45 (27
-September).
+MESSAGE-45, FINDINGS-46 and Task 11 (28 September).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-43, and FINDINGS-45 is the
-  last thing sent** (unprompted, after FINDINGS-44 needed no reply). No pin of
-  any kind is live (`knownWrong` is empty). FINDINGS-45 carries Dave's asks
-  for the bake log and is waiting on MESSAGE-45: how history becomes the FF in
-  use, and whether the solve needs each phase's duration. The storage is
-  decided and needs no reply: a private GitHub repo, one JSON file per bake,
-  a per-device token, and browser storage only without one.
+- **The correspondence is applied through MESSAGE-45, and FINDINGS-46 is the
+  last thing sent.** No pin of any kind is live (`knownWrong` is empty). Task
+  11, the bake log, is built: readings stored and solved on read, normalized
+  to mid-range phase times, §6's four-step FF in use, §10's counting rules,
+  and sync through a private GitHub repository with a per-device token. The
+  next move is theirs: expect MESSAGE-46.
 - **What the last rounds settled**, so you don't reopen it:
   - MESSAGE-32: `bulk-3` prints `{ballRoomMin}`, the rise the timeline plans;
     Dave's timers on the four mixer phases, so **the timer is the one source
@@ -102,8 +100,8 @@ tap, 48 px targets, and check phone width in both timeline modes.
 `Math.round` / `toFixed` for display also appears in:
 
 - `bindTokens.ts` — `roomMin`, `ballRoomMin`, the stagger tokens, `trim()`
-- `recipeText.ts` and the `StepList.tsx` final-temperature hint —
-  `Math.round(result.ballRoomMinutes)`
+- `recipeText.ts` and the final-temperature hint (`FinalTempCapture`, in
+  `BakeLog.tsx` since MESSAGE-45) — `Math.round(result.ballRoomMinutes)`
 - the `staggerUncentred` warning title in `engine.ts`
 - `StepTimer.tsx`'s progress-bar `aria-valuenow`
 - the duration and clock formatters in `timeline.ts` (including
@@ -231,9 +229,11 @@ true and what they need to change.
 | `constants.test.ts` | Derived constants recomputed from their inputs; every constant has a **code** read (`C.X` / `BASE.X`, comments stripped) | `divideBall = 0.33`, `ADY 0.0038`. The reader check once counted the comment recording a constant's removal as a read |
 | `stepInstances.test.ts` | Golden step sequences per schedule at `nMix` 1–3, and §8.2a's published counts read from the spec. Closed condition sets: detail blocks (`nMix > 1`, `nBiga > 1`, `thickerThanDefault`) and `shownWhen`; both throw on unknown | The expansion repeated templates instead of mixes: same count, same labels, wrong procedure. A component ternary read any unknown condition as `nBiga > 1` |
 | `stageSteps.test.ts` | Every timeline stage has a step rendered on its schedule, and every step maps to a stage. §7.5: each planning-point stage's step times the whole §4.7 range; the classic exception across 12–18 h; a single-number timer equals its stage's planned duration, `bulk-3` included at `nMix` 1–3 and at the 45-minute floor | `bigaTemper` had a duration and a clock time but no step. `bulk-3` timed the unshortened rise for a round: each side right alone, disagreeing |
-| `engine.test.ts` | §5 vectors and the bake-1 regression, **held to printed precision (0.005)**, not `TOL`. The rendered gap at app defaults: 0.392, or 0.482 at 6 balls per mix where the seeded FF applies, with the 12-ball cards' printed figures. §4.2's per-mix DDT slip, priced at `C_bowl/Cw` on both bases. Per-mix thermal weights. The panel hints' bases, measured by perturbing `calculate`. Water reachability sweep (samples 257 g for the true corner). Shaped rise **keyed by DDT**. The two biga bases, measured off `computeWaterTempF`. §4.9, §4.10 | Every rise table was keyed on dough temperature, silently assuming DDT 75 — including this suite's own vector. At `TOL.degF` = 0.1 the bake-1 pin couldn't tell 67.97 from 68.00 |
+| `engine.test.ts` | Each mix's bowl read by index (FINDINGS-46: mix 1's reading printed mix 2's water 4.6 °F warm). §5 vectors and the bake-1 regression, **held to printed precision (0.005)**, not `TOL`. The rendered gap at app defaults: 0.392, or 0.482 at 6 balls per mix where the seeded FF applies, with the 12-ball cards' printed figures. §4.2's per-mix DDT slip, priced at `C_bowl/Cw` on both bases. Per-mix thermal weights. The panel hints' bases, measured by perturbing `calculate`. Water reachability sweep (samples 257 g for the true corner). Shaped rise **keyed by DDT**. The two biga bases, measured off `computeWaterTempF`. §4.9, §4.10 | Every rise table was keyed on dough temperature, silently assuming DDT 75 — including this suite's own vector. At `TOL.degF` = 0.1 the bake-1 pin couldn't tell 67.97 from 68.00 |
 | `bindTokens.test.ts` | No unbound or unused token, over every string a step carries (walked, not listed, since FINDINGS-34). `{probeGapPhrase}` at below / above / right at DDT. The thicker note decided on its **printed** value | A condition decided on unrounded values printed "12.0 rather than 12" |
-| `state.test.ts` | URL and storage round-trips. The FF map keyed through `ballsPerMix`, exact-match at 6.5, the old seed replaced on load and nothing else | The map was keyed on total balls, so a 12-ball bake would have filed FF under a size no mix has |
+| `state.test.ts` | URL and storage round-trips. Final and poured-water readings by index, padded to the mixes (`73~`), and a pre-per-mix `dought` read as the batch reading. A stored FF map ignored | The map was keyed on total balls, so a 12-ball bake would have filed FF under a size no mix has |
+| `bakeLog.test.ts` | §5 *Bake log* pins: bake 1 at 14.031045 and 10.791045, the 0.7075 correction, no `Ct/TOT` factor; the counting rules one reason at a time; the aggregate (10.666667, spread 0.6), interpolation (11.7) and holding (12.2), the seed; **§6's badge table read from the spec**; the room slope; §4.8's mean (74.0 → 72.5, first mix only 77.4); the 120 °F warning at 10.23 | Mutation-checked: a carried-forward final list and a 0.9 factor on the correction both fail it |
+| `bakeLogSync.test.ts` | The local log's parsing and edits; sync against a fake repository (push, pull, stale write, deletions both ways, a refused token, an unreachable repo, offline, an unparseable file); `mergeAfterSync`; the session as a bake (entry dates, prefills, phase times by instance) | A sync result applied over edits made while it ran would drop them |
 | `timeline.test.ts` | §4.7 durations, the stage sequence on both schedules, daylight saving. §7.4's "19 h (18–20)" on every stage, written out. The centring at `nMix` 3 (middle dough on time) and a changeover overrun landing whole on the first dough (MESSAGE-38). **Backward mode pinned to hand-written clock times** on both schedules and at `nMix` 2; exact landing on the bake across fractional durations; the overnight windows against a brute-force scan | A wrong order sums to the right total. Summing hours × 3.6e6 landed 1 ms early and printed the minute before |
 | `capacity.test.ts` | §7.3: which capacity message fires and when, its bound wording, the binding-limit guards (flour cap never first for a mix, always first for the biga), the below-minimum guard silent across the range, decisions on the **printed** per-mix dough, the near-limit ball list across 240–300 g. §7.5 segment states (lit / dim / off), and the chip's smaller line for every speed step | The spec says conditions are decided on displayed values; 2374.96 g prints 2375.0 and must fire. **The ball list can't see the 5%**: it holds for any threshold from 94.03% to 98.11%, so the edge test is what pins the threshold |
 | `recipeText.test.ts` | Copy-as-text, and the dough total rounded once (2501.9 at 9 × 272 g, never the 2501.7 its rounded parts sum to) | The gate doesn't read `recipeText.ts` |

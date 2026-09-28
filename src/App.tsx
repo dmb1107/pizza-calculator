@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ConceptDrawer } from './components/ConceptDrawer';
 import { CopyButton } from './components/CopyButton';
 import { AboutDrawer, ReferenceDrawer } from './components/ReferenceDrawers';
+import { BakeLogDrawer } from './components/BakeLog';
 import { StepList } from './components/StepList';
 import { IngredientsCard, TargetsCard, WarningsList, WaterCard } from './components/cards';
 import { BatchPanel, CalibrationPanel, TemperaturesPanel } from './components/panels';
@@ -12,7 +13,8 @@ import { formatPercent } from './lib/format';
 
 /**
  * The §6 input panels, the §7 output cards, the §4.7 timeline, the §8.2 step
- * list, and three drawers: §8.3 concepts, §9 reference tables, §11 About.
+ * list, and four drawers: §8.3 concepts, §9 reference tables, §11 About and
+ * the §10 bake log.
  *
  * Warnings sit above the step list (§7.3) and are never inside a collapsed
  * panel.
@@ -21,7 +23,8 @@ export default function App() {
   const state = useAppState();
   const { result, shareUrl } = state;
   const [concept, setConcept] = useState<string | null>(null);
-  const [sheet, setSheet] = useState<'reference' | 'about' | null>(null);
+  const [sheet, setSheet] = useState<'reference' | 'about' | 'log' | null>(null);
+  const openLog = () => setSheet('log');
 
   /**
    * Flag a due timer in the tab title: one past its lower bound, or its
@@ -64,7 +67,7 @@ export default function App() {
       <div className="grid grid-cols-[minmax(0,1fr)] gap-3">
         <BatchPanel {...state} />
         <TemperaturesPanel {...state} />
-        <CalibrationPanel {...state} />
+        <CalibrationPanel {...state} onOpenLog={openLog} />
       </div>
 
       <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-3">
@@ -76,10 +79,17 @@ export default function App() {
       </div>
 
       <div className="mt-6">
-        <StepList state={state} onOpenConcept={setConcept} />
+        <StepList state={state} onOpenConcept={setConcept} onOpenLog={openLog} />
       </div>
 
       <footer className="mt-8 flex flex-wrap gap-3 border-t border-stone-200 pt-4 dark:border-stone-800">
+        <button
+          type="button"
+          onClick={openLog}
+          className="min-h-touch rounded-lg border border-stone-300 px-4 font-medium active:bg-stone-100 dark:border-stone-600 dark:active:bg-stone-800"
+        >
+          Bake log
+        </button>
         <button
           type="button"
           onClick={() => setSheet('reference')}
@@ -99,6 +109,7 @@ export default function App() {
       <ConceptDrawer id={concept} onClose={() => setConcept(null)} />
       <ReferenceDrawer open={sheet === 'reference'} onClose={() => setSheet(null)} />
       <AboutDrawer open={sheet === 'about'} onClose={() => setSheet(null)} />
+      <BakeLogDrawer open={sheet === 'log'} onClose={() => setSheet(null)} state={state} />
     </div>
   );
 }

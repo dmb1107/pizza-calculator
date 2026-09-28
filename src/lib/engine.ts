@@ -728,8 +728,12 @@ export interface CalculatorInputs extends BatchInputs {
    */
   bowlState?: BowlState;
   /**
-   * §4.2. Measured bowl temperature at mix 1, overriding the selector's
-   * prefill. A measurement always wins.
+   * §4.2. Measured bowl temperature per mix, overriding that mix's prefill. A
+   * measurement always wins.
+   *
+   * ⚠️ Read by index (`bowlReadingAt`), never carried forward: mix 1's bowl
+   * says nothing about mix 2's, which starts warm from mix 1. A scalar is
+   * mix 1's reading.
    *
    * Worth `C_bowl/Cw` °F of water per °F — 0.66 at a 3-ball mix, 0.22 at 9 —
    * and `cSystem/Cw` times what it costs the dough (`bowlReadingCost`). The
@@ -740,10 +744,14 @@ export interface CalculatorInputs extends BatchInputs {
   /** null / undefined uses the §4.3 default: 75 °F for <=6 balls, 74 °F for 7+. */
   ddtOverrideF?: number | null;
   /**
-   * Final dough temperature actually measured after mixing, §4.8. Null before
-   * the mix, which puts the calculator in planning mode at DDT.
+   * Final dough temperature actually measured after mixing, §4.8, per mix.
+   * Null before the mix, which puts the calculator in planning mode at DDT.
+   *
+   * ⚠️ Read by index, unlike the other per-mix inputs: a missing or null entry
+   * is a mix not yet read and counts at DDT (MESSAGE-45), so one reading on a
+   * two-mix batch is not copied to the other. A scalar applies to every mix.
    */
-  finalDoughTempF?: number | null;
+  finalDoughTempF?: PerMix<number | null>;
 }
 
 /** One mix's water target. A split batch has genuinely different numbers per mix. */
@@ -792,9 +800,50 @@ export interface CalculatorResult {
    * except on a warm split batch, where §4.8's floor blocks the correction.
    */
   staggerUncentredMin: number;
-  /** The temperature §4.8 was computed from — measured, or DDT in planning mode. */
+  /**
+   * The temperature §4.8 was computed from: the mean of the mixes' final
+   * readings, a mix not yet read counting at DDT. DDT in planning mode.
+   */
   effectiveFinalTempF: number;
   warnings: Warning[];
+}
+
+/**
+ * §4.2. The bowl measured at mix `index`, or null to use that mix's prefill.
+ *
+ * By index. `atMix` carried the last entry forward, so measuring mix 1's bowl
+ * at 60 °F on a 12 × 265 g batch also set mix 2's to 60, overriding the warm
+ * prefill (DDT, 74) and printing mix 2's water 4.6 °F too warm: 63.6 against
+ * 59.0 at biga 58, room and flour 70, FF 14.03 (FINDINGS-46).
+ */
+export function bowlReadingAt(value: PerMix<number | null> | undefined, index: number): number | null {
+  if (value == null) return null;
+  if (!Array.isArray(value)) return index === 0 ? (value as number) : null;
+  return (value as readonly (number | null)[])[index] ?? null;
+}
+
+/**
+ * §4.8. The final reading for each of `nMix` mixes, null where a mix hasn't
+ * been read. By index: an array shorter than `nMix` leaves the later mixes
+ * unread rather than copying its last entry forward, as `atMix` would.
+ */
+export function finalReadings(value: PerMix<number | null> | undefined, nMix: number): (number | null)[] {
+  return Array.from({ length: nMix }, (_, i) => {
+    if (value == null) return null;
+    if (!Array.isArray(value)) return value as number;
+    return (value as readonly (number | null)[])[i] ?? null;
+  });
+}
+
+/**
+ * §4.8, split batches (MESSAGE-45). `T_actual` is the mean of the mixes'
+ * final readings: the mixes have equal dough mass and share one tub, so their
+ * average is the tub's temperature. A mix not yet read counts at DDT,
+ * planning mode's value, so the rise updates as each reading comes in.
+ */
+export function meanFinalTempF(finals: readonly (number | null)[], ddtF: number): number {
+  if (finals.length === 0) return ddtF;
+  return finals.reduce<number>((sum, t) => sum + (t ?? ddtF), 0) / finals.length;
 }
 
 /** Composes §4.1–§4.8 into everything the UI needs. Nothing here is rounded. */
@@ -829,8 +878,8 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
       roomTempF: inputs.roomTempF,
       ddtF,
     });
-    // A measurement always wins, at every mix.
-    const measured = inputs.bowlTempF == null ? null : atMix(inputs.bowlTempF, i);
+    // A measurement always wins, at every mix — its own mix's measurement.
+    const measured = bowlReadingAt(inputs.bowlTempF, i);
     const bowlTempF = measured ?? prefill;
     return {
       index: i + 1,
@@ -844,8 +893,9 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
   const waterTempF = mixes[0]!.waterTempF;
 
   // Planning mode until a real final dough temperature is entered.
-  const roomMinutesIsPlanned = inputs.finalDoughTempF == null;
-  const effectiveFinalTempF = inputs.finalDoughTempF ?? ddtF;
+  const finals = finalReadings(inputs.finalDoughTempF, capacity.nMix);
+  const roomMinutesIsPlanned = finals.every((t) => t == null);
+  const effectiveFinalTempF = meanFinalTempF(finals, ddtF);
   const roomMinutes = computeRoomMinutes({ finalDoughTempF: effectiveFinalTempF, ddtF });
   const uncentred = staggerUncentredMin(roomMinutes, capacity.nMix);
   const probe = computeProbeParts({

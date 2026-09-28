@@ -1,7 +1,7 @@
 /** Defaults and input bounds — WEBSITE-SPEC-biga-calculator.md §6. */
 
 import { C } from '../lib/constants';
-import type { Calibration, Inputs, PanelPrefs, Persisted } from './types';
+import type { Calibration, EnteredDates, Inputs, PanelPrefs, Persisted } from './types';
 
 export const DEFAULT_INPUTS: Inputs = {
   balls: 6,
@@ -19,17 +19,22 @@ export const DEFAULT_INPUTS: Inputs = {
   bigaFridgeH: 19,
   bigaRoomOnlyH: 16,
   temperH: 2.5,
-  finalDoughTempF: null,
+  finalDoughTempF: [null],
+  waterUsedF: [null],
 };
 
-/**
- * §6: seed the friction map with the one real measurement.
- * FF 14.03 °F at 6 balls per mix, bake 1, 21 Aug 2026 — solved from the
- * logged inputs (§5; 14.04 before MESSAGE-25). Other sizes fall back to 14.0.
- */
+/** No DDT override. The FF isn't stored: bake 1's seed lives in `bakeLog.ts`. */
 export const DEFAULT_CALIBRATION: Calibration = {
-  frictionFactors: { 6: { ff: 14.03, measuredAt: '2026-08-21' } },
   ddtOverrideF: null,
+};
+
+export const DEFAULT_ENTERED: EnteredDates = {
+  roomTempF: '',
+  flourTempF: '',
+  bigaTempF: [],
+  bowlTempF: [],
+  waterUsedF: [],
+  finalDoughTempF: [],
 };
 
 /** §6: Batch open by default, the other two collapsed with a summary line. */
@@ -47,6 +52,8 @@ export const DEFAULT_PERSISTED: Persisted = {
   bakeAtIso: '',
   checkedSteps: [],
   timers: [],
+  entered: DEFAULT_ENTERED,
+  sessionBakeId: '',
 };
 
 /**
@@ -68,7 +75,6 @@ export const BOUNDS = {
   bigaTempF: { min: 32, max: 120, step: 0.5 },
   bowlTempF: { min: 32, max: 120, step: 0.5 },
 
-  frictionFactorF: { min: 0, max: 40, step: 0.1 },
   ddtOverrideF: { min: 60, max: 90, step: 0.5 },
 
   // §4.7 states each of these ranges explicitly. `ballRoomTemp` is absent
@@ -79,6 +85,8 @@ export const BOUNDS = {
 
   /** Wide: this is a reading off a probe, and a wild one should be visible. */
   finalDoughTempF: { min: 55, max: 95, step: 0.1 },
+  /** What was poured: wide enough for the whole blend, fridge to hot tap. */
+  waterUsedF: { min: 32, max: 140, step: 0.1 },
 } as const;
 
 export type BoundedField = keyof typeof BOUNDS;

@@ -22,6 +22,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseAst } from 'vite';
 import { formatPercent } from '../src/lib/format';
+import { BAKE_1_SEED, ffInUse } from '../src/lib/bakeLog';
 
 /**
  * §8.1: *no literal in §8 content may restate an engine output unchecked.*
@@ -193,6 +194,14 @@ const timerOf = (id: string): readonly [number, number] => {
 /** Phase C's planned minutes: the midpoint of `mix-5`'s timer. */
 const PHASE_C_MIN = mid(timerOf('mix-5'));
 
+/**
+ * Phase C's shortest time, from `mix-4`'s cut row. No constant holds it: the
+ * look sets the shortest Phase C (MESSAGE-45), and the cut row, `mix-4`'s
+ * "full range" row and `mix-5`'s authority all print this figure, so the
+ * claims below read it from here to keep the three together.
+ */
+const PHASE_C_CUT_MIN = 2;
+
 // ---------------------------------------------------------------------------
 // 1. CLAIMS
 // ---------------------------------------------------------------------------
@@ -286,7 +295,10 @@ const CLAIMS: readonly Claim[] = [
   { at: 'mix-4.detail', restates: 'the same slope, warm side', text: `above 70 moves it ${fx(probeAt(6, 70) - probeAt(6, 71), 1)} °F down.`, covers: ['70', '0.2 °F'] },
   {
     at: 'mix-4.detail',
-    restates: 'a 62–78 °F kitchen moves the target > 3 °F; 3→9 balls moves it a fraction of that at every FF the input allows (0–40)',
+    // The FF has no input bound since it comes from the log (§6). The sweep
+    // keeps the 0–40 the typed field allowed, well past any FF a real mix
+    // solves to, so the claim holds at every FF the log could produce.
+    restates: 'a 62–78 °F kitchen moves the target > 3 °F; 3→9 balls moves it a fraction of that at every FF from 0 to 40',
     holds: () => {
       const roomShift = probeAt(6, 62) - probeAt(6, 78);
       const batchShift = (ff: number) => {
@@ -294,7 +306,7 @@ const CLAIMS: readonly Claim[] = [
           computeProbeTargetF({ ddtF: defaultDdtF(b), frictionFactorF: ff, roomTempF: 70, thermal: thermalAt(b) });
         return Math.abs(target(3) - target(9));
       };
-      const ffs = Array.from({ length: 41 }, (_, i) => i * (BOUNDS.frictionFactorF.max / 40));
+      const ffs = Array.from({ length: 41 }, (_, i) => i);
       return roomShift > 3 && ffs.every((ff) => batchShift(ff) < roomShift);
     },
     text: 'A 62 °F kitchen against a 78 °F one shifts the target by more than three degrees; going from 3 balls to 9 shifts it by a fraction of that',
@@ -319,13 +331,20 @@ const CLAIMS: readonly Claim[] = [
     text: `Extend Phase C to 4.5–${C.PHASE_C_MAX_MIN} min`,
     covers: [`4.5–${C.PHASE_C_MAX_MIN} min`],
   },
+  {
+    at: 'mix-4.troubleshoot',
+    restates: "Phase C's full range (MESSAGE-45): the cut row's shortest time and PHASE_C_MAX_MIN",
+    holds: () => (CONTENT.get('mix-4.troubleshoot') ?? '').includes(`Cut Phase C to ${PHASE_C_CUT_MIN}–`),
+    text: `Use Phase C's full range: ${PHASE_C_CUT_MIN} min if high (longer if it isn't smooth and glossy yet), ${C.PHASE_C_MAX_MIN} min if low`,
+    covers: [`${PHASE_C_CUT_MIN} min`, `${C.PHASE_C_MAX_MIN} min`],
+  },
 
   // --- mix-5: Phase C's authority, and the friction rates -------------------
   {
     at: 'mix-5.detail',
     restates: 'observedRate(30) × minutes cut/added from the planned Phase C, at 6 balls',
     text:
-      `At 6 balls, cutting it to 2 minutes saves **${fx(observedRate(30, thermalAt(6)) * (PHASE_C_MIN - 2), 1)} °F** ` +
+      `At 6 balls, cutting it to ${PHASE_C_CUT_MIN} minutes saves **${fx(observedRate(30, thermalAt(6)) * (PHASE_C_MIN - PHASE_C_CUT_MIN), 1)} °F** ` +
       `and stretching it to ${C.PHASE_C_MAX_MIN} minutes adds **${fx(observedRate(30, thermalAt(6)) * (C.PHASE_C_MAX_MIN - PHASE_C_MIN), 1)} °F**`,
     covers: ['6 balls', '2 minutes', '1.5 °F', `${C.PHASE_C_MAX_MIN} minutes`, '1.9 °F'],
   },
@@ -333,11 +352,17 @@ const CLAIMS: readonly Claim[] = [
     at: 'mix-5.detail',
     restates: 'the same authority at 3 and 9 balls',
     text: (() => {
-      const cut = (b: number) => fx(observedRate(30, thermalAt(b)) * (PHASE_C_MIN - 2), 1);
+      const cut = (b: number) => fx(observedRate(30, thermalAt(b)) * (PHASE_C_MIN - PHASE_C_CUT_MIN), 1);
       const add = (b: number) => fx(observedRate(30, thermalAt(b)) * (C.PHASE_C_MAX_MIN - PHASE_C_MIN), 1);
       return `narrower at 3 balls (−${cut(3)} / +${add(3)}) and slightly wider at 9 (−${cut(9)} / +${add(9)})`;
     })(),
     covers: ['3 balls', '−1.3', '1.8', '9', '−1.5', '2.0'],
+  },
+  {
+    at: 'mix-5.detail',
+    restates: "PHASE_C_MAX_MIN as Phase C's longest (MESSAGE-45)",
+    text: `So the look sets the shortest Phase C, and ${C.PHASE_C_MAX_MIN} minutes the longest.`,
+    covers: [`${C.PHASE_C_MAX_MIN} minutes`],
   },
   {
     at: 'mix-5.detail',
@@ -653,9 +678,22 @@ const CLAIMS: readonly Claim[] = [
   },
   {
     at: 'concept:friction-factor',
-    restates: 'FF 14 × Ct/TOT at 3 and 9 balls',
-    text: `the raw temperature rise differs (${fx(14 * ctOverTot(3), 1)} vs ${fx(14 * ctOverTot(9), 1)})`,
-    covers: ['11.5', '13.0'],
+    restates: 'FF 14 × Ct/TOT at 3 and 9 balls, at the FF it names',
+    text: `the raw temperature rise differs (at FF 14, ${fx(14 * ctOverTot(3), 1)} vs ${fx(14 * ctOverTot(9), 1)})`,
+    covers: ['14', '11.5', '13.0'],
+  },
+  {
+    at: 'concept:friction-factor',
+    restates: "bake 1's logged Phase C (BAKE_1.phaseCMin), and its excess over mix-5's midpoint",
+    text: `Its Phase C took ${BAKE_1.phaseCMin} minutes, ${BAKE_1.phaseCMin - PHASE_C_MIN} more than the middle of the range`,
+    covers: [`${BAKE_1.phaseCMin} minutes`],
+  },
+  {
+    at: 'concept:friction-factor',
+    restates: "BAKE_1_SEED, the FF in use at 6 balls per mix until the log has a counted bake, to one decimal",
+    holds: () => ffInUse([], { balls: BAKE_1_SEED.k, nMix: 1 }).ff === BAKE_1_SEED.value,
+    text: `The calculator keeps ${fx(BAKE_1_SEED.value, 1)} until you log a fully measured bake of your own.`,
+    covers: [fx(BAKE_1_SEED.value, 1)],
   },
   {
     at: 'concept:friction-factor',
@@ -911,9 +949,10 @@ const FIXED: Record<Loc, readonly string[]> = {
   // number.
   'concept:thermal-model': ['4', '12-ball', '6-ball', '3 balls', '100 °F', '1'],
   // Bake 1's date and batch; published spiral friction and flour exotherm;
-  // the hypothesis "FF holds near 14"; "bakes at 3 and 9 balls", the batch
-  // sizes that test it.
-  'concept:friction-factor': ['1', '21', '2026', '6 balls', '20–26 °F', '14', '3', '9 balls', '1.5–3 °F'],
+  // "bakes at 3 and 9 balls", the batch sizes that test the bowl model. Its
+  // "3 more than the middle of the range" is computed, and the claim above
+  // reads it: this entry can only excuse the literal once per location.
+  'concept:friction-factor': ['1', '21', '2026', '6 balls', '20–26 °F', '3', '9 balls', '1.5–3 °F'],
   // All published (§11): Gozney / Italian Pizza Secrets 16–18 h at 16–18 °C,
   // Baking With Theory 16–20 h at 16–20 °C (ideally 18), PizzaBlab 12–24 h;
   // Giorilli's 44–45% and his 50% allowance; "00" is the flour grade; 20% is
@@ -1039,6 +1078,7 @@ describe('§8.1 numbers in component copy are classified too', () => {
     'between midnight and 6 a.m.': 'the definition `isUnsocialHour` implements — §4.7 "between midnight and 6 AM"',
     '750 °F, full flame, 60–90 s, turning every 15–20 s.': 'bake-2 procedure, the same figures FIXED under bake-2.summary',
     'at mix 1': 'names mix 1 — an index, not a quantity',
+    'bake 1’s figure': 'names bake 1 — an index, not a quantity',
     'Grain Craft 00': 'the flour grade in the product name',
   };
 

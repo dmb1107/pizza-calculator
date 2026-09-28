@@ -81,6 +81,8 @@ With a fridge-retarded biga you'll usually need **warm** water. The biga's therm
     title: "Measuring your own friction factor",
     body: `**FF = 14.0 °F, measured** on bake 1, 21 August 2026, with 6 balls. The Phase C friction rate agrees: 1.00 °F/min on the dough and bowl together is 1.11 °F/min for the dough alone, against 1.08 predicted.
 
+**That mix ran long.** Its Phase C took 6.5 minutes, 3 more than the middle of the range, and at about a degree a minute that extra time is inside the 14.0, so the figure for the mix as written is lower. The calculator keeps 14.0 until you log a fully measured bake of your own. A figure that's too high leaves the dough cool, which the probe step and the longer rise after balling both correct.
+
 **FF is the temperature rise the mixer produces in the dough alone.** That's why the work term is \`FF × Ct\` and not \`FF × (Ct + C_bowl)\`.
 
 This is the easiest thing to mix up. A thermometer reads the dough after it has come to equilibrium with the bowl, so any dough-only figure (FF itself, or the per-minute friction rates) has to be multiplied by \`Ct/(Ct + C_bowl)\` before you compare it with a measurement. That factor is 0.82 at 3 balls, 0.90 at 6, 0.93 at 9.
@@ -89,18 +91,18 @@ This is the easiest thing to mix up. A thermometer reads the dough after it has 
 
 For comparison, commercial spirals reach 20–26 °F on a full bread mix. This is a shorter profile on a smaller machine with a 10-minute rest in the middle, so a lower figure is expected.
 
-**One data point so far.** Bakes at 3 and 9 balls test the bowl model: if it's right, the raw temperature rise differs (11.5 vs 13.0) while the solved FF stays near 14. A difference in solved FF means different things depending on its direction:
+**One data point so far.** Bakes at 3 and 9 balls test the bowl model: if it's right, the solved FF comes out the same at both, even though the raw temperature rise differs (at FF 14, 11.5 vs 13.0). A difference in solved FF means different things depending on its direction:
 
 - **Higher at 3 balls than at 9**: the bowl term is too big. Nothing else predicts FF falling as the mix grows, so this result is clear.
 - **Higher at 9 balls than at 3**: either the bowl term is too small, or FF really does rise with mix size (the untested idea below). These two bakes can't tell those apart.
 - **About the same**: consistent with the bowl model, and with FF not varying by mix size.
 
-To measure it, record every input mass and temperature, run the mix profile exactly, probe the dough **immediately** at the end (three spots in the center of the mass, averaged), then solve with the formula above. Don't subtract a predicted temperature from the measured one: that difference is the rise *after* the bowl has diluted it, and it reads low by \`FF × C_bowl/(Ct + C_bowl)\`.
+To measure it, log the bake: the calculator takes each phase's time from its timer and asks for the temperatures it needs. Probe the dough **immediately** at the end (three spots in the center of the mass, averaged). The calculator solves with the formula above, then corrects for any phase that ran off the middle of its range. Don't subtract a predicted temperature from the measured one: that difference is the rise *after* the bowl has diluted it, and it reads low by \`FF × C_bowl/(Ct + C_bowl)\`.
 
 **Three things to watch:**
 
-- **FF belongs to the mix profile, not the machine.** Change speeds or times and it changes, by roughly +1 °F per extra minute at 30%. Re-measure whenever you change the routine.
-- **FF may differ by mix size (untested).** A bigger mix might run a higher FF: more total work, and less surface area per unit mass to lose heat. Nothing has measured this yet. The calculator stores a separate value for each mix size you measure, so nothing is lost if FF turns out not to vary.
+- **FF belongs to the mix profile, not the machine.** Change speeds or times and it changes, by roughly +1 °F per extra minute at 30%. The calculator corrects each logged bake for time, so a Phase C you stretched or cut at the probe doesn't end up in your FF. A change of speeds needs new bakes.
+- **FF may differ by mix size (untested).** A bigger mix might run a higher FF: more total work, and less surface area per unit mass to lose heat. Nothing has measured this yet. The calculator keeps each mix size's bakes apart, so nothing is lost if FF turns out not to vary, and a size you haven't baked borrows from the sizes you have.
 - **Heat of hydration is already included.** Flour releases roughly 1.5–3 °F as it absorbs water. That happens during the mix, so it's inside the temperature you measure and therefore inside your FF: FF is one number covering both mixer friction and the heat of hydration. If a calculator asks for friction and a *separate* hydration correction, it uses a different convention; don't give it this number.`,
   },
   {

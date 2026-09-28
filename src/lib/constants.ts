@@ -109,10 +109,24 @@ const BASE = {
   // Defaults
   DEFAULT_BALL_G: 265,
   /**
-   * °F, MEASURED at 6 balls on bake 1 (21 Aug 2026).
-   * This is the rise the mixer produces in the DOUGH ALONE — see §4.3.
+   * °F, bake 1 (6 balls; its Phase C ran 6.5 min). The rise the mixer
+   * produces in the DOUGH ALONE — see §4.3. Read only while the log has no
+   * counted bake (§6, Panel 3): the fallback at every mix size but 6, where
+   * bake 1's seed applies (`BAKE_1_SEED` in bakeLog.ts).
    */
   DEFAULT_FF: 14.0,
+
+  /**
+   * §6, Panel 3. The FF in use at a mix size is the mean of its last three
+   * counted bakes, and a size counts as calibrated at three: the upper end of
+   * the recipe's two to three per size, which give a mean and a spread.
+   */
+  FF_HISTORY_BAKES: 3,
+  /**
+   * §10. Counted bakes at one mix size before the room-temperature slope is
+   * fitted and reported. Reported only; §10 says why it isn't applied.
+   */
+  REGRESSION_MIN_BAKES: 8,
 
   /**
    * §4.4. Below this the target is colder than fridge water reaches, which is

@@ -100,7 +100,7 @@ export function BatchPanel(s: AppState) {
 }
 
 export function TemperaturesPanel(s: AppState) {
-  const { inputs, setInput, commitNumber, panels, togglePanel, result } = s;
+  const { inputs, setInput, commitReading, panels, togglePanel, result } = s;
 
   // §4.2 / §6: show the coefficient that makes each field worth measuring,
   // from the engine and on the right basis — see `bigaReadingCost`.
@@ -109,22 +109,9 @@ export function TemperaturesPanel(s: AppState) {
   const bowlCost = bowlReadingCost(thermal);
   const bigaAt = (i: number) => inputs.bigaTempF[i] ?? inputs.bigaTempF[0]!;
 
-  /**
-   * §7. Per-mix arrays grow to `nMix` on first edit rather than being resized
-   * eagerly, so a single-mix setup keeps serializing as one bare value and old
-   * links stay short.
-   */
-  function withAt<T extends number | null>(
-    list: T[],
-    index: number,
-    value: number,
-    bounds: { min: number; max: number },
-  ): T[] {
-    const next = [...list];
-    while (next.length <= index) next.push((next[next.length - 1] ?? null) as T);
-    next[index] = Math.min(bounds.max, Math.max(bounds.min, value)) as T;
-    return next;
-  }
+  // Every field here is a §10 reading: committing it records that it was
+  // entered today, which the bake log's counting rule reads. Per-mix lists
+  // grow on first edit, so a single-mix setup keeps serializing as one value.
 
   return (
     <Panel
@@ -138,7 +125,7 @@ export function TemperaturesPanel(s: AppState) {
           label="Room temperature"
           unit="°F"
           value={inputs.roomTempF}
-          onCommit={(v) => commitNumber('roomTempF', v)}
+          onCommit={(v) => commitReading('roomTempF', v)}
           min={BOUNDS.roomTempF.min}
           max={BOUNDS.roomTempF.max}
           step={BOUNDS.roomTempF.step}
@@ -148,7 +135,7 @@ export function TemperaturesPanel(s: AppState) {
             label="Flour temperature"
             unit="°F"
             value={inputs.flourSameAsRoom ? inputs.roomTempF : inputs.flourTempF}
-            onCommit={(v) => commitNumber('flourTempF', v)}
+            onCommit={(v) => commitReading('flourTempF', v)}
             min={BOUNDS.flourTempF.min}
             max={BOUNDS.flourTempF.max}
             step={BOUNDS.flourTempF.step}
@@ -173,7 +160,7 @@ export function TemperaturesPanel(s: AppState) {
                 label={bigaLabel}
                 unit="°F"
                 value={bigaAt(mix.index - 1)}
-                onCommit={(v) => setInput('bigaTempF', withAt(inputs.bigaTempF, mix.index - 1, v, BOUNDS.bigaTempF))}
+                onCommit={(v) => commitReading('bigaTempF', v, mix.index - 1)}
                 min={BOUNDS.bigaTempF.min}
                 max={BOUNDS.bigaTempF.max}
                 step={BOUNDS.bigaTempF.step}
@@ -196,7 +183,7 @@ export function TemperaturesPanel(s: AppState) {
                 label={bowlLabel}
                 unit="°F"
                 value={measuredBowl ?? mix.bowlTempF}
-                onCommit={(v) => setInput('bowlTempF', withAt(inputs.bowlTempF, mix.index - 1, v, BOUNDS.bowlTempF))}
+                onCommit={(v) => commitReading('bowlTempF', v, mix.index - 1)}
                 min={BOUNDS.bowlTempF.min}
                 max={BOUNDS.bowlTempF.max}
                 step={BOUNDS.bowlTempF.step}
@@ -210,62 +197,48 @@ export function TemperaturesPanel(s: AppState) {
   );
 }
 
-export function CalibrationPanel(s: AppState) {
-  const {
-    inputs,
-    panels,
-    togglePanel,
-    friction,
-    setFrictionForCurrentMix,
-    clearFrictionForCurrentMix,
-    calibration,
-    setDdtOverride,
-    autoDdtF,
-    ddtF,
-    mixSize,
-  } = s;
+/**
+ * §6 Panel 3. The FF is shown, not typed: it comes from the bake log by §6's
+ * rule, and the badge says which step of the rule produced it. There is no
+ * manual override (MESSAGE-45): a typed value would outrank the measurements.
+ */
+const FRICTION_HINT: Record<1 | 2 | 3 | 4, string> = {
+  1: 'From your logged bakes at this mix size. Each bake is corrected to the middle of every phase time first.',
+  2: 'No bakes at this mix size yet, so this sits on the line between the logged sizes either side.',
+  3: 'No bakes at this mix size yet, so this is the nearest logged size, held flat.',
+  4: 'Your bake log has no bake yet with every reading and phase time. The first one replaces this at every mix size.',
+};
+
+export function CalibrationPanel(s: AppState & { onOpenLog: () => void }) {
+  const { inputs, panels, togglePanel, friction, calibration, setDdtOverride, autoDdtF, ddtF, mixSize, onOpenLog } = s;
 
   const ddtIsAuto = calibration.ddtOverrideF === null;
+  const estimated = friction.badge.tone === 'estimate';
 
   return (
     <Panel
       title="Calibration"
-      summary={`FF ${formatTempF(friction.ff)} °F${friction.isEstimate ? ' (estimated)' : ''} · DDT ${formatTempF(ddtF)} °F${ddtIsAuto ? ' (auto)' : ''}`}
+      summary={`FF ${formatTempF(friction.ff)} °F${estimated ? ' (estimated)' : ''} · DDT ${formatTempF(ddtF)} °F${ddtIsAuto ? ' (auto)' : ''}`}
       open={panels.calibration}
       onToggle={() => togglePanel('calibration')}
     >
       <div className="grid gap-6">
         <div>
-          <NumberField
-            label={`Friction factor · ${formatBallsPerMix(mixSize)}-ball mix`}
-            unit="°F"
-            value={friction.ff}
-            onCommit={setFrictionForCurrentMix}
-            min={BOUNDS.frictionFactorF.min}
-            max={BOUNDS.frictionFactorF.max}
-            step={BOUNDS.frictionFactorF.step}
-            badge={
-              friction.isEstimate ? (
-                <Badge tone="estimate">estimated — not yet calibrated</Badge>
-              ) : (
-                <Badge tone="measured">measured {friction.measuredAt}</Badge>
-              )
-            }
-            hint={
-              friction.isEstimate
-                ? 'Kept separately for each mix size. Whether FF changes with mix size is untested; recording a value for each size you bake will show it.'
-                : `Recorded for ${formatBallsPerMix(mixSize)}-ball mixes. Other mix sizes keep their own value.`
-            }
-          />
-          {!friction.isEstimate && (
-            <button
-              type="button"
-              onClick={clearFrictionForCurrentMix}
-              className="mt-2 min-h-touch text-sm font-medium text-amber-800 underline underline-offset-2 dark:text-amber-400"
-            >
-              Clear this measurement
-            </button>
-          )}
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <span className="text-sm font-medium text-stone-700 dark:text-stone-300">
+              {`Friction factor · ${formatBallsPerMix(mixSize)}-ball mix`}
+            </span>
+            <Badge tone={friction.badge.tone}>{friction.badge.text}</Badge>
+          </div>
+          <p className="mt-1.5 text-2xl font-semibold tabular">{`${formatTempF(friction.ff)} °F`}</p>
+          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">{FRICTION_HINT[friction.source.step]}</p>
+          <button
+            type="button"
+            onClick={onOpenLog}
+            className="mt-2 min-h-touch rounded-lg border border-stone-300 px-4 font-medium active:bg-stone-100 dark:border-stone-600 dark:active:bg-stone-800"
+          >
+            Open the bake log
+          </button>
         </div>
 
         <div>

@@ -1,0 +1,528 @@
+import { useState, type ReactNode } from 'react';
+import { Drawer } from './Drawer';
+import { Badge, NumberField, ToggleField } from './fields';
+import {
+  MIX_PHASES,
+  PHASE_KEYS,
+  bakeFrictionFactorF,
+  bakeMixSize,
+  ffInUse,
+  frictionBadge,
+  mixSizeValue,
+  mixStatus,
+  roomSlope,
+  sizeHistories,
+  type LoggedBake,
+  type LoggedMix,
+  type NotCountedReason,
+  type PhaseKey,
+} from '../lib/bakeLog';
+import { formatBallsPerMix, formatCoefficient, formatTempF, roundTo } from '../lib/format';
+import { formatElapsed } from '../lib/timers';
+import { formatTimeOfDay } from '../lib/timeline';
+import { BOUNDS } from '../state/defaults';
+import { parseRepoName } from '../state/bakeLogStore';
+import { localDate, runningPhases } from '../state/sessionBake';
+import type { AppState } from '../state/useAppState';
+
+/**
+ * The bake log — WEBSITE-SPEC-biga-calculator.md §10, with §6 Panel 3's rule
+ * for turning it into the FF in use.
+ *
+ * Captures sit in the steps where each reading is taken: the poured water in
+ * Phase A, the final temperature at the end of each mix. The card after the
+ * last mix shows what the log will record and saves it. The drawer holds the
+ * history, Dave's switch for each mix, and this device's sync settings.
+ */
+
+const REASON: Record<NotCountedReason, string> = {
+  excluded: 'you left it out',
+  formula: 'mixed under another formula or other speeds',
+  room: 'room temperature not entered on the day',
+  flour: 'flour temperature not entered on the day',
+  biga: 'biga temperature not entered on the day',
+  bowl: 'bowl temperature not measured',
+  water: 'poured water temperature not entered',
+  final: 'final dough temperature not entered',
+  phases: 'a phase time is missing',
+};
+
+const phaseName = (k: PhaseKey) => `Phase ${k.toUpperCase()}`;
+
+const buttonClass =
+  'min-h-touch rounded-lg border border-stone-300 px-4 font-medium active:bg-stone-100 dark:border-stone-600 dark:active:bg-stone-800';
+const smallButtonClass =
+  'min-h-touch shrink-0 self-start rounded-lg border border-stone-300 px-3 text-sm font-medium active:bg-stone-100 dark:border-stone-600 dark:active:bg-stone-800';
+
+// ---------------------------------------------------------------------------
+// Captures in the steps
+// ---------------------------------------------------------------------------
+
+/** Phase A: the water temperature actually poured, for the log (§10). */
+export function WaterPouredCapture({ state, mixIndex }: { state: AppState; mixIndex: number }) {
+  const { inputs, result, entered, commitReading, confirmReading, now } = state;
+  const i = mixIndex - 1;
+  const target = result.mixes[i]?.waterTempF ?? result.waterTempF;
+  const poured = inputs.waterUsedF[i] ?? null;
+  const enteredToday = poured != null && entered.waterUsedF[i] === localDate(now);
+  const many = result.capacity.nMix > 1;
+
+  return (
+    <div className="mt-4 rounded-lg border border-stone-300 p-3 dark:border-stone-700">
+      <NumberField
+        label={many ? `Water temperature poured — mix ${mixIndex}` : 'Water temperature poured'}
+        unit="°F"
+        value={poured ?? roundTo(target, 1)}
+        onCommit={(v) => commitReading('waterUsedF', v, i)}
+        min={BOUNDS.waterUsedF.min}
+        max={BOUNDS.waterUsedF.max}
+        step={BOUNDS.waterUsedF.step}
+        // One wording before and after, so nothing above the button moves
+        // when it is tapped.
+        hint={`Read it in the jug as you pour. The target is ${formatTempF(target)} °F.`}
+      />
+      {/* The same height either way, so nothing below the tap moves up or down. */}
+      <div className="mt-2 flex min-h-touch items-center">
+        {enteredToday ? (
+          <span className="text-sm text-stone-600 dark:text-stone-400">Entered today.</span>
+        ) : (
+          <button type="button" onClick={() => confirmReading('waterUsedF', target, i)} className={smallButtonClass}>
+            Poured at the target
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The end of each mix: its final dough temperature. §4.8 times the ball rise
+ * from the mean of the mixes, a mix not yet read counting at DDT, and the log
+ * solves each mix's FF from its own reading.
+ */
+export function FinalTempCapture({ state, mixIndex }: { state: AppState; mixIndex: number }) {
+  const { inputs, result, commitReading, clearReading } = state;
+  const i = mixIndex - 1;
+  const measured = inputs.finalDoughTempF[i] ?? null;
+  const many = result.capacity.nMix > 1;
+  const rise = Math.round(result.ballRoomMinutes);
+
+  let hint: string;
+  if (!many) {
+    hint =
+      measured === null
+        ? `Not measured yet — planning at DDT ${formatTempF(result.ddtF)} °F, which gives ${rise} min at room temperature.`
+        : `The balls now get ${rise} min at room temperature, adjusted for this reading. Every later stage moves with it.`;
+  } else {
+    hint =
+      measured === null
+        ? `Not measured yet. Until it is, this mix counts at DDT ${formatTempF(result.ddtF)} °F in the average the ball rise is timed from.`
+        : `The balls get ${rise} min at room temperature, timed from the average of the mixes, ${formatTempF(result.effectiveFinalTempF)} °F. Every later stage moves with it.`;
+  }
+
+  return (
+    <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/40">
+      <NumberField
+        label={many ? `Final dough temperature — mix ${mixIndex}` : 'Final dough temperature'}
+        unit="°F"
+        value={measured ?? result.ddtF}
+        onCommit={(v) => commitReading('finalDoughTempF', v, i)}
+        min={BOUNDS.finalDoughTempF.min}
+        max={BOUNDS.finalDoughTempF.max}
+        step={BOUNDS.finalDoughTempF.step}
+        hint={hint}
+      />
+      {measured !== null && (
+        <button
+          type="button"
+          onClick={() => clearReading('finalDoughTempF', i)}
+          className="mt-2 min-h-touch text-sm font-medium text-amber-800 underline underline-offset-2 dark:text-amber-400"
+        >
+          {many ? 'Clear this reading' : 'Clear and plan at DDT'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// The card after the last mix
+// ---------------------------------------------------------------------------
+
+function ReadingRow({ label, value, status }: { label: string; value: string; status: ReactNode }) {
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-1.5">
+      <span className="min-w-0">
+        <span className="text-stone-600 dark:text-stone-400">{label}</span>{' '}
+        <span className="font-medium tabular">{value}</span>
+      </span>
+      {status}
+    </li>
+  );
+}
+
+const Ok = () => <span className="text-sm text-stone-600 dark:text-stone-400">Entered today</span>;
+const Note = ({ children }: { children: ReactNode }) => (
+  <span className="text-sm text-amber-900 dark:text-amber-200">{children}</span>
+);
+
+/** What the log will record for this session, and the button that saves it (§10). */
+export function BakeLogCard({ state, onOpenLog }: { state: AppState; onOpenLog: () => void }) {
+  const { sessionDraft: draft, sessionBakeId, saveSessionBake, confirmReading, inputs, log, timers, sync, github } = state;
+  const saved = log.bakes.some((b) => b.bake_id === sessionBakeId);
+  const nMix = draft.n_mix;
+  const confirm = (onClick: () => void) => (
+    <button type="button" onClick={onClick} className={smallButtonClass}>
+      Confirm
+    </button>
+  );
+
+  return (
+    <div className="rounded-xl border border-stone-300 bg-white p-4 dark:border-stone-700 dark:bg-stone-900">
+      <h4 className="text-lg font-semibold">Log this bake</h4>
+      <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+        A mix feeds the friction factor when every reading below was entered today and all four phase times were
+        captured. The phase timers capture them when you stop them or tick the step.
+      </p>
+
+      <ul className="mt-2 divide-y divide-stone-200 dark:divide-stone-800">
+        <ReadingRow
+          label="Room"
+          value={`${formatTempF(draft.room_temp_f.value)} °F`}
+          status={draft.room_temp_f.entered ? <Ok /> : confirm(() => confirmReading('roomTempF', inputs.roomTempF))}
+        />
+        {!draft.flour_follows_room && (
+          <ReadingRow
+            label="Flour"
+            value={`${formatTempF(draft.flour_temp_f.value)} °F`}
+            status={draft.flour_temp_f.entered ? <Ok /> : confirm(() => confirmReading('flourTempF', inputs.flourTempF))}
+          />
+        )}
+      </ul>
+
+      {draft.mixes.map((mix) => {
+        const i = mix.mix_index - 1;
+        const status = mixStatus(draft, mix);
+        const running = runningPhases(timers, mix.mix_index, nMix);
+        const bowlMeasured = inputs.bowlTempF[i] != null;
+        return (
+          <div key={mix.mix_index} className="mt-3">
+            {nMix > 1 && <h5 className="text-sm font-semibold">{`Mix ${mix.mix_index}`}</h5>}
+            <ul className="divide-y divide-stone-200 dark:divide-stone-800">
+              <ReadingRow
+                label="Biga"
+                value={`${formatTempF(mix.biga_temp_at_mix_f.value)} °F`}
+                status={
+                  mix.biga_temp_at_mix_f.entered ? (
+                    <Ok />
+                  ) : (
+                    confirm(() => confirmReading('bigaTempF', mix.biga_temp_at_mix_f.value, i))
+                  )
+                }
+              />
+              <ReadingRow
+                label="Bowl"
+                value={`${formatTempF(mix.bowl_temp_f.value)} °F`}
+                status={
+                  mix.bowl_temp_f.entered ? (
+                    <Ok />
+                  ) : bowlMeasured ? (
+                    confirm(() => confirmReading('bowlTempF', mix.bowl_temp_f.value, i))
+                  ) : (
+                    <Note>A prefill: measure it in Today’s temperatures</Note>
+                  )
+                }
+              />
+              <ReadingRow
+                label="Water poured"
+                value={`${formatTempF(mix.water_temp_used_f.value)} °F`}
+                status={
+                  mix.water_temp_used_f.entered ? (
+                    <Ok />
+                  ) : (
+                    confirm(() => confirmReading('waterUsedF', mix.water_temp_used_f.value, i))
+                  )
+                }
+              />
+              <ReadingRow
+                label="Final dough"
+                value={`${formatTempF(mix.final_dough_temp_f.value)} °F`}
+                status={
+                  mix.final_dough_temp_f.entered ? (
+                    <Ok />
+                  ) : (
+                    <Note>{nMix > 1 ? `Enter it at the end of mix ${mix.mix_index}` : 'Enter it above'}</Note>
+                  )
+                }
+              />
+              <ReadingRow
+                label="Phase times"
+                value={PHASE_KEYS.map((k) => {
+                  const s = mix.phase_seconds[k];
+                  return `${k.toUpperCase()} ${s == null ? '–' : formatElapsed(s * 1000)}`;
+                }).join(' · ')}
+                status={
+                  running.length ? (
+                    <Note>{`${running.map(phaseName).join(', ')} still running: stop it when the phase ends`}</Note>
+                  ) : PHASE_KEYS.some((k) => mix.phase_seconds[k] == null) ? (
+                    <Note>Start each phase’s timer as the phase starts</Note>
+                  ) : null
+                }
+              />
+            </ul>
+            <MixOutcome status={status} />
+          </div>
+        );
+      })}
+
+      <div className="mt-3 flex flex-wrap gap-3">
+        <button
+          type="button"
+          onClick={saveSessionBake}
+          className="min-h-touch rounded-lg bg-amber-700 px-4 font-medium text-white active:bg-amber-800 dark:bg-amber-600"
+        >
+          {saved ? 'Update the saved bake' : 'Save to the bake log'}
+        </button>
+        <button type="button" onClick={onOpenLog} className={buttonClass}>
+          Open the bake log
+        </button>
+      </div>
+      {saved && (
+        <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
+          {github
+            ? sync.state === 'error'
+              ? `Saved on this device. The sync failed: ${sync.message}`
+              : 'Saved. It syncs to your repository in the background.'
+            : 'Saved in this browser. Add a repository in the bake log to share it with your other devices.'}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function MixOutcome({ status }: { status: ReturnType<typeof mixStatus> }) {
+  if (status.ff == null) return <p className="mt-1 text-sm">{`Not solved: ${REASON.formula}.`}</p>;
+  const solved = `solves to ${formatTempF(status.ff)} °F`;
+  const nominal = status.ffNominal == null ? '' : `, ${formatTempF(status.ffNominal)} °F at the middle of every phase range`;
+  return status.counted ? (
+    <p className="mt-1 text-sm text-emerald-800 dark:text-emerald-300">{`Counts. This mix ${solved}${nominal}.`}</p>
+  ) : (
+    <p className="mt-1 text-sm text-amber-900 dark:text-amber-200">
+      {`Won't count: ${status.reasons.map((r) => REASON[r]).join('; ')}. It ${solved}${nominal}.`}
+    </p>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// The drawer
+// ---------------------------------------------------------------------------
+
+export function BakeLogDrawer({ open, onClose, state }: { open: boolean; onClose: () => void; state: AppState }) {
+  return (
+    <Drawer open={open} title="Bake log" onClose={onClose}>
+      <div className="grid gap-6">
+        <SizesSection state={state} />
+        <BakesSection state={state} />
+        <SyncSection state={state} />
+      </div>
+    </Drawer>
+  );
+}
+
+function SizesSection({ state }: { state: AppState }) {
+  const { log, mixSizeKey, friction } = state;
+  const histories = sizeHistories(log.bakes).sort((a, b) => mixSizeValue(a.size) - mixSizeValue(b.size));
+  return (
+    <section className="min-w-0">
+      <h3 className="mb-2 text-lg font-semibold">Friction factor by mix size</h3>
+      <p className="text-stone-700 dark:text-stone-300">
+        {`This batch, ${formatBallsPerMix(mixSizeValue(mixSizeKey))} balls per mix: ${formatTempF(friction.ff)} °F`}{' '}
+        <Badge tone={friction.badge.tone}>{friction.badge.text}</Badge>
+      </p>
+      {histories.length === 0 ? (
+        <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
+          No counted bakes yet. Until the first, the calculator uses bake 1’s figure at its mix size and the estimate
+          everywhere else.
+        </p>
+      ) : (
+        <ul className="mt-2 grid gap-2">
+          {histories.map((h) => {
+            const inUse = ffInUse(log.bakes, h.size);
+            const slope = roomSlope(log.bakes, h.size);
+            return (
+              <li key={`${h.size.balls}/${h.size.nMix}`} className="rounded-lg border border-stone-200 p-3 dark:border-stone-800">
+                <p className="font-medium">
+                  {`${formatBallsPerMix(mixSizeValue(h.size))} balls per mix: ${formatTempF(h.ff)} °F`}
+                </p>
+                <p className="text-sm text-stone-600 dark:text-stone-400">{frictionBadge(inUse).text}</p>
+                {slope && (
+                  <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+                    {`Room slope: ${formatCoefficient(slope.b, 2)} °F of friction factor per °F of room, over ${slope.bakes} bakes from ${formatTempF(slope.roomMinF)} to ${formatTempF(slope.roomMaxF)} °F. Reported only: the calculator doesn't apply it.`}
+                  </p>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function BakesSection({ state }: { state: AppState }) {
+  const bakes = [...state.log.bakes].sort((a, b) => (a.bake_id < b.bake_id ? 1 : -1));
+  return (
+    <section className="min-w-0">
+      <h3 className="mb-2 text-lg font-semibold">Bakes</h3>
+      {bakes.length === 0 ? (
+        <p className="text-sm text-stone-600 dark:text-stone-400">
+          Nothing logged yet. Save a bake from the card after the last mix.
+        </p>
+      ) : (
+        <ul className="grid gap-3">
+          {bakes.map((bake) => (
+            <BakeItem key={bake.bake_id} bake={bake} state={state} />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function BakeItem({ bake, state }: { bake: LoggedBake; state: AppState }) {
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const ff = bakeFrictionFactorF(bake);
+  const pending = state.log.dirty.includes(bake.bake_id);
+  return (
+    <li className="rounded-lg border border-stone-200 p-3 dark:border-stone-800">
+      <p className="font-medium">
+        {`${bake.date} · ${bake.balls} × ${bake.ball_g} g · ${formatBallsPerMix(mixSizeValue(bakeMixSize(bake)))} balls per mix`}
+      </p>
+      <p className="text-sm text-stone-600 dark:text-stone-400">
+        {ff == null ? 'No mix counts.' : `Friction factor ${formatTempF(ff)} °F.`}
+        {pending && state.github ? ' Waiting to sync.' : ''}
+      </p>
+      <ul className="mt-2 grid gap-2">
+        {bake.mixes.map((mix) => (
+          <MixItem key={mix.mix_index} bake={bake} mix={mix} state={state} />
+        ))}
+      </ul>
+      <div className="mt-2 flex min-h-touch flex-wrap items-center gap-3">
+        {confirmingDelete ? (
+          <>
+            <span className="text-sm">Delete this bake from every device?</span>
+            <button type="button" onClick={() => state.deleteBake(bake.bake_id)} className={smallButtonClass}>
+              Delete
+            </button>
+            <button type="button" onClick={() => setConfirmingDelete(false)} className={smallButtonClass}>
+              Keep
+            </button>
+          </>
+        ) : (
+          <button type="button" onClick={() => setConfirmingDelete(true)} className={smallButtonClass}>
+            Delete…
+          </button>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function MixItem({ bake, mix, state }: { bake: LoggedBake; mix: LoggedMix; state: AppState }) {
+  const status = mixStatus(bake, mix);
+  const times = MIX_PHASES.map((p) => {
+    const s = mix.phase_seconds[p.key];
+    return `${p.key.toUpperCase()} ${s == null ? '–' : formatElapsed(s * 1000)}`;
+  }).join(' · ');
+  return (
+    <li className="text-sm">
+      {bake.n_mix > 1 && <p className="font-medium">{`Mix ${mix.mix_index}`}</p>}
+      <p className="text-stone-600 dark:text-stone-400">
+        {`Biga ${formatTempF(mix.biga_temp_at_mix_f.value)} · bowl ${formatTempF(mix.bowl_temp_f.value)} · water ${formatTempF(mix.water_temp_used_f.value)} · final ${formatTempF(mix.final_dough_temp_f.value)} °F · ${times}`}
+      </p>
+      <MixOutcome status={status} />
+      <ToggleField
+        label="Leave this mix out"
+        checked={mix.excluded}
+        onChange={(v) => state.setMixExcluded(bake.bake_id, mix.mix_index, v)}
+      />
+    </li>
+  );
+}
+
+function SyncSection({ state }: { state: AppState }) {
+  const { github, setGitHub, sync, syncNow, log } = state;
+  const [repoText, setRepoText] = useState(github ? `${github.owner}/${github.repo}` : '');
+  const [token, setToken] = useState('');
+  const repo = parseRepoName(repoText);
+  const waiting = log.dirty.length + log.deleted.length;
+
+  return (
+    <section className="min-w-0">
+      <h3 className="mb-2 text-lg font-semibold">Sync between devices</h3>
+      {github ? (
+        <>
+          <p className="text-stone-700 dark:text-stone-300">
+            {sync.state === 'syncing'
+              ? `Syncing with ${github.owner}/${github.repo}…`
+              : sync.state === 'error'
+                ? `Couldn't sync with ${github.owner}/${github.repo}. ${sync.message}`
+                : waiting > 0
+                  ? `${waiting} ${waiting === 1 ? 'change' : 'changes'} waiting to sync with ${github.owner}/${github.repo}.`
+                  : `Synced with ${github.owner}/${github.repo}${log.lastSyncedAt ? ` at ${formatTimeOfDay(new Date(log.lastSyncedAt))}` : ''}.`}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-3">
+            <button type="button" onClick={syncNow} className={buttonClass}>
+              Sync now
+            </button>
+            <button type="button" onClick={() => setGitHub(null)} className={buttonClass}>
+              Forget the token on this device
+            </button>
+          </div>
+        </>
+      ) : (
+        <form
+          className="grid gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (repo && token.trim()) {
+              setGitHub({ ...repo, token: token.trim() });
+              setToken('');
+            }
+          }}
+        >
+          <p className="text-sm text-stone-600 dark:text-stone-400">
+            The log is in this browser only. To share it with your other devices, make a private GitHub repository
+            and a fine-grained token that can reach only that repository, with Contents set to read and write. Paste
+            both here on each device. The token stays in this browser’s storage.
+          </p>
+          <label className="grid gap-1.5 text-sm font-medium text-stone-700 dark:text-stone-300">
+            Repository
+            <input
+              value={repoText}
+              onChange={(e) => setRepoText(e.target.value)}
+              placeholder="owner/name"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              className="min-h-touch rounded-lg border border-stone-300 bg-white px-3 text-base text-stone-900 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+            />
+          </label>
+          <label className="grid gap-1.5 text-sm font-medium text-stone-700 dark:text-stone-300">
+            Token
+            <input
+              type="password"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              autoComplete="off"
+              className="min-h-touch rounded-lg border border-stone-300 bg-white px-3 text-base text-stone-900 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+            />
+          </label>
+          <button type="submit" disabled={!repo || !token.trim()} className={`${buttonClass} disabled:opacity-50`}>
+            Save and sync
+          </button>
+        </form>
+      )}
+    </section>
+  );
+}

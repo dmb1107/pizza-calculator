@@ -23,11 +23,13 @@ The user enters batch size, their measured temperatures, and how long they want 
 
 ## 2. Tech constraints
 
-- **Static only.** GitHub Pages — no server, no API, no build-time data fetching.
+- **Static only.** GitHub Pages — no server of its own and no build-time data fetching. The bake log's sync to GitHub (below) is the one network call the app makes.
 - **Recommended stack:** Vite + React + TypeScript + Tailwind. Use something else if you have a strong reason, but it must build to static assets.
 - ⚠️ **Set `base: '/<repo-name>/'` in `vite.config.ts`.** GitHub Pages serves from a subpath and asset links break silently without this. Same for the router — use a hash router or configure the basename.
 - Include a GitHub Actions workflow that builds and deploys to Pages on push to `main`.
-- **State:** inputs serialize to URL query params (shareable), and calibration + preferences persist to `localStorage`. `localStorage` works fine on GitHub Pages.
+- **State:** inputs serialize to URL query params (shareable), and preferences persist to browser storage.
+- **The bake log (§10)** lives in a private GitHub repository, one JSON file per bake, read and written from the browser through GitHub's API with a token that can reach only that repository, pasted once on each device. Each device writes its own copy first and syncs after, so a mix never waits on the network. **Without a token** the log stays in browser storage, so anyone opening a shared link gets a working calculator that saves nothing outside their own browser.
+- **The calibration isn't stored.** The FF in use is computed from the log each time (§6, Panel 3). ⚠️ An earlier version persisted it to `localStorage` as a map of typed values.
 - No analytics, no external fonts that block render, no CDN dependencies that can disappear.
 
 ---
@@ -82,7 +84,7 @@ export const C = {
 
   // Defaults
   DEFAULT_BALL_G: 265,
-  DEFAULT_FF: 14.0,           // °F, MEASURED at 6 balls (bake 1). Rise in the DOUGH ALONE.
+  DEFAULT_FF: 14.0,           // °F, bake 1 (6 balls; its Phase C ran 6.5 min). Rise in the DOUGH ALONE. Read only while the log has no counted bake (§6)
   DEFAULT_BIGA_TEMP_F: 58,    // the one measured value (bake 1, after tearing). Prompt to override.
 
   // Water reachability guards
@@ -243,6 +245,17 @@ Omitting the bowl made this output **5 °F wrong** on the first real bake — it
 
 `DDT` default: **75 °F** for ≤6 balls, **74 °F** for 7+. User-overridable.
 
+**Normalize a solved FF to the nominal mix profile before it reaches the FF in use (§6, §10).** The solve assigns FF every degree the ingredients and bowl don't explain, including the friction from a phase that ran long or short, and `mix-4` sends Phase C anywhere from 2 to 5.5 minutes on the probe reading. Correct each phase to the middle of its printed range at its speed's friction rate:
+
+```
+ffNominal    = FF − Σ over phases A, B, C, D of FRICTION_RATE[speed] × (actualMin − referenceMin)
+referenceMin = (rangeLow + rangeHigh) / 2     // from each phase's timer range: A 3.5, B 5.5, C 3.5, D 52.5/60
+```
+
+**Both sides are dough-only, so there is no `Ct/TOT` factor here.** The reference is the profile the documents already call nominal: `mix-5`'s Phase C authority and the recipe's probe table are computed from a 3.5-minute Phase C. Derive each reference from its timer's range rather than typing 3.5.
+
+Without this the log learns the baker's corrections as mixer friction. A mix whose water came out cold probes low, gets a longer Phase C and solves to a higher FF; the next target then comes out colder, and the next mix probes low again. Across the printed ranges the phases alone are worth 2.905 °F of FF, and a probe-adjusted Phase C (2 to 5.5 min) 3.78.
+
 ### 4.4 Reaching the water temperature
 
 **There is no ice calculation and no tap/ice split. Output the target temperature only.**
@@ -269,7 +282,7 @@ The user blends fridge-cold water with tap water by hand, measuring as they pour
 
 ⚠️ **An earlier last row read "9+ — ≤ 91 °F". That holds only while the batch stays in one mix.** Above that the batch splits and the requirement follows the *mix*: 10 × 265 g runs as two 5-ball mixes and asks for **95.3 °F**. The highest any split batch asks for is **96.3 °F**, at 9 × 272 g — two 1251 g mixes, the smallest a split can make (10 × 245 g is within 0.01). Nothing in the supported range exceeds the 3-ball figure, which is what the table exists to show.
 
-With `MIN_BALLS = 3`, the 120 °F warning **does not fire anywhere** in the temperature grid at the default FF — it is a guard rail for a user-entered calibration FF or an out-of-band temperature, not something that should appear in normal use. If it starts firing routinely, that is a signal, not noise.
+With `MIN_BALLS = 3`, the 120 °F warning **does not fire anywhere** in the temperature grid at the default FF — it is a guard rail for a low logged FF or an out-of-band temperature, not something that should appear in normal use. At the hottest corner (3 × 240 g, biga 45 °F, room 60 °F) it fires once the FF in use drops below **10.23**. If it starts firing routinely, that is a signal, not noise.
 
 No `tapTempF` or `freezerTempF` inputs. No ice fields in the log.
 
@@ -293,6 +306,8 @@ probeTargetF = DDT − 0.33 × FF × (Ct / TOT) + 0.2 × (DDT − T_room)
 ```
 
 Remaining friction is diluted by the bowl, and the 10-minute rest sheds heat in proportion to the dough-to-room gap rather than a flat 1 °F.
+
+⚠️ **`0.33 × FF` holds only near FF 14.** At the middle of each range Phases C and D add `1.08 × 3.5 + 0.86 × 52.5/60` = 4.5325 °F of dough-only friction by `FRICTION_RATE`: 0.32 of 14, but 0.42 of 10.79, where bake 1 lands once its long Phase C is corrected (§5, *Bake log*). If the log's FF settles well below 14, this term should come from the rates and the nominal C and D times instead of a fraction of FF. That is a recipe decision to make on bake data; nothing changes now.
 
 At FF 14 in a 70 °F room: **3 balls 72.2 · 6 balls 71.8 · 9 balls 70.5 · 12 balls 70.6 · 18 balls 70.5**
 
@@ -415,6 +430,8 @@ A cool dough loses ground on the counter *and* on the way down to 40 °F; `COOLD
 ⚠️ **An earlier version keyed this on dough temperature (77 °F → 71 min, 75 °F → 90 min…), which silently assumed DDT 75.** At 7+ balls DDT is 74 and every row is one step off — a 74 °F dough is *on target* and gets 90 minutes, not 100. Nothing computed was wrong, because the engine has always taken `DDT`; the defect was in every table that dropped it. Same shape as the probe gap in §4.6: a figure that depends on a difference, tabulated against one of its terms.
 
 **Planning mode:** before mixing there is no measurement, so default `T_actual = DDT`, giving exactly 90 min. When the user enters a real final dough temperature, recompute and shift every downstream stage.
+
+**Split batches: `T_actual` is the mean of the mixes' final readings.** The mixes have equal dough mass and all go into one tub, so their average is the tub's temperature; the last mix's reading alone ignores every other dough in it. A mix not yet read counts at `DDT`, planning mode's value, so the rise updates as each reading comes in. `{finalDoughTemp}` prints this mean. At 12 × 265 g, mixes finishing at 73.0 and 75.0 °F give `T_actual` 74.0, a 90-minute `roomMin` and a 72.5-minute rise; the last reading alone would give 80.4 and 62.9. How far the earlier doughs drift in the tub while the later ones mix is unmeasured and not modelled. ⚠️ The first build read `T_actual` from the last mix only; the spec hadn't said.
 
 Fixed overhead outside the cold ferment spans **25.6–30.8 h** across the full input ranges at `nMix = 1` (the upper bound uses the shaped-rise clamp of 180 min, which the old fixed 1–2 h stage could not reach). **At the defaults it is 27.8 h**, so total elapsed is `coldFerment + 27.8 h`: ~34 h at 6 h cold, ~52 h at 24 h, ~64 h at 36 h.
 
@@ -565,7 +582,7 @@ Splits are unchanged: `nBiga` = 1 except 18 balls (2); `nMix` = 1 except 12 and 
 
 The consequence is that **the flour default puts every water target 0.392 °F below its vector value** — the same figure at every batch size and every `nMix`, because `Cf/Cw` is scale-invariant.
 
-**That is the whole gap only where FF falls back to 14.0.** The vectors run at FF 14. At 6 balls per mix the app reads bake 1's seeded 14.03 instead (§6, Panel 3), which lowers the target by a further `(14.03 − 14) × Ct/Cw` = 0.090 °F — the same at every 6-ball mix, since `Ct/Cw` (3.0023) is also a dough-only ratio. With only the seed in the calibration map, 3–24 balls × 240–300 g therefore has exactly two gaps: **0.392**, and **0.482 on every 6-ball mix** — 6 and 12 balls at every weight, and 18 balls from 272 g, which runs as three 6-ball mixes. The default page, 6 × 265 g, is one of them. Every FF the baker records adds a gap of its own at that mix size, so derive this term from the stored map, never as a constant 0.090.
+**That is the whole gap only where FF falls back to 14.0.** The vectors run at FF 14. At 6 balls per mix the app reads bake 1's seeded 14.03 instead (§6, Panel 3), which lowers the target by a further `(14.03 − 14) × Ct/Cw` = 0.090 °F — the same at every 6-ball mix, since `Ct/Cw` (3.0023) is also a dough-only ratio. Until the log has a counted bake, 3–24 balls × 240–300 g therefore has exactly two gaps: **0.392**, and **0.482 on every 6-ball mix** — 6 and 12 balls at every weight, and 18 balls from 272 g, which runs as three 6-ball mixes. The default page, 6 × 265 g, is one of them. The first counted bake moves the FF in use at every mix size (§6, Panel 3), and this gap with it, so derive the term from the FF in use, never as a constant 0.090.
 
 Small enough to read as rounding, which is what makes it worth stating. A 12-ball mix-2 target is 59.505 at vector conditions, 59.113 at flour 70 with FF 14, and 59.022 at app defaults, which prints **59.0**. All three are correct under their own conditions. ⚠️ An earlier version called 0.392 the gap "at every batch size and every `nMix`" and 59.113 the app's figure. Both left out the seeded FF, which applies on the default page itself.
 
@@ -601,6 +618,8 @@ The real bake this model was corrected against. 6 balls, `FF = 14.03`, biga 58 �
 The 5 °F gap between what was used and what was needed, times water's 30% share of the system, is exactly the 1.5 °F the dough finished low. **If this test fails, the bowl term is wired wrong.**
 
 ⚠️ **FF 14.03, not 14.04.** Solved from these logged inputs with the §4.3 form, bake 1 gives **14.031**. The 14.04 carried previously can't be reproduced from any logged input and its source is unknown; at 14.04 this test pinned 73.508 and 67.97 °F. At 14.03 both pins are exact to the printed precision — `finalTempF` 73.499 → 73.50, `waterTempF` 67.999 → 68.00 — and the second now matches the recipe's bake log, which has always said the water should have been 68.0 °F.
+
+⚠️ **This pins the solve, not the FF of the nominal profile.** Bake 1's Phase C ran 6.5 minutes and its whole mix 18.5 motor minutes, against 13.375 at the middle of every range. Normalized for Phase C alone (§4.3) it is 10.791045; its other phase times weren't logged. The seed stays 14.03 on purpose (§6, Panel 3).
 
 ### Bowl dilution
 
@@ -652,10 +671,23 @@ Per-batch maxima at 265 g: 3 → 106.6 · 5 → 98.7 · 6 → 96.8 · 7 → 92.1
 
 Assertions:
 - The sub-38 warning fires **nowhere** in this envelope.
-- The above-120 warning fires **nowhere** in this envelope at FF 14 — it is reachable only via a user-entered calibration FF or an out-of-band temperature. Assert zero hits over the grid; do **not** assert it is unreachable in principle.
+- The above-120 warning fires **nowhere** in this envelope at FF 14 — it is reachable only via a low logged FF (below 10.23, §4.4) or an out-of-band temperature. Assert zero hits over the grid; do **not** assert it is unreachable in principle.
 - Both corner values are pinned. If either moves, the thermal model changed.
 
 For reference, had `MIN_BALLS` stayed at 1 the maximum would be **152.2 °F** (1 × 240 g). That case is what the minimum exists to remove.
+
+### Bake log (§10)
+
+Arithmetic pins for the log's rules. None of them is a measurement.
+
+- **Normalization.** Bake 1's readings (6 × 265 g; biga and bowl 58, flour 69, room 70, water 63.0, final 73.5 °F) solve to **14.031045**. With Phase C at 6.5 min and A, B and D at their references, `ffNominal` is **10.791045**. That is not bake 1's nominal FF: its A, B and D times weren't logged.
+- **Every phase at its reference:** `ffNominal = FF` exactly.
+- **A 4 min, B 6 min, C 2 min, D 60 s:** `ffNominal = FF + 0.7075`.
+- **Aggregate.** Counted bakes at one mix size, oldest first: a split batch whose mixes solve to 11.0 and 11.4, then 10.6, 11.0 and 10.4. Per-bake FFs 11.2, 10.6, 11.0, 10.4; the FF in use is **10.666667**, from the last three; spread **0.6**.
+- **Across sizes.** Counted sizes 3 at 11.0 and 9 at 12.2, nothing else: 6.5 balls per mix reads **11.7**, 10 reads **12.2** (held, never extrapolated), 3 reads 11.0.
+- **No counted bake anywhere:** 14.03 at 6 balls per mix, 14.0 at every other size.
+- **Split-batch `T_actual`.** 12 × 265 g, mixes finishing at 73.0 and 75.0 °F: `T_actual` **74.0**, `roomMin` 90, `ballRoomMin` **72.5**. With only the first mix read: `T_actual` 73.5, `ballRoomMin` **77.4**.
+- **120 °F warning.** 3 × 240 g, biga 45 °F, room and flour 60 °F: required water 108.68 °F at FF 14, reaching 120 at FF **10.23**.
 
 ### Invariants (every batch size and ball weight)
 - `(bigaWater + freshWater) / F` = 0.700
@@ -738,14 +770,41 @@ This was under-specified before and the gap was real: `mix-8` tells the user to 
 ### Panel 3 — Calibration
 | Field | Type | Default | Note |
 |---|---|---|---|
-| Friction factor (°F) | number | 14.0 | **per mix size** (balls per mix). 6 is MEASURED (bake 1); others fall back |
+| Friction factor (°F) | **shown, not typed** | from the bake log | **per mix size** (balls per mix), by the rule below, with its badge |
 | DDT override (°F) | number | auto | auto = 75 (≤6 balls) / 74 (7+) |
 
-**Store friction factor per mix size.** Store a map of `ballsPerMix → measuredFF` in `localStorage`, select by the current batch's balls per mix (`balls / nMix`), fall back to 14.0. Badge the fallback "estimated"; show the recorded date when measured. **Exact match only** — a fractional mix size (13 balls → 6.5) falls back rather than interpolating. **Key on balls per mix, not total balls:** FF is per-mix by definition (§4.2), so a 12-ball batch — two 6-ball mixes — reads the 6 entry, and an FF solved on a 12-ball bake is filed under 6. Keying on total balls would send every split batch to the fallback and file split-batch measurements under a size the mixer never ran. **Mix size depends on ball weight as well as ball count:** 9 balls is one 9-ball mix at 265 g but two 4.5-ball mixes at 280 g (2575 g, over the 2500 g cap). The key is a ball *count*, so a 6-ball mix of 300 g balls reads a value measured on 265 g balls. That's an accepted proxy while size dependence is itself untested; don't key on mass unless the bakes show FF moves with mix size.
+⚠️ **There is no typed FF and no manual override.** Dave's call (27 Sep 2026): the FF comes from his measurements. An earlier version had an editable field and stored a map of `ballsPerMix → measuredFF` in `localStorage`; ignore any stored value. The DDT override stays.
 
-Seed it with `{6: {value: 14.03, date: '2026-08-21'}}` — keyed 6 balls per mix.
+**The FF in use at mix size `k`** (`k = balls / nMix`; compare keys exactly, as the pair rather than as a rounded float):
 
-Note this is *separate* from bowl dilution — the bowl explains why the same FF produces different temperature rises at different mix sizes. **Whether FF itself varies with mix size is an untested hypothesis**, reasoned by an earlier recipe session (more work, less surface area per unit mass to shed it) and never observed. The per-size map costs nothing if FF turns out constant and is needed if it doesn't. Update this note once bakes 2 and 3 are in.
+1. **Counted bakes at `k`:** the mean of the last three bakes' FFs at `k`, or of all of them if there are fewer. A bake's FF is the mean of its counted mixes' normalized FFs (§4.3), so a split batch counts once however many mixes it ran. §10 says which mixes count.
+2. **None at `k`, counted sizes on both sides:** linear interpolation between the nearest counted size below `k` and the nearest above, each at its step-1 value.
+3. **Counted sizes on one side only:** the nearest counted size's step-1 value, held flat. Never extrapolate.
+4. **No counted bake at any size:** bake 1's seed, 14.03 at `k = 6`, and `DEFAULT_FF` (14.0) everywhere else. This is the behaviour before the log existed.
+
+Steps 2 and 3 borrow across sizes because, under the bowl model, a normalized FF is the same at every mix size. If the bakes show otherwise, interpolation follows the trend between measured sizes, and the badge says the value was borrowed. At 265 g the eight fractional mix sizes (5.5, 6.5, 7.5, 8.5, 6⅓, 6⅔, 7⅓, 7⅔) each occur at a single batch, from 11 to 23 balls; under an exact match each would calibrate only by baking that batch, which is why step 2 exists.
+
+**A session keeps the FF it started with.** A split batch's first mix doesn't move the next mix's target; the session's mixes join the history once its last mix is logged.
+
+**Badge** (a field message, so it renders):
+
+| Source | Badge |
+|---|---|
+| Step 1, one bake | `measured {date}` |
+| Step 1, two bakes | `mean of 2 bakes, latest {date} · spread {spread} °F` |
+| Step 1, three or more | `calibrated · mean of the last 3 bakes, latest {date} · spread {spread} °F` |
+| Step 2 | `interpolated from {kBelow} and {kAbove} balls per mix` |
+| Step 3 | `from {kNearest} balls per mix, the nearest measured size` |
+| Step 4, `k = 6` | `bake 1, {date} · not yet calibrated` |
+| Step 4, elsewhere | `estimated — not yet calibrated` |
+
+`{spread}` is the highest minus the lowest of the per-bake FFs in the mean, to one decimal. **A size counts as calibrated at three counted bakes**, the upper end of the recipe's two to three per size: three give a mean and a sense of the spread.
+
+**Bake 1's seed** is `{ k: 6, value: 14.03, date: '2026-08-21' }`, shipped in the code rather than in the log's repository, so a new device and a friend's browser both start from it. It isn't a counted bake: its bowl was assumed rather than measured, and of its phase times only Phase C's was recorded. ⚠️ **That Phase C ran 6.5 minutes**, 3 past the reference, which at `FRICTION_RATE[30]` is 3.24 °F of its FF (§5, *Bake log*). The seed stays at 14.03 on purpose. If the nominal figure is lower, a dough mixed on 14.03 comes out cool, which the probe step and the longer rise after balling both correct. A seed set too low would err warm, where the rise has a 45-minute floor and warmth costs this dough more. The first counted bake at any size retires it.
+
+**Key on balls per mix, not total balls:** FF is per-mix by definition (§4.2), so a 12-ball batch — two 6-ball mixes — reads the 6 entry, and a mix logged on a 12-ball bake is filed under 6. Keying on total balls would send every split batch to the fallback and file split-batch measurements under a size the mixer never ran. **Mix size depends on ball weight as well as ball count:** 9 balls is one 9-ball mix at 265 g but two 4.5-ball mixes at 280 g (2575 g, over the 2500 g cap). The key is a ball *count*, so a 6-ball mix of 300 g balls reads a value measured on 265 g balls. That's an accepted proxy while size dependence is itself untested; don't key on mass unless the bakes show FF moves with mix size.
+
+Note this is *separate* from bowl dilution — the bowl explains why the same FF produces different temperature rises at different mix sizes. **Whether FF itself varies with mix size is an untested hypothesis**, reasoned by an earlier recipe session (more work, less surface area per unit mass to shed it) and never observed. A per-size history costs nothing if FF turns out constant and is needed if it doesn't. Update this note once bakes 2 and 3 are in.
 
 ---
 
@@ -1046,9 +1105,10 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 #### `mix-3` — Phase B, salt and bassinage
 **phase:** mix
-**summary:** Add {saltPerMix} g salt, then **{phaseBWaterPerMix} g** of water (the remaining {phaseBPercent}%) in **3 additions**, letting each absorb fully before the next. **2 lit segments** (20%, 98 RPM), 5–6 min.
+**summary:** Add {saltPerMix} g salt, then **{phaseBWaterPerMix} g** of water (the remaining {phaseBPercent}%) in **3 additions**, letting each absorb fully before the next and the last before you stop. **2 lit segments** (20%, 98 RPM), 5–6 min.
 **speed:** 20% / 98 RPM
 **timer:** 5–6 min
+**watchFor:** No free water, no dry flour, one cohesive mass.
 **values:** Salt: {saltPerMix} g · Phase B water: {phaseBWaterPerMix} g
 
 **detail:**
@@ -1090,7 +1150,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 | Target ±1 °F | Run Phase C as written |
 | 1–2 °F high | Cut Phase C to 2–2.5 min |
 | 1–2 °F low | Extend Phase C to 4.5–5.5 min |
-| More than 2 °F off | Accept the miss and fix the water temperature next batch |
+| More than 2 °F off | Use Phase C's full range: 2 min if high (longer if it isn't smooth and glossy yet), 5.5 min if low. Accept what's left and fix the water temperature next batch |
 **concepts:** friction-factor
 
 ---
@@ -1107,6 +1167,8 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 > At 6 balls, cutting it to 2 minutes saves **1.5 °F** and stretching it to 5.5 minutes adds **1.9 °F**. That's the whole usable range; it's narrower at 3 balls (−1.3 / +1.8) and slightly wider at 9 (−1.5 / +2.0).
 >
 > Beyond that you give up gluten development to fix temperature. **A properly developed dough 2 °F warm is better than an under-mixed one at exactly the right temperature.** Fix a temperature miss in the next batch's water calculation instead.
+>
+> **So the look sets the shortest Phase C, and 5.5 minutes the longest.** The probe picks the time in between. Don't stop before the dough is smooth and glossy, however warm it reads, and don't run past 5.5 minutes to warm it.
 >
 > Friction per minute at each speed: 15% ≈ 0.75 °F/min · 20% ≈ 0.86 °F/min · 30% ≈ 1.08 °F/min. These are for the dough alone. A thermometer reads each of them multiplied by `Ct/(Ct + C_bowl)` — 0.82 at 3 balls, 0.90 at 6, 0.93 at 9 — which at 30% gives 0.89, 0.97 and 1.01 °F per minute. So "about a degree a minute" holds at 6 balls and up.
 
@@ -1288,6 +1350,8 @@ A bare token on a per-mix or per-biga step is then a **visible** error rather th
 
 **detail, shown only when `nMix > 1`:**
 > **This rise is shorter than a single mix would get.** At {finalDoughTemp} °F a single mix would rest {roomMin} min; this batch rests {ballRoomMin}. The first mix has been fermenting longer than the last, so the calculator shortens the rise by half that difference to split it (see *Bulk rest*), and never below 45 minutes.
+>
+> The final dough temperature here is the average of every mix's reading, since the doughs share one tub.
 **concepts:** oil-not-flour
 
 ---
@@ -1404,6 +1468,8 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 **`friction-factor`** — *Measuring your own friction factor*
 > **FF = 14.0 °F, measured** on bake 1, 21 August 2026, with 6 balls. The Phase C friction rate agrees: 1.00 °F/min on the dough and bowl together is 1.11 °F/min for the dough alone, against 1.08 predicted.
 >
+> **That mix ran long.** Its Phase C took 6.5 minutes, 3 more than the middle of the range, and at about a degree a minute that extra time is inside the 14.0, so the figure for the mix as written is lower. The calculator keeps 14.0 until you log a fully measured bake of your own. A figure that's too high leaves the dough cool, which the probe step and the longer rise after balling both correct.
+>
 > **FF is the temperature rise the mixer produces in the dough alone.** That's why the work term is `FF × Ct` and not `FF × (Ct + C_bowl)`.
 >
 > This is the easiest thing to mix up. A thermometer reads the dough after it has come to equilibrium with the bowl, so any dough-only figure (FF itself, or the per-minute friction rates) has to be multiplied by `Ct/(Ct + C_bowl)` before you compare it with a measurement. That factor is 0.82 at 3 balls, 0.90 at 6, 0.93 at 9.
@@ -1412,18 +1478,18 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 >
 > For comparison, commercial spirals reach 20–26 °F on a full bread mix. This is a shorter profile on a smaller machine with a 10-minute rest in the middle, so a lower figure is expected.
 >
-> **One data point so far.** Bakes at 3 and 9 balls test the bowl model: if it's right, the raw temperature rise differs (11.5 vs 13.0) while the solved FF stays near 14. A difference in solved FF means different things depending on its direction:
+> **One data point so far.** Bakes at 3 and 9 balls test the bowl model: if it's right, the solved FF comes out the same at both, even though the raw temperature rise differs (at FF 14, 11.5 vs 13.0). A difference in solved FF means different things depending on its direction:
 >
 > - **Higher at 3 balls than at 9**: the bowl term is too big. Nothing else predicts FF falling as the mix grows, so this result is clear.
 > - **Higher at 9 balls than at 3**: either the bowl term is too small, or FF really does rise with mix size (the untested idea below). These two bakes can't tell those apart.
 > - **About the same**: consistent with the bowl model, and with FF not varying by mix size.
 >
-> To measure it, record every input mass and temperature, run the mix profile exactly, probe the dough **immediately** at the end (three spots in the center of the mass, averaged), then solve with the formula above. Don't subtract a predicted temperature from the measured one: that difference is the rise *after* the bowl has diluted it, and it reads low by `FF × C_bowl/(Ct + C_bowl)`.
+> To measure it, log the bake: the calculator takes each phase's time from its timer and asks for the temperatures it needs. Probe the dough **immediately** at the end (three spots in the center of the mass, averaged). The calculator solves with the formula above, then corrects for any phase that ran off the middle of its range. Don't subtract a predicted temperature from the measured one: that difference is the rise *after* the bowl has diluted it, and it reads low by `FF × C_bowl/(Ct + C_bowl)`.
 >
 > **Three things to watch:**
 >
-> - **FF belongs to the mix profile, not the machine.** Change speeds or times and it changes, by roughly +1 °F per extra minute at 30%. Re-measure whenever you change the routine.
-> - **FF may differ by mix size (untested).** A bigger mix might run a higher FF: more total work, and less surface area per unit mass to lose heat. Nothing has measured this yet. The calculator stores a separate value for each mix size you measure, so nothing is lost if FF turns out not to vary.
+> - **FF belongs to the mix profile, not the machine.** Change speeds or times and it changes, by roughly +1 °F per extra minute at 30%. The calculator corrects each logged bake for time, so a Phase C you stretched or cut at the probe doesn't end up in your FF. A change of speeds needs new bakes.
+> - **FF may differ by mix size (untested).** A bigger mix might run a higher FF: more total work, and less surface area per unit mass to lose heat. Nothing has measured this yet. The calculator keeps each mix size's bakes apart, so nothing is lost if FF turns out not to vary, and a size you haven't baked borrows from the sizes you have.
 > - **Heat of hydration is already included.** Flour releases roughly 1.5–3 °F as it absorbs water. That happens during the mix, so it's inside the temperature you measure and therefore inside your FF: FF is one number covering both mixer friction and the heat of hydration. If a calculator asks for friction and a *separate* hydration correction, it uses a different convention; don't give it this number.
 
 **`giorilli-standard`** — *Where the yeast number comes from*
@@ -1500,37 +1566,68 @@ Blend fridge-cold water with tap water to reach the target, measuring as you pou
 
 ---
 
-## 10. Phase 2 — bake log
+## 10. Bake log
 
-Not required for v1, but design the data layer so it can be added. `localStorage`, with JSON export.
+The log holds the readings that solve FF, and it is the only source of the FF in use (§6, Panel 3). Dave logs FF inputs only; the rest of the recipe's bake diary (biga rise, fridge, oven, stone, crumb) stays out of the app. **Storage** is in §2: a private GitHub repository with one JSON file per bake when a token is set, browser storage when it isn't. The files are plain JSON, so they are the export.
 
-```
-batch_id, date, balls, ball_g, total_flour_g
-biga_ady_pct, biga_water_temp_f, biga_start_time, biga_rt_hours, biga_fridge_hours
-biga_pct_rise_at_pull, biga_temp_at_mix_f
-room_temp_f, flour_temp_f, water_temp_used_f
-bowl_mass_g
-mix_index                         // 1-based; a split batch logs one row per mix
-bowl_state                        // cold | room | warm_from_previous_mix
-bowl_temp_f                       // MEASURED at mix start; the selector is a fallback, not a value
-biga_temp_at_pull_f               // before tearing - the bowl's likely temperature
-biga_temp_at_mix_f                // after tearing - what the model calls T_biga
-phase_a_water_g                   // actual, weighed
-phase_c_seconds_actual
-ddt_target_f, probe_temp_f, phase_c_seconds, final_dough_temp_f
-predicted_mix_temp_f, ff_measured
-motor_protection_engaged
-ball_temp_into_fridge_f, fridge_temp_f, cold_hours
-temper_hours, ball_core_at_launch_f
-gauge_temp_f, stone_ir_f, bake_seconds
-notes_crumb, notes_cornicione, notes_base
-```
+Auto-populate each bake from the session's inputs so only the measured values need typing.
 
-`ff_measured` uses the §4.3 solve-for-FF form, which includes the bowl. Do not compute FF as `final − predicted_mix` (a prediction with friction left out). That difference is the rise *after* bowl dilution, so it reads low by `FF × C_bowl/(Ct + C_bowl)` — at FF 14, about 2.5 °F at a 3-ball mix, 1.4 at 6, 0.95 at 9 and 0.93 at the 2500 g cap. An earlier version said 1.5–2.5 °F, which is wrong from 6 balls per mix up.
+### What a bake stores
 
-**The payoff, and the reason this is worth building:** with 8–10 logged bakes you can regress `FF = a + b × (room_temp_f − 70)` per mix size. Friction factor may not be a constant — an earlier recipe session hypothesised that it rises with mix size (more work, less surface area per unit mass to shed it) and that it rises with room temperature (heat lost during a 15-minute mix scales with the dough-to-air gap). **Both are untested** — the regression is how you find out. Generic calculators use a single fixed FF. Modeling it is the thing this app can do that they can't.
+| Scope | Field | Note |
+|---|---|---|
+| Bake | `bake_id`, `date` | |
+| Bake | `balls`, `ball_g`, `n_mix` | `n_mix` is stored, not recomputed, because it depends on the capacity constants |
+| Bake | `formula` | snapshot of `HYDRATION`, `SALT`, `BIGA_FRACTION`, `BIGA_HYDRATION`, `OVERAGE`, and each mixer phase's speed |
+| Bake | `room_temp_f`, `flour_temp_f` | |
+| Mix | `mix_index` | 1-based; a split batch logs one row per mix |
+| Mix | `biga_temp_at_mix_f` | after tearing: what the model calls `T_biga` |
+| Mix | `bowl_state`, `bowl_temp_f` | cold / room / warm, and the temperature at mix start |
+| Mix | `water_temp_used_f` | what was poured, not the target |
+| Mix | `final_dough_temp_f` | every mix, not only the last |
+| Mix | `phase_seconds` | A, B, C and D, each from its phase's timer |
+| Mix | `excluded` | Dave's switch; false by default |
 
-Auto-populate the log from the current session's inputs so only the measured values need typing.
+**Every reading records whether it was entered on the day** or left at a default or prefill. A prefill is a guess, and the rules below treat it as one.
+
+**Derived on read, never stored:** the solved FF, its normalized value, and any predicted temperature. Store the readings and solve each time, so a corrected constant corrects every bake. The seed shows why: a stored 14.04 couldn't be reproduced, and re-solving bake 1 from its logged inputs gave 14.031. ⚠️ Earlier versions stored `ff_measured` and `predicted_mix_temp_f`, along with the full bake diary and `bowl_mass_g`, which is a constant (§3).
+
+**Physical constants re-solve; formula constants don't.** Specific heats, `BOWL_MASS_G` and `FRICTION_RATE` come from the current code, because a better value describes the same bake better. The formula comes from the bake's snapshot, because it set what was in the bowl: the recipe plans 80% biga, 100% biga and 72% hydration, and solving an old bake under a new formula would compute masses nobody mixed. **Only bakes whose snapshot matches the current formula and speeds feed the FF in use.** FF belongs to the dough and the profile.
+
+### Solving a mix
+
+`solveFrictionFactorF` (§4.3) on the snapshot's per-mix masses and the mix's readings, then `ffNominal` (§4.3) on its phase times.
+
+**Only the 30% rate has been checked against a bake:** late in bake 1's Phase C the dough alone rose 1.11 °F a minute, against 1.08. The 15% and 20% rates are unmeasured, and bake 1 suggests they run high. By its probe at 11 minutes the dough had risen 7.4 °F (dough-only, heat of hydration included), where 0.75 and 0.86 °F a minute alone give about 9.0 for Phases A and B. That is one bake, with Phase A's water guessed. Across their printed ranges A and B move FF by at most 0.375 and 0.43 °F, so a rate a third too high costs under 0.15 °F there; the error grows for a phase that runs well outside its range.
+
+Pauses aren't normalized. The rest has a fixed timer, and nothing measures what a pause between phases costs.
+
+### Which mixes count
+
+A mix feeds the FF in use only if:
+
+- room, biga, bowl, water used and final dough temperature were all entered on the day (flour may follow room);
+- all four phase times were captured;
+- its bake's snapshot matches the current formula and speeds;
+- Dave hasn't excluded it.
+
+Every mix stays in the log whether it counts or not, and the log shows which don't and why.
+
+**Why those five readings.** A 1 °F error moves the solved FF by `TOT/Ct` for the final reading (1.22, 1.11 and 1.07 °F at 3, 6 and 9 balls per mix), by `Cb/Ct` = 0.53 for the biga, `Cw/Ct` = 0.33 for the water, `C_bowl/Ct` for the bowl (0.22, 0.11, 0.07) and `Cf/Ct` = 0.13 for the flour. Room moves it only 0.005 through the salt, but it is the regression's variable, so it has to be real.
+
+**An unmeasured bowl leaves the mix out, and weighting can't fix it,** because the error has a direction. The cold prefill is the biga's post-tearing reading, and bake 1 showed the biga gains about 5 °F in tearing that the bowl doesn't share. The warm prefill is `DDT`, an upper bound. Both overstate the bowl, and an overstated bowl understates FF: 5 °F is 0.55 °F of FF at 6 balls per mix and 1.09 at 3.
+
+**Nothing else is excluded automatically.** With FF inputs only there's no motor-protection or overrun field; Dave's switch covers the odd mix, such as one where the motor protection tripped.
+
+### What the history tests
+
+`ffNominal` rests on the §4.3 solve, which includes the bowl. **Do not compute FF as `final − predicted_mix`** (a prediction with friction left out). That difference is the rise *after* bowl dilution, so it reads low by `FF × C_bowl/(Ct + C_bowl)` — at FF 14, about 2.5 °F at a 3-ball mix, 1.4 at 6, 0.95 at 9 and 0.93 at the 2500 g cap. An earlier version said 1.5–2.5 °F, which is wrong from 6 balls per mix up.
+
+**Room temperature.** With 8–10 counted bakes at a mix size, regress their FFs as `FF = a + b × (room_temp_f − 70)`. An earlier recipe session hypothesised that FF rises with room temperature (heat lost during a 15-minute mix scales with the dough-to-air gap). **It is untested**, and the regression is how to find out. Generic calculators use a single fixed FF; modelling it is the thing this app can do that they can't.
+
+**Report `b`; don't apply it.** Show it with its bake count and room range once a size has 8 counted bakes. Two reasons to keep it out of the targets for now. The recipe asks for 8–10 bakes per size before fitting. And the probe formula's rest term already models part of the same effect, +0.2 °F on the thermometer per °F of room, which is +0.24, +0.22 and +0.21 of FF at 3, 6 and 9 balls per mix. An applied `b` would also move `0.33 × FF` with room, so the probe formula needs rederiving first. That rest term is itself fitted to bake 1, so the regression tests it too.
+
+**Mix size.** The other hypothesis, that FF rises with mix size, is untested too. The per-size FFs side by side are the test, and §6's interpolation follows whatever they show. Bakes 2 and 3 (3 and 9 balls per mix) are the first; how to read them is in the `friction-factor` concept. They can be compared only once both are normalized, or a Phase C adjusted at the probe would show up as a size effect.
 
 ---
 
@@ -1554,7 +1651,7 @@ Link these from an About page. The recipe draws on these published sources.
 ## 12. Build order
 
 1. Calculation module + unit tests against §5, **including the bake-1 regression test.** Get this green before writing any UI. The bowl term and the `FF × Ct` work term are the two places this goes wrong silently.
-2. Input panels with URL + localStorage state.
+2. Input panels with URL and browser-storage state.
 3. Ingredients, water, and warnings cards — **both** water warnings (§4.4), not just the cold one.
 4. Timeline, forward mode.
 5. Step list with disclosure and persisted checkboxes. **Render `detail` as markdown** — it contains tables and multi-paragraph prose. Diff your `steps.ts` against §8 before moving on; truncated explanations are the most likely way this build goes wrong.

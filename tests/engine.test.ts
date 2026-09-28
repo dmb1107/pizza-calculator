@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { C, bowlHeatCapacity, defaultDdtF } from '../src/lib/constants';
 import { formatInches, formatTempF, formatWhole } from '../src/lib/format';
 import {
-  ballsPerMix,
   bigaReadingCost,
   bowlReadingCost,
   calculate,
@@ -39,8 +38,11 @@ import {
   TOL,
   VECTOR_CONDITIONS,
 } from './vectors';
-import { DEFAULT_CALIBRATION } from '../src/state/defaults';
-import { effectiveFriction } from '../src/state/storage';
+import { ffInUse } from '../src/lib/bakeLog';
+
+/** The FF in use with nothing logged: bake 1's seed at 6 balls per mix, 14.0 elsewhere. */
+const seededFf = (balls: number, ballWeightG: number) =>
+  ffInUse([], { balls, nMix: computeCapacity(computeFormula({ balls, ballWeightG })).nMix });
 
 /**
  * Engine acceptance tests — WEBSITE-SPEC-biga-calculator.md §5.
@@ -277,6 +279,22 @@ describe('§4.2 the bowl', () => {
     const cBowl = bowlHeatCapacity(C.BOWL_MASS_G);
     within(ctPerGram, 0.6516, 0.0005, 'Ct per gram of dough');
     within(cBowl / (ctPerGram * C.MAX_DOUGH + cBowl), BOWL_SHARE_FLOOR, 0.0001, 'infimum');
+  });
+
+  it("reads each mix's bowl by index: mix 1's reading never stands in for mix 2's", () => {
+    // FINDINGS-46. The panel writes [60] when only mix 1's bowl is measured.
+    // Carried forward, that overrode mix 2's warm prefill and printed its
+    // water 4.6 °F too warm (63.6 against 59.0) at app defaults with FF 14.03.
+    const inputs = { ...vectorInputs(12, 265), flourTempF: VECTOR_CONDITIONS.tRoomF, frictionFactorF: 14.03 };
+    const unmeasured = calculate(inputs).mixes;
+    const mix1Only = calculate({ ...inputs, bowlTempF: [60] }).mixes;
+    expect(mix1Only[0]!.bowlTempF).toBe(60);
+    expect(mix1Only[1]!.bowlTempF, 'mix 2 keeps the warm prefill').toBe(defaultDdtF(12));
+    expect(mix1Only[1]!.waterTempF).toBe(unmeasured[1]!.waterTempF);
+    expect(formatTempF(mix1Only[1]!.waterTempF)).toBe('59.0');
+    // A scalar is mix 1's reading; mix 2's own measurement still wins.
+    expect(calculate({ ...inputs, bowlTempF: 60 }).mixes[1]!.bowlTempF).toBe(defaultDdtF(12));
+    expect(calculate({ ...inputs, bowlTempF: [null, 70] }).mixes[1]!.bowlTempF).toBe(70);
   });
 
   it('defaults T_bowl to T_biga', () => {
@@ -1016,7 +1034,7 @@ describe('§5 the app-default flour offset', () => {
     const gaps = new Set<string>();
     for (let balls = C.MIN_BALLS; balls <= 24; balls++) {
       for (let ballG = 240; ballG <= 300; ballG++) {
-        const { ff } = effectiveFriction(DEFAULT_CALIBRATION, ballsPerMix({ balls, ballWeightG: ballG }));
+        const { ff } = seededFf(balls, ballG);
         const vector = calculate(vectorInputs(balls, ballG));
         const app = calculate({
           ...vectorInputs(balls, ballG),
@@ -1040,7 +1058,7 @@ describe('§5 the app-default flour offset', () => {
 
     // What the 12-ball cards print: §7.2 quotes the vector pair.
     const cards = (r: ReturnType<typeof calculate>) => r.mixes.map((m) => formatTempF(m.waterTempF));
-    const ff12 = effectiveFriction(DEFAULT_CALIBRATION, ballsPerMix({ balls: 12, ballWeightG: 265 })).ff;
+    const ff12 = seededFf(12, 265).ff;
     expect(cards(calculate(vectorInputs(12, 265)))).toEqual(['64.8', '59.5']);
     expect(
       cards(calculate({ ...vectorInputs(12, 265), flourTempF: VECTOR_CONDITIONS.tRoomF, frictionFactorF: ff12 })),
@@ -1052,7 +1070,7 @@ describe('§5 the app-default flour offset', () => {
     // rule applied per mix would make it 75. Only the prefill moves, so mix 2
     // shifts by C_bowl/Cw: 59.5 → 59.2 at the vector conditions, and 59.0 →
     // 58.7 at app defaults (MESSAGE-40).
-    const ff12 = effectiveFriction(DEFAULT_CALIBRATION, ballsPerMix({ balls: 12, ballWeightG: 265 })).ff;
+    const ff12 = seededFf(12, 265).ff;
     const slipped = defaultDdtF(12 / 2);
     expect([defaultDdtF(12), slipped]).toEqual([74, 75]);
     for (const [basis, inputs, before, after] of [

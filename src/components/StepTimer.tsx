@@ -18,6 +18,10 @@ import { formatTimeOfDay } from '../lib/timeline';
  * Before, in or past the window is carried by the card's tone, the label and
  * the bar, which marks the window and stays up throughout so the card doesn't
  * change height as the phase turns.
+ *
+ * Stop freezes the time where it is; Clear removes the timer. A stopped mixer
+ * phase is the phase time the bake log records (§10), and ticking the step
+ * off stops its timer too, so the time is captured without a second tap.
  */
 
 /**
@@ -72,6 +76,7 @@ export function StepTimer({
   now,
   onStart,
   onStop,
+  onClear,
   note,
 }: {
   stepId: string;
@@ -79,7 +84,10 @@ export function StepTimer({
   timer: RunningTimer | undefined;
   now: number;
   onStart: () => void;
+  /** Freeze the time. */
   onStop: () => void;
+  /** Remove the timer. */
+  onClear: () => void;
   /** Shown under a running timer's controls — growth below the tap point, never above it. */
   note?: ReactNode;
 }) {
@@ -88,8 +96,10 @@ export function StepTimer({
 
   // Beep once, on the transition out of `running`.
   const alerted = useRef<string | null>(null);
+  const stopped = state?.stopped ?? false;
   useEffect(() => {
-    if (!timer || !phase) return;
+    // A stopped timer is finished with: it never beeps, even on a reload.
+    if (!timer || !phase || stopped) return;
     const key = `${stepId}:${timer.startedAt}`;
     if (phase === 'running') {
       if (alerted.current === key) alerted.current = null;
@@ -99,7 +109,7 @@ export function StepTimer({
       alerted.current = key;
       beep();
     }
-  }, [stepId, timer, phase]);
+  }, [stepId, timer, phase, stopped]);
 
   if (!timer || !state) {
     return (
@@ -118,8 +128,9 @@ export function StepTimer({
     );
   }
 
-  const tone =
-    state.phase === 'running'
+  const tone = state.stopped
+    ? 'border-stone-300 bg-white dark:border-stone-700 dark:bg-stone-900'
+    : state.phase === 'running'
       ? 'border-stone-300 bg-stone-50 dark:border-stone-700 dark:bg-stone-800/50'
       : state.phase === 'window'
         ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-950/40'
@@ -134,7 +145,9 @@ export function StepTimer({
 
   // The phase alone: the bounds are in the line under the bar, and a longer
   // label wrapped at phone width, so the card changed height as it turned.
-  const label = spec.isWindow
+  const label = state.stopped
+    ? 'Stopped'
+    : spec.isWindow
     ? state.phase === 'running'
       ? 'Before the window'
       : state.phase === 'window'
@@ -153,10 +166,10 @@ export function StepTimer({
         </div>
         <button
           type="button"
-          onClick={onStop}
-          className="min-h-touch shrink-0 rounded-lg border border-stone-400 px-3 text-sm font-medium active:bg-stone-100 dark:border-stone-500 dark:active:bg-stone-800"
+          onClick={state.stopped ? onClear : onStop}
+          className="min-h-touch shrink-0 rounded-lg border border-stone-400 px-4 text-sm font-medium active:bg-stone-100 dark:border-stone-500 dark:active:bg-stone-800"
         >
-          {state.phase === 'running' ? 'Cancel' : 'Clear'}
+          {state.stopped ? 'Clear' : 'Stop'}
         </button>
       </div>
 

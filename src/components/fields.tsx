@@ -54,6 +54,10 @@ export function NumberField({
 }) {
   const id = useId();
   const [draft, setDraft] = useState(String(value));
+  // Whether the baker typed since the last commit. Typing the value already
+  // shown is still a reading taken today (§10), so it commits; tapping in and
+  // out without typing doesn't.
+  const [typed, setTyped] = useState(false);
 
   // Follow the value when it changes elsewhere (a link, the room-temp toggle),
   // but never while the field is being typed into.
@@ -62,6 +66,8 @@ export function NumberField({
   }, [value]);
 
   const commit = () => {
+    const wasTyped = typed;
+    setTyped(false);
     const parsed = Number(draft);
     if (draft.trim() === '' || !Number.isFinite(parsed)) {
       setDraft(String(value));
@@ -69,7 +75,7 @@ export function NumberField({
     }
     const clamped = Math.min(max, Math.max(min, parsed));
     setDraft(String(clamped));
-    if (clamped !== value) onCommit(clamped);
+    if (clamped !== value || wasTyped) onCommit(clamped);
   };
 
   return (
@@ -88,7 +94,10 @@ export function NumberField({
           max={max}
           step={step}
           disabled={disabled}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            setTyped(true);
+          }}
           onBlur={commit}
           onKeyDown={(e) => {
             if (e.key === 'Enter') e.currentTarget.blur();
@@ -304,7 +313,9 @@ export function Badge({ tone, children }: { tone: 'estimate' | 'measured'; child
       ? 'border-amber-400 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-200'
       : 'border-stone-300 bg-stone-100 text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-300';
   return (
-    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${styles}`}>
+    // max-w-full: the §6 badges run long, and at phone width one must wrap
+    // inside the card rather than push it sideways.
+    <span className={`max-w-full shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${styles}`}>
       {children}
     </span>
   );
