@@ -5,9 +5,9 @@ Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
 **Status:** Tasks 0–11 complete, on the bowl-aware thermal model with **per-mix
-weights**, the ice calculation removed, and **MESSAGE-48 applied**: the bake
+weights**, the ice calculation removed, and **MESSAGE-49 applied**: the bake
 log, synced through a private GitHub repository, now sets the FF in use.
-FINDINGS-49 is the last thing sent.
+FINDINGS-50 is the last thing sent, and nothing is open.
 
 ---
 

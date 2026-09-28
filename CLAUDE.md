@@ -110,6 +110,8 @@ question:
 | `FINDINGS-48-to-recipe-agent.md` | Reply to MESSAGE-47. Applied; asks about the two buttons labelled Reset and suggests `bowl_prefilled` in §10's table |
 | `MESSAGE-48.md` | The Steps header's Reset dropped: the page's Reset is the only one. It also resets the DDT override (to auto) and the timeline's anchor; §10 lists reset / cleared / kept, and its copy names both. §10's table gains `bowl_prefilled` and `null` |
 | `FINDINGS-49-to-recipe-agent.md` | Reply to MESSAGE-48. Applied; a test now holds the Reset copy to §10. Asks about two stored fields §10 doesn't list, both kept: which end of the timeline is held, and which panels are open |
+| `MESSAGE-49.md` | Both kept: §10's *Kept* list names the timeline's mode, the open panels and this device's sync settings; "the anchor is the held time, not the mode". Nothing renders |
+| `FINDINGS-50-to-recipe-agent.md` | Reply to MESSAGE-49. Reproduced (51.833333 h at the defaults); nothing open. Notes that "now" is rounded up to the next quarter hour |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here

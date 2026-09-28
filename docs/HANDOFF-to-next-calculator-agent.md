@@ -9,20 +9,20 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-48, FINDINGS-49 and Task 11 (28 September).
+MESSAGE-49, FINDINGS-50 and Task 11 (28 September).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-48, and FINDINGS-49 is the
-  last thing sent.** No pin of any kind is live (`knownWrong` is empty).
-  FINDINGS-49 asks one thing: whether two stored fields §10's Reset lists
-  don't name should stay kept, as the app has them: which end of the timeline
-  is held, and which panels are open. MESSAGE-48 made the page's Reset the
-  only one and added the DDT override and the timeline's anchor to what it
-  resets. Task 11, the bake log, is built: readings stored as they stand and
+- **The correspondence is applied through MESSAGE-49, and FINDINGS-50 is the
+  last thing sent.** Nothing is open, and no pin of any kind is live
+  (`knownWrong` is empty). MESSAGE-48 made the page's Reset the only one and
+  added the DDT override and the timeline's anchor to what it resets.
+  MESSAGE-49 put the rest of the page in §10's *Kept* list: which end of the
+  timeline is held, which panels are open and this device's sync settings.
+  The anchor is the held time, not the mode. Task 11, the bake log, is built: readings stored as they stand and
   solved on read, normalized to mid-range phase times, §6's four-step FF in
   use, §10's counting rules, and sync through a private GitHub repository
   with a per-device token.

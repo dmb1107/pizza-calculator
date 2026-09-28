@@ -1608,7 +1608,7 @@ Pauses aren't normalized. The rest has a fixed timer, and nothing measures what 
 - **Reset starts a new bake.** A **Reset** button near the top of the page asks first. The baker presses it when starting a new bake, and it is the page's only reset: ⚠️ the Steps header's own Reset, which cleared the checkboxes alone, is removed, so no two controls share the label. Every input is classified, and a test keeps it that way:
   - **Reset to defaults:** everything in Today's temperatures (room, flour and its "Same as room" switch, biga, the bowl state and readings), each mix's water poured and final reading, the DDT override (back to auto) and the timeline's anchor. The last two are per-bake choices: a stale override silently moves the water target and the rise, and a stale anchor puts every stage in the past.
   - **Cleared:** the step checkboxes, the timers, and the link to the saved bake, so the next save is a new bake.
-  - **Kept:** balls, ball weight, schedule and cold ferment, the schedule's adjustments (fridge hours, the classic biga's room hours, temper), and saved bakes.
+  - **Kept:** balls, ball weight, schedule and cold ferment, the schedule's adjustments (fridge hours, the classic biga's room hours, temper), which end of the timeline is held, which panels are open, this device's sync settings, and saved bakes. The anchor is the held time, not the mode: a Reset in either mode starts the schedule now.
 
   Copy (rendered):
 

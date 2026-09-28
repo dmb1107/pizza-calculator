@@ -75,9 +75,10 @@ export const DEFAULT_PERSISTED: Persisted = {
  * way a fresh session reads it. The checkboxes, the timers and the link to the
  * saved bake are cleared, so the next save is a new bake.
  *
- * Kept, though §10 doesn't name them: which panels are open, and which end of
- * the timeline is held. In backward mode the hook takes the bake time the reset
- * start implies, as switching modes does.
+ * Kept (§10, MESSAGE-49): which panels are open, and which end of the
+ * timeline is held. The anchor is the held time, not the mode, so in backward
+ * mode the hook takes the bake time the reset start implies, as switching
+ * modes does.
  */
 export function persistedForNewBake(prev: Persisted): Persisted {
   return {

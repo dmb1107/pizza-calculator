@@ -309,8 +309,8 @@ describe('§10 Reset starts a new bake', () => {
     expect(next.checkedSteps).toEqual([]);
     expect(next.timers).toEqual([]);
     expect(next.sessionBakeId).toBe('');
-    // Kept, though §10 doesn't name them: which panels are open, and which end
-    // of the timeline is held.
+    // Kept (§10, MESSAGE-49): which panels are open, and which end of the
+    // timeline is held. The anchor is the held time, not the mode.
     expect(next.panels).toEqual(MID_BAKE.panels);
     expect(next.timelineMode).toBe(MID_BAKE.timelineMode);
     // Nothing else: every persisted field is in one of the three lists, and
