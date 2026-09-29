@@ -70,10 +70,6 @@ export const C = {
   FLOUR_CAP_55: 1610,         // g, at 55-59% hydration (biga)
   MAX_RUN_MIN: 20,            // Ooni's published maximum continuous operating time, spiral hook. Read by the profile assertion in §5 and bound into mix-6/mix-7 prose
 
-  // Oven geometry (§4.9). Thickness is referenced to DEFAULT_BALL_G on the full stone.
-  TREAD_MAX_DIAMETER_IN: 12,       // Gozney Tread stone capacity
-  THICKER_NOTE_MIN_PERCENT: 10,    // Dave's call: the thickness difference he notices in the bake. Not a published figure
-
   // Speed. Two anchors, one measured and one published; the line through them is DERIVED (below).
   RPM_AT_5_PCT: 60,           // MEASURED: 20 hook revolutions in 20 s at 5% (first-bake calibration)
   RPM_AT_100_PCT: 300,        // Ooni's published maximum at 100%
@@ -498,34 +494,9 @@ Show cumulative clock times for each stage plus a total elapsed figure. Flag whe
 
 ---
 
-### 4.9 Opening diameter
+### 4.9 Opening diameter — removed
 
-**The reference is the default ball on the full stone** — 265 g on 12 inches. Hold that thickness and the diameter scales with the square root of the weight ratio, capped by the oven:
-
-```
-openDiameterIn       = TREAD_MAX_DIAMETER_IN × min(1, sqrt(ballWeightG / DEFAULT_BALL_G))
-thicknessPercentOver = max(0, ballWeightG / DEFAULT_BALL_G − 1) × 100
-thickerThanDefault   = Number(printed {thicknessPercentOver}) ≥ THICKER_NOTE_MIN_PERCENT
-```
-
-| Ball | Open to | Thicker than 265 g on the same stone |
-|---:|---:|---:|
-| 240 g | 11.4 in | — |
-| 265 g | 12.0 in | — |
-| 266 g | 12.0 in | 0% — block hidden |
-| 290 g | 12.0 in | 9% — block hidden |
-| 291 g | 12.0 in | **10%** — block shows |
-| 300 g | 12.0 in | **13%** |
-
-The cap binds for **any** ball over 265 g — at 266 g the uncapped diameter is 12.02 inches — but the block appears only from **10%**, so for 291–300 g. That threshold is Dave's judgment of where the extra thickness is noticeable in the bake, not a published figure; below it, a heavier ball is still capped at 12 inches and simply isn't worth a note. Display the diameter to one decimal.
-
-The threshold is compared against the **printed** percentage, as before, so the block can never announce a figure below its own threshold: 290 g (9.43%, prints 9) stays hidden, 291 g (9.81%, prints 10) shows "about 10% thicker".
-
-**`thickerThanDefault` is a detail-block condition, not a `shownWhen` condition.** `shownWhen` gates whole steps; this governs a block inside `bulk-2`. The detail-block set is exactly `nMix > 1`, `nBiga > 1`, `thickerThanDefault`.
-
-**Decide display on displayed values.** The condition reads the same printed string the sentence prints, so the block and its sentence cannot disagree about rounding. The computation stays unrounded; only the decision to show uses the printed value.
-
-⚠️ **There is no thickness-factor constant, and none should be reintroduced.** An earlier revision carried `TARGET_THICKNESS_FACTOR = 0.083` as "the classic Neapolitan band". It was 265 g on a 12-inch stone, rounded up — not a published figure. No authoritative Neapolitan thickness factor exists; AVPN specifies ball weight and maximum diameter. Referencing the default ball directly is the honest statement of what the recipe knows, and it makes thickness factor, unit conversion and π cancel.
+Removed in MESSAGE-51 at Dave's request. The app no longer computes an opening diameter or a thickness note: `TREAD_MAX_DIAMETER_IN`, `THICKER_NOTE_MIN_PERCENT`, `computeOpening`, the `thickerThanDefault` detail condition and the tokens `{openDiameterIn}`, `{thicknessPercentOver}`, `{defaultBallG}` and `{treadMaxDiameterIn}` are gone, and so is the ball-weight field's "Opens to about … inches" hint. The detail-block condition set is now exactly `nMix > 1` and `nBiga > 1`. The heading stays so that references to §4.10 still hold.
 
 ### 4.10 Tokens added in this revision
 
@@ -539,8 +510,6 @@ All are per-mix and computed at the user's inputs; none is a literal.
 | `{probeGapPhrase}` | `"1.6 °F below DDT"` / `"0.3 °F above DDT"` / `"right at DDT"` — the magnitude of `DDT − probeTargetF`, with the direction in words. The number must equal \|printed DDT − printed target\| exactly |
 | `{phaseAPercent}` / `{phaseBPercent}` | `PHASE_A_FRACTION × 100` and its complement. **No scope suffix** — they are ratios, and the `PerMix` / `PerBiga` rule is about masses |
 | `{bowlMassG}` | `BOWL_MASS_G`, the fixed bowl mass |
-| `{openDiameterIn}`, `{thicknessPercentOver}` | §4.9 |
-| `{defaultBallG}`, `{treadMaxDiameterIn}` | the constants, bound rather than typed |
 | `{doughTotal}`, `{doughPerMix}` | batch dough mass and per-mix dough mass (§7.3, *Capacity*) |
 | `{maxDoughG}`, `{minDoughG}`, `{bigaFlourCapG}` | `MAX_DOUGH`, `MIN_DOUGH`, `FLOUR_CAP_55` — constants, bound rather than typed |
 
@@ -957,17 +926,26 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 ---
 
-#### `biga-1` — Break up the flour dry
+#### `biga-1` — Start the yeast, break up the flour
 **phase:** biga
-**summary:** Weigh {bigaFlourPerBiga} g of flour, then whisk it hard or push it through a coarse sieve to break up the clumps.
-**values:** Biga flour: {bigaFlourPerBiga} g{bigaCountSuffix}
+**summary:** Weigh {bigaWaterPerBiga} g of water. Warm about ten times the yeast's weight of it to 100–110 °F, stir in {bigaADYPerBiga} g ADY and leave it 10 minutes. Meanwhile weigh {bigaFlourPerBiga} g of flour and whisk it hard or push it through a coarse sieve to break up the clumps.
+**values:** Biga water: {bigaWaterPerBiga} g · ADY: {bigaADYPerBiga} g · Biga flour: {bigaFlourPerBiga} g{bigaCountSuffix}
 
 **detail:**
+> **The yeast gets warm water; the rest of the biga water stays at room temperature.** Active dry yeast rehydrates best near 104 °F. Below about 68 °F its cells can lose up to half their soluble contents, and the glutathione that leaks out slackens the dough (PizzaBlab). King Arthur gives the same advice for active dry yeast going into cool water. PizzaBlab's biga guide uses room-temperature water because it assumes fresh or instant yeast. The warm water is only for rehydration: no sugar, no proofing test.
+>
+> The yeast water comes out of the biga water, not on top of it. It warms the biga water only 2–3 °F, which nothing downstream reads.
+>
+> **The yeast dose is Piergiorgio Giorilli's standard: 1% fresh yeast = 0.30% IDY = 0.375% ADY on biga flour**, the baseline for 16–18 h at 61–65 °F (16–18 °C).
+>
+> Italian Pizza Secrets gives this dose with that window, and Baking With Theory with 16–20 h at 16–20 °C; PizzaBlab allows a wider 12–24 h at 16–18 °C. A longer or warmer ferment needs less yeast. For a room-temperature biga at another time or temperature, use PizzaBlab's dough calculator. It doesn't model a biga that goes into the fridge, so the retarded schedule rests on an assumption (see *Refrigerate the biga*). These amounts are well above scale resolution, so there's no need to weigh the yeast as a slurry.
+>
 > Grain Craft arrives lumpy from the mill; the flour itself is fine. The lumps are only easy to break up while the flour is dry.
 >
 > A clump that survives into the biga keeps dry flour at its core, and dry flour never ferments. In a stiff 50% biga you can't find it by hand once the water is in, and it turns up later as a hard nodule in the finished dough.
 >
 > Weigh before you break it up, so flour lost in the sieve doesn't change your number.
+**concepts:** giorilli-standard
 
 **detail, shown only when `nBiga > 1`:**
 > **This batch needs {nBiga} separate bigas.** The weights above are for one of them. Don't weigh the batch total into one container: {bigaFlourTotal} g of biga flour is more than the 1610 g the machine handles at this hydration.
@@ -978,28 +956,23 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 #### `biga-3` — Mix by hand to chunks
 **phase:** biga
-**summary:** In the mixer bowl, stir {bigaADYPerBiga} g ADY into {bigaWaterPerBiga} g of **room-temperature** water until dissolved. Add the flour and mix by hand, fingers in a claw, for 3–6 minutes, until you have gnocchi-sized chunks and no dry flour.
+**summary:** In the mixer bowl, combine the rest of the water, at **room temperature**, with the yeast water. Add the flour and mix by hand, fingers in a claw, for 3–6 minutes, until you have gnocchi-sized chunks and no dry flour.
 **timer:** 3–6 min
-**values:** Biga water: {bigaWaterPerBiga} g · ADY: {bigaADYPerBiga} g
 **watchFor:** Crumbly chunks, not a dough. No dry flour anywhere.
 
 **detail:**
-> Mix by hand at every batch size. Gozney's 100% biga recipe calls for mixing by hand to a dry, lumpy consistency, and PizzaBlab warns against forming a cohesive mass.
+> Mix by hand at every batch size. PizzaBlab mixes it by hand, fingers in a claw, and warns against forming a cohesive mass.
 >
 > Aim for small-to-medium chunks, like gnocchi. A spiral mixer builds gluten, which a biga shouldn't have yet. An over-mixed biga rises like a dough, can double, and then looks riper than it is.
 >
-> Dissolve the yeast first so it spreads evenly. There's no proofing step: a few grams of yeast have to reach every part of a stiff 50% biga that is only mixed to chunks and never kneaded, and the water is what carries it there. Use room-temperature water, neither warm nor cold; cold water damages yeast cells.
+> The yeast goes in dissolved so it spreads evenly: a few grams have to reach every part of a stiff 50% biga that is only mixed to chunks and never kneaded, and the water carries it there.
 >
 > The biga always ferments in the mixer bowl, the same bowl the final mix runs in. Work your fingertips through it in a claw for 3–6 minutes, until no dry flour remains, since dry flour never ferments. Break up large chunks by hand.
 >
-> Cover it so it doesn't dry out. Gozney and Ooni say to leave a gap for venting; PizzaBlab says venting does nothing. Either works.
+> Cover it so it doesn't dry out. PizzaBlab says a vent serves no purpose, so a closed lid is fine.
 >
 > Because the biga is mixed by hand, the mixer's 500 g minimum doesn't apply to it, so no batch is too small.
->
-> **The yeast dose is Piergiorgio Giorilli's standard: 1% fresh yeast = 0.30% IDY = 0.375% ADY on biga flour**, the baseline for 16–18 h at 61–65 °F (16–18 °C).
->
-> Gozney's 100% biga recipe and Baking With Theory give this dose with that window; PizzaBlab gives it with a wider 12–24 h at the same temperature. A longer or warmer ferment needs less yeast. For a time or temperature outside that baseline, use PizzaBlab's dough calculator. These amounts are well above scale resolution, so there's no need to weigh the yeast as a slurry.
-**concepts:** mix-dont-knead, giorilli-standard
+**concepts:** mix-dont-knead
 
 ---
 
@@ -1011,7 +984,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 **timer (classic):** 16–18 h
 
 **detail:**
-> **The retarded schedule**, 2 h at room temperature and then 18–20 h in the fridge, is the one Ooni's professional biga recipe uses. It's the usual choice for a kitchen that won't hold 61–65 °F: the 2 hours start fermentation, and the fridge then holds the biga at a steady temperature instead of wherever the room drifts. You give up a little acid character for control.
+> **The retarded schedule**, 2 h at room temperature and then 18–20 h in the fridge, suits a kitchen that won't hold 61–65 °F: the 2 hours start fermentation, and the fridge then holds the biga at a steady temperature instead of wherever the room drifts. You give up a little acid character for control. The schedule is this recipe's own; Julian Sisofo's biga has the same shape with a longer warm start.
 >
 > **The classic room-temperature schedule** gives the truest biga flavor, if you have a wine fridge, a cool basement or a winter kitchen that holds the range.
 **concepts:** why-61-65
@@ -1025,7 +998,9 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 **timer:** 18–20 h
 
 **detail:**
-> The 2 hours at room temperature started fermentation; the fridge holds it steady while the biga ripens. Ooni's professional biga recipe uses 18–20 hours, and anywhere in that window works. Judge ripeness by the cue in the next step.
+> The 2 hours at room temperature started fermentation; the fridge holds it steady while the biga ripens. Anywhere in the 18–20 h window works. Judge ripeness by the cue in the next step.
+>
+> **This schedule rests on an assumption.** Giorilli's dose is set for 16–18 h at 61–65 °F. Two hours warm and 18–20 h at 38–40 °F give the biga less: by the recipe's fermentation model, with the rate doubling every 17 °F, about 11 hours' worth at 63 °F. The recipe assumes the biga is still ripe enough at pull, and that the final dough's schedule makes up any shortfall. Bake 1 ran this schedule; nothing has measured the biga's rise on it. If the balls are consistently behind on bake day, add an hour to the biga's time at room temperature before changing the dose.
 
 ---
 
@@ -1068,13 +1043,13 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 
 #### `mix-1` — Prep the bowl
 **phase:** mix
-**summary:** Break up the clumps in {freshFlourPerMix} g of fresh flour. Crumble the biga as small as you can, add the flour, and toss to coat.
+**summary:** Crumble the biga as small as you can, add {freshFlourPerMix} g of fresh flour, and toss to coat.
 **values:** Fresh flour: {freshFlourPerMix} g
 
 **detail:**
 > The biga is the stiffest thing the mixer handles all session. Crumbled small, it breaks down smoothly; in large pieces it can trip the motor protection.
 >
-> Break up the fresh flour dry for the same reason as the biga flour. It's the last chance before the water goes in.
+> The fresh flour isn't sieved. Its lumps break up in Phase A; the biga flour is sieved because mixing by hand leaves them intact.
 >
 > **Take both temperatures after you crumble the biga.** The calculator needs the biga's temperature when it meets the water, and handling warms it: on bake 1 the biga read **53 °F at pull and 58 °F once broken up**.
 >
@@ -1117,7 +1092,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 **detail:**
 > Salt goes in here and never in the biga, where it would slow the yeast you've spent 20 hours building up.
 >
-> At 2.8%, the salt is at the top of the Neapolitan range of 2.5–3.0%. It tightens the gluten slightly and slows fermentation a little, which helps over a long schedule.
+> At 2.8% of the flour, the salt sits inside AVPN's range: 40–60 g per liter of water with 1.6–1.8 kg of flour, which is 2.2–3.75% of the flour.
 >
 > Pour slowly down the splash-guard spout; at 98 RPM the hook slings water that's dumped in. Letting each addition absorb before the next keeps the dough from breaking into a slurry it then has to recover from.
 
@@ -1317,11 +1292,6 @@ A bare token on a per-mix or per-biga step is then a **visible** error rather th
 
 **detail:**
 > The rest between pre-rounding and final balling relaxes the gluten, so you can shape a tight ball without tearing it. A torn surface doesn't hold gas.
->
-> A {ballWeight} g ball opens to about **{openDiameterIn} inches**, the same thickness a {defaultBallG} g ball gives on the full {treadMaxDiameterIn}-inch stone. For a fatter cornicione, open it an inch smaller.
-
-**detail, shown only when `thickerThanDefault`:**
-> **At this ball weight the oven limits the size.** The Tread takes pizzas up to {treadMaxDiameterIn} inches, so a {ballWeight} g ball can't be opened any thinner than that. It will be about **{thicknessPercentOver}% thicker** than a {defaultBallG} g ball on the same stone, enough to notice: expect a softer, breadier center and a little more time on the stone.
 
 ---
 
@@ -1365,9 +1335,7 @@ A bare token on a per-mix or per-biga step is then a **visible** error rather th
 **timer:** {coldFerment} h
 
 **detail:**
-> A 265 g ball takes **3–4 hours to cool to 40 °F**, and it ferments faster the whole time, which the schedule doesn't account for. Stacking can double that time, because the trays in the middle are insulated by the ones above and below.
->
-> This is also the cost of a warmer dough: each extra degree at the start adds time above 50 °F while it cools.
+> A 265 g ball takes **3–4 hours to cool to 40 °F** on spread trays. The rise after balling allows for that cooldown, and for a warmer or cooler dough cooling from a different start. It doesn't allow for anything that slows the cooling: stacking can double the time, because the trays in the middle are insulated by the ones above and below, and a crowded fridge slows it too.
 
 ---
 
@@ -1423,7 +1391,7 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 >
 > **Why 65% and not 100%.** Flavor gains flatten sharply above about 60% biga, while the risks keep rising. Three reasons to stop at 65%:
 >
-> - **Flour strength.** Biga sources call for W 300+ / 12.5%+ protein for long ferments. Grain Craft Neapolitan is 12.2–12.8% protein, capable but at the low edge. Keeping 35% of the flour out of the biga leaves unfermented gluten in the final dough as a structural margin.
+> - **Flour strength.** Grain Craft Neapolitan is 12.2–12.8% protein, and Grain Craft doesn't publish a W value, so how well it holds up through a long biga is known only from baking it. Keeping 35% of the flour out of the biga leaves unfermented gluten in the final dough as a structural margin.
 > - **Adjustable consistency.** The reserved water goes in by feel during the mix, so you can correct for a wetter or drier biga.
 > - **Mixer load.** A smaller biga is easier to break down, and breakdown is the hardest work the mixer does.
 >
@@ -1432,18 +1400,18 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 **`formula-rationale`** — *Why 70% hydration, 2.8% salt, no malt*
 > **70% hydration** gives an open crumb and a puffy cornicione in a 60–90 second bake without exceeding what a 12.5%-protein flour can hold through a long ferment. A biga dough handles drier than the number suggests, because the biga's gluten is built before the water goes in.
 >
-> **50% biga hydration.** The documented band is 44–50%. Giorilli codified 45% and allows up to 50% for less-refined flours; Grain Craft, at 0.55% ash, is slightly less refined than true 00, and 50% mixes more evenly by hand.
+> **50% biga hydration.** The documented band is 44–50%. Giorilli codified 45% and allows up to 50% for less-refined flours. Grain Craft's spec sheet gives 0.55% ash at 13.5% moisture, about 0.64% on a dry basis. Italy grades flour on dry matter, and AVPN lists type 00 up to 0.50% ash and type 0 up to 0.65%, so Grain Craft sits at the top of type 0: a less-refined flour in Giorilli's sense. 50% also mixes more evenly by hand.
 >
-> **2.8% salt** is at the top of the Neapolitan range of 2.5–3.0%. It tightens the gluten slightly and slows fermentation a little, which helps over a long schedule.
+> **2.8% salt** sits inside AVPN's range. AVPN specifies 40–60 g of salt per liter of water, with 1.6–1.8 kg of flour: 2.2–3.75% of the flour. This dough carries 70% water, so by AVPN's own measure 2.8% of the flour is 40 g per liter, the bottom of their range.
 >
 > **No diastatic malt.** At these oven temperatures, added sugars and extra amylase burn. Grain Craft is unmalted, which suits this recipe.
 
 **`schedule-architecture`** — *Why the cold ferment is 6–36 h and not 72*
 > A classic biga front-loads the fermentation. At 0.375% ADY on 65% biga flour you carry about 0.244% ADY on total flour, a heavy dose by pizza standards and a deliberate one: the biga is meant to do nearly all the work.
 >
-> Documented biga recipes then give the final dough a *short* proof: Giorilli and Gozney a few hours, Ooni 2 h at room temperature or 6–36 h in the fridge.
+> That's the reverse of a lightly prefermented dough that develops its flavor over days in the fridge. **Put a full-strength biga in front of a 50-hour cold ferment and you've scheduled two complete fermentations.** The dough will over-ferment. Biga doughs that do spend a day or more in the fridge carry less yeast: Julian Sisofo's contemporary dough uses under half this recipe's dose per gram of biga flour, then gives the bulk and the balls each either a room-temperature rise or 24 h in the fridge.
 >
-> That's the reverse of a lightly prefermented dough that develops its flavor over days in the fridge. **Put a full-strength biga in front of a 50-hour cold ferment and you've scheduled two complete fermentations.** The dough will over-ferment.
+> **Use 24 h cold.** It's the only cold-ferment length that has been baked; 6 h and 36 h are inside the calculator's range but untested.
 >
 > In Italian practice, extra time goes into the biga rather than the ball proof. PizzaBlab's range is 12–24 h, and "biga lunga" runs 24 h at 39 °F, then 24 h at room temperature.
 
@@ -1498,13 +1466,13 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 **`giorilli-standard`** — *Where the yeast number comes from*
 > **1% fresh yeast = 0.30% IDY = 0.375% ADY, on biga flour**, for 16–18 h at 61–65 °F (16–18 °C).
 >
-> Piergiorgio Giorilli codified this dose. Gozney's 100% biga recipe gives it with a 16–18 h window at 16–18 °C, and Baking With Theory with 16–20 h at 16–20 °C (ideally 18). PizzaBlab gives the same dose and temperature with a wider window, 12–24 h. A longer or warmer ferment needs less yeast.
+> Piergiorgio Giorilli codified this dose. Italian Pizza Secrets gives it with a 16–18 h window at 16–18 °C, and Baking With Theory with 16–20 h at 16–20 °C (ideally 18). PizzaBlab gives the same dose and temperature with a wider window, 12–24 h. A longer or warmer ferment needs less yeast.
 >
 > **Giorilli's biga is 44–45% hydration; this one is 50%.** Giorilli allows up to 50% water only for semolina or less-refined flours, so a 50% biga on 00 is slightly outside his formula, and a wetter biga ferments faster. The dose is still the published starting point. It's another reason to pull the biga by the cue, about 20% rise, rather than by the clock.
 >
 > **The fresh-yeast dose is the sourced number.** The rest is unit conversion: fresh to instant at 0.30, instant to active dry at ×1.25, which gives exactly 0.375%.
 >
-> For a time or temperature outside that baseline, use PizzaBlab's dough calculator. It's built for this, and the rest of this recipe's biga guidance comes from the same source.
+> For a room-temperature biga at another time or temperature, use PizzaBlab's dough calculator. It calculates preferment yeast for room temperature only, so it can't check the retarded schedule; that one rests on an assumption (see *Refrigerate the biga*).
 
 **`mix-dont-knead`** — *Mix, don't knead*
 > A biga should be **small-to-medium chunks, like gnocchi**, not a dough. A spiral mixer builds gluten, which a preferment shouldn't have.
@@ -1517,7 +1485,7 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 > So an unstable kitchen affects flavor as well as timing, which is why the fridge-retarded schedule exists: it gives up a little acidity for a temperature that holds.
 
 **`no-creep-speed`** — *The mixer has no slow speed*
-> Measured: **5% on the dial = 60 RPM**. With Ooni's published 300 RPM at 100%, that gives `RPM = 47.4 + 2.526 × dial%`. Ooni's help-center chart, which puts 5% at 15 RPM, is wrong: the dial covers a usable band that starts at 60 RPM rather than at zero. The Halo Pro works the same way.
+> Measured: **5% on the dial = 60 RPM**. With Ooni's published 300 RPM at 100%, that gives `RPM = 47.4 + 2.526 × dial%`. Ooni's help-center chart, which puts 5% at 15 RPM, is wrong: the dial covers a usable band that starts at 60 RPM rather than at zero.
 >
 > **60 RPM is the slowest the mixer goes**, too fast to fold in liquid gently. Add water and flour with the mixer off, then start it; otherwise flour flies out of the bowl and the hook slings the bassinage water.
 
@@ -1658,15 +1626,18 @@ Every mix stays in the log whether it counts or not, and the log shows which don
 Link these from an About page. The recipe draws on these published sources.
 
 - [PizzaBlab — Biga (Preferment)](https://www.pizzablab.com/the-encyclopizza/biga-preferment/) — hydration, yeast, ripeness cues, mixing technique; 1% fresh yeast, 12–24 h at 16–18 °C
-- [PizzaBlab — Dough Calculator](https://www.pizzablab.com/calculators/pizza-dough-calculator/) — for biga yeast off the baseline time/temp
-- [Gozney — 100% Biga Pizza Dough](https://us.gozney.com/blogs/recipes/100-biga-pizza-dough-recipe) — 1% yeast, 16–18 h at 61–64 °F, hand-mixed
-- [Ooni / Marco Fuso — 100% Biga using Halo Pro](https://ooni.com/blogs/recipes/ooni-100-biga-dough-using-halo-pro) — the fridge-retarded schedule
+- [PizzaBlab — Dough Calculator](https://www.pizzablab.com/calculators/pizza-dough-calculator/) — biga yeast for a room-temperature biga off the baseline time/temp; it doesn't model a refrigerated biga
+- [PizzaBlab — How to use yeast](https://www.pizzablab.com/learning-and-resources/ingredients/how-to-use-yeast/) — dry yeast rehydrates best near 104 °F; active dry yeast needs warm water
+- [King Arthur — Desired dough temperature](https://www.kingarthurbaking.com/blog/2018/05/29/desired-dough-temperature) — with cool water, rehydrate active dry yeast in part of the recipe water at 110 °F
+- [Julian Sisofo — Contemporary pizza](https://juliansisofo.com/blog/Contemporarypizza) — a 50% biga with a warm start and then the fridge
 - [Ooni help center — Halo Core min/max capacity and hydration limits](https://ooni.com/pages/help-center?a=What-are-the-minmax-capacity-and-hydration-limits-for-Ooni-Halo-Core---id--tLwhKnlnR4G9F-kkvNO9Gw) — 0.5–2.5 kg dough, flour caps by hydration, recommended speeds, 20-minute maximum continuous operating time
 - [Ooni help center — Halo Core speed settings](https://ooni.com/pages/help-center?a=Halo-Core-Speed-Settings%3A-Percentage-to-RPM-Explained---id--J1HYTOEHRCiv1ONI2mRgqg) — 5% increments, the lit/half-lit indicator, 300 RPM at 100%. Its low-end RPM chart is wrong; see the mixer speed reference
-- [Stadler Made — Biga](https://www.stadlermade.com/pizza/ingredients/biga/) — warm-kitchen workaround
 - [Baking With Theory — Biga](https://www.bakingwiththeory.com/theory/biga/) — Giorilli formula: 44–45% hydration, 1% fresh yeast, short biga 16–20 h at 16–20 °C (ideally 18)
 - [Italian Pizza Secrets — Essential guide to biga](https://www.italianpizzasecrets.com/essential-guide-to-biga-for-pizza/) — Giorilli's short biga (16–18 h at 16–18 °C) and long biga
 - [Giochi di Gusto — How to make Biga at home](https://www.giochidigusto.it/en/how-to-make-biga-at-home-the-complete-and-definitive-method/) — Giorilli's hydration: 45%, up to 50% only for semolina or less-refined flours
+- [Grain Craft — Neapolitan product sheet](https://www.graincraft.com/wp-content/uploads/2020/04/NeapolitanProductSheet.pdf) — 12.2–12.8% protein, 0.55% ash at 13.5% moisture, unbleached
+- [AVPN — International Regulations, 2024](https://www.pizzanapoletana.org/public/pdf/Disciplinare-2024-ENG.pdf) — per liter of water: 40–60 g salt, 1.6–1.8 kg flour
+- [AVPN — Flours from 00 to whole wheat](https://www.pizzanapoletana.org/en/358-flours_from_00_to_whole_wheat) — ash limits: type 00 up to 0.50%, type 0 up to 0.65%
 
 ---
 

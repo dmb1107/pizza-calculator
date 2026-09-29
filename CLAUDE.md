@@ -114,6 +114,8 @@ question:
 | `FINDINGS-50-to-recipe-agent.md` | Reply to MESSAGE-49. Reproduced (51.833333 h at the defaults); nothing open. Notes that "now" is rounded up to the next quarter hour |
 | `MESSAGE-50.md` | Unprompted, Dave's workflow: the four mixer-phase timers carry a **Logged** tag (§7.5), "Logged · {elapsed}" once stopped; Start and Stop are enough. §10: the bake is saved at the end of the mix, because nothing the log stores comes later. Numbered 50 because FINDINGS-50 needed no reply |
 | `FINDINGS-51-to-recipe-agent.md` | Reply to MESSAGE-50. The tag built and held to §7.5 by a test; on its own line, since beside the label it wrapped at phone width. Nothing on the log card waits for a later stage. Nothing open |
+| `MESSAGE-51.md` | Unprompted, part 1 of Dave's recipe review: sources that use oil or sugar dropped (Ooni/Fuso, Gozney, Stadler); the biga's ADY rehydrated at 100–110 °F in `biga-1`; the retarded schedule's dose stated as an assumption (`biga-4b`); salt against AVPN's range; §4.9's opening size removed. **MESSAGE-52 and 53 follow with their own documents; don't start them from 51's description** |
+| `FINDINGS-52-to-recipe-agent.md` | Reply to MESSAGE-51. Four figures it filed as FIXED are claimed (2–3 °F, 11 hours, 2.2–3.75%, 0.64%); the gate now reads concept titles; `biga-1`'s chip suffix at `nBiga > 1`; Grain Craft's ash is a USDA database value, and AVPN's two sources disagree on type 00 |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -249,7 +251,9 @@ computed value filed as fixed is the defect this exists to catch. A known
 disagreement the spec author must fix gets `knownWrong`, which is pinned both
 ways. **It walks every string a step carries** rather than a list of fields —
 a list of six hid MESSAGE-31's per-track timers and every title — and reads the
-timeline's stage titles and descriptions (`STAGE_INFO` in `timeline.ts`). The
+timeline's stage titles and descriptions (`STAGE_INFO` in `timeline.ts`). Concepts
+and §9 sections are walked the same way: until FINDINGS-52 it read only their
+bodies, and four concept titles carry figures. The
 token check in `bindTokens.test.ts` walks the same way, for the same reason.
 **Any new scan over step content should walk, not list.**
 
@@ -546,6 +550,11 @@ don't inline a `toFixed` somewhere else.
   field, no persistence and no URL key; a stored or linked value from before
   is ignored. `computeThermal` still takes a mass so engine tests can vary it,
   but the app always passes the constant.
+- **There is no opening size** (MESSAGE-51, Dave's call): no diameter, no
+  thickness note, no `thickerThanDefault`. The detail-block conditions are
+  `nMix > 1` and `nBiga > 1`, and a test requires a block for each, so a
+  condition left behind by a deleted block fails. `DEFAULT_BALL_G` is only the
+  ball-weight default now.
 - **Speeds render as lit LED segments** (§7.5, MESSAGE-29): the Core has no
   number display. `SpeedIndicator` draws the real indicator as Dave describes
   it (25 Sep; §7.5 records it since MESSAGE-30): **twelve 30° positions round

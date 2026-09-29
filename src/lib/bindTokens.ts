@@ -13,11 +13,9 @@ import { C } from './constants';
 import {
   formatAdy,
   formatGrams,
-  formatInches,
   formatPercentNumber,
   formatProbeGapPhrase,
   formatTempF,
-  formatWhole,
 } from './format';
 import { mixStaggerH, observedRate, type CalculatorResult } from './engine';
 
@@ -86,12 +84,6 @@ export function tokenValues(
     phaseAPercent: formatPercentNumber(C.PHASE_A_FRACTION),
     phaseBPercent: formatPercentNumber(1 - C.PHASE_A_FRACTION),
 
-    // §4.9 — `bulk-2`. Rounded once each from the unrounded values.
-    // `thickerThanDefault` is decided on the printed percentage, so this token
-    // is also what decides whether the capped block shows.
-    openDiameterIn: formatInches(result.opening.openDiameterIn),
-    thicknessPercentOver: formatWhole(result.opening.thicknessPercentOver),
-    defaultBallG: trim(C.DEFAULT_BALL_G),
     /**
      * §4.6. Phase C's rate AS A THERMOMETER READS IT — the dough-only 1.08
      * °F/min times `Ct/TOT`. "About 1 °F per minute" is only true at 6 balls
@@ -145,7 +137,6 @@ export function tokenValues(
      * the two drift apart.
      */
     maxRunMin: trim(C.MAX_RUN_MIN),
-    treadMaxDiameterIn: trim(C.TREAD_MAX_DIAMETER_IN),
 
     // §7.3 *Capacity* (MESSAGE-29). Batch and per-mix dough, and the three
     // limits the messages name — bound, not typed, like `maxRunMin`.

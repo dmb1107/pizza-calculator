@@ -488,35 +488,6 @@ export function computeProbeTargetF(args: Parameters<typeof computeProbeParts>[0
   return computeProbeParts(args).targetF;
 }
 
-// ---------------------------------------------------------------------------
-// §4.9 Opening diameter
-// ---------------------------------------------------------------------------
-
-export interface Opening {
-  /** What to open to: the default ball's thickness, capped at the stone. */
-  openDiameterIn: number;
-  /**
-   * How much thicker than the default ball on the full stone, in percent —
-   * zero until the cap binds. Unrounded. Whether `bulk-2`'s block shows is
-   * decided on the PRINTED value (`thickerThanDefault` in stepInstances.ts),
-   * never on this: a block that fires on 12.02 > 12 prints "12.0 rather than 12".
-   */
-  thicknessPercentOver: number;
-}
-
-/**
- * §4.9. The reference is the default ball on the full stone. Holding that
- * thickness, diameter scales with the square root of the weight ratio, and
- * the oven caps it — past which the pizza runs thicker instead.
- */
-export function computeOpening(ballWeightG: number): Opening {
-  const ratio = ballWeightG / C.DEFAULT_BALL_G;
-  return {
-    openDiameterIn: C.TREAD_MAX_DIAMETER_IN * Math.min(1, Math.sqrt(ratio)),
-    thicknessPercentOver: Math.max(0, ratio - 1) * 100,
-  };
-}
-
 /**
  * §4.6. Dough-only °F/min at a dial setting converted to what a THERMOMETER
  * will show.
@@ -783,8 +754,6 @@ export interface CalculatorResult {
   probeTargetF: number;
   /** §4.10. The target's parts, per mix at the user's inputs. `probeTargetF === probe.targetF`. */
   probe: ProbeParts;
-  /** §4.9. Opening diameter, and how much thicker than the default ball, for the entered weight. */
-  opening: Opening;
   /** §4.8 room-temperature minutes before the fridge. */
   roomMinutes: number;
   /**
@@ -915,7 +884,6 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
     capacity,
     probeTargetF: probe.targetF,
     probe,
-    opening: computeOpening(inputs.ballWeightG),
     roomMinutes,
     ballRoomMinutes: plannedBallRiseH(roomMinutes, capacity.nMix) * 60,
     roomMinutesIsPlanned,

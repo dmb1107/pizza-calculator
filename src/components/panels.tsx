@@ -5,7 +5,7 @@ import { CAPACITY } from '../content/capacity';
 import { Badge, NumberField, SegmentedField, SliderField, Stepper, ToggleField } from './fields';
 import { BOUNDS } from '../state/defaults';
 import { bigaReadingCost, bowlReadingCost } from '../lib/engine';
-import { formatBallsPerMix, formatCoefficient, formatInches, formatTempF } from '../lib/format';
+import { formatBallsPerMix, formatCoefficient, formatTempF } from '../lib/format';
 import type { AppState } from '../state/useAppState';
 import type { BowlState, Schedule } from '../state/types';
 
@@ -74,10 +74,6 @@ export function BatchPanel(s: AppState) {
           min={BOUNDS.ballWeightG.min}
           max={BOUNDS.ballWeightG.max}
           step={BOUNDS.ballWeightG.step}
-          // §4.9's figure for the weight entered, never a typed one: this hint
-          // said "265 g opens to about 11.5–12 inches" for three rounds after
-          // §4.9 retracted it, invisible to the §8 gate because it isn't §8.
-          hint={`Opens to about ${formatInches(s.result.opening.openDiameterIn)} inches.`}
         />
         <SliderField
           label="Cold ferment"

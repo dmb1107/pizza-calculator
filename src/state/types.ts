@@ -6,8 +6,7 @@ export type { BowlState };
 
 /**
  * §4.7. `retarded` is 2 h at room temperature then ~19 h in the fridge — the
- * Ooni/Marco Fuso schedule, and the answer for a kitchen that won't hold a
- * band. `classic` is 12–18 h at 61–65 °F, which gives the truer acid profile.
+ * retarded schedule, and the answer for a kitchen that won't hold a band. `classic` is 12–18 h at 61–65 °F, which gives the truer acid profile.
  */
 export type Schedule = 'retarded' | 'classic';
 

@@ -25,7 +25,7 @@ export const CONCEPTS: readonly Concept[] = [
 
 **Why 65% and not 100%.** Flavor gains flatten sharply above about 60% biga, while the risks keep rising. Three reasons to stop at 65%:
 
-- **Flour strength.** Biga sources call for W 300+ / 12.5%+ protein for long ferments. Grain Craft Neapolitan is 12.2–12.8% protein, capable but at the low edge. Keeping 35% of the flour out of the biga leaves unfermented gluten in the final dough as a structural margin.
+- **Flour strength.** Grain Craft Neapolitan is 12.2–12.8% protein, and Grain Craft doesn't publish a W value, so how well it holds up through a long biga is known only from baking it. Keeping 35% of the flour out of the biga leaves unfermented gluten in the final dough as a structural margin.
 - **Adjustable consistency.** The reserved water goes in by feel during the mix, so you can correct for a wetter or drier biga.
 - **Mixer load.** A smaller biga is easier to break down, and breakdown is the hardest work the mixer does.
 
@@ -36,9 +36,9 @@ Once this has run cleanly three or four times, moving to 80% or 100% biga is a s
     title: "Why 70% hydration, 2.8% salt, no malt",
     body: `**70% hydration** gives an open crumb and a puffy cornicione in a 60–90 second bake without exceeding what a 12.5%-protein flour can hold through a long ferment. A biga dough handles drier than the number suggests, because the biga's gluten is built before the water goes in.
 
-**50% biga hydration.** The documented band is 44–50%. Giorilli codified 45% and allows up to 50% for less-refined flours; Grain Craft, at 0.55% ash, is slightly less refined than true 00, and 50% mixes more evenly by hand.
+**50% biga hydration.** The documented band is 44–50%. Giorilli codified 45% and allows up to 50% for less-refined flours. Grain Craft's spec sheet gives 0.55% ash at 13.5% moisture, about 0.64% on a dry basis. Italy grades flour on dry matter, and AVPN lists type 00 up to 0.50% ash and type 0 up to 0.65%, so Grain Craft sits at the top of type 0: a less-refined flour in Giorilli's sense. 50% also mixes more evenly by hand.
 
-**2.8% salt** is at the top of the Neapolitan range of 2.5–3.0%. It tightens the gluten slightly and slows fermentation a little, which helps over a long schedule.
+**2.8% salt** sits inside AVPN's range. AVPN specifies 40–60 g of salt per liter of water, with 1.6–1.8 kg of flour: 2.2–3.75% of the flour. This dough carries 70% water, so by AVPN's own measure 2.8% of the flour is 40 g per liter, the bottom of their range.
 
 **No diastatic malt.** At these oven temperatures, added sugars and extra amylase burn. Grain Craft is unmalted, which suits this recipe.`,
   },
@@ -47,9 +47,9 @@ Once this has run cleanly three or four times, moving to 80% or 100% biga is a s
     title: "Why the cold ferment is 6\u201336 h and not 72",
     body: `A classic biga front-loads the fermentation. At 0.375% ADY on 65% biga flour you carry about 0.244% ADY on total flour, a heavy dose by pizza standards and a deliberate one: the biga is meant to do nearly all the work.
 
-Documented biga recipes then give the final dough a *short* proof: Giorilli and Gozney a few hours, Ooni 2 h at room temperature or 6–36 h in the fridge.
+That's the reverse of a lightly prefermented dough that develops its flavor over days in the fridge. **Put a full-strength biga in front of a 50-hour cold ferment and you've scheduled two complete fermentations.** The dough will over-ferment. Biga doughs that do spend a day or more in the fridge carry less yeast: Julian Sisofo's contemporary dough uses under half this recipe's dose per gram of biga flour, then gives the bulk and the balls each either a room-temperature rise or 24 h in the fridge.
 
-That's the reverse of a lightly prefermented dough that develops its flavor over days in the fridge. **Put a full-strength biga in front of a 50-hour cold ferment and you've scheduled two complete fermentations.** The dough will over-ferment.
+**Use 24 h cold.** It's the only cold-ferment length that has been baked; 6 h and 36 h are inside the calculator's range but untested.
 
 In Italian practice, extra time goes into the biga rather than the ball proof. PizzaBlab's range is 12–24 h, and "biga lunga" runs 24 h at 39 °F, then 24 h at room temperature.`,
   },
@@ -110,13 +110,13 @@ To measure it, log the bake: the calculator takes each phase's time from its tim
     title: "Where the yeast number comes from",
     body: `**1% fresh yeast = 0.30% IDY = 0.375% ADY, on biga flour**, for 16–18 h at 61–65 °F (16–18 °C).
 
-Piergiorgio Giorilli codified this dose. Gozney's 100% biga recipe gives it with a 16–18 h window at 16–18 °C, and Baking With Theory with 16–20 h at 16–20 °C (ideally 18). PizzaBlab gives the same dose and temperature with a wider window, 12–24 h. A longer or warmer ferment needs less yeast.
+Piergiorgio Giorilli codified this dose. Italian Pizza Secrets gives it with a 16–18 h window at 16–18 °C, and Baking With Theory with 16–20 h at 16–20 °C (ideally 18). PizzaBlab gives the same dose and temperature with a wider window, 12–24 h. A longer or warmer ferment needs less yeast.
 
 **Giorilli's biga is 44–45% hydration; this one is 50%.** Giorilli allows up to 50% water only for semolina or less-refined flours, so a 50% biga on 00 is slightly outside his formula, and a wetter biga ferments faster. The dose is still the published starting point. It's another reason to pull the biga by the cue, about 20% rise, rather than by the clock.
 
 **The fresh-yeast dose is the sourced number.** The rest is unit conversion: fresh to instant at 0.30, instant to active dry at ×1.25, which gives exactly 0.375%.
 
-For a time or temperature outside that baseline, use PizzaBlab's dough calculator. It's built for this, and the rest of this recipe's biga guidance comes from the same source.`,
+For a room-temperature biga at another time or temperature, use PizzaBlab's dough calculator. It calculates preferment yeast for room temperature only, so it can't check the retarded schedule; that one rests on an assumption (see *Refrigerate the biga*).`,
   },
   {
     id: "mix-dont-knead",
@@ -135,7 +135,7 @@ So an unstable kitchen affects flavor as well as timing, which is why the fridge
   {
     id: "no-creep-speed",
     title: "The mixer has no slow speed",
-    body: `Measured: **5% on the dial = 60 RPM**. With Ooni's published 300 RPM at 100%, that gives \`RPM = 47.4 + 2.526 × dial%\`. Ooni's help-center chart, which puts 5% at 15 RPM, is wrong: the dial covers a usable band that starts at 60 RPM rather than at zero. The Halo Pro works the same way.
+    body: `Measured: **5% on the dial = 60 RPM**. With Ooni's published 300 RPM at 100%, that gives \`RPM = 47.4 + 2.526 × dial%\`. Ooni's help-center chart, which puts 5% at 15 RPM, is wrong: the dial covers a usable band that starts at 60 RPM rather than at zero.
 
 **60 RPM is the slowest the mixer goes**, too fast to fold in liquid gently. Add water and flour with the mixer off, then start it; otherwise flour flies out of the bowl and the hook slings the bassinage water.`,
   },

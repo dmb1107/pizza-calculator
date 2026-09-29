@@ -9,16 +9,24 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-50, FINDINGS-51 and Task 11 (28 September).
+MESSAGE-51 and FINDINGS-52 (29 September).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-50, and FINDINGS-51 is the
-  last thing sent.** Nothing is open, and no pin of any kind is live
-  (`knownWrong` is empty). MESSAGE-48 made the page's Reset the only one and
+- **The correspondence is applied through MESSAGE-51, and FINDINGS-52 is the
+  last thing sent.** No pin of any kind is live (`knownWrong` is empty).
+  FINDINGS-52 left three notes with the recipe agent, none blocking:
+  `biga-1`'s chip suffix at `nBiga > 1`, and two source points behind
+  `formula-rationale`'s ash sentence. MESSAGE-51 is part 1 of 3 of Dave's
+  recipe review. **MESSAGE-52** (the cooldown constant 150 → 35 min, the FF in
+  use, and the probe's remaining-friction term) and **MESSAGE-53** (the
+  timeline and split batches) come with their own documents. Don't start
+  either from 51's summary of them. MESSAGE-51 dropped sources that use oil or
+  sugar, moved the yeast dose to `biga-1` with a warm rehydration, stated the
+  retarded schedule's dose as an assumption, and removed §4.9's opening size. MESSAGE-48 made the page's Reset the only one and
   added the DDT override and the timeline's anchor to what it resets.
   MESSAGE-49 put the rest of the page in §10's *Kept* list: which end of the
   timeline is held, which panels are open and this device's sync settings.
@@ -64,7 +72,8 @@ Don't trust any status here that you can check instead (§7).
     the tab title included, since a window stage is judged by its cue.
 - **Git state.** PRs #1, #2, #3, #5 and #6 merged MESSAGE-30 to 41 and
   Task 10's status into `main`, each with a merge commit. PR #7 made the
-  step timers count up, and PR #8 carried FINDINGS-43 to 44. PR #4, from
+  step timers count up, PR #8 carried FINDINGS-43 to 44, and PR #9 carried
+  Task 11 with MESSAGE-45 to 50 and FINDINGS-51. PR #4, from
   another session, added the pizza icon (`public/`) and CLAUDE.md's rule to
   bring `README.md` current before opening a PR. The session branch restarts from `main` after each
   merge, so a new round starts on `main` plus nothing.
@@ -232,12 +241,12 @@ true and what they need to change.
 | Suite | Guards | Why it exists |
 |---|---|---|
 | `steps.test.ts` | §8 prose verbatim, plus §9, §11, §7.3's capacity messages (with §6's split hint) and §10's Reset confirmation (read from `NewBakeReset`'s syntax tree), each re-derived by a differently shaped parser. The generator and this file parse the same grammar independently. Both refuse unknown `**marker:**` lines, a raw count of conditional markers is taken from the spec itself, and each step ends at the next `###`. Per-track `timer (retarded\|classic)` since MESSAGE-31. Concepts compared as ids split from the spec line, not re-joined | Two parsers sharing one condition list dropped `bulk-2`'s capped block, and 42/42 still passed. `mix-8` used to swallow §8.2a. Re-joining split ids agreed with the spec when the generator kept a comma in `"mix-dont-knead,"` (MESSAGE-34) |
-| `contentLiterals.test.ts` | Every number in §8, §9, §11 and the capacity messages either rebuilt from the engine (`CLAIMS`) or classified (`FIXED`); `knownWrong` pins a disagreement both ways (none live); numeric copy in **every `.tsx` under `src`**, read from the syntax tree (JSX text, attributes, template text), and a classified phrase excuses only itself. **Every string a step carries**, walked rather than listed, and the timeline's stage text (`STAGE_INFO`). The planning ranges claimed against `PLANNING_RANGE_H`. Lit-segment counts are rebuilt as dial ÷ 10 independently of the formatter. A counterfactual can still be a claim: `computeThermal` at `nMix` 1 *is* the batch-total model | `mix-4` showed stale probe values for eight rounds while prose-vs-prose passed. The biga hint's typed figures hid inside a template literal, then behind a classified phrase in the same string. A list of six step fields hid the per-track timers and every title (MESSAGE-31). **It checks numbers, not sources:** a worded claim passes by construction |
+| `contentLiterals.test.ts` | Every number in §8, §9, §11 and the capacity messages either rebuilt from the engine (`CLAIMS`) or classified (`FIXED`); `knownWrong` pins a disagreement both ways (none live); numeric copy in **every `.tsx` under `src`**, read from the syntax tree (JSX text, attributes, template text), and a classified phrase excuses only itself. **Every string a step carries**, walked rather than listed, and every string of a concept or §9 section (titles included since FINDINGS-52), and the timeline's stage text (`STAGE_INFO`). Figures derived from §11's sources (AVPN, Grain Craft) are claimed against constants that are themselves checked against §11's notes, and `biga-4b`'s "11 hours" re-runs MESSAGE-51's integration from `Q_DOUBLING_F` and §4.7. The planning ranges claimed against `PLANNING_RANGE_H`. Lit-segment counts are rebuilt as dial ÷ 10 independently of the formatter. A counterfactual can still be a claim: `computeThermal` at `nMix` 1 *is* the batch-total model | `mix-4` showed stale probe values for eight rounds while prose-vs-prose passed. The biga hint's typed figures hid inside a template literal, then behind a classified phrase in the same string. A list of six step fields hid the per-track timers and every title (MESSAGE-31). **It checks numbers, not sources:** a worded claim passes by construction |
 | `constants.test.ts` | Derived constants recomputed from their inputs; every constant has a **code** read (`C.X` / `BASE.X`, comments stripped) | `divideBall = 0.33`, `ADY 0.0038`. The reader check once counted the comment recording a constant's removal as a read |
-| `stepInstances.test.ts` | Golden step sequences per schedule at `nMix` 1–3, and §8.2a's published counts read from the spec. Closed condition sets: detail blocks (`nMix > 1`, `nBiga > 1`, `thickerThanDefault`) and `shownWhen`; both throw on unknown | The expansion repeated templates instead of mixes: same count, same labels, wrong procedure. A component ternary read any unknown condition as `nBiga > 1` |
+| `stepInstances.test.ts` | Golden step sequences per schedule at `nMix` 1–3, and §8.2a's published counts read from the spec. Closed condition sets: detail blocks (`nMix > 1`, `nBiga > 1`) and `shownWhen`; both throw on unknown, the retired `openDiameterCapped` and `thickerThanDefault` included. Every detail condition must have a block | The expansion repeated templates instead of mixes: same count, same labels, wrong procedure. A component ternary read any unknown condition as `nBiga > 1` |
 | `stageSteps.test.ts` | Every timeline stage has a step rendered on its schedule, and every step maps to a stage. §7.5: each planning-point stage's step times the whole §4.7 range; the classic exception across 12–18 h; a single-number timer equals its stage's planned duration, `bulk-3` included at `nMix` 1–3 and at the 45-minute floor | `bigaTemper` had a duration and a clock time but no step. `bulk-3` timed the unshortened rise for a round: each side right alone, disagreeing |
-| `engine.test.ts` | Each mix's bowl read by index (FINDINGS-46: mix 1's reading printed mix 2's water 4.6 °F warm). §5 vectors and the bake-1 regression, **held to printed precision (0.005)**, not `TOL`. The rendered gap at app defaults: 0.392, or 0.482 at 6 balls per mix where the seeded FF applies, with the 12-ball cards' printed figures. §4.2's per-mix DDT slip, priced at `C_bowl/Cw` on both bases. Per-mix thermal weights. The panel hints' bases, measured by perturbing `calculate`. Water reachability sweep (samples 257 g for the true corner). Shaped rise **keyed by DDT**. The two biga bases, measured off `computeWaterTempF`. §4.9, §4.10 | Every rise table was keyed on dough temperature, silently assuming DDT 75 — including this suite's own vector. At `TOL.degF` = 0.1 the bake-1 pin couldn't tell 67.97 from 68.00 |
-| `bindTokens.test.ts` | No unbound or unused token, over every string a step carries (walked, not listed, since FINDINGS-34). `{probeGapPhrase}` at below / above / right at DDT. The thicker note decided on its **printed** value | A condition decided on unrounded values printed "12.0 rather than 12" |
+| `engine.test.ts` | Each mix's bowl read by index (FINDINGS-46: mix 1's reading printed mix 2's water 4.6 °F warm). §5 vectors and the bake-1 regression, **held to printed precision (0.005)**, not `TOL`. The rendered gap at app defaults: 0.392, or 0.482 at 6 balls per mix where the seeded FF applies, with the 12-ball cards' printed figures. §4.2's per-mix DDT slip, priced at `C_bowl/Cw` on both bases. Per-mix thermal weights. The panel hints' bases, measured by perturbing `calculate`. Water reachability sweep (samples 257 g for the true corner). Shaped rise **keyed by DDT**. The two biga bases, measured off `computeWaterTempF`. §4.10 | Every rise table was keyed on dough temperature, silently assuming DDT 75 — including this suite's own vector. At `TOL.degF` = 0.1 the bake-1 pin couldn't tell 67.97 from 68.00 |
+| `bindTokens.test.ts` | No unbound or unused token, over every string a step carries (walked, not listed, since FINDINGS-34). `{probeGapPhrase}` at below / above / right at DDT, decided on the **printed** DDT and target | A condition decided on unrounded values printed "12.0 rather than 12" (§4.9's thicker note, removed in MESSAGE-51) |
 | `state.test.ts` | URL and storage round-trips. Final and poured-water readings by index, padded to the mixes (`73~`), and a pre-per-mix `dought` read as the batch reading. A stored FF map ignored. §10's Reset: every input and every persisted field classified as reset, cleared or kept | The map was keyed on total balls, so a 12-ball bake would have filed FF under a size no mix has. Reset's classification fails with the DDT override or the anchor left out (MESSAGE-48) |
 | `bakeLog.test.ts` | §5 *Bake log* pins: bake 1 at 14.031045 and 10.791045, the 0.7075 correction, no `Ct/TOT` factor; the counting rules one reason at a time; the aggregate (10.666667, spread 0.6), interpolation (11.7) and holding (12.2), the seed; **§6's badge table read from the spec**; the room slope; §4.8's mean (74.0 → 72.5, first mix only 77.4); the 120 °F warning at 10.23. §7.5's **Logged** tag: the ids and both wordings read from the spec, the stopped tag equal to the time the log records | Mutation-checked: a carried-forward final list and a 0.9 factor on the correction both fail it, and so do a tag on the rest and a stopped tag without its time |
 | `bakeLogSync.test.ts` | The local log's parsing and edits; sync against a fake repository (push, pull, stale write, deletions both ways, a refused token, an unreachable repo, offline, an unparseable file); `mergeAfterSync`; the session as a bake (entry dates, prefills, phase times by instance) | A sync result applied over edits made while it ran would drop them |
@@ -262,8 +271,13 @@ twice.
 - **They want unprompted structural checks**, including the ones that
   contradict them.
 - **Dough science is theirs, and Dave's judgment is Dave's.** For example,
-  `THICKER_NOTE_MIN_PERCENT = 10` is Dave's call, labelled as such. Don't invent
-  a threshold or a band. Two unsourced "bands" have been removed already.
+  `THICKER_NOTE_MIN_PERCENT = 10` was Dave's call, labelled as such, until he
+  removed the feature in MESSAGE-51. Don't invent a threshold or a band. Two
+  unsourced "bands" have been removed already.
+- **Read the sources when a round is about sources.** The gate checks numbers
+  only. In FINDINGS-52, reading them found Grain Craft's ash in a nutrition
+  panel sourced to the USDA database, and AVPN's regulation and web page
+  giving type 00 different limits.
 
 `docs/` holds the whole exchange. Read the relevant `MESSAGE-*` / `FINDINGS-*`
 before reopening anything settled. CLAUDE.md indexes them.
@@ -328,7 +342,9 @@ The long form is the errors table in their `HANDOFF-new-context.md`. The shapes:
   with no number in them.
 - **A scan over a hand-written list of fields.** The gate read six step fields
   and missed the per-track timers and every title (MESSAGE-31). The token
-  check had the same list. Both now walk every string a step carries.
+  check had the same list. Both now walk every string a step carries. The
+  gate then still read only a concept's body, and four concept titles carry
+  figures (FINDINGS-52). Concepts and §9 sections are walked now too.
 - **Two parsers agreeing on a bad split.** The generator wrote the concept id
   `"mix-dont-knead,"` from a comma-separated line, and the test re-joined the
   split ids, so both matched (MESSAGE-34). Independence has to hold on the

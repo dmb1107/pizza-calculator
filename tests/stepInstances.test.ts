@@ -236,41 +236,45 @@ describe('§8.2a expansion', () => {
 });
 
 describe('§8.2 conditional detail conditions', () => {
-  const ctx = { nMix: 1, nBiga: 1, thickerThanDefault: false };
+  const ctx = { nMix: 1, nBiga: 1 };
 
-  it('is exactly the closed set — nMix > 1, nBiga > 1, thickerThanDefault', () => {
-    expect([...DETAIL_CONDITION_NAMES].sort()).toEqual(['nBiga > 1', 'nMix > 1', 'thickerThanDefault']);
+  it('is exactly the closed set — nMix > 1, nBiga > 1', () => {
+    expect([...DETAIL_CONDITION_NAMES].sort()).toEqual(['nBiga > 1', 'nMix > 1']);
   });
 
-  it('throws on anything outside it — including the retired name', () => {
+  it('throws on anything outside it — including the retired names', () => {
     // `openDiameterCapped` was renamed in MESSAGE-19 because it was wrong at
-    // 266 g (capped by 0.02 in, correctly hidden). Content still carrying the
-    // old name must fail loudly, not borrow some other test.
-    for (const bad of ['openDiameterCapped', 'nMix > 2', 'thickerThanDefalt', "schedule === 'retarded'", '']) {
+    // 266 g (capped by 0.02 in, correctly hidden), and its successor
+    // `thickerThanDefault` went with §4.9's opening diameter in MESSAGE-51.
+    // Content still carrying either name must fail loudly, not borrow some
+    // other test.
+    for (const bad of ['openDiameterCapped', 'thickerThanDefault', 'nMix > 2', "schedule === 'retarded'", '']) {
       expect(() => detailConditionHolds(bad, ctx), JSON.stringify(bad)).toThrow(/unknown detail condition/);
     }
   });
 
   it('reads each condition from its own input', () => {
     // The ternary this replaced answered anything but `nMix > 1` with the
-    // biga-split test, so a split biga would have shown the capped block.
-    expect(detailConditionHolds('thickerThanDefault', { ...ctx, nBiga: 2 })).toBe(false);
-    expect(detailConditionHolds('thickerThanDefault', { ...ctx, thickerThanDefault: true })).toBe(true);
-    expect(detailConditionHolds('nBiga > 1', { ...ctx, thickerThanDefault: true })).toBe(false);
+    // biga-split test, so a third condition would have borrowed it.
+    expect(detailConditionHolds('nMix > 1', { ...ctx, nBiga: 2 })).toBe(false);
     expect(detailConditionHolds('nMix > 1', { ...ctx, nMix: 2 })).toBe(true);
+    expect(detailConditionHolds('nBiga > 1', { ...ctx, nMix: 2 })).toBe(false);
+    expect(detailConditionHolds('nBiga > 1', { ...ctx, nBiga: 2 })).toBe(true);
   });
 
   it('covers every conditional block the content carries', () => {
     const used = STEPS.flatMap((s) => (s.detailWhen ? [s.detailWhen.condition] : []));
     expect(used.filter((c) => !DETAIL_CONDITION_NAMES.includes(c))).toEqual([]);
-    expect(used).toContain('thickerThanDefault');
+    // And the other way: a condition no block reads is dead, as
+    // `thickerThanDefault` would have been had §4.9's code outlived bulk-2's block.
+    expect([...new Set(used)].sort()).toEqual([...DETAIL_CONDITION_NAMES].sort());
   });
 
   it('keeps it out of shownWhen, which gates whole steps', () => {
-    // MESSAGE-18 called it a shownWhen condition, but §8.2 writes it as a
-    // conditional DETAIL block inside bulk-2. Were it a step-level condition,
-    // the whole divide-and-ball step would vanish below 267 g.
-    const step = { ...STEPS[0]!, shownWhen: 'thickerThanDefault' as never };
+    // MESSAGE-18 called §4.9's condition a shownWhen condition, but §8.2 wrote
+    // it as a conditional DETAIL block inside bulk-2. Were a detail condition
+    // step-level, the whole step would vanish whenever it didn't hold.
+    const step = { ...STEPS[0]!, shownWhen: 'nBiga > 1' as never };
     expect(() => expandSteps(1, 'retarded', [step])).toThrow(/unknown shownWhen/);
   });
 });

@@ -40,6 +40,16 @@ describe('recipe text', () => {
     expect(out).toContain('blend fridge-cold and tap water to hit it');
   });
 
+  it('warms only the yeast water, as biga-1 does', () => {
+    // MESSAGE-51: ADY rehydrates in about ten times its weight of the biga
+    // water at 100–110 °F; the rest of the water stays at room temperature.
+    // The whole biga water printed "(room temperature)" before.
+    const out = text();
+    expect(out).toMatch(/^ +Water +305\.6 g$/m);
+    expect(out).toMatch(/^ +ADY +2\.29 g\n +in about 10× its weight of the water at 100–110 °F for 10 minutes;\n +the rest of the water at room temperature$/m);
+    expect(out).not.toContain('(room temperature)');
+  });
+
   it('shows both bassinage additions as weighable grams', () => {
     // The bake-1 bug: "~60% of the water" caused a guess and cost a data point.
     const out = text();

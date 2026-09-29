@@ -376,7 +376,7 @@ export function StepList({
                     timerLabel={boundTimer}
                     bind={bindHere}
                     conditionHolds={(condition) =>
-                      detailConditionHolds(condition, detailConditionContext(state.result, tokens))
+                      detailConditionHolds(condition, detailConditionContext(state.result))
                     }
                     showWarning={state.result.staggerUncentredMin > 2}
                     checked={checkedSteps.has(key)}

@@ -71,17 +71,22 @@ export const SOURCES: readonly Source[] = [
   {
     title: "PizzaBlab — Dough Calculator",
     url: "https://www.pizzablab.com/calculators/pizza-dough-calculator/",
-    note: "for biga yeast off the baseline time/temp",
+    note: "biga yeast for a room-temperature biga off the baseline time/temp; it doesn't model a refrigerated biga",
   },
   {
-    title: "Gozney — 100% Biga Pizza Dough",
-    url: "https://us.gozney.com/blogs/recipes/100-biga-pizza-dough-recipe",
-    note: "1% yeast, 16–18 h at 61–64 °F, hand-mixed",
+    title: "PizzaBlab — How to use yeast",
+    url: "https://www.pizzablab.com/learning-and-resources/ingredients/how-to-use-yeast/",
+    note: "dry yeast rehydrates best near 104 °F; active dry yeast needs warm water",
   },
   {
-    title: "Ooni / Marco Fuso — 100% Biga using Halo Pro",
-    url: "https://ooni.com/blogs/recipes/ooni-100-biga-dough-using-halo-pro",
-    note: "the fridge-retarded schedule",
+    title: "King Arthur — Desired dough temperature",
+    url: "https://www.kingarthurbaking.com/blog/2018/05/29/desired-dough-temperature",
+    note: "with cool water, rehydrate active dry yeast in part of the recipe water at 110 °F",
+  },
+  {
+    title: "Julian Sisofo — Contemporary pizza",
+    url: "https://juliansisofo.com/blog/Contemporarypizza",
+    note: "a 50% biga with a warm start and then the fridge",
   },
   {
     title: "Ooni help center — Halo Core min/max capacity and hydration limits",
@@ -92,11 +97,6 @@ export const SOURCES: readonly Source[] = [
     title: "Ooni help center — Halo Core speed settings",
     url: "https://ooni.com/pages/help-center?a=Halo-Core-Speed-Settings%3A-Percentage-to-RPM-Explained---id--J1HYTOEHRCiv1ONI2mRgqg",
     note: "5% increments, the lit/half-lit indicator, 300 RPM at 100%. Its low-end RPM chart is wrong; see the mixer speed reference",
-  },
-  {
-    title: "Stadler Made — Biga",
-    url: "https://www.stadlermade.com/pizza/ingredients/biga/",
-    note: "warm-kitchen workaround",
   },
   {
     title: "Baking With Theory — Biga",
@@ -112,6 +112,21 @@ export const SOURCES: readonly Source[] = [
     title: "Giochi di Gusto — How to make Biga at home",
     url: "https://www.giochidigusto.it/en/how-to-make-biga-at-home-the-complete-and-definitive-method/",
     note: "Giorilli's hydration: 45%, up to 50% only for semolina or less-refined flours",
+  },
+  {
+    title: "Grain Craft — Neapolitan product sheet",
+    url: "https://www.graincraft.com/wp-content/uploads/2020/04/NeapolitanProductSheet.pdf",
+    note: "12.2–12.8% protein, 0.55% ash at 13.5% moisture, unbleached",
+  },
+  {
+    title: "AVPN — International Regulations, 2024",
+    url: "https://www.pizzanapoletana.org/public/pdf/Disciplinare-2024-ENG.pdf",
+    note: "per liter of water: 40–60 g salt, 1.6–1.8 kg flour",
+  },
+  {
+    title: "AVPN — Flours from 00 to whole wheat",
+    url: "https://www.pizzanapoletana.org/en/358-flours_from_00_to_whole_wheat",
+    note: "ash limits: type 00 up to 0.50%, type 0 up to 0.65%",
   },
 ];
 

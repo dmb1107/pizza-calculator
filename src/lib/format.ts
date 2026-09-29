@@ -38,16 +38,6 @@ export function formatGramsWhole(grams: number): string {
   return String(Math.round(grams));
 }
 
-/** §4.9. Opening diameter, 1 decimal, rounded once from the unrounded value. */
-export function formatInches(inches: number): string {
-  return roundTo(inches, 1).toFixed(1);
-}
-
-/** A whole number, e.g. §4.9's percentage — the prose supplies the `%`. */
-export function formatWhole(value: number): string {
-  return roundTo(value, 0).toFixed(0);
-}
-
 /**
  * §4.10 `{probeGapPhrase}`: "1.6 °F below DDT" / "0.3 °F above DDT" /
  * "right at DDT".

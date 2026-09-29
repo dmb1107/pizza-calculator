@@ -28,8 +28,13 @@ export function buildRecipeText(result: CalculatorResult): string {
 
   lines.push('BIGA');
   lines.push(row('Flour', `${formatGrams(formula.bigaFlour)} g`));
-  lines.push(row('Water', `${formatGrams(formula.bigaWater)} g (room temperature)`));
+  lines.push(row('Water', `${formatGrams(formula.bigaWater)} g`));
   lines.push(row('ADY', `${formatAdy(formula.bigaADY)} g`));
+  // §8.2 biga-1 (MESSAGE-51): the yeast rehydrates in warm water taken from
+  // the biga water, and the rest stays at room temperature. Figures as biga-1
+  // prints them; the §8 gate doesn't read this file.
+  lines.push(row('', 'in about 10× its weight of the water at 100–110 °F for 10 minutes;'));
+  lines.push(row('', 'the rest of the water at room temperature'));
   if (capacity.nBiga > 1) {
     lines.push(row('Split', `${capacity.nBiga} batches of ~${formatGrams(capacity.bigaMassPerBatch)} g`));
   }

@@ -9,7 +9,6 @@
 import { STEPS, type DetailCondition, type ShownWhen, type Step } from '../content/steps';
 import type { Schedule } from '../state/types';
 import type { CalculatorResult } from './engine';
-import { C } from './constants';
 import { PLANNING_RANGE_H } from './timeline';
 
 /**
@@ -37,32 +36,18 @@ const SHOWN_WHEN: Record<ShownWhen, Schedule> = {
 export interface DetailConditionContext {
   nMix: number;
   nBiga: number;
-  thickerThanDefault: boolean;
 }
 
 const DETAIL_CONDITIONS: Record<DetailCondition, (ctx: DetailConditionContext) => boolean> = {
   'nMix > 1': (ctx) => ctx.nMix > 1,
   'nBiga > 1': (ctx) => ctx.nBiga > 1,
-  thickerThanDefault: (ctx) => ctx.thickerThanDefault,
 };
 
-/**
- * The context the conditions read, built from the result and the PRINTED tokens.
- *
- * §4.9: "a condition that triggers prose must be decided on the values the
- * prose will print." So `thickerThanDefault` reads the very string `bulk-2`
- * prints — the block shows exactly when that number reaches
- * `THICKER_NOTE_MIN_PERCENT`, and a condition and its sentence cannot disagree
- * about rounding.
- */
-export function detailConditionContext(
-  result: CalculatorResult,
-  tokens: Readonly<Record<string, string>>,
-): DetailConditionContext {
+/** The context the conditions read, built from the result. */
+export function detailConditionContext(result: CalculatorResult): DetailConditionContext {
   return {
     nMix: result.capacity.nMix,
     nBiga: result.capacity.nBiga,
-    thickerThanDefault: Number(tokens.thicknessPercentOver) >= C.THICKER_NOTE_MIN_PERCENT,
   };
 }
 
