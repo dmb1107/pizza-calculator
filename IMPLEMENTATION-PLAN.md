@@ -5,11 +5,13 @@ Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
 **Status:** Tasks 0–11 complete, on the bowl-aware thermal model with **per-mix
-weights**, the ice calculation removed, and **MESSAGE-51 applied**: sources
-that use oil or sugar dropped, the biga's yeast rehydrated warm, and the
-opening size removed. The bake log, synced through a private GitHub
-repository, sets the FF in use. FINDINGS-52 is the last thing sent; MESSAGE-52
-and 53 are announced and not yet received.
+weights**, the ice calculation removed, and **MESSAGE-52 applied**: the
+cooldown term at 35 min, bake 1's normalized FF in use at every size until a
+counted bake, and a probe target with no FF term. MESSAGE-51 before it dropped
+sources that use oil or sugar, rehydrated the biga's yeast warm and removed the
+opening size. The bake log, synced through a private GitHub repository, sets
+the FF in use. FINDINGS-53 is the last thing sent; MESSAGE-53 (timeline and
+split batches) follows it.
 
 ---
 
@@ -691,8 +693,8 @@ has the rules (§4.3 normalization, §4.8 split-batch `T_actual`, §6 Panel 3,
       Every mix stays in the log with its reasons.
 - [x] **The FF in use** (§6): the mean of the last three counted bakes at the
       size, a split batch counting once; else interpolated between counted
-      sizes, or the nearest held flat; else bake 1's seed at 6 and 14.0
-      elsewhere. Keys compared as the `(balls, nMix)` pair. The badge table
+      sizes, or the nearest held flat; else bake 1's normalized FF at every
+      size (MESSAGE-52; it was the seed at 6 and 14.0 elsewhere). Keys compared as the `(balls, nMix)` pair. The badge table
       is read from the spec by a test.
 - [x] **No typed FF.** Panel 3 shows the value and its badge; a stored map
       from before is ignored.

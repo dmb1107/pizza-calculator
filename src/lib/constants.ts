@@ -86,13 +86,9 @@ const BASE = {
 
   // Defaults
   DEFAULT_BALL_G: 265,
-  /**
-   * °F, bake 1 (6 balls; its Phase C ran 6.5 min). The rise the mixer
-   * produces in the DOUGH ALONE — see §4.3. Read only while the log has no
-   * counted bake (§6, Panel 3): the fallback at every mix size but 6, where
-   * bake 1's seed applies (`BAKE_1_SEED` in bakeLog.ts).
-   */
-  DEFAULT_FF: 14.0,
+  // No DEFAULT_FF since MESSAGE-52: before the log has a counted bake, the FF
+  // in use at every mix size is bake 1's normalized FF, solved from its
+  // readings (`BAKE_1_SEED` in bakeLog.ts).
 
   /**
    * §6, Panel 3. The FF in use at a mix size is the mean of its last three
@@ -170,7 +166,14 @@ const BASE = {
 
   // Shaped rise time — §4.8
   BASE_ROOM_MIN: 90, // at DDT
-  COOLDOWN_EQUIV_MIN: 150, // cooldown's equivalent fermentation at DDT (a modelling estimate)
+  /**
+   * Minutes at DDT: the extra fermentation a ball gets on its way down to
+   * fridge temperature, beyond what the fridge itself gives. ESTIMATED, not
+   * measured (MESSAGE-52): `Q_DOUBLING_F` applied to a 265 g ball cooling
+   * 75 → 40 °F in 3–4 h gives 29–39. It depends on how fast the fridge cools
+   * the balls, so a new fridge or a move means measuring it again.
+   */
+  COOLDOWN_EQUIV_MIN: 35,
   Q_DOUBLING_F: 17,
   ROOM_MIN_CLAMP: [45, 180],
 } as const;
@@ -211,10 +214,12 @@ const FRESH_FLOUR_FRACTION = 1 - BASE.BIGA_FRACTION;
 const FRESH_WATER_FRACTION = BASE.HYDRATION - BASE.BIGA_FRACTION * BASE.BIGA_HYDRATION;
 
 /**
- * §5. How far below its vector value a rendered water target sits, in °F,
- * wherever FF falls back to 14.0. At 6 balls per mix the app reads the seeded
- * 14.03, which adds `(14.03 − 14) × Ct/Cw` on top (engine.test.ts, 'adds the
- * seeded friction factor').
+ * §5. The flour part of the gap between a rendered water target and its
+ * vector value, in °F: the app's flour at room (70) against the vectors' 69.
+ * The FF in use supplies the rest. Before the log has a counted bake that is
+ * bake 1's normalized 10.791045 against the vectors' 14, which adds
+ * `(14 − FF) × Ct/Cw` = 9.634 the other way: the app sits 9.242 °F above the
+ * vectors (engine.test.ts, 'adds the FF in use at every mix size').
  *
  * The vectors pin flour at 69 °F so the flour term stays independently
  * observable; the app defaults flour to room (70 °F), which is what a bag of

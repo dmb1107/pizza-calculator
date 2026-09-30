@@ -15,6 +15,7 @@
 
 import { C, bowlHeatCapacity, defaultDdtF } from './constants';
 import { formatTempF } from './format';
+import { FRICTION_AFTER_PROBE_F } from './mixPhases';
 
 // ---------------------------------------------------------------------------
 // §4.1 Formula
@@ -434,14 +435,16 @@ export function ballsPerMix(b: BatchInputs): number {
  * §4.6. The temperature to expect partway through the mix, before Phases C and
  * D add their friction.
  *
- * Two corrections from bake 1: the friction still to come is diluted by the
- * bowl's thermal mass, and the 10-minute rest sheds heat in proportion to the
- * dough-to-room gap rather than a flat 1 °F.
+ * The friction still to come is Phases C and D at their reference times and
+ * friction rates (MESSAGE-52), diluted by the bowl's thermal mass. The
+ * 10-minute rest sheds heat in proportion to the dough-to-room gap rather than
+ * a flat 1 °F. No FF: it decides where the dough is when probed, which is what
+ * the probe measures, and not what C and D still add.
  *
- * At FF 14 in a 70 °F room: 3 balls 72.2 · 6 balls 71.8 · 9 balls 70.5.
+ * In a 70 °F room: 3 balls 72.3 · 6 balls 71.9 · 9 balls 70.6.
  */
 export interface ProbeParts {
-  /** `0.33 × FF × Ct/TOT` — friction still to come after the probe, as a probe reads it. */
+  /** `FRICTION_AFTER_PROBE_F × Ct/TOT` — friction still to come after the probe, as a probe reads it. */
   frictionRemainingF: number;
   /** `0.2 × (DDT − T_room)`, signed: positive when the rest cools the dough. */
   restSignedF: number;
@@ -453,7 +456,7 @@ export interface ProbeParts {
 }
 
 /**
- * §4.6 decomposed, per §4.10. The ONE place the probe's 0.33 and 0.2 live —
+ * §4.6 decomposed, per §4.10. The ONE place the probe's formula lives —
  * `computeProbeTargetF` is built from this, so the parts the step prints and the
  * target the summary prints cannot come from two copies of the formula.
  *
@@ -463,16 +466,14 @@ export interface ProbeParts {
  */
 export function computeProbeParts({
   ddtF,
-  frictionFactorF,
   roomTempF,
   thermal,
 }: {
   ddtF: number;
-  frictionFactorF: number;
   roomTempF: number;
   thermal: Thermal;
 }): ProbeParts {
-  const frictionRemainingF = 0.33 * frictionFactorF * (thermal.cTotal / thermal.cSystem);
+  const frictionRemainingF = FRICTION_AFTER_PROBE_F * (thermal.cTotal / thermal.cSystem);
   const restSignedF = 0.2 * (ddtF - roomTempF);
   const gapF = frictionRemainingF - restSignedF;
   return {
@@ -869,7 +870,6 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
   const uncentred = staggerUncentredMin(roomMinutes, capacity.nMix);
   const probe = computeProbeParts({
     ddtF,
-    frictionFactorF: inputs.frictionFactorF,
     roomTempF: inputs.roomTempF,
     thermal,
   });

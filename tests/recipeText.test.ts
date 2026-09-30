@@ -64,7 +64,7 @@ describe('recipe text', () => {
   it('marks the room time as planned until a dough temperature is measured', () => {
     expect(text()).toContain('planned at DDT 75.0 °F');
     const measured = text({ finalDoughTempF: 72 });
-    expect(measured).toContain('121 min');
+    expect(measured).toContain('106 min');
     expect(measured).toContain('final dough 72.0 °F against DDT 75.0 °F');
   });
 

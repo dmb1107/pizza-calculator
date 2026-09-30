@@ -36,11 +36,11 @@ Once this has run cleanly three or four times, moving to 80% or 100% biga is a s
     title: "Why 70% hydration, 2.8% salt, no malt",
     body: `**70% hydration** gives an open crumb and a puffy cornicione in a 60–90 second bake without exceeding what a 12.5%-protein flour can hold through a long ferment. A biga dough handles drier than the number suggests, because the biga's gluten is built before the water goes in.
 
-**50% biga hydration.** The documented band is 44–50%. Giorilli codified 45% and allows up to 50% for less-refined flours. Grain Craft's spec sheet gives 0.55% ash at 13.5% moisture, about 0.64% on a dry basis. Italy grades flour on dry matter, and AVPN lists type 00 up to 0.50% ash and type 0 up to 0.65%, so Grain Craft sits at the top of type 0: a less-refined flour in Giorilli's sense. 50% also mixes more evenly by hand.
+**50% biga hydration.** The documented band is 44–50%. Giorilli codified 45% and allows up to 50% for less-refined flours. Grain Craft sells this flour as a 00 type and publishes no milled ash figure, so a 50% biga on it sits slightly outside his formula. 50% mixes more evenly by hand, and a wetter biga ferments faster, which is one more reason to pull it by the cue.
 
 **2.8% salt** sits inside AVPN's range. AVPN specifies 40–60 g of salt per liter of water, with 1.6–1.8 kg of flour: 2.2–3.75% of the flour. This dough carries 70% water, so by AVPN's own measure 2.8% of the flour is 40 g per liter, the bottom of their range.
 
-**No diastatic malt.** At these oven temperatures, added sugars and extra amylase burn. Grain Craft is unmalted, which suits this recipe.`,
+**No diastatic malt.** At these oven temperatures, added sugars and extra amylase burn. Grain Craft is unmalted, which suits this recipe. AVPN's regulation rules out fat and sugar in the dough, and this recipe counts malt as sugar.`,
   },
   {
     id: "schedule-architecture",
@@ -70,9 +70,9 @@ Its *temperature* matters more than it seems, because it has two different coeff
 
 **What matters is the mix, not the batch.** A 12-ball batch runs as two 6-ball mixes, and the bowl holds one at a time, so it's two 6-ball systems rather than one 12-ball system. Treating it as one 12-ball system halves the bowl's share and sets the water target too low, by 1.5 to 6.2 °F across the supported range, most with the coldest biga, when the water is already at its hottest. Your kitchen temperature doesn't change it.
 
-**The same fixed mass is why small mixes need hot water.** At 3 balls the bowl is 18% of the system and only the water can make up for it, so the requirement reaches about 107 °F, against 90 °F for a 9-ball mix. Below 3 balls it goes beyond what a tap can supply, which is why 3 is the smallest supported batch. This follows the **mix**: a 12-ball batch is two 6-ball mixes, so it needs *hotter* water than a 9-ball batch.
+**The same fixed mass is why small mixes need hot water.** At 3 balls the bowl is 18% of the system and only the water can make up for it, so with a cold biga in a cold kitchen the requirement reaches about 116 °F, against 100 °F for a 9-ball mix. Below 3 balls it goes beyond what a tap can supply, which is why 3 is the smallest supported batch. This follows the **mix**: a 12-ball batch is two 6-ball mixes, so it needs *hotter* water than a 9-ball batch.
 
-**Because the biga always ferments in the bowl, the temper is the only way to warm the bowl before the first mix.** An hour on the counter brings bowl and biga up together. Skipping it is the costliest shortcut in the schedule: each °F of biga temperature is worth about 2 °F of water, and at 3 balls a skipped temper pushes the requirement toward 100 °F.
+**Because the biga always ferments in the bowl, the temper is the only way to warm the bowl before the first mix.** An hour on the counter brings bowl and biga up together. Skipping it is the costliest shortcut in the schedule: each °F of biga temperature is worth about 2 °F of water, and at 3 balls a skipped temper pushes the requirement past 110 °F.
 
 With a fridge-retarded biga you'll usually need **warm** water. The biga's thermal mass dominates, so the schedule controls dough temperature more than the water does.`,
   },
@@ -81,7 +81,7 @@ With a fridge-retarded biga you'll usually need **warm** water. The biga's therm
     title: "Measuring your own friction factor",
     body: `**FF = 14.0 °F, measured** on bake 1, 21 August 2026, with 6 balls. The Phase C friction rate agrees: 1.00 °F/min on the dough and bowl together is 1.11 °F/min for the dough alone, against 1.08 predicted.
 
-**That mix ran long.** Its Phase C took 6.5 minutes, 3 more than the middle of the range, and at about a degree a minute that extra time is inside the 14.0, so the figure for the mix as written is lower. The calculator keeps 14.0 until you log a fully measured bake of your own. A figure that's too high leaves the dough cool, which the probe step and the longer rise after balling both correct.
+**That mix ran long.** Its Phase C took 6.5 minutes, 3 more than the middle of the range, and at about a degree a minute that extra time is inside the 14.0. Taken out, bake 1 comes to **10.8**, and that's the figure the calculator uses at every batch size until you log a fully measured bake of your own. Bake 1's other phases also ran over, by an amount it didn't record, so 10.8 may still be a little high. A figure that's too high leaves the dough cool, which the probe step and the longer rise after balling both correct.
 
 **FF is the temperature rise the mixer produces in the dough alone.** That's why the work term is \`FF × Ct\` and not \`FF × (Ct + C_bowl)\`.
 

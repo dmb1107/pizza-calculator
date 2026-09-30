@@ -237,11 +237,12 @@ describe('§7.5 a step\'s timer agrees with the stage it times', () => {
     expect(mismatches('retarded', 12)).toEqual([]);
     expect(mismatches('classic', 18)).toEqual([]);
     expect(mismatches('retarded', 24)).toEqual([]);
-    // 24 balls at a measured 76 °F (DDT 74): 71.2 min unshortened, 36.2 after
+    // 24 balls at a measured 77 °F (DDT 74): 75.6 min unshortened, 40.6 after
     // the correction, held at the 45-minute floor. Asserted to BE at the floor,
-    // so this case can't quietly stop exercising it.
-    const floor = calculate({ balls: 24, ballWeightG: 265, roomTempF: 70, flourTempF: 70, bigaTempF: 58, frictionFactorF: 14, finalDoughTempF: 76 });
+    // so this case can't quietly stop exercising it. (76 °F was the case until
+    // MESSAGE-52's cooldown term put it at 45.2, just above the floor.)
+    const floor = calculate({ balls: 24, ballWeightG: 265, roomTempF: 70, flourTempF: 70, bigaTempF: 58, frictionFactorF: 14, finalDoughTempF: 77 });
     expect(floor.ballRoomMinutes).toBe(45);
-    expect(mismatches('retarded', 24, DEFAULTS.bigaRoomOnlyH, 76)).toEqual([]);
+    expect(mismatches('retarded', 24, DEFAULTS.bigaRoomOnlyH, 77)).toEqual([]);
   });
 });

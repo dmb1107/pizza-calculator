@@ -46,13 +46,13 @@ export interface BatchVector {
 }
 
 export const BATCH_VECTORS: readonly BatchVector[] = [
-  { balls: 3,  ballG: 265, F: 470.2,  bigaFlour: 305.6,  bigaWater: 152.8, bigaADY: 1.15, freshFlour: 164.6, freshWater: 176.3,  phaseA: 105.8, phaseB: 70.5,  salt: 13.2, Ct: 529.4,  ddtF: 75, waterTempF: 73.7, probeTargetF: 72.2, nBiga: 1, nMix: 1 },
-  { balls: 6,  ballG: 265, F: 940.4,  bigaFlour: 611.2,  bigaWater: 305.6, bigaADY: 2.29, freshFlour: 329.1, freshWater: 352.6,  phaseA: 211.6, phaseB: 141.1, salt: 26.3, Ct: 1058.8, ddtF: 75, waterTempF: 68.1, probeTargetF: 71.8, nBiga: 1, nMix: 1 },
-  { balls: 9,  ballG: 265, F: 1410.6, bigaFlour: 916.9,  bigaWater: 458.4, bigaADY: 3.44, freshFlour: 493.7, freshWater: 529.0,  phaseA: 317.4, phaseB: 211.6, salt: 39.5, Ct: 1588.1, ddtF: 74, waterTempF: 63.0, probeTargetF: 70.5, nBiga: 1, nMix: 1 },
-  { balls: 12, ballG: 265, F: 1880.8, bigaFlour: 1222.5, bigaWater: 611.2, bigaADY: 4.58, freshFlour: 658.3, freshWater: 705.3,  phaseA: 423.2, phaseB: 282.1, salt: 52.7, Ct: 1058.8, ddtF: 74, waterTempF: 64.8, probeTargetF: 70.6, nBiga: 1, nMix: 2 },
-  { balls: 18, ballG: 265, F: 2821.1, bigaFlour: 1833.7, bigaWater: 916.9, bigaADY: 6.88, freshFlour: 987.4, freshWater: 1057.9, phaseA: 634.8, phaseB: 423.2, salt: 79.0, Ct: 1588.1, ddtF: 74, waterTempF: 63.0, probeTargetF: 70.5, nBiga: 2, nMix: 2 },
-  { balls: 5,  ballG: 270, F: 798.4,  bigaFlour: 519.0,  bigaWater: 259.5, bigaADY: 1.95, freshFlour: 279.5, freshWater: 299.4,  phaseA: 179.6, phaseB: 119.8, salt: 22.4, Ct: 898.9,  ddtF: 75, waterTempF: 69.1, probeTargetF: 71.9, nBiga: 1, nMix: 1 },
-  { balls: 7,  ballG: 260, F: 1076.4, bigaFlour: 699.7,  bigaWater: 349.8, bigaADY: 2.62, freshFlour: 376.7, freshWater: 403.7,  phaseA: 242.2, phaseB: 161.5, salt: 30.1, Ct: 1211.9, ddtF: 74, waterTempF: 64.1, probeTargetF: 70.6, nBiga: 1, nMix: 1 },
+  { balls: 3,  ballG: 265, F: 470.2,  bigaFlour: 305.6,  bigaWater: 152.8, bigaADY: 1.15, freshFlour: 164.6, freshWater: 176.3,  phaseA: 105.8, phaseB: 70.5,  salt: 13.2, Ct: 529.4,  ddtF: 75, waterTempF: 73.7, probeTargetF: 72.3, nBiga: 1, nMix: 1 },
+  { balls: 6,  ballG: 265, F: 940.4,  bigaFlour: 611.2,  bigaWater: 305.6, bigaADY: 2.29, freshFlour: 329.1, freshWater: 352.6,  phaseA: 211.6, phaseB: 141.1, salt: 26.3, Ct: 1058.8, ddtF: 75, waterTempF: 68.1, probeTargetF: 71.9, nBiga: 1, nMix: 1 },
+  { balls: 9,  ballG: 265, F: 1410.6, bigaFlour: 916.9,  bigaWater: 458.4, bigaADY: 3.44, freshFlour: 493.7, freshWater: 529.0,  phaseA: 317.4, phaseB: 211.6, salt: 39.5, Ct: 1588.1, ddtF: 74, waterTempF: 63.0, probeTargetF: 70.6, nBiga: 1, nMix: 1 },
+  { balls: 12, ballG: 265, F: 1880.8, bigaFlour: 1222.5, bigaWater: 611.2, bigaADY: 4.58, freshFlour: 658.3, freshWater: 705.3,  phaseA: 423.2, phaseB: 282.1, salt: 52.7, Ct: 1058.8, ddtF: 74, waterTempF: 64.8, probeTargetF: 70.7, nBiga: 1, nMix: 2 },
+  { balls: 18, ballG: 265, F: 2821.1, bigaFlour: 1833.7, bigaWater: 916.9, bigaADY: 6.88, freshFlour: 987.4, freshWater: 1057.9, phaseA: 634.8, phaseB: 423.2, salt: 79.0, Ct: 1588.1, ddtF: 74, waterTempF: 63.0, probeTargetF: 70.6, nBiga: 2, nMix: 2 },
+  { balls: 5,  ballG: 270, F: 798.4,  bigaFlour: 519.0,  bigaWater: 259.5, bigaADY: 1.95, freshFlour: 279.5, freshWater: 299.4,  phaseA: 179.6, phaseB: 119.8, salt: 22.4, Ct: 898.9,  ddtF: 75, waterTempF: 69.1, probeTargetF: 72.0, nBiga: 1, nMix: 1 },
+  { balls: 7,  ballG: 260, F: 1076.4, bigaFlour: 699.7,  bigaWater: 349.8, bigaADY: 2.62, freshFlour: 376.7, freshWater: 403.7,  phaseA: 242.2, phaseB: 161.5, salt: 30.1, Ct: 1211.9, ddtF: 74, waterTempF: 64.1, probeTargetF: 70.7, nBiga: 1, nMix: 1 },
 ];
 
 /**
@@ -167,45 +167,46 @@ export const BOWL_MODE_VECTORS: readonly {
 
 /**
  * §4.6. The probe gap is mix-size dependent; there is no flat `DDT − 4`.
+ * Room 70 °F. Independent of FF since MESSAGE-52: the friction still to come
+ * is Phases C and D at their reference times and rates.
  *
- * Settled by MESSAGE-5 §3: §4.6 now agrees with §5 at 70.6 / 70.5. 12 and 6
- * differ despite sharing a mix size because mix size sets the friction term
- * while TOTAL balls sets DDT (74 vs 75), and the gap also carries
- * `0.2 × (DDT − T_room)`.
+ * 12 and 6 differ despite sharing a mix size because mix size sets the
+ * friction term while TOTAL balls sets DDT (74 vs 75), and the gap also
+ * carries `0.2 × (DDT − T_room)`.
  */
 export const PROBE_GAP_VECTORS: readonly { balls: number; belowDdt: number }[] = [
-  { balls: 3, belowDdt: 2.79 },
-  { balls: 6, belowDdt: 3.16 },
-  { balls: 9, belowDdt: 3.51 },
-  { balls: 12, belowDdt: 3.36 },
-  { balls: 18, belowDdt: 3.51 },
+  { balls: 3, belowDdt: 2.719 },
+  { balls: 6, belowDdt: 3.086 },
+  { balls: 9, belowDdt: 3.424 },
+  { balls: 12, belowDdt: 3.286 },
+  { balls: 18, belowDdt: 3.424 },
 ];
 
-/** §4.8 shaped rise time, at DDT 75. */
 /**
  * §4.8 / §5 shaped rise. **`roomMin` depends only on `T_actual − DDT`**, so
  * every row carries its DDT. This vector used to be keyed on dough temperature
  * alone with DDT 75 assumed by the test — the shape that put every table one
  * row off at 7+ balls, where DDT is 74 (MESSAGE-21). §5's two DDT 74 rows are
- * marked; the rest is §4.8's offset table at both DDTs.
+ * marked; the rest is §4.8's offset table at both DDTs. `COOLDOWN_EQUIV_MIN`
+ * 35 since MESSAGE-52 (150 before).
  */
 export const ROOM_MINUTES: readonly { ddtF: number; finalTempF: number; roomMin: number }[] = [
-  { ddtF: 75, finalTempF: 77, roomMin: 71 },
-  { ddtF: 75, finalTempF: 76, roomMin: 80 },
+  { ddtF: 75, finalTempF: 77, roomMin: 80 },
+  { ddtF: 75, finalTempF: 76, roomMin: 85 },
   { ddtF: 75, finalTempF: 75, roomMin: 90 },
-  { ddtF: 75, finalTempF: 74, roomMin: 100 },
-  { ddtF: 75, finalTempF: 73, roomMin: 110 },
-  { ddtF: 75, finalTempF: 72, roomMin: 121 },
-  { ddtF: 75, finalTempF: 71, roomMin: 133 },
-  { ddtF: 75, finalTempF: 70, roomMin: 144 },
-  { ddtF: 74, finalTempF: 76, roomMin: 71 },
-  { ddtF: 74, finalTempF: 75, roomMin: 80 },
+  { ddtF: 75, finalTempF: 74, roomMin: 95 },
+  { ddtF: 75, finalTempF: 73, roomMin: 101 },
+  { ddtF: 75, finalTempF: 72, roomMin: 106 },
+  { ddtF: 75, finalTempF: 71, roomMin: 112 },
+  { ddtF: 75, finalTempF: 70, roomMin: 118 },
+  { ddtF: 74, finalTempF: 76, roomMin: 80 },
+  { ddtF: 74, finalTempF: 75, roomMin: 85 },
   { ddtF: 74, finalTempF: 74, roomMin: 90 }, // §5
-  { ddtF: 74, finalTempF: 73, roomMin: 100 },
-  { ddtF: 74, finalTempF: 72, roomMin: 110 }, // §5
-  { ddtF: 74, finalTempF: 71, roomMin: 121 },
-  { ddtF: 74, finalTempF: 70, roomMin: 133 },
-  { ddtF: 74, finalTempF: 69, roomMin: 144 },
+  { ddtF: 74, finalTempF: 73, roomMin: 95 },
+  { ddtF: 74, finalTempF: 72, roomMin: 101 }, // §5
+  { ddtF: 74, finalTempF: 71, roomMin: 106 },
+  { ddtF: 74, finalTempF: 70, roomMin: 112 },
+  { ddtF: 74, finalTempF: 69, roomMin: 118 },
 ];
 
 /**

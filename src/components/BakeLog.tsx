@@ -345,8 +345,8 @@ function SizesSection({ state }: { state: AppState }) {
       </p>
       {histories.length === 0 ? (
         <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
-          No counted bakes yet. Until the first, the calculator uses bake 1’s figure at its mix size and the estimate
-          everywhere else.
+          No counted bakes yet. Until the first, the calculator uses bake 1’s figure at every mix size, corrected for
+          its long Phase C.
         </p>
       ) : (
         <ul className="mt-2 grid gap-2">

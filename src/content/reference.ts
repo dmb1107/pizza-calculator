@@ -56,7 +56,7 @@ A 12-ball batch runs as two 6-ball mixes and reads the 6 column; 18 balls reads 
   {
     id: "water-temperature",
     title: "Water temperature",
-    body: `Blend fridge-cold water with tap water to reach the target, measuring as you pour. Fridge water gets to about 38 °F; the tap covers the warmer end. Across the supported range (3–24 balls, 240–300 g, biga 45–60 °F, room 60–84 °F) the required water spans **53–109 °F**, and **53–107 °F** at the default 265 g ball. It's hottest for *small mixes*, not small batches. You won't need ice, and the app doesn't calculate a blend ratio.`,
+    body: `Blend fridge-cold water with tap water to reach the target, measuring as you pour. Fridge water gets to about 38 °F; the tap covers the warmer end. Across the supported range (3–24 balls, 240–300 g, biga 45–60 °F, room 60–84 °F) the required water spans about **60–118 °F**, and **60–116 °F** at the default 265 g ball. The top of that range needs a 45 °F biga in a 60 °F kitchen, which the biga's 1-hour temper prevents. It's hottest for *small mixes*, not small batches. You won't need ice, and the app doesn't calculate a blend ratio.`,
   },
 ];
 
@@ -116,17 +116,12 @@ export const SOURCES: readonly Source[] = [
   {
     title: "Grain Craft — Neapolitan product sheet",
     url: "https://www.graincraft.com/wp-content/uploads/2020/04/NeapolitanProductSheet.pdf",
-    note: "12.2–12.8% protein, 0.55% ash at 13.5% moisture, unbleached",
+    note: "12.2–12.8% protein, unbleached, sold as a 00 type. Its nutrition panel's ash figure is a USDA database value for enriched flour, not a milled specification",
   },
   {
     title: "AVPN — International Regulations, 2024",
     url: "https://www.pizzanapoletana.org/public/pdf/Disciplinare-2024-ENG.pdf",
-    note: "per liter of water: 40–60 g salt, 1.6–1.8 kg flour",
-  },
-  {
-    title: "AVPN — Flours from 00 to whole wheat",
-    url: "https://www.pizzanapoletana.org/en/358-flours_from_00_to_whole_wheat",
-    note: "ash limits: type 00 up to 0.50%, type 0 up to 0.65%",
+    note: "per liter of water: 40–60 g salt, 1.6–1.8 kg flour; no fat or sugar in the dough (§2.1.2)",
   },
 ];
 

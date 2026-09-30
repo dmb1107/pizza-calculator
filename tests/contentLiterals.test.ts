@@ -6,6 +6,7 @@ import { CAPACITY } from '../src/content/capacity';
 import { NEAR_LIMIT_FRACTION } from '../src/lib/capacity';
 import { C, bowlHeatCapacity, defaultDdtF, rpmForDial } from '../src/lib/constants';
 import {
+  calculate,
   computeCapacity,
   computeFormula,
   computeProbeTargetF,
@@ -23,6 +24,7 @@ import { join } from 'node:path';
 import { parseAst } from 'vite';
 import { formatPercent } from '../src/lib/format';
 import { BAKE_1_SEED, ffInUse } from '../src/lib/bakeLog';
+import { FRICTION_AFTER_PROBE_F, PHASES_AFTER_PROBE, frictionRateOf } from '../src/lib/mixPhases';
 
 /**
  * §8.1: *no literal in §8 content may restate an engine output unchecked.*
@@ -140,9 +142,13 @@ const ctOverTot = (balls: number) => {
   return t.cTotal / t.cSystem;
 };
 
-/** Probe target at FF 14 and the batch's default DDT. */
+/** Probe target at the batch's default DDT. No FF term since MESSAGE-52. */
 const probeAt = (balls: number, roomTempF: number) =>
-  computeProbeTargetF({ ddtF: defaultDdtF(balls), frictionFactorF: 14, roomTempF, thermal: thermalAt(balls) });
+  computeProbeTargetF({ ddtF: defaultDdtF(balls), roomTempF, thermal: thermalAt(balls) });
+
+/** The FF in use at a batch before the log has a counted bake (§6, Panel 3). */
+const ffBeforeLog = (balls: number, ballWeightG: number = C.DEFAULT_BALL_G) =>
+  ffInUse([], { balls, nMix: computeCapacity(computeFormula({ balls, ballWeightG })).nMix }).ff;
 
 /** `d(T_water)/d(T_biga)`, measured off `computeWaterTempF`, bowl held or tracking. */
 function bigaSensitivity(balls: number, bowl: 'held' | 'tracking'): number {
@@ -239,17 +245,14 @@ const BIGA_ROOM_H = stageDurations('retarded', {
 /**
  * Published figures MESSAGE-51 cites, as §11's notes state them. Claimed at
  * `about` against those notes, so each figure the prose derives from them is
- * checked against the source line as well as against the arithmetic.
+ * checked against the source line as well as against the arithmetic. The ash
+ * figures went in MESSAGE-52.
  */
 const AVPN = {
   /** International Regulations 2024, per liter of water. */
   saltG: [40, 60] as const,
   flourKg: [1.6, 1.8] as const,
-  /** Flours from 00 to whole wheat: ash limits, % dry matter. */
-  ashMax00: 0.5,
-  ashMax0: 0.65,
 };
-const GRAIN_CRAFT = { ashPct: 0.55, moisturePct: 13.5 };
 /** AVPN's salt as a percent of flour: least salt on most flour, to most on least. */
 const avpnSaltPct = [
   (AVPN.saltG[0] / (AVPN.flourKg[1] * 1000)) * 100,
@@ -258,7 +261,6 @@ const avpnSaltPct = [
 const avpnSaltSpan = `${fx(avpnSaltPct[0], 1)}–${fx(avpnSaltPct[1], 2)}%`;
 const avpnPerLiter = `${AVPN.saltG[0]}–${AVPN.saltG[1]} g`;
 const avpnFlourKg = `${AVPN.flourKg[0]}–${AVPN.flourKg[1]}`;
-const grainCraftDryAshPct = GRAIN_CRAFT.ashPct / (1 - GRAIN_CRAFT.moisturePct / 100);
 
 /**
  * biga-4b's "about 11 hours' worth at 63 °F" (MESSAGE-51). The engine doesn't
@@ -272,7 +274,8 @@ const grainCraftDryAshPct = GRAIN_CRAFT.ashPct / (1 - GRAIN_CRAFT.moisturePct / 
  *
  * Reproduced at 19 h in the fridge: 11.07 h (cooled in 3 h) to 11.56 h (in 5
  * h); across the whole 18–20 h window, 10.69–11.94. The claim is taken at the
- * middle of both, 11.32, which prints 11. MESSAGE-51 quotes 11.1–11.6.
+ * middle of both, 11.32, which prints 11. MESSAGE-51 quotes 11.1–11.6. The
+ * sentence names the temper since MESSAGE-52, as this count always did.
  */
 const BIGA_REFERENCE_F = (61 + 65) / 2;
 const bigaEquivalentH = (coolH: number, fridgeH: number) => {
@@ -360,35 +363,49 @@ const CLAIMS: readonly Claim[] = [
   { at: 'mix-4.detail', restates: 'the same slope, warm side', text: `above 70 moves it ${fx(probeAt(6, 70) - probeAt(6, 71), 1)} °F down.`, covers: ['70', '0.2 °F'] },
   {
     at: 'mix-4.detail',
-    // The FF has no input bound since it comes from the log (§6). The sweep
-    // keeps the 0–40 the typed field allowed, well past any FF a real mix
-    // solves to, so the claim holds at every FF the log could produce.
-    restates: 'a 62–78 °F kitchen moves the target > 3 °F; 3→9 balls moves it a fraction of that at every FF from 0 to 40',
+    // The target has no FF term since MESSAGE-52, so one batch shift holds at
+    // every FF the log could produce.
+    restates: 'a 62–78 °F kitchen moves the target > 3 °F; 3→9 balls moves it a fraction of that',
     holds: () => {
       const roomShift = probeAt(6, 62) - probeAt(6, 78);
-      const batchShift = (ff: number) => {
-        const target = (b: number) =>
-          computeProbeTargetF({ ddtF: defaultDdtF(b), frictionFactorF: ff, roomTempF: 70, thermal: thermalAt(b) });
-        return Math.abs(target(3) - target(9));
-      };
-      const ffs = Array.from({ length: 41 }, (_, i) => i);
-      return roomShift > 3 && ffs.every((ff) => batchShift(ff) < roomShift);
+      const batchShift = Math.abs(probeAt(3, 70) - probeAt(9, 70));
+      return roomShift > 3 && batchShift < roomShift;
     },
     text: 'A 62 °F kitchen against a 78 °F one shifts the target by more than three degrees; going from 3 balls to 9 shifts it by a fraction of that',
     covers: ['3 balls', '9', '62 °F', '78 °F'],
   },
   {
     at: 'mix-4.detail',
-    restates: "computeProbeTargetF's coefficients, read off its behaviour",
+    restates: "computeProbeTargetF's terms, read off its behaviour, and no FF in the calculated target",
     holds: () => {
       const t = thermalAt(6);
-      const at = (ff: number, room: number) =>
-        computeProbeTargetF({ ddtF: 75, frictionFactorF: ff, roomTempF: room, thermal: t });
-      const ffCoeff = (at(14, 70) - at(15, 70)) / (t.cTotal / t.cSystem);
-      return Math.abs(ffCoeff - 0.33) < 1e-9 && Math.abs(at(14, 69) - at(14, 70) - 0.2) < 1e-9;
+      const at = (room: number) => computeProbeTargetF({ ddtF: 75, roomTempF: room, thermal: t });
+      const remaining = (75 - at(75)) / (t.cTotal / t.cSystem);
+      const target = (ff: number) => calculate({ ...DEFAULT_INPUTS, frictionFactorF: ff, flourTempF: 70 } as never).probeTargetF;
+      return (
+        Math.abs(remaining - FRICTION_AFTER_PROBE_F) < 1e-9 &&
+        Math.abs(at(69) - at(70) - 0.2) < 1e-9 &&
+        target(8) === target(18)
+      );
     },
-    text: 'DDT − 0.33 × FF × Ct/(Ct + C_bowl) + 0.2 × (DDT − T_room)',
-    covers: ['0.33 ×', '0.2 ×'],
+    text: 'DDT − (Phase C + Phase D friction) × Ct/(Ct + C_bowl) + 0.2 × (DDT − T_room)',
+    covers: ['0.2 ×'],
+  },
+  {
+    at: 'mix-4.detail',
+    restates: 'PHASES_AFTER_PROBE: each reference time at its FRICTION_RATE, and FRICTION_AFTER_PROBE_F',
+    text: (() => {
+      const [c, d] = PHASES_AFTER_PROBE;
+      const seconds = d!.referenceMin * 60;
+      if (seconds % 0.5 !== 0) throw new Error(`Phase D's reference is ${seconds} s`);
+      const dWords = `${Math.floor(seconds)}${seconds % 1 ? '½' : ''} seconds`;
+      return (
+        `${c!.referenceMin} minutes at ${fx(frictionRateOf(c!.dial), 2)} °F a minute plus ${dWords} at ` +
+        `${fx(frictionRateOf(d!.dial), 2)}, about ${fx(FRICTION_AFTER_PROBE_F, 1)} °F in the dough alone`
+      );
+    })(),
+    // "52½" extracts as "52": the pattern stops at the fraction.
+    covers: ['3.5 minutes', '1.08 °F', '52', '0.86', '4.5 °F'],
   },
   {
     at: 'mix-4.troubleshoot',
@@ -532,18 +549,6 @@ const CLAIMS: readonly Claim[] = [
     text: `per liter of water: ${avpnPerLiter} salt, ${avpnFlourKg} kg flour`,
     covers: ['40–60 g', '1.6–1.8'],
   },
-  {
-    at: 'about',
-    restates: 'AVPN, ash limits by grade',
-    text: `type 00 up to ${fx(AVPN.ashMax00, 2)}%, type 0 up to ${fx(AVPN.ashMax0, 2)}%`,
-    covers: ['0.50%', '0.65%'],
-  },
-  {
-    at: 'about',
-    restates: 'Grain Craft\'s product sheet',
-    text: `${GRAIN_CRAFT.ashPct}% ash at ${GRAIN_CRAFT.moisturePct}% moisture`,
-    covers: ['0.55%', '13.5%'],
-  },
 
   // --- §11's Halo Core sources (MESSAGE-34). §3 now cites these pages for the
   // constants, so the note and the constant are checked against each other: a
@@ -621,7 +626,7 @@ const CLAIMS: readonly Claim[] = [
   { at: 'biga-4b.summary', restates: 'PLANNING_RANGE_H.bigaFridge', text: `for **${span('bigaFridge')} hours**`, covers: ['18–20 hours'] },
   { at: 'biga-4b.timerLabel', restates: 'PLANNING_RANGE_H.bigaFridge', text: `${span('bigaFridge')} h`, covers: ['18–20 h'] },
   { at: 'biga-4b.detail', restates: 'PLANNING_RANGE_H.bigaFridge', text: `Anywhere in the ${span('bigaFridge')} h window`, covers: ['18–20 h'] },
-  { at: 'biga-4b.detail', restates: 'PLANNING_RANGE_H.bigaFridge', text: `warm and ${span('bigaFridge')} h at`, covers: ['18–20 h'] },
+  { at: 'biga-4b.detail', restates: 'PLANNING_RANGE_H.bigaFridge', text: `warm, ${span('bigaFridge')} h at`, covers: ['18–20 h'] },
   {
     at: 'biga-4b.detail',
     restates: 'Q_DOUBLING_F, and the biga\'s equivalent hours at 63 °F (bigaEquivalentH, above)',
@@ -667,19 +672,6 @@ const CLAIMS: readonly Claim[] = [
     text: `This dough carries ${fx(C.HYDRATION * 100, 0)}% water, so by AVPN's own measure ${fx(C.SALT * 100, 1)}% of the flour is ${fx((C.SALT / C.HYDRATION) * 1000, 0)} g per liter, the bottom of their range`,
     holds: () => Math.abs((C.SALT / C.HYDRATION) * 1000 - AVPN.saltG[0]) < 1e-9,
     covers: ['70%', '2.8%', '40 g'],
-  },
-  {
-    at: 'concept:formula-rationale',
-    restates: 'Grain Craft\'s ash on a dry basis, inside AVPN\'s type 0 and above type 00',
-    text: `${GRAIN_CRAFT.ashPct}% ash at ${GRAIN_CRAFT.moisturePct}% moisture, about ${fx(grainCraftDryAshPct, 2)}% on a dry basis`,
-    holds: () => grainCraftDryAshPct > AVPN.ashMax00 && grainCraftDryAshPct <= AVPN.ashMax0,
-    covers: ['0.55%', '13.5%', '0.64%'],
-  },
-  {
-    at: 'concept:formula-rationale',
-    restates: 'AVPN, ash limits by grade',
-    text: `AVPN lists type 00 up to ${fx(AVPN.ashMax00, 2)}% ash and type 0 up to ${fx(AVPN.ashMax0, 2)}%`,
-    covers: ['0.50%', '0.65%'],
   },
   // MESSAGE-51's recommendation is the input's default, and its untested
   // lengths are the input's bounds, which the title states too.
@@ -814,13 +806,21 @@ const CLAIMS: readonly Claim[] = [
   })(),
   {
     at: 'concept:thermal-model',
-    restates: 'maximum required water at 3 and 9 balls — the hot corner, biga 45, room 60',
+    restates: 'maximum required water at 3 and 9 balls — the hot corner, biga 45, room 60, at the FF in use',
     text: (() => {
       const hot = (b: number) =>
-        computeWaterTempF({ ddtF: defaultDdtF(b), frictionFactorF: 14, bigaTempF: 45, flourTempF: 60, roomTempF: 60 }, thermalAt(b));
+        computeWaterTempF({ ddtF: defaultDdtF(b), frictionFactorF: ffBeforeLog(b), bigaTempF: 45, flourTempF: 60, roomTempF: 60 }, thermalAt(b));
       return `the requirement reaches about ${fx(hot(3), 0)} °F, against ${fx(hot(9), 0)} °F for a 9-ball mix`;
     })(),
-    covers: ['107 °F', '9-ball', '90 °F'],
+    covers: ['116 °F', '9-ball', '100 °F'],
+  },
+  {
+    at: 'concept:thermal-model',
+    restates: 'a skipped temper (biga 45) in a 70 °F kitchen, 3 × 265 g, at the FF in use: 112.18',
+    holds: () =>
+      computeWaterTempF({ ddtF: defaultDdtF(3), frictionFactorF: ffBeforeLog(3), bigaTempF: 45, flourTempF: 70, roomTempF: 70 }, thermalAt(3)) > 110,
+    text: 'at 3 balls a skipped temper pushes the requirement past 110 °F',
+    covers: ['110 °F'],
   },
   {
     at: 'concept:thermal-model',
@@ -864,10 +864,17 @@ const CLAIMS: readonly Claim[] = [
   },
   {
     at: 'concept:friction-factor',
-    restates: "BAKE_1_SEED, the FF in use at 6 balls per mix until the log has a counted bake, to one decimal",
-    holds: () => ffInUse([], { balls: BAKE_1_SEED.k, nMix: 1 }).ff === BAKE_1_SEED.value,
-    text: `The calculator keeps ${fx(BAKE_1_SEED.value, 1)} until you log a fully measured bake of your own.`,
-    covers: [fx(BAKE_1_SEED.value, 1)],
+    restates: "BAKE_1.ff, and BAKE_1_SEED: bake 1 normalized, the FF in use at every batch size until the log has a counted bake",
+    holds: () => {
+      for (let balls = BOUNDS.balls.min; balls <= BOUNDS.balls.max; balls++) {
+        for (let w = BOUNDS.ballWeightG.min; w <= BOUNDS.ballWeightG.max; w++) {
+          if (ffBeforeLog(balls, w) !== BAKE_1_SEED.value) return false;
+        }
+      }
+      return true;
+    },
+    text: `inside the ${fx(BAKE_1.ff, 1)}. Taken out, bake 1 comes to **${fx(BAKE_1_SEED.value, 1)}**, and that's the figure the calculator uses at every batch size until you log a fully measured bake of your own.`,
+    covers: [fx(BAKE_1.ff, 1), fx(BAKE_1_SEED.value, 1)],
   },
   {
     at: 'concept:friction-factor',
@@ -989,18 +996,24 @@ const CLAIMS: readonly Claim[] = [
     // The §5 envelope. Balls and ball weight are the input bounds; biga and
     // room are WATER_REACHABILITY's. Water is linear in both temperatures,
     // so their ends bound it.
+    // Every mix, at the FF in use before any counted bake (MESSAGE-52): a
+    // split batch's later mixes start in a bowl prefilled at DDT and ask for
+    // less, so a first-mix sweep misses the cold end.
     const W = WATER_REACHABILITY;
     let lo = Infinity, hi = -Infinity, lo265 = Infinity, hi265 = -Infinity, hiBalls = 0;
+    let hiCorner = { bigaTempF: NaN, roomTempF: NaN };
     for (let balls = BOUNDS.balls.min; balls <= BOUNDS.balls.max; balls++) {
       for (let w: number = BOUNDS.ballWeightG.min; w <= BOUNDS.ballWeightG.max; w++) {
         for (const bigaTempF of [W.bigaF.min, W.bigaF.max]) {
           for (const roomTempF of [W.roomF.min, W.roomF.max]) {
-            const f = computeFormula({ balls, ballWeightG: w });
-            const t = { ddtF: defaultDdtF(balls), frictionFactorF: C.DEFAULT_FF, bigaTempF, flourTempF: roomTempF, roomTempF };
-            const water = computeWaterTempF(t, computeThermal(f, C.BOWL_MASS_G, computeCapacity(f).nMix));
-            lo = Math.min(lo, water);
-            if (water > hi) { hi = water; hiBalls = balls; }
-            if (w === C.DEFAULT_BALL_G) { lo265 = Math.min(lo265, water); hi265 = Math.max(hi265, water); }
+            const r = calculate({
+              balls, ballWeightG: w, bigaTempF, roomTempF, flourTempF: roomTempF, frictionFactorF: ffBeforeLog(balls, w),
+            });
+            for (const { waterTempF: water } of r.mixes) {
+              lo = Math.min(lo, water);
+              if (water > hi) { hi = water; hiBalls = balls; hiCorner = { bigaTempF, roomTempF }; }
+              if (w === C.DEFAULT_BALL_G) { lo265 = Math.min(lo265, water); hi265 = Math.max(hi265, water); }
+            }
           }
         }
       }
@@ -1014,9 +1027,16 @@ const CLAIMS: readonly Claim[] = [
       },
       {
         at: 'reference:water-temperature',
-        restates: 'required water across that envelope and at the default ball (53.2–108.7, 53.3–106.6)',
-        text: `spans **${fx(lo, 0)}–${fx(hi, 0)} °F**, and **${fx(lo265, 0)}–${fx(hi265, 0)} °F** at the default ${C.DEFAULT_BALL_G} g ball`,
-        covers: ['53–109 °F', '53–107 °F', '265 g'],
+        restates: 'required water across that envelope, every mix, at the FF in use, and at the default ball (59.850–118.312, 59.850–116.259)',
+        text: `spans about **${fx(lo, 0)}–${fx(hi, 0)} °F**, and **${fx(lo265, 0)}–${fx(hi265, 0)} °F** at the default ${C.DEFAULT_BALL_G} g ball`,
+        covers: ['60–118 °F', '60–116 °F', '265 g'],
+      },
+      {
+        at: 'reference:water-temperature',
+        restates: 'the corner the sweep finds hottest, and BIGA_TEMPER_H',
+        holds: () => hiCorner.bigaTempF === W.bigaF.min && hiCorner.roomTempF === W.roomF.min,
+        text: `The top of that range needs a ${W.bigaF.min} °F biga in a ${W.roomF.min} °F kitchen, which the biga's ${C.BIGA_TEMPER_H}-hour temper prevents.`,
+        covers: ['45 °F', '60 °F', '1-hour'],
       },
       {
         at: 'reference:water-temperature',
@@ -1121,19 +1141,17 @@ const FIXED: Record<Loc, readonly string[]> = {
 
   // Concepts — published sources, the flour's spec, history, and index words.
   'concept:why-biga': ['100%', '60%', '12.2–12.8%', '80%'],
-  // "00" and "0" are flour grades, as in giorilli-standard; AVPN's and Grain
-  // Craft's figures are claimed above.
-  'concept:formula-rationale': ['60–90 second', '12.5%', '44–50%', '45%', '00', '0'],
+  // "00" is the flour grade, as in giorilli-standard; AVPN's figures are
+  // claimed above.
+  'concept:formula-rationale': ['60–90 second', '12.5%', '44–50%', '45%', '00'],
   // "72" is the multi-day cold ferment the title argues against. PizzaBlab's
   // 12–24 h and biga lunga's 24 h at 39 °F are published; so is Sisofo's 24 h
   // in the fridge, which shares its literal with the claimed default and so
   // is covered by that claim at this location's granularity.
   'concept:schedule-architecture': ['72', '50-hour', '12–24 h', '39 °F'],
-  // "Multiply DDT by 4" is the standard method being rejected. "Toward 100 °F"
-  // is directional: it depends on the unmeasured fridge (open item 3) — the
-  // engine gives 102.6 at a 45 °F biga in a 70 °F room. "Bake 1" is the bake's
-  // number.
-  'concept:thermal-model': ['4', '12-ball', '6-ball', '3 balls', '100 °F', '1'],
+  // "Multiply DDT by 4" is the standard method being rejected. "Bake 1" is the
+  // bake's number. The 100 °F and 110 °F figures are claimed above.
+  'concept:thermal-model': ['4', '12-ball', '6-ball', '3 balls', '1'],
   // Bake 1's date and batch; published spiral friction and flour exotherm;
   // "bakes at 3 and 9 balls", the batch sizes that test the bowl model. Its
   // "3 more than the middle of the range" is computed, and the claim above
@@ -1157,7 +1175,8 @@ const FIXED: Record<Loc, readonly string[]> = {
   // biga-1's; Grain Craft's protein; the year of AVPN's regulations; "00" and
   // "0" are grades. The Halo Core, AVPN and Grain Craft ash figures are
   // claimed above.
-  about: ['1%', '12–24 h', '16–18 °C', '100%', '16–18 h', '44–45%', '16–20 h', '16–20 °C', '18', '45%', '50%', '104 °F', '110 °F', '12.2–12.8%', '2024', '00', '0'],
+  // "§2.1.2" is the section of AVPN's regulation, which extracts as "2.1" and "2".
+  about: ['1%', '12–24 h', '16–18 °C', '100%', '16–18 h', '44–45%', '16–20 h', '16–20 °C', '18', '45%', '50%', '104 °F', '110 °F', '12.2–12.8%', '2024', '00', '2.1', '2'],
   'concept:burn-ring': ['1', '100 °C', '1–1.5 cm', '2'],
 };
 

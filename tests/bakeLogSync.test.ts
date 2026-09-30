@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MIX_PHASES, currentFormulaSnapshot, mixStatus, type LoggedBake } from '../src/lib/bakeLog';
+import { BAKE_1_SEED, MIX_PHASES, currentFormulaSnapshot, mixStatus, type LoggedBake } from '../src/lib/bakeLog';
 import { calculate } from '../src/lib/engine';
 import {
   EMPTY_LOG,
@@ -331,7 +331,8 @@ describe('the session as a bake (§10)', () => {
     ).flat();
 
   const session = (inputs: Inputs, timers = phaseTimers(1)) => {
-    const result = calculate({ ...inputs, frictionFactorF: 14.03, flourTempF: inputs.flourTempF });
+    // The FF the page would use; the log stores readings, not the FF.
+    const result = calculate({ ...inputs, frictionFactorF: BAKE_1_SEED.value, flourTempF: inputs.flourTempF });
     return sessionBake({ inputs, result, timers }, NOW, newBakeId(NOW));
   };
 

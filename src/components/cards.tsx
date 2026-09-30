@@ -59,12 +59,9 @@ export function IngredientsCard({ result }: { result: CalculatorResult }) {
             )}
           </h3>
           <Weight label="Flour" value={`${formatGrams(formula.bigaFlour)} g`} />
-          <Weight
-            label="Water"
-            value={`${formatGrams(formula.bigaWater)} g`}
-            note="room temperature"
-          />
-          <Weight label="ADY" value={`${formatAdy(formula.bigaADY)} g`} />
+          <Weight label="Water" value={`${formatGrams(formula.bigaWater)} g`} />
+          {/* §8.2 biga-1: the yeast rehydrates in warm water taken from the biga water. */}
+          <Weight label="ADY" value={`${formatAdy(formula.bigaADY)} g`} note="in warm water first" />
         </div>
 
         <div>

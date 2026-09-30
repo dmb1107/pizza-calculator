@@ -186,7 +186,7 @@ Because the biga is mixed by hand, the mixer's 500 g minimum doesn't apply to it
     timerLabel: `18–20 h`,
     detail: `The 2 hours at room temperature started fermentation; the fridge holds it steady while the biga ripens. Anywhere in the 18–20 h window works. Judge ripeness by the cue in the next step.
 
-**This schedule rests on an assumption.** Giorilli's dose is set for 16–18 h at 61–65 °F. Two hours warm and 18–20 h at 38–40 °F give the biga less: by the recipe's fermentation model, with the rate doubling every 17 °F, about 11 hours' worth at 63 °F. The recipe assumes the biga is still ripe enough at pull, and that the final dough's schedule makes up any shortfall. Bake 1 ran this schedule; nothing has measured the biga's rise on it. If the balls are consistently behind on bake day, add an hour to the biga's time at room temperature before changing the dose.`,
+**This schedule rests on an assumption.** Giorilli's dose is set for 16–18 h at 61–65 °F. Two hours warm, 18–20 h at 38–40 °F and the hour's temper give the biga less: by the recipe's fermentation model, with the rate doubling every 17 °F, about 11 hours' worth at 63 °F. The recipe assumes the biga is still ripe enough at pull, and that the final dough's schedule makes up any shortfall. Bake 1 ran this schedule; nothing has measured the biga's rise on it. If the balls are consistently behind on bake day, add an hour to the biga's time at room temperature before changing the dose.`,
   },
   {
     id: "biga-5",
@@ -285,7 +285,7 @@ Pour slowly down the splash-guard spout; at 98 RPM the hook slings water that's 
     title: `Probe the temperature`,
     summary: `Stop and probe. **Target {probeTarget} °F**, below DDT on purpose.`,
     values: [`Probe target: {probeTarget} °F`, `DDT: {ddt} °F`],
-    detail: `By the end of Phase B the dough has taken about two thirds of its total friction heat: Phases A and B are long, and the heat of hydration has already been released.
+    detail: `By the end of Phase B the dough has taken most of its friction heat: Phases A and B are long, and the heat of hydration has already been released.
 
 What's still to come, as the probe will read it (dough and bowl together, for your batch in your kitchen): Phases C and D add about **{frictionRemainingF} °F**, and the 10-minute rest moves the dough **{restExchangeF} °F** toward room temperature. That's why the target sits **{probeGapPhrase}**.
 
@@ -299,9 +299,9 @@ So the target is computed from the room temperature you entered, and the room is
 
 The formula:
 
-**Probe target = DDT − 0.33 × FF × Ct/(Ct + C_bowl) + 0.2 × (DDT − T_room)**
+**Probe target = DDT − (Phase C + Phase D friction) × Ct/(Ct + C_bowl) + 0.2 × (DDT − T_room)**
 
-The mixer bowl's thermal mass dilutes the remaining friction, and the rest exchanges heat in proportion to the gap between dough and room.`,
+Phase C and Phase D friction is their middle times at their friction rates: 3.5 minutes at 1.08 °F a minute plus 52½ seconds at 0.86, about 4.5 °F in the dough alone. It doesn't depend on your friction factor. FF decides where the dough is when you probe, which is what the probe measures; what C and D still add is the same either way. The mixer bowl's thermal mass dilutes that friction, and the rest exchanges heat in proportion to the gap between dough and room.`,
     troubleshoot: {
       headers: ["Probe reads", "Do"],
       rows: [

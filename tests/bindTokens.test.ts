@@ -167,8 +167,8 @@ describe('bound values', () => {
 
   it('carries the probe target and DDT as temperatures', () => {
     expect(values['ddt']).toBe('75.0');
-    // §5: 6 balls at FF 14 in a 70 °F room.
-    expect(values['probeTarget']).toBe('71.8');
+    // §5: 6 balls in a 70 °F room (no FF term since MESSAGE-52).
+    expect(values['probeTarget']).toBe('71.9');
   });
 
   it('plans the room time at 90 min until a dough temperature is measured', () => {
@@ -176,7 +176,7 @@ describe('bound values', () => {
     expect(values['finalDoughTemp']).toBe('75.0');
 
     const measured = tokenValues(calculate({ ...INPUTS, finalDoughTempF: 73 }), SCHEDULE);
-    expect(measured['roomMin']).toBe('110');
+    expect(measured['roomMin']).toBe('101');
     expect(measured['finalDoughTemp']).toBe('73.0');
   });
 
@@ -233,13 +233,15 @@ describe('step summaries bind to real numbers', () => {
       bindTokens(block, tokenValues(calculate({ ...INPUTS, balls, finalDoughTempF }), SCHEDULE));
     // 12 balls, dough on its DDT of 74 °F: 90 per dough, 72.5 planned.
     expect(at(12)).toContain('At 74.0 °F a single mix would rest 90 min; this batch rests 73.');
-    // 24 balls at a measured 76 °F: 71.2 per dough, held at the 45-minute floor.
-    expect(at(24, 76)).toContain('At 76.0 °F a single mix would rest 71 min; this batch rests 45.');
+    // 24 balls at a measured 76 °F: 80.2 per dough, 45.2 planned, above the floor.
+    expect(at(24, 76)).toContain('At 76.0 °F a single mix would rest 80 min; this batch rests 45.');
+    // At 77 °F: 75.6 per dough, and the correction is held at the 45-minute floor.
+    expect(at(24, 77)).toContain('At 77.0 °F a single mix would rest 76 min; this batch rests 45.');
   });
 
   it('fills mix-4 with the probe target', () => {
     const step = STEPS.find((s) => s.id === 'mix-4');
-    expect(bindTokens(step?.summary ?? '', values)).toContain('71.8 °F');
+    expect(bindTokens(step?.summary ?? '', values)).toContain('71.9 °F');
   });
 });
 
@@ -249,26 +251,31 @@ describe('§4.10 tokens', () => {
     tokenValues(calculate({ ...INPUTS, ...over }), SCHEDULE).probeGapPhrase;
 
   it('says below, above, or right at DDT — never a signed number', () => {
-    // 6 balls, 70 °F room, FF 14: the usual case.
-    expect(phraseAt({})).toBe('3.2 °F below DDT');
-    // 3 balls, 60 °F room, FF 10: the rest cools the dough more than Phases C
-    // and D warm it, so the target sits ABOVE DDT. Bake 2 is a 3-ball bake
-    // that measures FF, in a kitchen that could be this cold.
-    expect(phraseAt({ balls: 3, roomTempF: 60, flourTempF: 60, frictionFactorF: 10 })).toBe('0.3 °F above DDT');
-    // Same kitchen at FF 11.1: the gap is +0.006, so the printed target is
-    // 75.0 against a printed DDT of 75.0 — and the sentence must not say
-    // "0.0 °F below".
-    expect(phraseAt({ balls: 3, roomTempF: 60, flourTempF: 60, frictionFactorF: 11.1 })).toBe('right at DDT');
-    // And from the other side of zero: at FF 11.0 the gap is −0.02.
-    expect(phraseAt({ balls: 3, roomTempF: 60, flourTempF: 60, frictionFactorF: 11 })).toBe('right at DDT');
+    // 6 balls, 70 °F room: the usual case.
+    expect(phraseAt({})).toBe('3.1 °F below DDT');
+    // Since MESSAGE-52 the gap has no FF term, and at 3 × 265 g it crosses zero
+    // only in a room of 56.4 °F, below the 60 °F input floor. The phrase must
+    // still read right if the range widens, so these rooms sit outside it.
+    // At 54 °F the rest cools the dough more than Phases C and D warm it, and
+    // the target sits ABOVE DDT.
+    const cold = { balls: 3, ballWeightG: 265 };
+    expect(phraseAt({ ...cold, roomTempF: 54, flourTempF: 54 })).toBe('0.5 °F above DDT');
+    // At 56.6 °F the gap is +0.04: the printed target is 75.0 against a
+    // printed DDT of 75.0, and the sentence must not say "0.0 °F below".
+    expect(phraseAt({ ...cold, roomTempF: 56.6, flourTempF: 56.6 })).toBe('right at DDT');
+    // And from the other side of zero: at 56.2 °F the gap is −0.04.
+    expect(phraseAt({ ...cold, roomTempF: 56.2, flourTempF: 56.2 })).toBe('right at DDT');
+    // FF doesn't move it.
+    expect(phraseAt({ ...cold, roomTempF: 54, flourTempF: 54, frictionFactorF: 8 })).toBe('0.5 °F above DDT');
   });
 
   it('prints the magnitude of the printed DDT minus the printed target, exactly', () => {
     // §4.10: "The number must equal |printed DDT − printed target| exactly."
-    // Swept across the directions and the zero crossing.
+    // Swept across the directions and the zero crossing, which lies below the
+    // 60 °F input floor since MESSAGE-52, so the rooms start at 50.
     for (const balls of [3, 6, 9, 12, 18]) {
-      for (let room = 60; room <= 84; room += 0.5) {
-        for (const ff of [8, 10, 11, 11.1, 12, 14, 14.03, 16]) {
+      for (let room = 50; room <= 84; room += 0.5) {
+        for (const ff of [8, 10.791045, 14]) {
           const inputs = { ...INPUTS, balls, roomTempF: room, flourTempF: room, frictionFactorF: ff };
           const v = tokenValues(calculate(inputs), SCHEDULE);
           const printed = Number(v.ddt) - Number(v.probeTarget);

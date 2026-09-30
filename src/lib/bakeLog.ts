@@ -11,62 +11,17 @@
  * gave 14.031 (MESSAGE-25).
  */
 
-import { STEPS } from '../content/steps';
 import { C } from './constants';
-import { computeFormula, computeThermal, solveFrictionFactorF, type BowlState } from './engine';
+import { computeCapacity, computeFormula, computeThermal, solveFrictionFactorF, type BowlState } from './engine';
 import { formatBallsPerMix, formatTempF } from './format';
+import { MIX_PHASES, PHASE_KEYS, frictionRateOf, phaseForStep, type PhaseKey } from './mixPhases';
 import { formatElapsed } from './timers';
+
+export { MIX_PHASES, PHASE_KEYS, phaseForStep, type MixPhase, type PhaseKey } from './mixPhases';
 
 // ---------------------------------------------------------------------------
 // §4.3 The mix profile and normalization
 // ---------------------------------------------------------------------------
-
-export type PhaseKey = 'a' | 'b' | 'c' | 'd';
-export const PHASE_KEYS: readonly PhaseKey[] = ['a', 'b', 'c', 'd'];
-
-export interface MixPhase {
-  key: PhaseKey;
-  /** The step that runs it: `mix-2`, `mix-3`, `mix-5`, `mix-7`. */
-  stepId: string;
-  /** Dial %, from the step's speed. Keys `FRICTION_RATE`. */
-  dial: number;
-  /** The printed range, minutes, from the step's timer. */
-  rangeMin: readonly [number, number];
-  /** The middle of the range: §4.3's reference. */
-  referenceMin: number;
-}
-
-/**
- * The four mixer phases, derived from the step content rather than typed: the
- * speed steps of the mix phase, in order. §4.3 says to derive each reference
- * from its timer's range rather than typing 3.5, so extending a phase in §8.2
- * moves its reference, and every logged bake re-normalizes with it.
- */
-export const MIX_PHASES: readonly MixPhase[] = (() => {
-  const speedSteps = STEPS.filter((s) => s.phase === 'mix' && s.speed);
-  if (speedSteps.length !== PHASE_KEYS.length) {
-    throw new Error(`expected ${PHASE_KEYS.length} mixer phases, found ${speedSteps.length}`);
-  }
-  return speedSteps.map((s, i) => {
-    const t = s.timerMinutes;
-    if (t === undefined) throw new Error(`${s.id} has a speed but no timer`);
-    const rangeMin: readonly [number, number] = Array.isArray(t) ? [t[0], t[1]] : [t, t];
-    const dial = s.speed!.dial;
-    if (!(dial in C.FRICTION_RATE)) throw new Error(`${s.id}: no friction rate at ${dial}%`);
-    return {
-      key: PHASE_KEYS[i]!,
-      stepId: s.id,
-      dial,
-      rangeMin,
-      referenceMin: (rangeMin[0] + rangeMin[1]) / 2,
-    };
-  });
-})();
-
-/** Phase by step id, for the timers that capture them. */
-export function phaseForStep(stepId: string): MixPhase | undefined {
-  return MIX_PHASES.find((p) => p.stepId === stepId);
-}
 
 /**
  * §7.5: "The logged timers are marked." The four mixer phases carry a tag and
@@ -83,15 +38,13 @@ export function loggedTimerTag(
   return `Logged · ${formatElapsed(timer.stoppedAt - timer.startedAt)}`;
 }
 
-const rateOf = (dial: number): number => C.FRICTION_RATE[dial as keyof typeof C.FRICTION_RATE];
-
 /**
  * §4.3. `ffNominal = FF − Σ FRICTION_RATE[speed] × (actualMin − referenceMin)`.
  * Both sides are dough-only, so there is no `Ct/TOT` factor. Durations are not
  * clamped to their printed ranges: the recipe runs A, B and D to their cues.
  */
 export function normalizeFrictionFactorF(ff: number, phaseMinutes: Readonly<Record<PhaseKey, number>>): number {
-  return MIX_PHASES.reduce((acc, p) => acc - rateOf(p.dial) * (phaseMinutes[p.key] - p.referenceMin), ff);
+  return MIX_PHASES.reduce((acc, p) => acc - frictionRateOf(p.dial) * (phaseMinutes[p.key] - p.referenceMin), ff);
 }
 
 // ---------------------------------------------------------------------------
@@ -282,12 +235,71 @@ export const sameMixSize = (a: MixSize, b: MixSize): boolean => compareMixSize(a
 export const bakeMixSize = (bake: LoggedBake): MixSize => ({ balls: bake.balls, nMix: bake.n_mix });
 
 /**
- * §6. Bake 1's seed: shipped in the code rather than in the log's repository,
- * so a new device and a friend's browser both start from it. Not a counted
- * bake: its bowl was assumed, and of its phase times only Phase C's was
- * recorded. The first counted bake at any size retires it.
+ * §6. Bake 1's readings, 21 August 2026 (§5, *Bake 1*). Shipped in the code
+ * rather than in the log's repository, so a new device and a friend's browser
+ * both start from them. Not a counted bake: its bowl was assumed rather than
+ * measured, and of its phase times only Phase C's was recorded.
  */
-export const BAKE_1_SEED = { k: 6, value: 14.03, date: '2026-08-21' } as const;
+export const BAKE_1_READINGS = {
+  date: '2026-08-21',
+  balls: 6,
+  ball_g: 265,
+  room_temp_f: 70,
+  flour_temp_f: 69,
+  biga_temp_at_mix_f: 58,
+  bowl_temp_f: 58,
+  water_temp_used_f: 63,
+  final_dough_temp_f: 73.5,
+  /** Recipe §12: 14 → 20.5 min. */
+  phase_c_min: 6.5,
+} as const;
+
+/**
+ * Bake 1 solved from its readings by the log's own solve (14.031045), then
+ * normalized for Phase C, the one phase time it recorded: A, B and D stand at
+ * their references (10.791045). Computed, never typed (MESSAGE-52). Solved
+ * under today's formula: bake 1 was mixed on it.
+ */
+function bake1NormalizedFf(): number {
+  const r = BAKE_1_READINGS;
+  const bake: LoggedBake = {
+    bake_id: 'bake-1',
+    date: r.date,
+    balls: r.balls,
+    ball_g: r.ball_g,
+    n_mix: computeCapacity(computeFormula({ balls: r.balls, ballWeightG: r.ball_g })).nMix,
+    formula: currentFormulaSnapshot(),
+    room_temp_f: r.room_temp_f,
+    flour_temp_f: r.flour_temp_f,
+    flour_follows_room: false,
+    mixes: [
+      {
+        mix_index: 1,
+        biga_temp_at_mix_f: r.biga_temp_at_mix_f,
+        bowl_state: 'cold',
+        bowl_temp_f: r.bowl_temp_f,
+        bowl_prefilled: false,
+        water_temp_used_f: r.water_temp_used_f,
+        final_dough_temp_f: r.final_dough_temp_f,
+        phase_seconds: { a: null, b: null, c: r.phase_c_min * 60, d: null },
+        excluded: false,
+      },
+    ],
+  };
+  const { ff } = mixStatus(bake, bake.mixes[0]!);
+  if (ff == null) throw new Error("bake 1's readings don't solve");
+  const minutes = Object.fromEntries(
+    MIX_PHASES.map((p) => [p.key, p.key === 'c' ? r.phase_c_min : p.referenceMin]),
+  ) as Record<PhaseKey, number>;
+  return normalizeFrictionFactorF(ff, minutes);
+}
+
+/**
+ * §6, Panel 3, step 4: the FF in use at every mix size until the log has a
+ * counted bake (Dave's call, MESSAGE-52). The first counted bake at any size
+ * retires it. `k` is the size bake 1 ran, which picks the badge.
+ */
+export const BAKE_1_SEED = { k: 6, date: BAKE_1_READINGS.date, value: bake1NormalizedFf() } as const;
 
 export type FfSource =
   /** Step 1: this size's own counted bakes. */
@@ -296,7 +308,7 @@ export type FfSource =
   | { step: 2; below: MixSize; above: MixSize }
   /** Step 3: the nearest counted size, held flat. */
   | { step: 3; nearest: MixSize }
-  /** Step 4: nothing counted anywhere. `seed` at k = 6. */
+  /** Step 4: nothing counted anywhere. `seed` is true at bake 1's own size. */
   | { step: 4; seed: boolean };
 
 export interface FfInUse {
@@ -345,7 +357,7 @@ export function sizeHistories(bakes: readonly LoggedBake[], current: FormulaSnap
  * 1. Counted bakes at `k`: the mean of the last three bakes' FFs.
  * 2. None at `k`, counted sizes on both sides: linear interpolation.
  * 3. Counted sizes on one side only: the nearest, held flat. Never extrapolate.
- * 4. No counted bake anywhere: the seed at 6, `DEFAULT_FF` elsewhere.
+ * 4. No counted bake anywhere: bake 1's normalized FF, at every size.
  */
 export function ffInUse(bakes: readonly LoggedBake[], k: MixSize, current: FormulaSnapshot = currentFormulaSnapshot()): FfInUse {
   const histories = sizeHistories(bakes, current);
@@ -372,7 +384,7 @@ export function ffInUse(bakes: readonly LoggedBake[], k: MixSize, current: Formu
   if (nearest) return { ff: nearest.ff, source: { step: 3, nearest: nearest.size } };
 
   const seed = sameMixSize(k, { balls: BAKE_1_SEED.k, nMix: 1 });
-  return { ff: seed ? BAKE_1_SEED.value : C.DEFAULT_FF, source: { step: 4, seed } };
+  return { ff: BAKE_1_SEED.value, source: { step: 4, seed } };
 }
 
 // ---------------------------------------------------------------------------
@@ -389,8 +401,9 @@ export const BADGE_TEMPLATES = {
   calibrated: 'calibrated · mean of the last 3 bakes, latest {date} · spread {spread} °F',
   interpolated: 'interpolated from {kBelow} and {kAbove} balls per mix',
   nearest: 'from {kNearest} balls per mix, the nearest measured size',
-  seed: 'bake 1, {date} · not yet calibrated',
-  estimated: 'estimated — not yet calibrated',
+  seed: 'bake 1, {date}, Phase C corrected · not yet calibrated',
+  // The 6 is `BAKE_1_SEED.k`, written out as §6 writes it; a test holds the two together.
+  fromSeed: 'from bake 1 at 6 balls per mix · not yet calibrated',
 } as const;
 
 export type BadgeTone = 'measured' | 'estimate';
@@ -420,7 +433,7 @@ export function frictionBadge(inUse: FfInUse): { text: string; tone: BadgeTone }
     case 4:
       return s.seed
         ? { text: fill(BADGE_TEMPLATES.seed, { date: BAKE_1_SEED.date }), tone: 'estimate' }
-        : { text: BADGE_TEMPLATES.estimated, tone: 'estimate' };
+        : { text: BADGE_TEMPLATES.fromSeed, tone: 'estimate' };
   }
 }
 

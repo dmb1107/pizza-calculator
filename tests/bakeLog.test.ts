@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { C } from '../src/lib/constants';
 import {
   BADGE_TEMPLATES,
+  BAKE_1_READINGS,
   BAKE_1_SEED,
   MIX_PHASES,
   PHASE_KEYS,
@@ -236,11 +237,14 @@ describe('§5 Bake log: the FF in use', () => {
     expect(ffInUse(bakes, { balls: 3, nMix: 1 })).toMatchObject({ ff: expect.closeTo(11.0, 9), source: { step: 1 } });
   });
 
-  it('reads the seed at 6 and DEFAULT_FF elsewhere with no counted bake', () => {
-    expect(ffInUse([], { balls: 6, nMix: 1 })).toEqual({ ff: 14.03, source: { step: 4, seed: true } });
-    expect(ffInUse([], { balls: 12, nMix: 2 }).ff).toBe(14.03);
-    expect(ffInUse([], { balls: 9, nMix: 1 })).toEqual({ ff: C.DEFAULT_FF, source: { step: 4, seed: false } });
-    expect(ffInUse([], { balls: 13, nMix: 2 }).ff).toBe(C.DEFAULT_FF);
+  it("reads bake 1's normalized FF at every size with no counted bake (MESSAGE-52)", () => {
+    expect(ffInUse([], { balls: 6, nMix: 1 })).toEqual({ ff: BAKE_1_SEED.value, source: { step: 4, seed: true } });
+    expect(ffInUse([], { balls: 12, nMix: 2 }).source).toEqual({ step: 4, seed: true });
+    expect(ffInUse([], { balls: 9, nMix: 1 })).toEqual({ ff: BAKE_1_SEED.value, source: { step: 4, seed: false } });
+    for (const k of [{ balls: 3, nMix: 1 }, { balls: 13, nMix: 2 }, { balls: 19, nMix: 3 }, { balls: 24, nMix: 3 }]) {
+      expect(ffInUse([], k).ff, `${k.balls} in ${k.nMix}`).toBe(BAKE_1_SEED.value);
+    }
+    expect(BAKE_1_SEED.value).toBeCloseTo(10.791045, 6);
   });
 
   it('retires the seed with the first counted bake at any size', () => {
@@ -254,9 +258,25 @@ describe('§5 Bake log: the FF in use', () => {
     expect(ffInUse([b], { balls: 6, nMix: 1 }).source).toEqual({ step: 4, seed: true });
   });
 
-  it('is the seed, bake 1 solved and rounded to two places', () => {
-    expect(BAKE_1_SEED.value).toBe(Number(mixStatus(bake(), mix()).ff!.toFixed(2)));
-    expect(BAKE_1_SEED.value).toBe(BAKE_1.ff);
+  it("is bake 1 solved from its readings and normalized for Phase C, by the log's own code", () => {
+    // The fixture here is bake 1 too: the seed's readings and §5's must agree,
+    // or the seed solves a bake nobody made.
+    const solved = mixStatus(bake(), mix({ phase_seconds: { ...REFERENCE_SECONDS, c: BAKE_1.phaseCMin * 60 } }));
+    expect(BAKE_1_SEED.value).toBe(solved.ffNominal);
+    expect(BAKE_1_READINGS).toMatchObject({
+      balls: BAKE_1.balls,
+      ball_g: BAKE_1.ballG,
+      room_temp_f: BAKE_1.tRoomF,
+      flour_temp_f: BAKE_1.tFlourF,
+      biga_temp_at_mix_f: BAKE_1.tBigaF,
+      bowl_temp_f: BAKE_1.tBowlF,
+      water_temp_used_f: BAKE_1.waterUsedF,
+      final_dough_temp_f: BAKE_1.finalTempF,
+      phase_c_min: BAKE_1.phaseCMin,
+    });
+    // 14.031045 less FRICTION_RATE[30] × 3 minutes of long Phase C.
+    expect(BAKE_1_SEED.value).toBeCloseTo(solved.ff! - C.FRICTION_RATE[30] * (BAKE_1.phaseCMin - 3.5), 12);
+    expect(BAKE_1_SEED.date).toBe('2026-08-21');
   });
 
   it('compares mix sizes as the pair, not a rounded float', () => {
@@ -287,8 +307,13 @@ describe('§6 the badge', () => {
       BADGE_TEMPLATES.interpolated,
       BADGE_TEMPLATES.nearest,
       BADGE_TEMPLATES.seed,
-      BADGE_TEMPLATES.estimated,
+      BADGE_TEMPLATES.fromSeed,
     ]);
+  });
+
+  it('names the size bake 1 ran at, as the seed holds it', () => {
+    expect(BADGE_TEMPLATES.fromSeed).toContain(`at ${BAKE_1_SEED.k} balls per mix`);
+    expect(BAKE_1_SEED.k).toBe(BAKE_1.balls);
   });
 
   it('prints the calibrated badge from three bakes, with the spread to one decimal', () => {
@@ -337,9 +362,17 @@ describe('§6 the badge', () => {
     );
   });
 
-  it('prints the seed and the fallback', () => {
-    expect(frictionBadge(ffInUse([], { balls: 6, nMix: 1 })).text).toBe('bake 1, 2026-08-21 · not yet calibrated');
-    expect(frictionBadge(ffInUse([], { balls: 9, nMix: 1 })).text).toBe('estimated — not yet calibrated');
+  it('prints the seed at its own size and where it is borrowed', () => {
+    expect(frictionBadge(ffInUse([], { balls: 6, nMix: 1 })).text).toBe(
+      'bake 1, 2026-08-21, Phase C corrected · not yet calibrated',
+    );
+    expect(frictionBadge(ffInUse([], { balls: 12, nMix: 2 })).text).toBe(
+      'bake 1, 2026-08-21, Phase C corrected · not yet calibrated',
+    );
+    expect(frictionBadge(ffInUse([], { balls: 9, nMix: 1 })).text).toBe(
+      'from bake 1 at 6 balls per mix · not yet calibrated',
+    );
+    expect(frictionBadge(ffInUse([], { balls: 9, nMix: 1 })).tone).toBe('estimate');
   });
 });
 
@@ -384,18 +417,19 @@ describe('§4.8 split-batch T_actual (§5 Bake log)', () => {
     expect(r.roomMinutesIsPlanned).toBe(false);
   });
 
-  it('counts a mix not yet read at DDT: the first alone gives 73.5 and 77.4', () => {
+  it('counts a mix not yet read at DDT: the first alone gives 73.5 and 75.1', () => {
     const r = at12([73.0, null]);
     expect(r.effectiveFinalTempF).toBeCloseTo(73.5, 12);
-    expect(Number(r.ballRoomMinutes.toFixed(1))).toBe(77.4);
+    expect(r.roomMinutes).toBeCloseTo(92.574489, 6);
+    expect(Number(r.ballRoomMinutes.toFixed(1))).toBe(75.1);
     // A shorter array reads the same: the later mix is unread, not a copy.
     expect(at12([73.0]).effectiveFinalTempF).toBeCloseTo(73.5, 12);
   });
 
-  it('differs from the last reading alone, which would give 80.4 and 62.9', () => {
+  it('differs from the last reading alone, which would give 85.0 and 67.5', () => {
     const lastOnly = at12([75.0, 75.0]);
-    expect(Number(lastOnly.roomMinutes.toFixed(1))).toBe(80.4);
-    expect(Number(lastOnly.ballRoomMinutes.toFixed(1))).toBe(62.9);
+    expect(Number(lastOnly.roomMinutes.toFixed(1))).toBe(85.0);
+    expect(Number(lastOnly.ballRoomMinutes.toFixed(1))).toBe(67.5);
   });
 
   it('plans at DDT with no reading, and a scalar still applies to every mix', () => {
@@ -426,6 +460,13 @@ describe('§4.4 the 120 °F warning under a low logged FF', () => {
     expect(lo.toFixed(2)).toBe('10.23');
     expect(hot(10.22).warnings.map((w) => w.id)).toContain('water-above-tap');
     expect(hot(10.24).warnings.map((w) => w.id)).not.toContain('water-above-tap');
+  });
+
+  it("doesn't reach it at bake 1's normalized FF, 0.56 above the threshold", () => {
+    // MESSAGE-52: the FF in use before any counted bake.
+    expect(hot(BAKE_1_SEED.value).waterTempF.toFixed(3)).toBe('118.312');
+    expect(hot(BAKE_1_SEED.value).warnings.map((w) => w.id)).not.toContain('water-above-tap');
+    expect((BAKE_1_SEED.value - 10.228729).toFixed(2)).toBe('0.56');
   });
 
   it('reads the same with the water formula directly', () => {
