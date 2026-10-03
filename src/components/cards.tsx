@@ -50,14 +50,7 @@ export function IngredientsCard({ result }: { result: CalculatorResult }) {
     <Card title="Ingredients" action={<CopyButton text={buildRecipeText(result)} label="Copy as text" />}>
       <div className="grid gap-6 sm:grid-cols-2">
         <div>
-          <h3 className="mb-1 font-semibold">
-            Biga
-            {capacity.nBiga > 1 && (
-              <span className="ml-2 text-sm font-normal text-stone-500">
-                × {capacity.nBiga} batches
-              </span>
-            )}
-          </h3>
+          <h3 className="mb-1 font-semibold">Biga</h3>
           <Weight label="Flour" value={`${formatGrams(formula.bigaFlour)} g`} />
           <Weight label="Water" value={`${formatGrams(formula.bigaWater)} g`} />
           {/* §8.2 biga-1: the yeast rehydrates in warm water taken from the biga water. */}

@@ -15,11 +15,13 @@ import { PLANNING_RANGE_H } from './timeline';
  * §8.2's `shown only when` conditions, resolved by lookup rather than by
  * evaluating the string. An unrecognised condition throws: silently showing or
  * silently hiding a step are both wrong, and a missing temper step is exactly
- * the failure this mechanism was added to fix.
+ * the failure this mechanism was added to fix. `nMix > 1` joined the set in
+ * MESSAGE-53, for `mix-0`.
  */
-const SHOWN_WHEN: Record<ShownWhen, Schedule> = {
-  "schedule === 'retarded'": 'retarded',
-  "schedule === 'classic'": 'classic',
+const SHOWN_WHEN: Record<ShownWhen, (ctx: { schedule: Schedule; nMix: number }) => boolean> = {
+  "schedule === 'retarded'": (ctx) => ctx.schedule === 'retarded',
+  "schedule === 'classic'": (ctx) => ctx.schedule === 'classic',
+  'nMix > 1': (ctx) => ctx.nMix > 1,
 };
 
 /**
@@ -27,28 +29,23 @@ const SHOWN_WHEN: Record<ShownWhen, Schedule> = {
  * gates the whole step. Resolved by lookup; an unknown condition throws.
  *
  * ⚠️ This used to be an inline ternary in `StepList` that read anything other
- * than `nMix > 1` as `nBiga > 1`, so a third condition would have silently
- * borrowed the biga-split test. And the generator and the test parser matched
+ * than `nMix > 1` as `nBiga > 1` (a condition MESSAGE-53 retired), so a third
+ * condition would have silently borrowed the biga-split test. And the generator and the test parser matched
  * conditions from the same hard-coded list, so a block with a new one was
  * dropped by both and the verbatim check still passed — which is what
  * happened to `bulk-2`'s `openDiameterCapped` block before this was fixed.
  */
 export interface DetailConditionContext {
   nMix: number;
-  nBiga: number;
 }
 
 const DETAIL_CONDITIONS: Record<DetailCondition, (ctx: DetailConditionContext) => boolean> = {
   'nMix > 1': (ctx) => ctx.nMix > 1,
-  'nBiga > 1': (ctx) => ctx.nBiga > 1,
 };
 
 /** The context the conditions read, built from the result. */
 export function detailConditionContext(result: CalculatorResult): DetailConditionContext {
-  return {
-    nMix: result.capacity.nMix,
-    nBiga: result.capacity.nBiga,
-  };
+  return { nMix: result.capacity.nMix };
 }
 
 export const DETAIL_CONDITION_NAMES = Object.keys(DETAIL_CONDITIONS) as readonly DetailCondition[];
@@ -59,11 +56,11 @@ export function detailConditionHolds(condition: string, ctx: DetailConditionCont
   return test(ctx);
 }
 
-function showsOn(step: Step, schedule: Schedule): boolean {
+function showsOn(step: Step, schedule: Schedule, nMix: number): boolean {
   if (!step.shownWhen) return true;
-  const required = SHOWN_WHEN[step.shownWhen];
-  if (!required) throw new Error(`unknown shownWhen condition: ${step.shownWhen}`);
-  return required === schedule;
+  const holds = SHOWN_WHEN[step.shownWhen];
+  if (!holds) throw new Error(`unknown shownWhen condition: ${step.shownWhen}`);
+  return holds({ schedule, nMix });
 }
 
 export interface StepInstance {
@@ -106,9 +103,9 @@ export function expandSteps(
   schedule: Schedule,
   allSteps: readonly Step[] = STEPS,
 ): StepInstance[] {
-  const steps = allSteps.filter((step) => showsOn(step, schedule));
-  const out: StepInstance[] = [];
   const passes = Math.max(1, nMix);
+  const steps = allSteps.filter((step) => showsOn(step, schedule, passes));
+  const out: StepInstance[] = [];
 
   let i = 0;
   while (i < steps.length) {

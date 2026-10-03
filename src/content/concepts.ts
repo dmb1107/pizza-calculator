@@ -51,6 +51,8 @@ That's the reverse of a lightly prefermented dough that develops its flavor over
 
 **Use 24 h cold.** It's the only cold-ferment length that has been baked; 6 h and 36 h are inside the calculator's range but untested.
 
+On the classic track the biga ripens fully at room temperature first, so the dough gets only 6–8 hours cold.
+
 In Italian practice, extra time goes into the biga rather than the ball proof. PizzaBlab's range is 12–24 h, and "biga lunga" runs 24 h at 39 °F, then 24 h at room temperature.`,
   },
   {

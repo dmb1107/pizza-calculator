@@ -100,8 +100,6 @@ export function tokenValues(
     waterTempNext: formatTempF(
       (result.mixes[mix] ?? result.mixes[result.mixes.length - 1]!).waterTempF,
     ),
-    /** " × 2 bigas" when the biga splits, empty otherwise. §8.2 `biga-1`. */
-    bigaCountSuffix: capacity.nBiga > 1 ? ` × ${capacity.nBiga} bigas` : '',
     // §4.8 — computed from the measured final dough temperature, or from DDT
     // while the calculator is still in planning mode.
     roomMin: String(Math.round(result.roomMinutes)),
@@ -110,17 +108,13 @@ export function tokenValues(
     ballRoomMin: String(Math.round(result.ballRoomMinutes)),
     finalDoughTemp: formatTempF(result.effectiveFinalTempF),
 
-    // §8.2 per-biga values. `biga-1` and `biga-3` are per-biga steps: at 18
-    // balls the batch total is 1833.7 g, which is above the 1610 g the machine
-    // handles at this hydration — which is *why* it splits, so showing it as
-    // one weight to scale out would be actively wrong.
-    bigaFlourPerBiga: formatGrams(formula.bigaFlour / capacity.nBiga),
-    bigaWaterPerBiga: formatGrams(formula.bigaWater / capacity.nBiga),
-    bigaADYPerBiga: formatAdy(formula.bigaADY / capacity.nBiga),
-    bigaFlourTotal: formatGrams(formula.bigaFlour),
-    nBiga: String(capacity.nBiga),
+    // §8.2 biga values: batch totals, bare, since there is one biga at every
+    // size (MESSAGE-53 retired the `PerBiga` scope with `nBiga`).
+    bigaFlour: formatGrams(formula.bigaFlour),
+    bigaWater: formatGrams(formula.bigaWater),
+    bigaADY: formatAdy(formula.bigaADY),
 
-    // §8.2 per-mix values. Same class of error one scope down.
+    // §8.2 per-mix values: a batch total on a per-mix step pours double.
     freshFlourPerMix: formatGrams(formula.freshFlour / capacity.nMix),
     bigaMassPerMix: formatGrams(formula.bigaMass / capacity.nMix),
     nMix: String(capacity.nMix),
@@ -144,7 +138,6 @@ export function tokenValues(
     doughPerMix: formatGrams(capacity.doughPerMix),
     maxDoughG: trim(C.MAX_DOUGH),
     minDoughG: trim(C.MIN_DOUGH),
-    bigaFlourCapG: trim(C.FLOUR_CAP_55),
 
     // Inputs — trimmed, since the prose supplies the unit.
     balls: String(inputs.balls),

@@ -10,7 +10,7 @@
  */
 
 import { computeCapacity, computeFormula } from '../lib/engine';
-import { BOUNDS, DEFAULT_INPUTS, clampField } from './defaults';
+import { BOUNDS, COLD_FERMENT_H, DEFAULT_INPUTS, clampColdFerment, clampField } from './defaults';
 import type { BowlState, Inputs, Schedule } from './types';
 
 const KEYS = {
@@ -81,7 +81,12 @@ export function encodeInputs(inputs: Inputs): string {
 
   put(KEYS.balls, num(inputs.balls), inputs.balls === DEFAULT_INPUTS.balls);
   put(KEYS.ballWeightG, num(inputs.ballWeightG), inputs.ballWeightG === DEFAULT_INPUTS.ballWeightG);
-  put(KEYS.coldFermentH, num(inputs.coldFermentH), inputs.coldFermentH === DEFAULT_INPUTS.coldFermentH);
+  // Default by track: a classic link without `cold` means 6, a retarded one 24.
+  put(
+    KEYS.coldFermentH,
+    num(inputs.coldFermentH),
+    inputs.coldFermentH === COLD_FERMENT_H[inputs.schedule].default,
+  );
   put(KEYS.schedule, SCHEDULE_CODE[inputs.schedule], inputs.schedule === DEFAULT_INPUTS.schedule);
   put(KEYS.roomTempF, num(inputs.roomTempF), inputs.roomTempF === DEFAULT_INPUTS.roomTempF);
   put(
@@ -250,7 +255,17 @@ export function decodeInputs(search: string, base: Inputs = DEFAULT_INPUTS): Inp
   return {
     balls,
     ballWeightG,
-    coldFermentH: readNumber(p, KEYS.coldFermentH, 'coldFermentH', base.coldFermentH),
+    // §4.7: clamped into the track's range. Absent, the track's default,
+    // unless `base` already carries a value for this track.
+    coldFermentH: clampColdFerment(
+      schedule,
+      readNumber(
+        p,
+        KEYS.coldFermentH,
+        'coldFermentH',
+        schedule === base.schedule ? base.coldFermentH : COLD_FERMENT_H[schedule].default,
+      ),
+    ),
     schedule,
     roomTempF,
     flourSameAsRoom,

@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { divideBallH } from '../src/lib/timeline';
 import { C, rpmForDial } from '../src/lib/constants';
 import { STEPS, type Step } from '../src/content/steps';
 import { expandSteps } from '../src/lib/stepInstances';
@@ -119,8 +120,12 @@ describe('derived constants are derived', () => {
 
   it('holds no duration as a rounded decimal', () => {
     // The `divideBall = 0.33` failure: a displayed figure used as an input.
-    // Both of these are whole minutes, so they must divide exactly by 60.
-    expect((C.DIVIDE_BALL_H * 60) % 1).toBe(0);
+    // The divide is summed in minutes and divided by 60 once (MESSAGE-53), so
+    // 6 balls is exactly the 20/60 it replaced; the changeover is whole minutes.
+    expect(divideBallH(6)).toBe(20 / 60);
+    for (let balls = C.MIN_BALLS; balls <= 24; balls++) {
+      expect(divideBallH(balls) * 60, `${balls} balls`).toBeCloseTo(C.DIVIDE_BASE_MIN + C.DIVIDE_PER_BALL_MIN * balls, 12);
+    }
     expect((C.CHANGEOVER_H * 60) % 1).toBe(0);
   });
 });

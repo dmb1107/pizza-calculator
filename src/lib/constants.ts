@@ -59,7 +59,8 @@ const BASE = {
   MAX_DOUGH: 2500, // g
   MIN_DOUGH: 500, // g
   FLOUR_CAP_66: 1505, // g, at 66%+ hydration (final mix)
-  FLOUR_CAP_55: 1610, // g, at 55-59% hydration (biga)
+  // No FLOUR_CAP_55 since MESSAGE-53: it only ever split the biga, which is
+  // mixed by hand, and Phase A's 55% dough is under FLOUR_CAP_66's tighter cap.
   /**
    * Ooni's published maximum continuous operating time for the spiral hook,
    * minutes (help center, §11). Read by the profile assertion in
@@ -141,15 +142,18 @@ const BASE = {
   CHANGEOVER_H: 5 / 60,
 
   /**
-   * §4.7. Divide-and-ball, in hours. The quantity is **20 minutes**; the 0.33
-   * the spec table displays is a rounded rendering of it.
+   * §4.7 (MESSAGE-53). Divide and ball, in MINUTES: `DIVIDE_BASE_MIN +
+   * DIVIDE_PER_BALL_MIN × balls`, divided by 60 once (`divideBallH` in
+   * timeline.ts). ESTIMATES: Dave hasn't timed a divide. The base is the middle
+   * of `bulk-2`'s 10–15 min rest; the per-ball figure keeps 6 balls at the
+   * flat 20 minutes this replaced.
    *
-   * ⚠️ Expressed as 20/60 rather than 0.33 deliberately. Baking the displayed
-   * figure into the source is exactly the "never treat a displayed value as an
-   * input" error §4.7 warns about — and it is worth 0.0033 h, which is the
-   * whole of the 28.41-vs-28.42 disagreement at nMix 3.
+   * ⚠️ Minutes, not hours. A rounded hour figure is the "displayed value as an
+   * input" error §4.7 warns about: 0.33 for 20/60 was the whole of the
+   * 28.41-vs-28.42 disagreement at nMix 3.
    */
-  DIVIDE_BALL_H: 20 / 60,
+  DIVIDE_BASE_MIN: 12.5,
+  DIVIDE_PER_BALL_MIN: 1.25,
   /**
    * §4.7. Biga out of the fridge before mixing, in hours. Retarded only — on
    * the classic track the biga is already at room temperature and this stage is

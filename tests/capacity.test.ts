@@ -32,9 +32,22 @@ describe('§7.3 capacity: which message, when', () => {
     expect(ids(12)).toEqual(['capacity-split', 'capacity-divide-biga']);
   });
 
-  it('splits the biga too at 18 balls, and is near the limit there', () => {
-    // 18 x 265 g: two mixes of 2437.5 g, and 1833.7 g of biga flour over the 1610 g cap.
-    expect(ids(18)).toEqual(['capacity-split', 'capacity-biga-split', 'capacity-near-limit']);
+  it('keeps one biga at 18 balls, and is near the limit there', () => {
+    // 18 x 265 g: two mixes of 2437.5 g. One biga at every size since
+    // MESSAGE-53, so no biga-split message: the one-biga line follows the split.
+    expect(ids(18)).toEqual(['capacity-split', 'capacity-divide-biga', 'capacity-near-limit']);
+  });
+
+  it('shows the one-biga line exactly when the batch splits, at every size', () => {
+    for (let b = C.MIN_BALLS; b <= 24; b++) {
+      for (const w of [240, 265, 300]) {
+        const nMix = computeCapacity(computeFormula({ balls: b, ballWeightG: w })).nMix;
+        expect(ids(b, w).includes('capacity-divide-biga'), `${b} x ${w} g`).toBe(nMix > 1);
+      }
+    }
+    const line = alertsAt(18).find((a) => a.id === 'capacity-divide-biga')!;
+    expect(line.severity).toBe('info');
+    expect(line.detail).toBe('Mix one biga, then divide it by weight into 2 portions for 2 separate final mixes.');
   });
 
   it('fires near the limit at exactly 9 and 18 balls at the 265 g default', () => {
@@ -96,18 +109,6 @@ describe('§7.3 capacity: the limit named is the one that binds', () => {
     }
   });
 
-  it('splits the biga on the 55% flour cap, never first on dough mass', () => {
-    // FLOUR_CAP_55 x 1.5 = 2415 g of biga, under 2500 — the biga message names the flour cap.
-    expect(C.FLOUR_CAP_55 * (1 + C.BIGA_HYDRATION)).toBeLessThan(C.MAX_DOUGH);
-    for (let b = C.MIN_BALLS; b <= 24; b++) {
-      for (let w = 240; w <= 300; w++) {
-        const f = computeFormula({ balls: b, ballWeightG: w });
-        expect(Math.ceil(f.bigaMass / C.MAX_DOUGH), `${b} x ${w} g`).toBeLessThanOrEqual(
-          computeCapacity(f).nBiga,
-        );
-      }
-    }
-  });
 });
 
 describe('§7.3 capacity: the words', () => {

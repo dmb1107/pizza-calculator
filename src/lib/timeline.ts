@@ -51,10 +51,22 @@ export interface ScheduleAdjustments {
    * bulk clock — see `stageDurations`.
    */
   nMix: number;
-  /** 6–36 h. */
+  /** Total balls: the whole tub is divided at once, so the divide scales with it (MESSAGE-53). */
+  balls: number;
+  /** 6–36 h retarded, 6–8 h classic (§4.7, MESSAGE-53). */
   coldFermentH: number;
-  /** 2–3 h. */
+  /** 1.5–2 h. */
   temperH: number;
+}
+
+/**
+ * §4.7 (MESSAGE-53). Divide and ball, hours, for a batch of `balls`: the
+ * minutes are summed from the two constants and divided by 60 once. 20 min at
+ * 6 balls, 27.5 at 12, 42.5 at 24. Timeline only: the rise after balling isn't
+ * shortened for it (Dave's call).
+ */
+export function divideBallH(balls: number): number {
+  return (C.DIVIDE_BASE_MIN + C.DIVIDE_PER_BALL_MIN * balls) / 60;
 }
 
 export const STAGE_ORDER: readonly StageKey[] = [
@@ -82,7 +94,7 @@ export const PLANNING_RANGE_H: Partial<Record<StageKey, readonly [number, number
   // exception covers a plan outside this.
   bigaRoomOnly: [16, 18],
   bulkRest: [45 / 60, 1],
-  temper: [2, 3],
+  temper: [1.5, 2],
 };
 
 /** The planning point's range, if `hours` lies inside it — §7.4 shows it beside the point. */
@@ -162,7 +174,7 @@ export function stageDurations(schedule: Schedule, a: ScheduleAdjustments): Stag
     bigaTemper: retarded ? C.BIGA_TEMPER_H : 0,
     mix: MIX_H * nMix + C.CHANGEOVER_H * (nMix - 1),
     bulkRest: 1,
-    divideBall: C.DIVIDE_BALL_H,
+    divideBall: divideBallH(a.balls),
     ballRoomTemp: plannedBallRiseH(a.ballRoomTempH * 60, nMix),
     coldFerment: a.coldFermentH,
     temper: a.temperH,
@@ -421,7 +433,9 @@ export function formatStageDuration(hours: number, range?: readonly [number, num
   const point = formatDuration(hours);
   if (!range) return point;
   const [lo, hi] = range;
-  const inHours = Number.isInteger(lo) && Number.isInteger(hi);
+  // Minutes only for a range that starts under an hour (bulkRest's 45–60),
+  // so the temper reads "1.5–2 h", as its step's timer does (MESSAGE-53).
+  const inHours = lo >= 1;
   const unit = inHours ? 'h' : 'min';
   const span = inHours ? `${lo}–${hi}` : `${Math.round(lo * 60)}–${Math.round(hi * 60)}`;
   const pointIsOneUnit = !point.includes(' h ') && point.endsWith(` ${unit}`);

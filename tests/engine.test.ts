@@ -92,7 +92,6 @@ describe('§5 batch vectors', () => {
     within(r.waterTempF, v.waterTempF, TOL.degF, 'water temp');
     within(r.probeTargetF, v.probeTargetF, TOL.degF, 'probe target');
 
-    expect(r.capacity.nBiga, 'nBiga').toBe(v.nBiga);
     expect(r.capacity.nMix, 'nMix').toBe(v.nMix);
   });
 });
@@ -1180,41 +1179,30 @@ describe('§4.4 and §5 at the FF in use before any counted bake (MESSAGE-52)', 
 });
 
 describe('§4.5 capacity', () => {
-  it('flags the 12-ball case as one biga across two mixes', () => {
-    const c = computeCapacity(computeFormula({ balls: 12, ballWeightG: 265 }));
-    expect(c.nBiga).toBe(1);
-    expect(c.nMix).toBe(2);
-    expect(c.divideBigaAcrossMixes).toBe(true);
+  it('runs 12 balls as two mixes', () => {
+    expect(computeCapacity(computeFormula({ balls: 12, ballWeightG: 265 })).nMix).toBe(2);
   });
 
-  it('splits the biga at 18 balls', () => {
-    const c = computeCapacity(computeFormula({ balls: 18, ballWeightG: 265 }));
-    expect(c.nBiga).toBe(2);
-    expect(c.nMix).toBe(2);
-  });
-
-  it('uses the 55% flour cap for the biga, not the 66% one', () => {
-    // 15 x 265 g puts 1528.1 g of biga flour between the two caps.
-    const f = computeFormula({ balls: 15, ballWeightG: 265 });
-    expect(f.bigaFlour).toBeGreaterThan(C.FLOUR_CAP_66);
-    expect(f.bigaFlour).toBeLessThan(C.FLOUR_CAP_55);
-    expect(computeCapacity(f).nBiga).toBe(1);
+  it('keeps one biga at 18 balls, divided into two mixes (MESSAGE-53)', () => {
+    // No biga split at any size: 1833.7 g of biga flour, 2 × 1375.3 g of biga.
+    const r = calculate(vectorInputs(18, 265));
+    expect(r.capacity).toEqual({ nMix: 2, doughPerMix: r.formula.doughTotal / 2 });
+    within(r.formula.bigaFlour, 1833.7, TOL.grams, 'biga flour');
+    within(r.formula.bigaMass / r.capacity.nMix, 1375.3, TOL.grams, 'biga per mix');
   });
 
   it('documents which capacity term actually binds', () => {
     // The flour term in nMix is unreachable at 70% hydration: the 2500 g dough
     // ceiling implies 1446.8 g of flour, below the 1505 g cap. Kept as correct
-    // defensive form; this asserts why no input can exercise it.
+    // defensive form; this asserts why no input can exercise it. Phase A's 55%
+    // dough is under the same, tighter cap, so no 55% cap is needed (§4.5).
     expect(C.MAX_DOUGH / C.DOUGH_YIELD).toBeLessThan(C.FLOUR_CAP_66);
-    expect(C.FLOUR_CAP_55).toBeLessThan(C.MAX_DOUGH / (1 + C.BIGA_HYDRATION));
   });
 
-  it('never returns a mix over the ceiling or a flour load over the cap', () => {
+  it('never returns a mix over the ceiling', () => {
     for (let balls = 1; balls <= 24; balls++) {
-      const f = computeFormula({ balls, ballWeightG: 265 });
-      const c = computeCapacity(f);
+      const c = computeCapacity(computeFormula({ balls, ballWeightG: 265 }));
       expect(c.doughPerMix, `dough per mix at ${balls}`).toBeLessThanOrEqual(C.MAX_DOUGH + 1e-9);
-      expect(c.bigaFlourPerBatch, `biga flour at ${balls}`).toBeLessThanOrEqual(C.FLOUR_CAP_55 + 1e-9);
     }
   });
 });

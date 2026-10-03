@@ -1,12 +1,43 @@
 /** Defaults and input bounds — WEBSITE-SPEC-biga-calculator.md §6. */
 
 import { C } from '../lib/constants';
-import type { Calibration, Inputs, PanelPrefs, Persisted } from './types';
+import type { Calibration, Inputs, PanelPrefs, Persisted, Schedule } from './types';
+
+/**
+ * §4.7, §6 Panel 1 (MESSAGE-53). The cold ferment by track. A classic biga
+ * arrives fully ripe from 16–18 h at room temperature, so its dough gets a
+ * short cold ferment: 6–8 h, default 6. The retarded track keeps 6–36, 24.
+ */
+export const COLD_FERMENT_H: Record<Schedule, { min: number; max: number; step: number; default: number }> = {
+  retarded: { min: 6, max: 36, step: 1, default: 24 },
+  classic: { min: 6, max: 8, step: 1, default: 6 },
+};
+
+/** §4.7: "Clamp the value into the track's range when the schedule changes." */
+export function clampColdFerment(schedule: Schedule, hours: number): number {
+  const { min, max } = COLD_FERMENT_H[schedule];
+  return Math.min(max, Math.max(min, hours));
+}
+
+/**
+ * `setInput`'s rules, pure so the tests reach them: the flour tracks the room
+ * while the toggle is on, in both directions, and the cold ferment stays inside
+ * its track's range, so a schedule change clamps it (§4.7, MESSAGE-53).
+ */
+export function applyInput<K extends keyof Inputs>(prev: Inputs, key: K, value: Inputs[K]): Inputs {
+  const next = { ...prev, [key]: value };
+  if (key === 'roomTempF' && next.flourSameAsRoom) next.flourTempF = next.roomTempF;
+  if (key === 'flourSameAsRoom' && value === true) next.flourTempF = next.roomTempF;
+  if (key === 'schedule' || key === 'coldFermentH') {
+    next.coldFermentH = clampColdFerment(next.schedule, next.coldFermentH);
+  }
+  return next;
+}
 
 export const DEFAULT_INPUTS: Inputs = {
   balls: 6,
   ballWeightG: C.DEFAULT_BALL_G,
-  coldFermentH: 24,
+  coldFermentH: COLD_FERMENT_H.retarded.default,
   schedule: 'retarded',
 
   roomTempF: 70,
@@ -18,7 +49,7 @@ export const DEFAULT_INPUTS: Inputs = {
 
   bigaFridgeH: 19,
   bigaRoomOnlyH: 16,
-  temperH: 2.5,
+  temperH: 1.5,
   finalDoughTempF: [null],
   waterUsedF: [null],
 };
@@ -101,10 +132,13 @@ export function persistedForNewBake(prev: Persisted): Persisted {
  */
 export const BOUNDS = {
   // §4.4. 3 is a hard floor, not a warning: 2 balls won't let a spiral hook
-  // grip AND asks for 116 °F water. Two independent reasons, same answer.
+  // grip AND asks for 126 °F water at the hot corner. Two independent
+  // reasons, same answer.
   balls: { min: C.MIN_BALLS, max: 24, step: 1 },
   ballWeightG: { min: 240, max: 300, step: 1 },
-  coldFermentH: { min: 6, max: 36, step: 1 },
+  // The widest track's range, for a generic clamp. Each track's own range is
+  // `COLD_FERMENT_H`, applied by `clampColdFerment` after this.
+  coldFermentH: { min: COLD_FERMENT_H.retarded.min, max: COLD_FERMENT_H.retarded.max, step: 1 },
 
   roomTempF: { min: 32, max: 120, step: 0.5 },
   flourTempF: { min: 32, max: 120, step: 0.5 },
@@ -117,7 +151,9 @@ export const BOUNDS = {
   // deliberately — §4.8 computes it and it is no longer a user choice.
   bigaFridgeH: { min: 18, max: 20, step: 0.5 },
   bigaRoomOnlyH: { min: 12, max: 18, step: 0.5 },
-  temperH: { min: 2, max: 3, step: 0.25 },
+  // 1.5–2 since MESSAGE-53 (was 2–3): Sisofo's 1–2 h, and the recipe's
+  // cooling figure puts a 39 °F ball at 60 °F in a little over an hour.
+  temperH: { min: 1.5, max: 2, step: 0.25 },
 
   /** Wide: this is a reading off a probe, and a wild one should be visible. */
   finalDoughTempF: { min: 55, max: 95, step: 0.1 },

@@ -33,7 +33,7 @@ export interface StepTable {
  * §8.2 `**detail, shown only when `<condition>`:**`. A closed set, resolved by
  * `detailConditionHolds` and never evaluated — the same reasoning as `ShownWhen`.
  */
-export type DetailCondition = 'nMix > 1' | 'nBiga > 1';
+export type DetailCondition = 'nMix > 1';
 
 export interface ConditionalDetail {
   /** Literally as written in the spec. */
@@ -57,15 +57,16 @@ export interface ConditionalWarning {
  * one convenient condition at a time, which is the same reasoning that keeps
  * `{token}` to bare identifiers.
  */
-export type ShownWhen = "schedule === 'retarded'" | "schedule === 'classic'";
+export type ShownWhen = "schedule === 'retarded'" | "schedule === 'classic'" | 'nMix > 1';
 
 export interface Step {
   id: string;
   phase: Phase;
   /**
-   * Render this step only on the named schedule. `biga-6` only: the temper does
-   * not exist on the classic track, where the biga is already at room
-   * temperature and `bigaTemper` is zero.
+   * Render this step only when its condition holds. `biga-6` on the retarded
+   * track: the temper does not exist on the classic one, where the biga is
+   * already at room temperature and `bigaTemper` is zero. `mix-0` at
+   * `nMix > 1`: the biga is split once, before the first mix (MESSAGE-53).
    */
   shownWhen?: ShownWhen;
   /** Short, imperative. */
@@ -119,8 +120,8 @@ export const STEPS: readonly Step[] = [
     id: "biga-1",
     phase: "biga",
     title: `Start the yeast, break up the flour`,
-    summary: `Weigh {bigaWaterPerBiga} g of water. Warm about ten times the yeast's weight of it to 100–110 °F, stir in {bigaADYPerBiga} g ADY and leave it 10 minutes. Meanwhile weigh {bigaFlourPerBiga} g of flour and whisk it hard or push it through a coarse sieve to break up the clumps.`,
-    values: [`Biga water: {bigaWaterPerBiga} g`, `ADY: {bigaADYPerBiga} g`, `Biga flour: {bigaFlourPerBiga} g{bigaCountSuffix}`],
+    summary: `Weigh {bigaWater} g of water. Warm about ten times the yeast's weight of it to 100–110 °F, stir in {bigaADY} g ADY and leave it 10 minutes. Meanwhile weigh {bigaFlour} g of flour and whisk it hard or push it through a coarse sieve to break up the clumps.`,
+    values: [`Biga water: {bigaWater} g`, `ADY: {bigaADY} g`, `Biga flour: {bigaFlour} g`],
     detail: `**The yeast gets warm water; the rest of the biga water stays at room temperature.** Active dry yeast rehydrates best near 104 °F. Below about 68 °F its cells can lose up to half their soluble contents, and the glutathione that leaks out slackens the dough (PizzaBlab). King Arthur gives the same advice for active dry yeast going into cool water. PizzaBlab's biga guide uses room-temperature water because it assumes fresh or instant yeast. The warm water is only for rehydration: no sugar, no proofing test.
 
 The yeast water comes out of the biga water, not on top of it. It warms the biga water only 2–3 °F, which nothing downstream reads.
@@ -134,12 +135,6 @@ Grain Craft arrives lumpy from the mill; the flour itself is fine. The lumps are
 A clump that survives into the biga keeps dry flour at its core, and dry flour never ferments. In a stiff 50% biga you can't find it by hand once the water is in, and it turns up later as a hard nodule in the finished dough.
 
 Weigh before you break it up, so flour lost in the sieve doesn't change your number.`,
-    detailWhen: {
-      condition: "nBiga > 1",
-      detail: `**This batch needs {nBiga} separate bigas.** The weights above are for one of them. Don't weigh the batch total into one container: {bigaFlourTotal} g of biga flour is more than the 1610 g the machine handles at this hydration.
-
-Make them back to back in separate containers. They ferment side by side on the same clock, so the steps that follow cover both. Only one fits in the mixer bowl; the second goes in its own tub.`,
-    },
     concepts: ["giorilli-standard"],
   },
   {
@@ -221,13 +216,30 @@ To make the cue objective, fill a small straight-sided jar with biga from the sa
 Without it, the calculator will ask for water hotter than a tap can supply, because the biga is too cold to reach your target dough temperature any other way.
 
 Leave the biga in the mixer bowl. The {bowlMassG} g stainless bowl is part of the thermal system, and the hour warms bowl and biga together. Tempering the biga on the counter leaves the bowl cold.`,
+    detailWhen: {
+      condition: "nMix > 1",
+      detail: `**A biga this size doesn't behave like a small one.** It cooled more slowly in the fridge and warms more slowly in this hour, so expect it riper and colder at the mix than a 6-ball biga on the same clock. Judge ripeness by the cue in the previous step, and take its temperature after you crumble it; the water target follows the reading.`,
+    },
+  },
+  {
+    id: "mix-0",
+    phase: "mix",
+    shownWhen: "nMix > 1",
+    title: `Split the biga`,
+    summary: `Split the tempered biga into {nMix} portions of {bigaMassPerMix} g. Leave mix 1's in the bowl and cover the others. Weigh out each mix's fresh flour and salt now too.`,
+    values: [`Biga per mix: {bigaMassPerMix} g`, `Fresh flour per mix: {freshFlourPerMix} g`, `Salt per mix: {saltPerMix} g`],
+    detail: `**Weigh out every mix before you start the first.** You're running {nMix} mixes, with five minutes budgeted for each changeover. That only works if the next mix's biga, flour and salt are already in their own containers. Weighing during the changeover stretches it to fifteen or twenty minutes, and every extra five minutes adds five minutes of fermentation to the first dough that nothing later can correct.
+
+Weigh the biga portions rather than judging them by eye. The biga carries 65% of each mix's flour and all of its yeast, so an uneven split changes each mix's formula, not just its size.
+
+The waiting portions warm toward room temperature while the earlier mixes run. That's expected: the changeover step asks you to measure the biga again before each later mix.`,
   },
   {
     id: "mix-1",
     phase: "mix",
     title: `Prep the bowl`,
     summary: `Crumble the biga as small as you can, add {freshFlourPerMix} g of fresh flour, and toss to coat.`,
-    values: [`Fresh flour: {freshFlourPerMix} g`],
+    values: [`Biga: {bigaMassPerMix} g`, `Fresh flour: {freshFlourPerMix} g`],
     detail: `The biga is the stiffest thing the mixer handles all session. Crumbled small, it breaks down smoothly; in large pieces it can trip the motor protection.
 
 The fresh flour isn't sieved. Its lumps break up in Phase A; the biga flour is sieved because mixing by hand leaves them intact.
@@ -235,12 +247,6 @@ The fresh flour isn't sieved. Its lumps break up in Phase A; the biga flour is s
 **Take both temperatures after you crumble the biga.** The calculator needs the biga's temperature when it meets the water, and handling warms it: on bake 1 the biga read **53 °F at pull and 58 °F once broken up**.
 
 The bowl doesn't warm with the biga, so read it separately: hold the probe against the bowl wall for five seconds. Each degree of bowl temperature is worth 0.66 °F of water at a 3-ball mix.`,
-    detailWhen: {
-      condition: "nMix > 1",
-      detail: `**Weigh out every mix before you start the first.** You're running {nMix} mixes, with five minutes budgeted for each changeover. That only works if the next mix's flour, biga and salt are already in their own containers. Weighing during the changeover stretches it to fifteen or twenty minutes, and every extra five minutes adds five minutes of fermentation to the first dough that nothing later can correct.
-
-Split the tempered biga into {nMix} equal portions of {bigaMassPerMix} g and cover them. Do the same with the fresh flour and salt.`,
-    },
     repeatsPerMix: true,
   },
   {
@@ -463,11 +469,15 @@ The final dough temperature here is the average of every mix's reading, since th
     id: "bake-1",
     phase: "bake",
     title: `Temper`,
-    summary: `Out of the fridge **2–3 hours** before baking; the timeline plans {temper} h. Target **60–65 °F at the core**, measured with a probe.`,
-    timerLabel: `2–3 h`,
+    summary: `Out of the fridge **1½–2 hours** before the first launch; the timeline plans {temper} h. Target **60–65 °F at the core**, measured with a probe.`,
+    timerLabel: `1.5–2 h`,
     detail: `Below **55 °F** the dough tears when you open it and won't get good oven spring. Above **70 °F** it goes slack and sticky and loses its shape on the peel.
 
-The look of the ball and the thermometer should agree. If a ball looks ready but reads 52 °F, trust the thermometer; the surface warms long before the core.`,
+The look of the ball and the thermometer should agree. If a ball looks ready but reads 52 °F, trust the thermometer; the surface warms long before the core.
+
+**Why 1½ hours.** Julian Sisofo gives his balls 1–2 hours at room temperature after the fridge. This recipe's own cooling figure points the same way: a ball that takes 3–4 hours to cool from 75 to 40 °F should reach 60 °F at the core in a little over an hour in a 70 °F kitchen, and 65 °F in about two. Still air on the counter may warm it more slowly than the fridge cooled it, so the core temperature decides, not the clock.
+
+**More than one tray: temper in waves**, so each ball reaches 60–65 °F at the core when its turn at the oven comes. Take the first tray out {temper} h before the first launch, the second at the first launch, and each one after that 45 minutes after the one before. In individual containers, pull them in groups of six.`,
     watchFor: `Balls relaxed and spread slightly, domed and airy, with a slow, incomplete rebound when poked.`,
   },
   {

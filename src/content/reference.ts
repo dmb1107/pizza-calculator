@@ -86,7 +86,7 @@ export const SOURCES: readonly Source[] = [
   {
     title: "Julian Sisofo — Contemporary pizza",
     url: "https://juliansisofo.com/blog/Contemporarypizza",
-    note: "a 50% biga with a warm start and then the fridge",
+    note: "a 50% biga with a warm start and then the fridge; balls 1–2 h at room temperature after the fridge",
   },
   {
     title: "Ooni help center — Halo Core min/max capacity and hydration limits",

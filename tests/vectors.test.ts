@@ -65,15 +65,10 @@ describe('spec §5 test vectors are internally consistent', () => {
   it('splits capacity per the §4.5 rules', () => {
     for (const v of BATCH_VECTORS) {
       const doughTotal = v.F * C.DOUGH_YIELD;
-      const bigaMass = v.bigaFlour + v.bigaWater;
       expect(
         Math.max(1, Math.ceil(Math.max(doughTotal / C.MAX_DOUGH, v.F / C.FLOUR_CAP_66))),
         `nMix for ${v.balls} balls`,
       ).toBe(v.nMix);
-      expect(
-        Math.max(1, Math.ceil(Math.max(v.bigaFlour / C.FLOUR_CAP_55, bigaMass / C.MAX_DOUGH))),
-        `nBiga for ${v.balls} balls`,
-      ).toBe(v.nBiga);
     }
   });
 

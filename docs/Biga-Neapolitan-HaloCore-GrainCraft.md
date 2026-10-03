@@ -74,10 +74,11 @@ Where the constants come from: **1.728** is the dough yield factor (1 + 0.70 wat
 
 ⚠️ **The two `0.375`s are unrelated.** One is final-mix water as a fraction of total flour; the other is the ADY percentage of biga flour. They match by coincidence.
 
-**Then check both Halo Core limits before you mix:**
+**Then check the Halo Core's limits before you mix:**
 
 - Final dough `F × 1.728` ≤ **2500 g**, and `F` ≤ **1505 g** → otherwise split the final mix
-- Biga flour `F × 0.65` ≤ **1610 g** → otherwise split the biga too
+
+The biga has no limit of its own. It's mixed by hand, so the mixer's caps don't apply to it, and it's always one biga, fermenting in the mixer bowl.
 
 Every mixing speed and duration (§4, §8) holds at any batch size. **The water-temperature formula doesn't:** the mixer bowl is a fixed thermal mass while everything else scales with flour, so the weights shift with batch size (§6). Friction factor *may* also change with scale, an untested idea (§6), which is why §6 keeps one value per mix size.
 
@@ -88,9 +89,11 @@ The Core takes **0.5–2.5 kg dough** and caps flour at **1505 g at 66%+ hydrati
 | Balls | Biga | Final mix |
 |---|---|---|
 | **12** | **One biga**: 1222.5 g flour + 611.2 g water + 4.58 g ADY (1833.7 g), which fits | Split the biga into **2 × 916.9 g** and run **two 6-ball final mixes** |
-| **18** | **Two bigas**, each the 9-ball spec (1375.3 g), because 1833.7 g of biga flour exceeds the 1610 g low-hydration cap | **Two 9-ball final mixes** |
+| **18** | **One biga**: 1833.7 g flour + 916.9 g water + 6.88 g ADY (2750.6 g) | Split the biga into **2 × 1375.3 g** and run **two 9-ball final mixes** |
 
-⚠️ **A split batch needs its water temperature calculated for each mix.** The thermal system is the mix, and the bowl is in a different state for each one (§6). At 18 balls there's also only one mixer bowl for two bigas, so the second ferments in another container.
+⚠️ **A split batch needs its water temperature calculated for each mix.** The thermal system is the mix, and the bowl is in a different state for each one (§6).
+
+**A big biga doesn't behave like a small one.** It cools more slowly in the fridge and warms more slowly in its hour on the counter, so a 12- or 18-ball biga arrives riper and colder than a 6-ball one on the same clock. Judge it by the ripeness cue and measure it after crumbling; the water target follows the reading.
 
 ### Small batches: 3 balls is the floor
 
@@ -325,7 +328,7 @@ The table is keyed on mix size: 12 balls runs as two 6-ball mixes and reads the 
 | Bowl state | Take `T_bowl` from | When |
 |---|---|---|
 | **Cold, held the biga** | biga temperature | Mix 1, and every single-mix batch |
-| **Room temperature** | room temperature | Bowl washed and left out; a second biga fermented elsewhere |
+| **Room temperature** | room temperature | Bowl washed and left out |
 | **Warm from the previous mix** | DDT | Mix 2 onward: *an upper bound; measure it* |
 
 **Why "upper bound", and why measure.** The bowl can't come off a mix warmer than the dough it held, so DDT bounds it, provided that mix finished at or below DDT. How far it cools toward the room during the 5-minute changeover has never been measured, and in a cold kitchen the room is further away. Read it before every mix after the first (below), and log it on the first split bake.
@@ -433,18 +436,18 @@ Two hours at room temperature start the biga, and the fridge then holds it at a 
 | Biga rest before mixing | 1 h | ambient | §8.2 |
 | Final mix | ~30 min | DDT 74–75 °F | §8.2 |
 | Bulk rest | 45–60 min | ambient | §8.3 step 7 |
-| Divide and ball | 15–20 min | ambient | §8.3 step 8 |
+| Divide and ball | 16–43 min by batch size (20 at 6 balls) | ambient | §8.3 step 8 |
 | Balls at room temperature | **set by how far the dough landed from DDT**: 90 min on target, 45–180 at the limits | ambient | §8.3 step 9 |
 | Dough, refrigerated | **6–36 h** | 38–40 °F | §8.3 step 10 |
-| Temper | 2–3 h | ambient | §8.4 step 11 |
+| Temper | 1½–2 h | ambient | §8.4 step 11 |
 
-**Total: ~34 h (6 h cold) · ~52 h (24 h cold) · ~64 h (36 h cold)**
+**Total: ~33 h (6 h cold) · ~51 h (24 h cold) · ~63 h (36 h cold)**
 
-Those are the defaults. Everything except the cold ferment is fixed overhead: **27.8 h at the defaults, 25.6–30.8 h across the full input ranges**, so the total is roughly `cold ferment + 28 h`.
+Those are the defaults. Everything except the cold ferment is fixed overhead: **26.8 h at the defaults, 25.0–29.9 h across the full input ranges**, so the total is roughly `cold ferment + 27 h`.
 
-**Use 24 h cold (~52 h total).** It's the only cold-ferment length that has been baked; 6 h and 36 h are inside the calculator's range but untested.
+**Use 24 h cold (~51 h total).** It's the only cold-ferment length that has been baked; 6 h and 36 h are inside the calculator's range but untested.
 
-**A two-mix batch (10–18 balls at 265 g) has 28.1 h of overhead**, not 27.8. The second mix and changeover add 0.58 h, and the stagger correction below takes 0.29 h back off the ball rise, so the net is +0.29 h. A third mix adds the same again: three mixes (19 balls and up) come to 28.4 h. The 5-minute changeover assumes the bowl isn't cleaned and every mix is weighed out before the first one starts.
+**A two-mix batch (10–18 balls at 265 g) has 27.2–27.4 h of overhead** (27.25 at 12 balls), not 26.8. The second mix and changeover add 0.58 h, the stagger correction below takes 0.29 h back off the ball rise, and dividing more balls takes longer: about 12½ minutes plus 1¼ a ball, an estimate worth timing once. Three mixes (19 balls and up) come to 27.7–27.8 h. The 5-minute changeover assumes the bowl isn't cleaned and every mix is weighed out before the first one starts.
 
 ### Split batches run on one clock, and the earlier doughs are ahead of it
 
@@ -471,11 +474,11 @@ Rinsing is still available: thin stainless reaches roughly the rinse temperature
 
 ### Alternative: classic room-temperature biga
 
-If you can hold **61–65 °F** reliably (a wine fridge, a cool basement, winter), run the codified version: **16–18 h at 61–65 °F**, then a short final proof. Total ~24–30 h. This gives the truest biga acid profile, because at that temperature the fermentation develops flavor the fridge can't.
+If you can hold **61–65 °F** reliably (a wine fridge, a cool basement, winter), run the codified version: **16–18 h at 61–65 °F**, then a short final proof: the balls get **6–8 h** in the fridge instead of 24, since the biga arrives fully ripe. Total ~27–31 h. This gives the truest biga acid profile, because at that temperature the fermentation develops flavor the fridge can't.
 
 Your Home Assistant sensors would show quickly whether anywhere in the house holds that range.
 
-### Going past 64 h
+### Going past 63 h
 
 Beyond 36 h of cold ferment you're past documented practice and into your own calibration. Two options, in order of preference:
 
@@ -500,7 +503,7 @@ Do neither until the ~50 h version has worked twice.
 
 ### Stage 2: Final mix (~15 min run time)
 
-Have everything weighed before you start, and the water already blended to temperature.
+Have everything weighed before you start, and the water already blended to temperature. **On a split batch, first split the tempered biga by weight into one portion per mix**, leave mix 1's in the bowl, cover the rest, and weigh out every mix's fresh flour and salt (§7).
 
 | Phase | Speed (lit segments) | Time | What |
 |---|---:|---:|---|
@@ -613,7 +616,9 @@ Flour dusting comes from **wooden** dough boxes, which breathe and buffer moistu
 
 ### Stage 4: Temper and bake
 
-11. Out of the fridge **2–3 h** before baking. Target **60–65 °F at the core**, measured with a probe. Under 55 °F the dough tears when you open it and won't get good oven spring; over 70 °F it goes slack and sticky.
+11. Out of the fridge **1½–2 h** before the first launch. Target **60–65 °F at the core**, measured with a probe. Under 55 °F the dough tears when you open it and won't get good oven spring; over 70 °F it goes slack and sticky.
+    **More than one tray: temper in waves.** First tray 1½ h before the first launch, the second at the first launch, and each one after that 45 minutes after the one before. In individual containers, pull them in groups of six.
+    Julian Sisofo gives his balls 1–2 h after the fridge, and this recipe's cooling figure agrees: a ball that takes 3–4 h to cool from 75 to 40 °F should reach 60 °F at the core in a little over an hour and 65 °F in about two. Still counter air may be slower, so the core temperature decides, not the clock.
 12. Ready when the balls have relaxed and spread slightly, domed, and feel airy, with a slow, incomplete rebound when poked.
 
 ---
@@ -717,7 +722,7 @@ BIGA 65% @ 50% hyd  ·  TOTAL HYD 70%  ·  SALT 2.8%  ·  265 g BALLS  ·  DY 1.
  6 balls   940.4   611.2   305.6   2.29   329.1   352.6   26.3   211.6   141.1
  9 balls  1410.6   916.9   458.4   3.44   493.7   529.0   39.5   317.4   211.6
  12 = one 1222.5 g-flour biga, split, 2 x 6-ball mixes
- 18 = two 9-ball bigas (1833.7 g biga flour > 1610 cap), 2 x 9-ball mixes
+ 18 = one 1833.7 g-flour biga, split, 2 x 9-ball mixes. ONE BIGA AT EVERY SIZE.
  *ADY 0.375% of biga flour = 1% fresh = 0.30% IDY, Giorilli.
   Giorilli is a 44-45% biga; ours is 50% (wetter = faster). Pull on the cue.
   Room-temp biga off baseline -> PizzaBlab calculator, not an extrapolated table.
@@ -731,21 +736,23 @@ BIGA = HAND-MIXED, 3-6 min, gnocchi chunks, NO dry flour, NO kneading.
        Doubled = over-mixed.  Sharp acid smell = over-fermented.
 
 SCHEDULE (retarded): biga 2h RT + 18-20h fridge -> 1h temper -> mix
-       -> bulk 1h -> ball -> RT per dough temp -> 6-36h fridge -> 2-3h temper.
-       Fixed overhead outside the cold ferment = 27.8 h at defaults, so
-       TOTAL = coldFerment + ~28 h:  ~34 h @6  ~52 h @24  ~64 h @36.
+       -> bulk 1h -> ball -> RT per dough temp -> 6-36h fridge -> 1.5-2h temper.
+       Fixed overhead outside the cold ferment = 26.8 h at defaults, so
+       TOTAL = coldFerment + ~27 h:  ~33 h @6  ~51 h @24  ~63 h @36.
        24 h cold is the only length baked so far.
-       SPLIT BATCH: 2 mixes (10-18 balls) = 28.1 h overhead, 3 mixes
-       (19-24) = 28.4 h. Each mix ends 35 min after the one before, and one
-       container can't run separate clocks. Bulk clocks from the LAST mix;
+       SPLIT BATCH: 2 mixes (10-18 balls) = 27.2-27.4 h overhead, 3 mixes
+       (19-24) = 27.7-27.8 h. Divide ~12.5 min + 1.25 min/ball (estimate).
+       Each mix ends 35 min after the one before, and one container can't
+       run separate clocks. Bulk clocks from the LAST mix;
        then cut HALF the stagger off the ball rise: 2 mixes 17.5 min
        (90 -> 72.5), 3 mixes 35 min (90 -> 55). This SPLITS the error
        between the doughs. On a warm dough the 45-min rise floor eats the
        correction - accept it, fix upstream.
        DON'T clean the bowl between mixes: residue is at DDT, so it doesn't
        change the heat balance, and the yield evens out since every mix
-       bulks together. Pre-weigh EVERY mix before starting mix 1.
-       Classic alt: biga 16-18h @ 61-65F, then short proof (~24-30 h).
+       bulks together. Split the biga by WEIGHT and pre-weigh EVERY mix
+       before starting mix 1.
+       Classic alt: biga 16-18h @ 61-65F, then 6-8h fridge (~27-31 h).
 
 WATER TEMP (includes the bowl; no fixed multiplier works)
   Ct = Cb+Cf+Cw+Cs (dough)   C_bowl = 965 x 0.12 = 115.8
@@ -799,7 +806,9 @@ BULK 45-60 min (no folds) -> ball -> RT per offset from DDT -> fridge (unstacked
   on target=90min  -1F=95  -2F=101  -3F=106  -4F=112  -5F=118   (+1F=85, +2F=80)
   R' = (90+35)/f - 35. The 35 (cooldown) is an ESTIMATE; re-measure on a new fridge.
   9 balls = DDT 74, so a 74 F dough is ON TARGET = 90 min, not 95.
-TEMPER 2-3 h to 60-65 F core.
+TEMPER 1.5-2 h to 60-65 F core; the core decides, not the clock.
+  More than one tray: WAVES. 1st tray 1.5 h before first launch, 2nd at first
+  launch, then +45 min each. Containers: pull in groups of 6.
 BAKE gauge 750 F, FULL FLAME, 60-90 s, turn every 15-20 s. Do not push to 800+.
 ```
 

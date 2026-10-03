@@ -126,6 +126,24 @@ const KNOWN_MARKERS = [
 
 const markersIn = (chunk: string) => [...chunk.matchAll(/^\*\*([^*\n]+?):\*\*/gm)].map((m) => m[1] as string);
 
+/**
+ * §8.2a declares the repeating steps in prose: "Mark **`mix-1` … `mix-8`**
+ * with `repeatsPerMix: true`". Read here as a span of §8.2's step order; the
+ * generator reads it as a numeric range, so the two agree only if both find
+ * the same steps. Both derived it from the phase until MESSAGE-53's `mix-0`,
+ * a mix-phase step that runs once.
+ */
+const REPEATING_IDS: ReadonlySet<string> = (() => {
+  const m = /Mark \*\*`([a-z0-9-]+)` … `([a-z0-9-]+)`\*\* with `repeatsPerMix: true`/.exec(SPEC);
+  if (!m) throw new Error('§8.2a: no repeatsPerMix span');
+  const section = SPEC.slice(SPEC.indexOf('### 8.2 Steps'), SPEC.indexOf('### 8.3 Concepts'));
+  const order = [...section.matchAll(/^#### `([a-z0-9-]+)` — /gm)].map((x) => x[1] as string);
+  const from = order.indexOf(m[1] as string);
+  const to = order.indexOf(m[2] as string);
+  if (from < 0 || to < from) throw new Error(`§8.2a: ${m[1]} … ${m[2]} is not a span of §8.2's steps`);
+  return new Set(order.slice(from, to + 1));
+})();
+
 const specSteps = SPEC.slice(SPEC.indexOf('### 8.2 Steps'), SPEC.indexOf('### 8.3 Concepts'))
   .split(/\n#### /)
   .slice(1)
@@ -160,10 +178,9 @@ const specSteps = SPEC.slice(SPEC.indexOf('### 8.2 Steps'), SPEC.indexOf('### 8.
       markers: markersIn(chunk),
       warningWhen: conditionalWarning(chunk),
       troubleshoot: table(chunk, '**troubleshoot:**'),
-      // §8.2a marks the WHOLE mix phase as repeating, in prose rather than
-      // per-step, so it is derived from the phase. Only `mix-8` carries the
-      // explicit marker, for `suppressOnFinal`.
-      repeatsPerMix: field(chunk, 'phase') === 'mix',
+      // §8.2a names the repeating span in prose (above). Only `mix-8` carries
+      // the explicit marker, for `suppressOnFinal`.
+      repeatsPerMix: REPEATING_IDS.has(head[1] as string),
       suppressOnFinal: /\*\*repeatsPerMix:\*\*.*suppress/i.test(chunk),
     };
   });
@@ -419,8 +436,7 @@ describe('§7.3 capacity messages are reproduced verbatim', () => {
 
   it.each([
     ['split', blockquoteAfter('**Split required')],
-    ['bigaSplit', blockquoteAfter('**Biga split required')],
-    ['divideBiga', quotedAfter(section, "keep §4.5's line:")],
+    ['divideBiga', quotedAfter(section, '**One biga, divided')],
     ['nearLimit', blockquoteAfter('**Near the limit')],
     ['belowMinimum', blockquoteAfter('- **As a guard')],
     ['minimumAtInput', quotedAfter(section, 'shows, next to the field:')],
@@ -431,9 +447,10 @@ describe('§7.3 capacity messages are reproduced verbatim', () => {
   });
 
   it('has exactly the messages §7.3 defines — one blockquote per condition', () => {
-    // Four conditions carry a blockquote; a fifth would be a message nothing renders.
-    expect((section.match(/^> /gm) ?? []).length).toBe(4);
-    expect(Object.keys(CAPACITY)).toHaveLength(7);
+    // Three conditions carry a blockquote; a fourth would be a message nothing
+    // renders. MESSAGE-53 removed the biga split's.
+    expect((section.match(/^> /gm) ?? []).length).toBe(3);
+    expect(Object.keys(CAPACITY)).toHaveLength(6);
   });
 });
 

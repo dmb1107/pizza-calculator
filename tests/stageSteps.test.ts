@@ -31,8 +31,9 @@ const DEFAULTS: ScheduleAdjustments = {
   bigaRoomOnlyH: 16,
   ballRoomTempH: 1.5,
   nMix: 1,
+  balls: 6,
   coldFermentH: 24,
-  temperH: 2.5,
+  temperH: 1.5,
 };
 
 /** Which step tells the baker to do each stage. */
@@ -44,7 +45,8 @@ const INSTRUCTED_BY: Record<StageKey, readonly string[]> = {
   bigaFridge: ['biga-4b'],
   bigaRoomOnly: ['biga-4'],
   bigaTemper: ['biga-6'],
-  mix: ['mix-1', 'mix-2', 'mix-3', 'mix-4', 'mix-5', 'mix-6', 'mix-7', 'mix-8'],
+  // mix-0, the split, belongs to the mix stage too (§4.7, MESSAGE-53).
+  mix: ['mix-0', 'mix-1', 'mix-2', 'mix-3', 'mix-4', 'mix-5', 'mix-6', 'mix-7', 'mix-8'],
   bulkRest: ['bulk-1'],
   divideBall: ['bulk-2'],
   ballRoomTemp: ['bulk-3'],

@@ -383,16 +383,15 @@ export function bowlReadingCost(thermal: Thermal): {
 // §4.5 Capacity splits
 // ---------------------------------------------------------------------------
 
+/**
+ * §4.5. One biga at every size (MESSAGE-53, Dave's call): it is mixed by hand
+ * and ferments in the mixer bowl, so no machine cap applies to it. At
+ * `nMix > 1` it is divided by weight, once, in `mix-0`.
+ */
 export interface Capacity {
   /** Number of separate final mixes the Halo Core needs. */
   nMix: number;
-  /** Number of separate biga batches. */
-  nBiga: number;
   doughPerMix: number;
-  bigaMassPerBatch: number;
-  bigaFlourPerBatch: number;
-  /** One biga divides by weight across several final mixes. The 12-ball case. */
-  divideBigaAcrossMixes: boolean;
 }
 
 /** §4.5. */
@@ -401,20 +400,7 @@ export function computeCapacity(f: Formula): Capacity {
     1,
     Math.ceil(Math.max(f.doughTotal / C.MAX_DOUGH, f.flourTotal / C.FLOUR_CAP_66)),
   );
-  const nBiga = Math.max(
-    1,
-    Math.ceil(Math.max(f.bigaFlour / C.FLOUR_CAP_55, f.bigaMass / C.MAX_DOUGH)),
-  );
-  const doughPerMix = f.doughTotal / nMix;
-
-  return {
-    nMix,
-    nBiga,
-    doughPerMix,
-    bigaMassPerBatch: f.bigaMass / nBiga,
-    bigaFlourPerBatch: f.bigaFlour / nBiga,
-    divideBigaAcrossMixes: nBiga < nMix,
-  };
+  return { nMix, doughPerMix: f.doughTotal / nMix };
 }
 
 /**

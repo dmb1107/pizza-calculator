@@ -100,9 +100,11 @@ describe('recipe text', () => {
     expect(out).toContain('divide the one biga by weight');
   });
 
-  it('names the biga split at 18 balls', () => {
+  it('keeps one biga at 18 balls, divided by weight (MESSAGE-53)', () => {
     const out = text({ balls: 18 });
-    expect(out).toMatch(/Split\s+2 batches/);
+    expect(out).toMatch(/^ +Flour +1833\.7 g$/m);
+    expect(out).not.toMatch(/batches of/);
+    expect(out).toContain('2 mixes of ~2437.5 g — divide the one biga by weight');
   });
 
   it('gives the water as one target with no split, at any temperature', () => {

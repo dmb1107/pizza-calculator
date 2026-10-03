@@ -3,7 +3,7 @@ import { Panel } from './Panel';
 import { Markdown } from './Markdown';
 import { CAPACITY } from '../content/capacity';
 import { Badge, NumberField, SegmentedField, SliderField, Stepper, ToggleField } from './fields';
-import { BOUNDS } from '../state/defaults';
+import { BOUNDS, COLD_FERMENT_H } from '../state/defaults';
 import { bigaReadingCost, bowlReadingCost } from '../lib/engine';
 import { formatBallsPerMix, formatCoefficient, formatTempF } from '../lib/format';
 import type { AppState } from '../state/useAppState';
@@ -80,8 +80,8 @@ export function BatchPanel(s: AppState) {
           unit=" h"
           value={inputs.coldFermentH}
           onChange={(v) => setInput('coldFermentH', v)}
-          min={BOUNDS.coldFermentH.min}
-          max={BOUNDS.coldFermentH.max}
+          min={COLD_FERMENT_H[inputs.schedule].min}
+          max={COLD_FERMENT_H[inputs.schedule].max}
           hint="The biga does nearly all the fermentation, so extra time goes into the biga and the ball proof stays short."
         />
         <SegmentedField

@@ -12,10 +12,13 @@ const SPEC = readFileSync(new URL('../docs/WEBSITE-SPEC-biga-calculator.md', imp
  * where nothing could assert against it.
  */
 
+/** The repeating block's keys. By `repeatsPerMix`, not phase: `mix-0` is a mix-phase step that runs once. */
 const mixKeys = (nMix: number, schedule: Schedule = 'retarded') =>
   expandSteps(nMix, schedule)
-    .filter((i) => i.step.phase === 'mix')
+    .filter((i) => i.step.repeatsPerMix)
     .map((i) => i.key);
+
+const allKeysOf = (nMix: number, schedule: Schedule) => expandSteps(nMix, schedule).map((i) => i.key);
 
 describe('§8.2a golden sequence', () => {
   /**
@@ -35,9 +38,10 @@ describe('§8.2a golden sequence', () => {
    * cannot satisfy, because the expected list comes from a person reasoning
    * about the procedure rather than from the thing under test.
    *
-   * Counts: retarded 19 / 27 / 35, classic 17 / 25 / 33 at nMix 1 / 2 / 3.
-   * `biga-2` is deliberately absent: MESSAGE-34 folded it into `biga-3` and
-   * kept every other id.
+   * Counts: retarded 19 / 28 / 36, classic 17 / 26 / 34 at nMix 1 / 2 / 3.
+   * `mix-0` (split the biga, MESSAGE-53) renders once, before the first pass,
+   * only when the batch splits. `biga-2` is deliberately absent: MESSAGE-34
+   * folded it into `biga-3` and kept every other id.
    */
   const allKeys = (nMix: number, schedule: Schedule) =>
     expandSteps(nMix, schedule).map((i) => i.key);
@@ -66,9 +70,10 @@ describe('§8.2a golden sequence', () => {
   });
 
   it('retarded, nMix 2 — two complete passes', () => {
-    // 12 balls. 27 instances.
+    // 12 balls. 28 instances, as §8.2a writes the order out.
     expect(allKeys(2, 'retarded')).toEqual([
       'biga-1', 'biga-3', 'biga-4', 'biga-4b', 'biga-5', 'biga-6',
+      'mix-0', // split the biga — once, after the temper, before the first pass
       'mix-1#1', 'mix-2#1', 'mix-3#1', 'mix-4#1', 'mix-5#1', 'mix-6#1', 'mix-7#1',
       'mix-8#1', // changeover, BETWEEN the passes — never last
       'mix-1#2', 'mix-2#2', 'mix-3#2', 'mix-4#2', 'mix-5#2', 'mix-6#2', 'mix-7#2',
@@ -80,6 +85,7 @@ describe('§8.2a golden sequence', () => {
   it('classic, nMix 2 — two complete passes', () => {
     expect(allKeys(2, 'classic')).toEqual([
       'biga-1', 'biga-3', 'biga-4', 'biga-5',
+      'mix-0', // after the ripeness check: no temper on this track
       'mix-1#1', 'mix-2#1', 'mix-3#1', 'mix-4#1', 'mix-5#1', 'mix-6#1', 'mix-7#1',
       'mix-8#1',
       'mix-1#2', 'mix-2#2', 'mix-3#2', 'mix-4#2', 'mix-5#2', 'mix-6#2', 'mix-7#2',
@@ -91,6 +97,7 @@ describe('§8.2a golden sequence', () => {
   it('retarded, nMix 3 — three complete passes', () => {
     expect(allKeys(3, 'retarded')).toEqual([
       'biga-1', 'biga-3', 'biga-4', 'biga-4b', 'biga-5', 'biga-6',
+      'mix-0',
       'mix-1#1', 'mix-2#1', 'mix-3#1', 'mix-4#1', 'mix-5#1', 'mix-6#1', 'mix-7#1',
       'mix-8#1',
       'mix-1#2', 'mix-2#2', 'mix-3#2', 'mix-4#2', 'mix-5#2', 'mix-6#2', 'mix-7#2',
@@ -104,6 +111,7 @@ describe('§8.2a golden sequence', () => {
   it('classic, nMix 3 — three complete passes', () => {
     expect(allKeys(3, 'classic')).toEqual([
       'biga-1', 'biga-3', 'biga-4', 'biga-5',
+      'mix-0',
       'mix-1#1', 'mix-2#1', 'mix-3#1', 'mix-4#1', 'mix-5#1', 'mix-6#1', 'mix-7#1',
       'mix-8#1',
       'mix-1#2', 'mix-2#2', 'mix-3#2', 'mix-4#2', 'mix-5#2', 'mix-6#2', 'mix-7#2',
@@ -123,10 +131,11 @@ describe('§8.2a golden sequence', () => {
     };
     const counts = (schedule: Schedule) => [1, 2, 3].map((n) => allKeys(n, schedule).length);
     expect(counts('classic')).toEqual(published('classic'));
-    // MESSAGE-32 corrected the retarded row (19 / 27 / 35 before biga-4b).
+    // MESSAGE-32 corrected the retarded row (19 / 27 / 35 before biga-4b), and
+    // MESSAGE-53's mix-0 added one to each split count.
     expect(counts('retarded')).toEqual(published('retarded'));
-    expect(counts('retarded')).toEqual([19, 27, 35]);
-    expect(counts('classic')).toEqual([17, 25, 33]);
+    expect(counts('retarded')).toEqual([19, 28, 36]);
+    expect(counts('classic')).toEqual([17, 26, 34]);
   });
 
   it('differs between schedules by exactly the fridge and temper steps', () => {
@@ -205,8 +214,24 @@ describe('§8.2a expansion', () => {
     // sequences above; this derives from STEPS on purpose, to catch a template
     // being added or dropped rather than reordered.
     const keys = expandSteps(1, 'retarded').map((i) => i.key);
-    expect(keys).toEqual(STEPS.filter((s) => s.id !== 'mix-8').map((s) => s.id));
+    expect(keys).toEqual(STEPS.filter((s) => s.id !== 'mix-8' && s.id !== 'mix-0').map((s) => s.id));
     expect(keys.every((k) => !k.includes('#'))).toBe(true);
+  });
+
+  it('splits the biga once, before the first pass, only when the batch splits', () => {
+    // MESSAGE-53. mix-0 is a mix-phase step that does NOT repeat: were it in
+    // the repeating block, mix 2's pass would open by splitting the biga again.
+    const mix0 = STEPS.find((s) => s.id === 'mix-0')!;
+    expect(mix0).toMatchObject({ phase: 'mix', shownWhen: 'nMix > 1' });
+    expect(mix0.repeatsPerMix ?? false).toBe(false);
+    for (const schedule of ['retarded', 'classic'] as const) {
+      expect(allKeysOf(1, schedule)).not.toContain('mix-0');
+      for (const nMix of [2, 3]) {
+        const keys = allKeysOf(nMix, schedule);
+        expect(keys.filter((k) => k.startsWith('mix-0')), `${schedule} nMix ${nMix}`).toEqual(['mix-0']);
+        expect(keys[keys.indexOf('mix-0') + 1]).toBe('mix-1#1');
+      }
+    }
   });
 
   it('gives every instance a unique key', () => {
@@ -236,19 +261,19 @@ describe('§8.2a expansion', () => {
 });
 
 describe('§8.2 conditional detail conditions', () => {
-  const ctx = { nMix: 1, nBiga: 1 };
+  const ctx = { nMix: 1 };
 
-  it('is exactly the closed set — nMix > 1, nBiga > 1', () => {
-    expect([...DETAIL_CONDITION_NAMES].sort()).toEqual(['nBiga > 1', 'nMix > 1']);
+  it('is exactly the closed set — nMix > 1', () => {
+    expect([...DETAIL_CONDITION_NAMES]).toEqual(['nMix > 1']);
   });
 
   it('throws on anything outside it — including the retired names', () => {
     // `openDiameterCapped` was renamed in MESSAGE-19 because it was wrong at
     // 266 g (capped by 0.02 in, correctly hidden), and its successor
-    // `thickerThanDefault` went with §4.9's opening diameter in MESSAGE-51.
-    // Content still carrying either name must fail loudly, not borrow some
-    // other test.
-    for (const bad of ['openDiameterCapped', 'thickerThanDefault', 'nMix > 2', "schedule === 'retarded'", '']) {
+    // `thickerThanDefault` went with §4.9's opening diameter in MESSAGE-51,
+    // and `nBiga > 1` with `nBiga` in MESSAGE-53. Content still carrying any
+    // of them must fail loudly, not borrow some other test.
+    for (const bad of ['openDiameterCapped', 'thickerThanDefault', 'nBiga > 1', 'nMix > 2', "schedule === 'retarded'", '']) {
       expect(() => detailConditionHolds(bad, ctx), JSON.stringify(bad)).toThrow(/unknown detail condition/);
     }
   });
@@ -256,10 +281,9 @@ describe('§8.2 conditional detail conditions', () => {
   it('reads each condition from its own input', () => {
     // The ternary this replaced answered anything but `nMix > 1` with the
     // biga-split test, so a third condition would have borrowed it.
-    expect(detailConditionHolds('nMix > 1', { ...ctx, nBiga: 2 })).toBe(false);
-    expect(detailConditionHolds('nMix > 1', { ...ctx, nMix: 2 })).toBe(true);
-    expect(detailConditionHolds('nBiga > 1', { ...ctx, nMix: 2 })).toBe(false);
-    expect(detailConditionHolds('nBiga > 1', { ...ctx, nBiga: 2 })).toBe(true);
+    expect(detailConditionHolds('nMix > 1', ctx)).toBe(false);
+    expect(detailConditionHolds('nMix > 1', { nMix: 2 })).toBe(true);
+    expect(detailConditionHolds('nMix > 1', { nMix: 3 })).toBe(true);
   });
 
   it('covers every conditional block the content carries', () => {
@@ -270,11 +294,15 @@ describe('§8.2 conditional detail conditions', () => {
     expect([...new Set(used)].sort()).toEqual([...DETAIL_CONDITION_NAMES].sort());
   });
 
-  it('keeps it out of shownWhen, which gates whole steps', () => {
-    // MESSAGE-18 called §4.9's condition a shownWhen condition, but §8.2 wrote
-    // it as a conditional DETAIL block inside bulk-2. Were a detail condition
-    // step-level, the whole step would vanish whenever it didn't hold.
-    const step = { ...STEPS[0]!, shownWhen: 'nBiga > 1' as never };
-    expect(() => expandSteps(1, 'retarded', [step])).toThrow(/unknown shownWhen/);
+  it('resolves shownWhen from its own closed set, which gates whole steps', () => {
+    // `nMix > 1` is in both sets since MESSAGE-53 (`mix-0`), resolved by each
+    // on its own; a retired or unknown condition throws at the step level too.
+    for (const bad of ['nBiga > 1', 'thickerThanDefault', 'nMix > 2']) {
+      const step = { ...STEPS[0]!, shownWhen: bad as never };
+      expect(() => expandSteps(1, 'retarded', [step]), bad).toThrow(/unknown shownWhen/);
+    }
+    const split = { ...STEPS[0]!, shownWhen: 'nMix > 1' as const };
+    expect(expandSteps(1, 'retarded', [split])).toEqual([]);
+    expect(expandSteps(2, 'classic', [split]).map((i) => i.key)).toEqual([split.id]);
   });
 });

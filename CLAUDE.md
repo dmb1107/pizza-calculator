@@ -118,6 +118,8 @@ question:
 | `FINDINGS-52-to-recipe-agent.md` | Reply to MESSAGE-51. Four figures it filed as FIXED are claimed (2–3 °F, 11 hours, 2.2–3.75%, 0.64%); the gate now reads concept titles; `biga-1`'s chip suffix at `nBiga > 1`; Grain Craft's ash is a USDA database value, and AVPN's two sources disagree on type 00 |
 | `MESSAGE-52.md` | Part 2 of Dave's review, and the reply to FINDINGS-52: `COOLDOWN_EQUIV_MIN` 150 → 35 (an estimate from `Q_DOUBLING_F`); `DEFAULT_FF` retired, bake 1's normalized 10.791045 is the FF in use at every size until a counted bake; the probe's remaining friction from Phases C and D at their references (4.5325 × Ct/TOT), no FF; the ash argument withdrawn. Part 3 (MESSAGE-53) follows our reply |
 | `FINDINGS-53-to-recipe-agent.md` | Reply to MESSAGE-52. All reproduced. §4.2's two app-default sentences weren't swept; §4.10's zero crossing is 56.0–56.7; 35 sits a minute above the middle of 29–39; our ingredients card still said "room temperature" for the biga water |
+| `MESSAGE-53.md` | Part 3, the last of Dave's review, and the reply to FINDINGS-53: one biga at every size (`nBiga`, `FLOUR_CAP_55`, the biga-split warning and the `PerBiga` scope removed); `mix-0`, split the biga once at `nMix > 1`; `biga-6`'s large-biga note; temper 1.5–2 h (planning 1.5) with Dave's waves; divide scales with total balls (timeline only); classic cold ferment 6–8 h, default 6 |
+| `FINDINGS-54-to-recipe-agent.md` | Reply to MESSAGE-53. All reproduced. Both parsers derived `repeatsPerMix` from the phase, so `mix-0` would have repeated: they now read §8.2a's span, each in its own way. `mix-0` says "tempered" on the classic track; §8.1 still names `{bigaCountSuffix}`; the temper times were rounded twice |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -132,7 +134,12 @@ won't be obvious until 50 hours of fermentation later.
 
 **The whole `mix` phase repeats, and instances are the primary key.** §8.2a:
 `mix-1` … `mix-8` carry `repeatsPerMix`, so at `nMix = 2` the list renders them
-twice with ids `mix-2#1`, `mix-2#2`. **`expandSteps` repeats the contiguous
+twice with ids `mix-2#1`, `mix-2#2`. **`mix-0` (split the biga, MESSAGE-53) is
+a `mix`-phase step that does not repeat**: shown once, before `mix-1#1`, when
+`nMix > 1`. So repetition is read from §8.2a's sentence "Mark **`mix-1` …
+`mix-8`** with `repeatsPerMix: true`", never from the phase: the generator
+reads it as a numeric range, `steps.test.ts` as a span of step order. Both
+used to derive it from the phase, which would have repeated `mix-0`. **`expandSteps` repeats the contiguous
 block per mix, not each template in turn** — the baker runs mix-1 through mix-8,
 then mix-1 through mix-7 again. Repeating each template individually gives the
 same instance count and the same labels but the wrong procedure: both bowls
@@ -145,10 +152,12 @@ instance id is the bare template id, so nothing changes for 3, 6 or 9 balls and
 no persisted checkbox is orphaned.
 
 **Step tokens are scoped to their step, and getting that wrong is a live
-bug class.** `mix-*` are per-mix steps, so `{phaseAWater}`, `{phaseBWater}` and
-`{salt}` bind to per-mix amounts — a batch total there would have the baker pour
-double into mix 1. `biga-1`/`biga-3` are per-biga, hence `{bigaFlourPerBiga}`.
-The ingredients card still shows batch totals; that is the shopping list.
+bug class.** `mix-*` are per-mix steps, so they bind `{phaseAWaterPerMix}`,
+`{phaseBWaterPerMix}` and `{saltPerMix}` — a batch total there would have the
+baker pour double into mix 1. There is one biga at every size since
+MESSAGE-53, so the biga steps take batch totals, bare: `{bigaFlour}`,
+`{bigaWater}`, `{bigaADY}`. The ingredients card shows batch totals; that is
+the shopping list.
 (`biga-2` no longer exists — MESSAGE-34 folded it into `biga-3` and kept every
 other id, so the gap is deliberate.) Three
 instances of this have been found in three rounds — check every new token
@@ -158,8 +167,9 @@ against its step's scope.
 is deliberately narrow, and `unboundTokens` reports anything brace-delimited
 that isn't an identifier. §8 prose is edited often; an evaluator there is a
 code-execution surface that grows one convenient ternary at a time. What were
-`{mixIndex + 1}` and a ternary are now `{nextMixIndex}` and `{bigaCountSuffix}`,
-computed in `bindTokens` where every other value lives.
+`{mixIndex + 1}` and a ternary became `{nextMixIndex}` and `{bigaCountSuffix}`
+(the latter gone with `nBiga`), computed in `bindTokens` where every other
+value lives.
 
 **Rendered numbers don't match their vector values, and that is not a bug.**
 Two terms separate them. The §5 vectors pin flour at 69 °F so the flour term
@@ -174,7 +184,9 @@ and 59.5. **Quote the conditions whenever you quote a rendered number**, FF
 included; one without them cost a round of correspondence (FINDINGS-40).
 
 **Anything derivable from the formula constants is derived, never written down.**
-`C_BIGA`, `ADY_OF_BIGA_FLOUR`, `DIVIDE_BALL_H` (20/60, not 0.33),
+`C_BIGA`, `ADY_OF_BIGA_FLOUR`, the divide (`divideBallH`: minutes from
+`DIVIDE_BASE_MIN + DIVIDE_PER_BALL_MIN × balls`, divided by 60 once — the flat
+20/60 it replaced was once typed as 0.33),
 `FRESH_FLOUR_FRACTION`, `FRESH_WATER_FRACTION`,
 `APP_DEFAULT_FLOUR_OFFSET_F`, and the RPM line — `RPM_SLOPE` and
 `RPM_INTERCEPT` from the two anchors `RPM_AT_5_PCT` (measured) and
@@ -214,8 +226,9 @@ compute against — and a bound invented for the occasion is how the yeast table
 went wrong. Don't model it, don't warn on it.
 
 **Scope goes in the token name.** Bare means a batch total; `PerMix` divides by
-`nMix`; `PerBiga` by `nBiga`. Three scope bugs in three rounds — the worst put
-423.2 g of water into a 211.6 g mix — so this is naming, not attention.
+`nMix`. (`PerBiga` went with `nBiga` in MESSAGE-53.) Three scope bugs in three
+rounds — the worst put 423.2 g of water into a 211.6 g mix — so this is naming,
+not attention.
 
 **The §8 prose is generated from the spec and guarded by a test.**
 `src/content/steps.ts`, `concepts.ts`, `reference.ts` (§9 and §11) and
@@ -561,10 +574,26 @@ don't inline a `toFixed` somewhere else.
   is ignored. `computeThermal` still takes a mass so engine tests can vary it,
   but the app always passes the constant.
 - **There is no opening size** (MESSAGE-51, Dave's call): no diameter, no
-  thickness note, no `thickerThanDefault`. The detail-block conditions are
-  `nMix > 1` and `nBiga > 1`, and a test requires a block for each, so a
-  condition left behind by a deleted block fails. `DEFAULT_BALL_G` is only the
+  thickness note, no `thickerThanDefault`. The detail-block condition set is
+  exactly `nMix > 1`, and a test requires a block for each condition, so one
+  left behind by a deleted block fails. `DEFAULT_BALL_G` is only the
   ball-weight default now.
+- **One biga at every size** (MESSAGE-53, Dave's call): no `nBiga`, no
+  `FLOUR_CAP_55`, no biga-split warning. At `nMix > 1` it is divided once, in
+  `mix-0`, and §4.5's information line says so. `shownWhen` takes
+  `nMix > 1` as well as the two schedules.
+- **The cold ferment's range is per track** (§4.7, §6 Panel 1, MESSAGE-53):
+  retarded 6–36 h (24), classic 6–8 h (6), in `COLD_FERMENT_H`. A schedule
+  change clamps it, and so does reading a link; a link that omits it takes
+  its track's default. `setInput`'s rules live in `applyInput` in
+  `defaults.ts`, pure, so `state.test.ts` reaches them.
+- **The temper is 1.5–2 h, planned at 1.5** (MESSAGE-53); a stored or linked
+  2–3 clamps. The timeline prints a range from one hour up in hours ("1 h 30
+  min (1.5–2 h)", as `bake-1`'s timer reads), and below an hour in minutes.
+- **The divide scales with total balls** (12.5 + 1.25 per ball, minutes,
+  estimates), on the timeline only: the rise after balling isn't shortened
+  for it (Dave's call). So the overhead depends on the ball count as well as
+  `nMix`: 26.83 h at 6 balls, 27.25 at 12, 27.79 at 24.
 - **Speeds render as lit LED segments** (§7.5, MESSAGE-29): the Core has no
   number display. `SpeedIndicator` draws the real indicator as Dave describes
   it (25 Sep; §7.5 records it since MESSAGE-30): **twelve 30° positions round

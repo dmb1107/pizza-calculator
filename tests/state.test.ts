@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { C } from '../src/lib/constants';
 import {
   BOUNDS,
+  COLD_FERMENT_H,
   DEFAULT_CALIBRATION,
   DEFAULT_INPUTS,
   DEFAULT_PERSISTED,
+  applyInput,
   clampField,
   inputsForNewBake,
   persistedForNewBake,
@@ -28,7 +30,8 @@ function fakeStorage(seed: Record<string, string> = {}): StorageLike & { data: M
 const CUSTOM: Inputs = {
   balls: 12,
   ballWeightG: 280,
-  coldFermentH: 30,
+  // Inside the classic track's 6–8 (MESSAGE-53).
+  coldFermentH: 7,
   schedule: 'classic',
   roomTempF: 66.5,
   flourSameAsRoom: false,
@@ -38,7 +41,7 @@ const CUSTOM: Inputs = {
   bowlTempF: [71.5, null],
   bigaFridgeH: 18.5,
   bigaRoomOnlyH: 14,
-  temperH: 3,
+  temperH: 1.75,
   finalDoughTempF: [73.5, 74],
   waterUsedF: [64.2, null],
 };
@@ -155,6 +158,33 @@ describe('URL serialization', () => {
       expect(decodeInputs('balls=-5').balls).toBe(BOUNDS.balls.min);
       expect(decodeInputs('ball=10').ballWeightG).toBe(BOUNDS.ballWeightG.min);
       expect(decodeInputs('cold=500').coldFermentH).toBe(BOUNDS.coldFermentH.max);
+    });
+
+    it('clamps the temper into 1.5–2 h, stored or linked (MESSAGE-53)', () => {
+      // A link from before carried 2–3 h.
+      expect(decodeInputs('temper=3').temperH).toBe(2);
+      expect(decodeInputs('temper=2.5').temperH).toBe(2);
+      expect(decodeInputs('temper=1').temperH).toBe(1.5);
+      expect(decodeInputs('temper=1.75').temperH).toBe(1.75);
+      expect(DEFAULT_INPUTS.temperH).toBe(1.5);
+    });
+
+    it("clamps the cold ferment into the track's range, and defaults by track", () => {
+      // §4.7, §6 Panel 1: retarded 6–36 (24), classic 6–8 (6).
+      expect(COLD_FERMENT_H).toEqual({
+        retarded: { min: 6, max: 36, step: 1, default: 24 },
+        classic: { min: 6, max: 8, step: 1, default: 6 },
+      });
+      expect(decodeInputs('sched=c&cold=24').coldFermentH).toBe(8);
+      expect(decodeInputs('sched=c&cold=4').coldFermentH).toBe(6);
+      expect(decodeInputs('sched=c').coldFermentH).toBe(6);
+      expect(decodeInputs('').coldFermentH).toBe(24);
+      expect(decodeInputs('cold=30').coldFermentH).toBe(30);
+      // Each track's default is left out of the link, and read back.
+      const classic = { ...DEFAULT_INPUTS, schedule: 'classic' as const, coldFermentH: 6 };
+      expect(encodeInputs(classic)).toBe('sched=c');
+      expect(decodeInputs(encodeInputs(classic)).coldFermentH).toBe(6);
+      expect(decodeInputs(encodeInputs({ ...classic, coldFermentH: 7 })).coldFermentH).toBe(7);
     });
 
     it('rounds a fractional ball count', () => {
@@ -336,6 +366,25 @@ describe('field clamping', () => {
     expect(clampField('ballWeightG', 400)).toBe(300);
     expect(clampField('coldFermentH', 0)).toBe(6);
     expect(clampField('coldFermentH', 100)).toBe(36);
+  });
+
+  it('clamps the cold ferment when the schedule changes (§4.7)', () => {
+    const retarded = { ...DEFAULT_INPUTS, coldFermentH: 24 };
+    const classic = applyInput(retarded, 'schedule', 'classic');
+    expect(classic.coldFermentH).toBe(8);
+    // Back to retarded, the value is inside 6–36 and stays.
+    expect(applyInput(classic, 'schedule', 'retarded').coldFermentH).toBe(8);
+    // A cold ferment set past the classic range is held to it.
+    expect(applyInput(classic, 'coldFermentH', 30).coldFermentH).toBe(8);
+    expect(applyInput(retarded, 'coldFermentH', 30).coldFermentH).toBe(30);
+  });
+
+  it('keeps the flour on the room while the toggle is on', () => {
+    const on = { ...DEFAULT_INPUTS, flourSameAsRoom: true };
+    expect(applyInput(on, 'roomTempF', 64).flourTempF).toBe(64);
+    const off = { ...DEFAULT_INPUTS, flourSameAsRoom: false, flourTempF: 60 };
+    expect(applyInput(off, 'roomTempF', 64).flourTempF).toBe(60);
+    expect(applyInput({ ...off, roomTempF: 66 }, 'flourSameAsRoom', true).flourTempF).toBe(66);
   });
 
   it('leaves in-range values alone', () => {

@@ -17,7 +17,7 @@ import {
   observedRate,
 } from '../src/lib/engine';
 import { PLANNING_RANGE_H, STAGE_INFO, stageDurations, type StageKey } from '../src/lib/timeline';
-import { BOUNDS, DEFAULT_INPUTS } from '../src/state/defaults';
+import { BOUNDS, COLD_FERMENT_H, DEFAULT_INPUTS } from '../src/state/defaults';
 import { BAKE_1, WATER_REACHABILITY } from './vectors';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -239,7 +239,7 @@ interface Claim {
 
 /** §4.7's bigaRoomTemp, the retarded biga's hours at room temperature. */
 const BIGA_ROOM_H = stageDurations('retarded', {
-  bigaFridgeH: 19, bigaRoomOnlyH: 16, ballRoomTempH: 1.5, nMix: 1, coldFermentH: 24, temperH: 2.5,
+  bigaFridgeH: 19, bigaRoomOnlyH: 16, ballRoomTempH: 1.5, nMix: 1, balls: 6, coldFermentH: 24, temperH: 1.5,
 }).bigaRoomTemp;
 
 /**
@@ -297,6 +297,25 @@ const bigaEquivalentH = (coolH: number, fridgeH: number) => {
   );
 };
 const BIGA_FRIDGE_MID_H = ((PLANNING_RANGE_H.bigaFridge?.[0] ?? NaN) + (PLANNING_RANGE_H.bigaFridge?.[1] ?? NaN)) / 2;
+
+/** Hours as the prose writes a half: 1.5 → "1½", 2 → "2". */
+const halves = (h: number) => {
+  if ((h * 2) % 1 !== 0) throw new Error(`${h} h is not a whole or half hour`);
+  return `${Math.floor(h)}${h % 1 ? '½' : ''}`;
+};
+
+/**
+ * bake-1's "60 °F at the core in a little over an hour in a 70 °F kitchen,
+ * and 65 °F in about two" (MESSAGE-53): warming from a 39 °F fridge at the
+ * time constant behind §4.8's "3–4 hours from 75 to 40 °F" in a 38.5 °F
+ * fridge. 1.063–1.418 h to 60 °F and 1.715–2.287 h to 65 °F; MESSAGE-53's
+ * 1.06–1.41 and 1.72–2.28 came from the time constant rounded first.
+ */
+const temperHours = (target: number) =>
+  [3, 4].map((coolH) => {
+    const tau = coolH / Math.log((75 - 38.5) / (40 - 38.5));
+    return tau * Math.log((70 - 39) / (70 - target));
+  });
 
 /** A planning range as prose prints it, "18–20", scaled to the prose's unit. */
 const span = (key: StageKey, scale = 1) => {
@@ -506,7 +525,6 @@ const CLAIMS: readonly Claim[] = [
     text: `its ${fx(computeRoomMinutes({ finalDoughTempF: 90, ddtF: 75 }), 0)}-minute floor`,
     covers: ['45-minute'],
   },
-  { at: 'biga-1.detailWhen', restates: 'FLOUR_CAP_55', text: `the ${C.FLOUR_CAP_55} g the machine handles`, covers: [`${C.FLOUR_CAP_55} g`] },
   { at: 'biga-1.detail', restates: 'BIGA_HYDRATION', text: `In a stiff ${fx(C.BIGA_HYDRATION * 100, 0)}% biga`, covers: ['50%'] },
   { at: 'biga-3.detail', restates: 'MIN_DOUGH', text: `mixer's ${C.MIN_DOUGH} g minimum`, covers: [`${C.MIN_DOUGH} g`] },
   {
@@ -642,8 +660,42 @@ const CLAIMS: readonly Claim[] = [
     text: `never below ${C.ROOM_MIN_CLAMP[0]} minutes`,
     covers: [`${C.ROOM_MIN_CLAMP[0]} minutes`],
   },
-  { at: 'bake-1.summary', restates: 'PLANNING_RANGE_H.temper', text: `**${span('temper')} hours** before baking`, covers: ['2–3 hours'] },
-  { at: 'bake-1.timerLabel', restates: 'PLANNING_RANGE_H.temper', text: `${span('temper')} h`, covers: ['2–3 h'] },
+  {
+    // "1½–2 hours" extracts as "1" and "2 hours": the pattern stops at ½.
+    at: 'bake-1.summary',
+    restates: 'PLANNING_RANGE_H.temper, which is the temper input range (MESSAGE-53)',
+    holds: () => {
+      const [lo, hi] = PLANNING_RANGE_H.temper as readonly [number, number];
+      return lo === BOUNDS.temperH.min && hi === BOUNDS.temperH.max;
+    },
+    text: (() => {
+      const [lo, hi] = PLANNING_RANGE_H.temper as readonly [number, number];
+      return `**${halves(lo)}–${halves(hi)} hours** before the first launch`;
+    })(),
+    covers: ['1', '2 hours'],
+  },
+  { at: 'bake-1.timerLabel', restates: 'PLANNING_RANGE_H.temper', text: `${span('temper')} h`, covers: ['1.5–2 h'] },
+  {
+    at: 'bake-1.detail',
+    restates: 'the temper planning point, the app default',
+    holds: () => DEFAULT_INPUTS.temperH === (PLANNING_RANGE_H.temper as readonly [number, number])[0],
+    text: `**Why ${halves(DEFAULT_INPUTS.temperH)} hours.**`,
+    covers: ['1'],
+  },
+  {
+    at: 'bake-1.detail',
+    restates: 'warming at the cooling time constant: to 60 °F in 1.06–1.42 h, to 65 °F in 1.71–2.29 h',
+    holds: () =>
+      temperHours(60).every((h) => h > 1 && h < 1.5) && temperHours(65).every((h) => Math.round(h) === 2),
+    text: 'should reach 60 °F at the core in a little over an hour in a 70 °F kitchen, and 65 °F in about two',
+    covers: ['60 °F', '65 °F'],
+  },
+  {
+    at: 'mix-0.detail',
+    restates: 'BIGA_FRACTION',
+    text: `The biga carries ${fx(C.BIGA_FRACTION * 100, 0)}% of each mix's flour`,
+    covers: ['65%'],
+  },
 
   // --- concepts: the formula -------------------------------------------------
   { at: 'concept:why-biga', restates: 'BIGA_FRACTION', text: `Why ${fx(C.BIGA_FRACTION * 100, 0)}% and not 100%`, covers: ['65%'] },
@@ -686,6 +738,12 @@ const CLAIMS: readonly Claim[] = [
     restates: 'BOUNDS.coldFermentH',
     text: `${BOUNDS.coldFermentH.min} h and ${BOUNDS.coldFermentH.max} h are inside the calculator's range`,
     covers: ['6 h', '36 h'],
+  },
+  {
+    at: 'concept:schedule-architecture',
+    restates: "COLD_FERMENT_H.classic, the classic track's cold-ferment range (MESSAGE-53)",
+    text: `the dough gets only ${COLD_FERMENT_H.classic.min}–${COLD_FERMENT_H.classic.max} hours cold`,
+    covers: ['6–8 hours'],
   },
   {
     at: 'concept:schedule-architecture',
@@ -1122,6 +1180,10 @@ const FIXED: Record<Loc, readonly string[]> = {
   // A cooling time is a claim about a 265 g ball specifically, so the weight
   // is its index rather than a stale default.
   'bulk-4.detail': ['265 g', '3–4 hours', '40 °F'],
+  // MESSAGE-53. biga-6's block compares a split batch's biga with a 6-ball
+  // one; mix-0's "mix 1's" is an index.
+  'biga-6.detailWhen': ['6-ball'],
+  'mix-0.summary': ['1'],
 
   // Procedure: temper cues, and the oven — validated by Dave, not computed.
   'bake-1.summary': ['60–65 °F'],
@@ -1134,7 +1196,10 @@ const FIXED: Record<Loc, readonly string[]> = {
   'stage:divideBall': ['10–15 min'],
   'stage:coldFerment': ['38–40 °F', '4 hours'],
   'stage:temper': ['60–65 °F'],
-  'bake-1.detail': ['55 °F', '70 °F', '52 °F'],
+  // MESSAGE-53 adds: Sisofo's 1–2 hours; bulk-4's 3–4 hours from 75 to 40 °F
+  // (the cooling figure the warming claim above reads); the 60–65 °F core
+  // target, as in the summary; Dave's 45-minute wave interval.
+  'bake-1.detail': ['55 °F', '70 °F', '52 °F', '1–2 hours', '3–4 hours', '75', '40 °F', '60–65 °F', '45 minutes'],
   'bake-2.summary': ['750 °F', '60–90 s', '15–20 s'],
   'bake-2.detail': ['750', '750 °F', '800 °F', '15–20 s', '9–18'],
   'bake-2.troubleshoot': ['1 cm', '15 s', '5–10 s'],
@@ -1176,7 +1241,8 @@ const FIXED: Record<Loc, readonly string[]> = {
   // "0" are grades. The Halo Core, AVPN and Grain Craft ash figures are
   // claimed above.
   // "§2.1.2" is the section of AVPN's regulation, which extracts as "2.1" and "2".
-  about: ['1%', '12–24 h', '16–18 °C', '100%', '16–18 h', '44–45%', '16–20 h', '16–20 °C', '18', '45%', '50%', '104 °F', '110 °F', '12.2–12.8%', '2024', '00', '2.1', '2'],
+  // Sisofo's 1–2 h for the balls after the fridge (MESSAGE-53).
+  about: ['1%', '12–24 h', '16–18 °C', '100%', '16–18 h', '44–45%', '16–20 h', '16–20 °C', '18', '45%', '50%', '104 °F', '110 °F', '12.2–12.8%', '2024', '00', '2.1', '2', '1–2 h'],
   'concept:burn-ring': ['1', '100 °C', '1–1.5 cm', '2'],
 };
 

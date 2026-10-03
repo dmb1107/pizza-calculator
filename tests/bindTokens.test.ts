@@ -23,7 +23,7 @@ const SCHEDULE: ScheduleTokens = {
   bigaFridgeH: 19,
   bigaRoomOnlyH: 16,
   coldFermentH: 24,
-  temperH: 2.5,
+  temperH: 1.5,
 };
 
 const values = tokenValues(calculate(INPUTS), SCHEDULE);
@@ -34,7 +34,7 @@ function allContent(): { where: string; text: string }[] {
   // Every string a step carries, walked rather than listed — a list missed
   // MESSAGE-31's per-track timers (timerLabelRetarded / timerLabelClassic) and
   // every title, the same blind spot the literal gate had. Conditional blocks
-  // count: they carry tokens of their own ({nBiga}, {staggerUncentred}) and
+  // count: they carry tokens of their own ({nMix}, {staggerUncentred}) and
   // render. Only identifiers and condition expressions are skipped.
   const walk = (where: string, value: unknown): void => {
     if (typeof value === 'string') out.push({ where, text: value });
@@ -133,11 +133,11 @@ describe('per-mix scope', () => {
 
 describe('bound values', () => {
   it('matches the §5 six-ball vector', () => {
-    // Per-biga and per-mix at 6 balls, where nBiga and nMix are both 1, so
-    // these equal the batch totals from the §5 vector.
-    expect(values['bigaFlourPerBiga']).toBe('611.2');
-    expect(values['bigaWaterPerBiga']).toBe('305.6');
-    expect(values['bigaADYPerBiga']).toBe('2.29');
+    // The biga's are batch totals at every size (one biga, MESSAGE-53); the
+    // per-mix ones equal them at 6 balls, where nMix is 1.
+    expect(values['bigaFlour']).toBe('611.2');
+    expect(values['bigaWater']).toBe('305.6');
+    expect(values['bigaADY']).toBe('2.29');
     expect(values['freshFlourPerMix']).toBe('329.1');
     expect(values['saltPerMix']).toBe('26.3');
   });
@@ -160,9 +160,9 @@ describe('bound values', () => {
     // "Divide to 265 g", not "265.0 g" — but "611.2 g" keeps its decimal.
     expect(values['ballWeight']).toBe('265');
     expect(values['balls']).toBe('6');
-    expect(values['temper']).toBe('2.5');
+    expect(values['temper']).toBe('1.5');
     expect(values['coldFerment']).toBe('24');
-    expect(values['bigaFlourPerBiga']).toContain('.');
+    expect(values['bigaFlour']).toContain('.');
   });
 
   it('carries the probe target and DDT as temperatures', () => {
@@ -196,7 +196,7 @@ describe('unknown tokens fail loudly', () => {
   });
 
   it('reports them', () => {
-    expect(unboundTokens('{a} and {bigaFlourPerBiga} and {b}', values)).toEqual(['a', 'b']);
+    expect(unboundTokens('{a} and {bigaFlour} and {b}', values)).toEqual(['a', 'b']);
   });
 
   it('leaves text with no tokens alone', () => {
@@ -221,7 +221,7 @@ describe('step summaries bind to real numbers', () => {
       'for **18–20 hours**. The timeline plans 19 h.',
     );
     expect(bindTokens(step('bake-1')?.summary ?? '', values)).toContain(
-      '**2–3 hours** before baking; the timeline plans 2.5 h.',
+      '**1½–2 hours** before the first launch; the timeline plans 1.5 h.',
     );
   });
 

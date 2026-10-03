@@ -29,7 +29,14 @@ import {
   type Timeline,
 } from '../lib/timeline';
 import { timerDueAt, type RunningTimer, type TimerSpec } from '../lib/timers';
-import { DEFAULT_INPUTS, clampField, inputsForNewBake, persistedForNewBake, type BoundedField } from './defaults';
+import {
+  DEFAULT_INPUTS,
+  applyInput,
+  clampField,
+  inputsForNewBake,
+  persistedForNewBake,
+  type BoundedField,
+} from './defaults';
 import { browserStorage, loadPersisted, savePersisted } from './storage';
 import {
   loadGitHubConfig,
@@ -305,13 +312,7 @@ export function useAppState(): AppState {
   }, [storage, log]);
 
   const setInput = useCallback(<K extends keyof Inputs>(key: K, value: Inputs[K]) => {
-    setInputs((prev) => {
-      const next = { ...prev, [key]: value };
-      // The flour tracks the room while the toggle is on, in both directions.
-      if (key === 'roomTempF' && next.flourSameAsRoom) next.flourTempF = next.roomTempF;
-      if (key === 'flourSameAsRoom' && value === true) next.flourTempF = next.roomTempF;
-      return next;
-    });
+    setInputs((prev) => applyInput(prev, key, value));
   }, []);
 
   const commitNumber = useCallback(
@@ -331,7 +332,7 @@ export function useAppState(): AppState {
     setInputs((prev) => {
       const current = prev[key];
       if (typeof current !== 'number') return prev;
-      return { ...prev, [key]: clampField(key, current + delta) };
+      return applyInput(prev, key, clampField(key, current + delta) as Inputs[typeof key]);
     });
   }, []);
 
@@ -520,6 +521,7 @@ export function useAppState(): AppState {
       // §4.8: computed from the measured dough temperature, not chosen.
       ballRoomTempH: result.roomMinutes / 60,
       nMix: result.capacity.nMix,
+      balls: inputs.balls,
       coldFermentH: inputs.coldFermentH,
       temperH: inputs.temperH,
     }),
@@ -527,6 +529,8 @@ export function useAppState(): AppState {
       inputs.bigaFridgeH,
       inputs.bigaRoomOnlyH,
       result.roomMinutes,
+      result.capacity.nMix,
+      inputs.balls,
       inputs.coldFermentH,
       inputs.temperH,
     ],

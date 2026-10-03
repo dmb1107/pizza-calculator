@@ -65,7 +65,7 @@ export interface Inputs {
   bigaFridgeH: number;
   /** Classic only. 12–18 h at 61–65 °F. */
   bigaRoomOnlyH: number;
-  /** 2–3 h. */
+  /** 1.5–2 h (MESSAGE-53). */
   temperH: number;
 
   /**
