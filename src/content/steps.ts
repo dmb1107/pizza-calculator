@@ -120,41 +120,35 @@ export const STEPS: readonly Step[] = [
     id: "biga-1",
     phase: "biga",
     title: `Start the yeast, break up the flour`,
-    summary: `Weigh {bigaWater} g of water. Warm about ten times the yeast's weight of it to 100–110 °F, stir in {bigaADY} g ADY and leave it 10 minutes. Meanwhile weigh {bigaFlour} g of flour and whisk it hard or push it through a coarse sieve to break up the clumps.`,
+    summary: `Weigh {bigaWater} g of water. Warm about ten times the yeast's weight of it to 100–110 °F, stir in {bigaADY} g ADY and leave it 10 minutes. Meanwhile whisk the flour hard or push it through a coarse sieve to break up the clumps, then weigh out {bigaFlour} g.`,
     values: [`Biga water: {bigaWater} g`, `ADY: {bigaADY} g`, `Biga flour: {bigaFlour} g`],
-    detail: `**The yeast gets warm water; the rest of the biga water stays at room temperature.** Active dry yeast rehydrates best near 104 °F. Below about 68 °F its cells can lose up to half their soluble contents, and the glutathione that leaks out slackens the dough (PizzaBlab). King Arthur gives the same advice for active dry yeast going into cool water. PizzaBlab's biga guide uses room-temperature water because it assumes fresh or instant yeast. The warm water is only for rehydration: no sugar, no proofing test.
+    detail: `**The yeast gets warm water; the rest of the biga water stays at room temperature.** Active dry yeast rehydrates best near 104 °F. Below about 68 °F its cells can lose up to half their soluble contents, and the glutathione that leaks out slackens the dough. The warm water is only for rehydration: no sugar, no proofing test.
 
 The yeast water comes out of the biga water, not on top of it. It warms the biga water only 2–3 °F, which nothing downstream reads.
 
-**The yeast dose is Piergiorgio Giorilli's standard: 1% fresh yeast = 0.30% IDY = 0.375% ADY on biga flour**, the baseline for 16–18 h at 61–65 °F (16–18 °C).
-
-Italian Pizza Secrets gives this dose with that window, and Baking With Theory with 16–20 h at 16–20 °C; PizzaBlab allows a wider 12–24 h at 16–18 °C. A longer or warmer ferment needs less yeast. For a room-temperature biga at another time or temperature, use PizzaBlab's dough calculator. It doesn't model a biga that goes into the fridge, so the retarded schedule rests on an assumption (see *Refrigerate the biga*). These amounts are well above scale resolution, so there's no need to weigh the yeast as a slurry.
+**The yeast dose is 1% fresh yeast = 0.30% IDY = 0.375% ADY on biga flour**, set for 16–18 h at 61–65 °F (16–18 °C).
 
 Grain Craft arrives lumpy from the mill; the flour itself is fine. The lumps are only easy to break up while the flour is dry.
 
 A clump that survives into the biga keeps dry flour at its core, and dry flour never ferments. In a stiff 50% biga you can't find it by hand once the water is in, and it turns up later as a hard nodule in the finished dough.
 
-Weigh before you break it up, so flour lost in the sieve doesn't change your number.`,
+Break it up first and weigh after, so flour left in the sieve doesn't come out of the biga.`,
     concepts: ["giorilli-standard"],
   },
   {
     id: "biga-3",
     phase: "biga",
     title: `Mix by hand to chunks`,
-    summary: `In the mixer bowl, combine the rest of the water, at **room temperature**, with the yeast water. Add the flour and mix by hand, fingers in a claw, for 3–6 minutes, until you have gnocchi-sized chunks and no dry flour.`,
+    summary: `In the mixer bowl, combine the rest of the water, at **room temperature**, with the yeast water. Add the flour and work it in with your fingers until no dry flour is left. When it gets too stiff to work, tear it into gnocchi-sized chunks. 3–6 minutes in all.`,
     timerLabel: `3–6 min`,
     timerMinutes: [3, 6],
-    detail: `Mix by hand at every batch size. PizzaBlab mixes it by hand, fingers in a claw, and warns against forming a cohesive mass.
+    detail: `The mass stiffens fast. Once it does, stop working it as one piece and tear it into gnocchi-sized chunks. Kneading builds gluten a biga shouldn't have yet; an over-mixed biga rises like a dough, can double, and then looks riper than it is.
 
-Aim for small-to-medium chunks, like gnocchi. A spiral mixer builds gluten, which a biga shouldn't have yet. An over-mixed biga rises like a dough, can double, and then looks riper than it is.
+Make sure no dry flour is left before you stop. Dry flour never ferments.
 
-The yeast goes in dissolved so it spreads evenly: a few grams have to reach every part of a stiff 50% biga that is only mixed to chunks and never kneaded, and the water carries it there.
+The yeast goes in dissolved so it reaches every part of a biga that's only mixed to chunks.
 
-The biga always ferments in the mixer bowl, the same bowl the final mix runs in. Work your fingertips through it in a claw for 3–6 minutes, until no dry flour remains, since dry flour never ferments. Break up large chunks by hand.
-
-Cover it so it doesn't dry out. PizzaBlab says a vent serves no purpose, so a closed lid is fine.
-
-Because the biga is mixed by hand, the mixer's 500 g minimum doesn't apply to it, so no batch is too small.`,
+Cover the bowl so the biga doesn't dry out. A closed lid is fine.`,
     watchFor: `Crumbly chunks, not a dough. No dry flour anywhere.`,
     concepts: ["mix-dont-knead"],
   },
@@ -164,10 +158,10 @@ Because the biga is mixed by hand, the mixer's 500 g minimum doesn't apply to it
     title: `Ferment at room temperature`,
     summary: `**2 hours** at room temperature in the mixer bowl, covered so it doesn't dry out. Then it goes in the fridge.`,
     summaryRetarded: `**2 hours** at room temperature in the mixer bowl, covered so it doesn't dry out. Then it goes in the fridge.`,
-    summaryClassic: `At 61–65 °F, covered so it doesn't dry out. The Giorilli window is **16–18 hours**; the timeline plans **{bigaRoomOnly} h**.`,
+    summaryClassic: `At 61–65 °F, covered so it doesn't dry out. The window is **16–18 hours**; the timeline plans **{bigaRoomOnly} h**.`,
     timerLabelRetarded: `2 h`,
     timerLabelClassic: `16–18 h`,
-    detail: `**The retarded schedule**, 2 h at room temperature and then 18–20 h in the fridge, suits a kitchen that won't hold 61–65 °F: the 2 hours start fermentation, and the fridge then holds the biga at a steady temperature instead of wherever the room drifts. You give up a little acid character for control. The schedule is this recipe's own; Julian Sisofo's biga has the same shape with a longer warm start.
+    detail: `**The retarded schedule**, 2 h at room temperature and then 18–20 h in the fridge, suits a kitchen that won't hold 61–65 °F: the 2 hours start fermentation, and the fridge then holds the biga at a steady temperature instead of wherever the room drifts. You give up a little acid character for control.
 
 **The classic room-temperature schedule** gives the truest biga flavor, if you have a wine fridge, a cool basement or a winter kitchen that holds the range.`,
     concepts: ["why-61-65"],
@@ -181,14 +175,14 @@ Because the biga is mixed by hand, the mixer's 500 g minimum doesn't apply to it
     timerLabel: `18–20 h`,
     detail: `The 2 hours at room temperature started fermentation; the fridge holds it steady while the biga ripens. Anywhere in the 18–20 h window works. Judge ripeness by the cue in the next step.
 
-**This schedule rests on an assumption.** Giorilli's dose is set for 16–18 h at 61–65 °F. Two hours warm, 18–20 h at 38–40 °F and the hour's temper give the biga less: by the recipe's fermentation model, with the rate doubling every 17 °F, about 11 hours' worth at 63 °F. The recipe assumes the biga is still ripe enough at pull, and that the final dough's schedule makes up any shortfall. Bake 1 ran this schedule; nothing has measured the biga's rise on it. If the balls are consistently behind on bake day, add an hour to the biga's time at room temperature before changing the dose.`,
+**This schedule rests on an assumption.** The yeast dose is set for 16–18 h at 61–65 °F. Two hours warm, 18–20 h at 38–40 °F and the hour's temper give the biga less: by the recipe's fermentation model, with the rate doubling every 17 °F, about 11 hours' worth at 63 °F. The recipe assumes the biga is still ripe enough at pull, and that the final dough's schedule makes up any shortfall. Bake 1 ran this schedule; nothing has measured the biga's rise on it. If the balls are consistently behind on bake day, add an hour to the biga's time at room temperature before changing the dose.`,
   },
   {
     id: "biga-5",
     phase: "biga",
     title: `Pull at ~20% rise`,
     summary: `Ripe when the chunks have puffed about 20%. **It won't double.**`,
-    detail: `A ripe biga rises only about 20%. Habits from poolish and bulk dough say to wait for it to double; with a biga that means waiting well past ripe. If it does double, it was over-mixed and is rising like a dough.
+    detail: `A ripe biga rises about 20%. It doesn't double; one that does was over-mixed and rose like a dough.
 
 The window is wide. A biga ferments slowly, makes acid slowly and breaks down little gluten, so an hour either way rarely matters. Go by the cue rather than the clock.
 
@@ -211,7 +205,7 @@ To make the cue objective, fill a small straight-sided jar with biga from the sa
     title: `Temper the biga`,
     summary: `Out of the fridge **{bigaTemper} h** before you mix. Leave it in the mixer bowl.`,
     timerLabel: `{bigaTemper} h`,
-    detail: `This is the easiest hour in the schedule to skip, and skipping it costs the most. Biga temperature affects the water target more than anything else you measure: each degree of biga moves the required water by about **two degrees**, 1.9 °F at a 6-ball mix and 2.3 °F at a 3-ball one.
+    detail: `Biga temperature moves the water target more than anything else you measure: each degree of biga moves the required water by about **two degrees**, 1.9 °F at a 6-ball mix and 2.3 °F at a 3-ball one.
 
 Without it, the calculator will ask for water hotter than a tap can supply, because the biga is too cold to reach your target dough temperature any other way.
 
@@ -226,7 +220,7 @@ Leave the biga in the mixer bowl. The {bowlMassG} g stainless bowl is part of th
     phase: "mix",
     shownWhen: "nMix > 1",
     title: `Split the biga`,
-    summary: `Split the tempered biga into {nMix} portions of {bigaMassPerMix} g. Leave mix 1's in the bowl and cover the others. Weigh out each mix's fresh flour and salt now too.`,
+    summary: `Split the biga into {nMix} portions of {bigaMassPerMix} g. Leave mix 1's in the bowl and cover the others. Weigh out each mix's fresh flour and salt now too.`,
     values: [`Biga per mix: {bigaMassPerMix} g`, `Fresh flour per mix: {freshFlourPerMix} g`, `Salt per mix: {saltPerMix} g`],
     detail: `**Weigh out every mix before you start the first.** You're running {nMix} mixes, with five minutes budgeted for each changeover. That only works if the next mix's biga, flour and salt are already in their own containers. Weighing during the changeover stretches it to fifteen or twenty minutes, and every extra five minutes adds five minutes of fermentation to the first dough that nothing later can correct.
 
@@ -238,15 +232,15 @@ The waiting portions warm toward room temperature while the earlier mixes run. T
     id: "mix-1",
     phase: "mix",
     title: `Prep the bowl`,
-    summary: `Crumble the biga as small as you can, add {freshFlourPerMix} g of fresh flour, and toss to coat.`,
+    summary: `Crumble the biga as small as you can and take the readings below; this mix's water target follows. Then add {freshFlourPerMix} g of fresh flour and toss to coat.`,
     values: [`Biga: {bigaMassPerMix} g`, `Fresh flour: {freshFlourPerMix} g`],
     detail: `The biga is the stiffest thing the mixer handles all session. Crumbled small, it breaks down smoothly; in large pieces it can trip the motor protection.
 
 The fresh flour isn't sieved. Its lumps break up in Phase A; the biga flour is sieved because mixing by hand leaves them intact.
 
-**Take both temperatures after you crumble the biga.** The calculator needs the biga's temperature when it meets the water, and handling warms it: on bake 1 the biga read **53 °F at pull and 58 °F once broken up**.
+**Take the biga's temperature after you crumble it.** The water target needs the biga's temperature when it meets the water, and handling warms it: on bake 1 the biga read **53 °F at pull and 58 °F once broken up**.
 
-The bowl doesn't warm with the biga, so read it separately: hold the probe against the bowl wall for five seconds. Each degree of bowl temperature is worth 0.66 °F of water at a 3-ball mix.`,
+The bowl doesn't warm with the biga, so read it separately, against the inside wall. Each degree of bowl temperature is worth 0.66 °F of water at a 3-ball mix.`,
     repeatsPerMix: true,
   },
   {
@@ -262,9 +256,9 @@ The bowl doesn't warm with the biga, so read it separately: hold the probe again
 
 Add the water with the mixer off. The Core's slowest setting is 60 RPM, too fast to fold liquid in, and pouring water in at 85 RPM throws flour out of the bowl. Add it, then start the mixer.
 
-Weigh the water rather than pouring by eye. Bake 1 left open whether the split between Phases A and B is right, and only weighed pours can settle it.
+Weigh the water rather than pouring by eye.
 
-Optional, from PizzaBlab: soak the crumbled biga in the water for a few minutes first. Keep it to a few; working biga in plain water strips starch off the chunks and leaves hard, sticky gluten lumps that won't disperse.`,
+Optional: soak the crumbled biga in the water for a few minutes first. Keep it to a few; working biga in plain water strips starch off the chunks and leaves hard, sticky gluten lumps that won't disperse.`,
     concepts: ["no-creep-speed"],
     repeatsPerMix: true,
   },
@@ -279,7 +273,7 @@ Optional, from PizzaBlab: soak the crumbled biga in the water for a few minutes 
     speed: { dial: 20, rpm: 98, label: `20% / 98 RPM` },
     detail: `Salt goes in here and never in the biga, where it would slow the yeast you've spent 20 hours building up.
 
-At 2.8% of the flour, the salt sits inside AVPN's range: 40–60 g per liter of water with 1.6–1.8 kg of flour, which is 2.2–3.75% of the flour.
+At 2.8% of the flour, the salt sits inside the Neapolitan range of 2.2–3.75%.
 
 Pour slowly down the splash-guard spout; at 98 RPM the hook slings water that's dumped in. Letting each addition absorb before the next keeps the dough from breaking into a slurry it then has to recover from.`,
     watchFor: `No free water, no dry flour, one cohesive mass.`,
@@ -369,13 +363,12 @@ It also breaks up the mixer's run time, keeping each run inside the Halo Core's 
     id: "mix-8",
     phase: "mix",
     title: `Changeover to the next mix`,
-    summary: `Turn mix {mixIndex} out into the bulk container. **Don't clean the bowl.** Re-measure the biga and the bowl, then start mix {nextMixIndex}.`,
-    values: [`Mix {nextMixIndex} water target: {waterTempNext} °F`],
+    summary: `Turn mix {mixIndex} out into the bulk container. **Don't clean the bowl.** Then start mix {nextMixIndex}; its prep step asks for the biga and bowl again.`,
     timerLabel: `5 min`,
     timerMinutes: 5,
     detail: `Leave the residue in the bowl; cleaning costs time and gains nothing. The dough stuck to it is already at your target temperature, so it doesn't change the next water target, which is the same with 0 g or 60 g left behind. Every mix ends up in the same bulk container, so whatever carries into the next mix still ends up in the batch. Only what's left after the last mix is lost, and the 2.2% overage covers it.
 
-Take two readings before the next mix, because both have changed.
+Mix {nextMixIndex}'s prep step asks for both readings again, because both have changed.
 
 The **bowl** just held a finished dough, so it's no longer cold. It won't be warmer than that dough, but how far it cools toward room temperature in five minutes hasn't been measured, so read it. The **biga** waiting on the counter has been warming toward room temperature while mix {mixIndex} ran.
 
@@ -392,9 +385,7 @@ If the next target is awkward, rinse the bowl. Thin stainless reaches roughly th
     summary: `Lightly oiled container, 45–60 min at room temperature. **No folds.**`,
     timerLabel: `45–60 min`,
     timerMinutes: [45, 60],
-    detail: `Skip the folds. The mixer has already built the gluten, on top of the structure the biga brought with it, and folding now only tightens the dough and costs extensibility.
-
-With the spiral mixer doing that work, bulk is short and fold-free. A fold-based bulk would add hours here and make this dough worse.`,
+    detail: `Skip the folds. The mixer has already built the gluten, on top of the structure the biga brought with it, and folding now only tightens the dough and costs extensibility.`,
     detailWhen: {
       condition: "nMix > 1",
       detail: `**Start the clock when the last mix comes out.** Starting it earlier leaves the last dough with no bulk at all.
@@ -475,7 +466,7 @@ The final dough temperature here is the average of every mix's reading, since th
 
 The look of the ball and the thermometer should agree. If a ball looks ready but reads 52 °F, trust the thermometer; the surface warms long before the core.
 
-**Why 1½ hours.** Julian Sisofo gives his balls 1–2 hours at room temperature after the fridge. This recipe's own cooling figure points the same way: a ball that takes 3–4 hours to cool from 75 to 40 °F should reach 60 °F at the core in a little over an hour in a 70 °F kitchen, and 65 °F in about two. Still air on the counter may warm it more slowly than the fridge cooled it, so the core temperature decides, not the clock.
+**Why 1½ hours.** A ball that takes 3–4 hours to cool from 75 to 40 °F should reach 60 °F at the core in a little over an hour in a 70 °F kitchen, and 65 °F in about two. Still air on the counter may warm it more slowly than the fridge cooled it, so the core temperature decides, not the clock.
 
 **More than one tray: temper in waves**, so each ball reaches 60–65 °F at the core when its turn at the oven comes. Take the first tray out {temper} h before the first launch, the second at the first launch, and each one after that 45 minutes after the one before. In individual containers, pull them in groups of six.`,
     watchFor: `Balls relaxed and spread slightly, domed and airy, with a slow, incomplete rebound when poked.`,

@@ -23,10 +23,11 @@ import { formatTimeOfDay } from '../lib/timeline';
 import { BOUNDS } from '../state/defaults';
 import { parseRepoName } from '../state/bakeLogStore';
 import { runningPhases } from '../state/sessionBake';
+import { STEPS } from '../content/steps';
 import type { AppState } from '../state/useAppState';
 
 /**
- * The bake log — WEBSITE-SPEC-biga-calculator.md §10, with §6 Panel 3's rule
+ * The bake log — WEBSITE-SPEC-biga-calculator.md §10, with §6 Panel 2's rule
  * for turning it into the FF in use.
  *
  * Captures sit in the steps where each reading is taken: the poured water in
@@ -43,6 +44,9 @@ const REASON: Record<NotCountedReason, string> = {
   formula: 'mixed under another formula or other speeds',
   excluded: 'you left it out',
 };
+
+/** Where the bowl is read (§6): the prep step, by its title rather than a copy of it. */
+const PREP_STEP_TITLE = STEPS.find((s) => s.id === 'mix-1')!.title;
 
 /** A temperature that may be absent, as the card and the log print it. */
 const tempOrDash = (t: number | null) => (t == null ? '–' : `${formatTempF(t)} °F`);
@@ -226,7 +230,7 @@ export function BakeLogCard({ state, onOpenLog }: { state: AppState; onOpenLog: 
               <ReadingRow
                 label="Bowl"
                 value={`${formatTempF(mix.bowl_temp_f)} °F`}
-                status={mix.bowl_prefilled ? <Note>A prefill: measure it in Today’s temperatures</Note> : null}
+                status={mix.bowl_prefilled ? <Note>{`A prefill: read it in “${PREP_STEP_TITLE}”`}</Note> : null}
               />
               <ReadingRow
                 label="Water poured"

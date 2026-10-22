@@ -11,7 +11,7 @@
 
 import { computeCapacity, computeFormula } from '../lib/engine';
 import { BOUNDS, COLD_FERMENT_H, DEFAULT_INPUTS, clampColdFerment, clampField } from './defaults';
-import type { BowlState, Inputs, Schedule } from './types';
+import type { Inputs, Schedule } from './types';
 
 const KEYS = {
   balls: 'balls',
@@ -22,7 +22,8 @@ const KEYS = {
   flourSameAsRoom: 'flsame',
   flourTempF: 'flour',
   bigaTempF: 'biga',
-  bowlState: 'bowlst',
+  // 'bowlst' carried the bowl-state selector until MESSAGE-54. An old link
+  // that has it opens with it ignored; don't reuse the key.
   bowlTempF: 'bowlt',
   bigaFridgeH: 'fridge',
   bigaRoomOnlyH: 'bigart',
@@ -47,10 +48,6 @@ function encodeIndexedList(values: readonly (number | null)[], nMix: number): st
 }
 
 const SCHEDULE_CODE: Record<Schedule, string> = { retarded: 'r', classic: 'c' };
-
-/** §4.2 bowl states, abbreviated for the query string. */
-const BOWL_STATE_CODE: Record<BowlState, string> = { cold: 'c', room: 'r', warm: 'w' };
-const BOWL_STATE_BY_CODE: Record<string, BowlState> = { c: 'cold', r: 'room', w: 'warm' };
 
 /**
  * §7. Per-mix values ride as a delimited list. A single value still decodes to
@@ -113,12 +110,7 @@ export function encodeInputs(inputs: Inputs): string {
     inputs.bigaRoomOnlyH === DEFAULT_INPUTS.bigaRoomOnlyH,
   );
   put(KEYS.temperH, num(inputs.temperH), inputs.temperH === DEFAULT_INPUTS.temperH);
-  put(
-    KEYS.bowlState,
-    BOWL_STATE_CODE[inputs.bowlState],
-    inputs.bowlState === DEFAULT_INPUTS.bowlState,
-  );
-  // Measured bowl temperatures override the selector, so they travel too.
+  // Measured bowl temperatures override the prefill, so they travel too.
   put(
     KEYS.bowlTempF,
     encodeList(inputs.bowlTempF),
@@ -277,7 +269,6 @@ export function decodeInputs(search: string, base: Inputs = DEFAULT_INPUTS): Inp
     bigaFridgeH: readNumber(p, KEYS.bigaFridgeH, 'bigaFridgeH', base.bigaFridgeH),
     bigaRoomOnlyH: readNumber(p, KEYS.bigaRoomOnlyH, 'bigaRoomOnlyH', base.bigaRoomOnlyH),
     temperH: readNumber(p, KEYS.temperH, 'temperH', base.temperH),
-    bowlState: BOWL_STATE_BY_CODE[p.get(KEYS.bowlState) ?? ''] ?? base.bowlState,
     bowlTempF: readOptionalNumberList(p, KEYS.bowlTempF, 'bowlTempF', base.bowlTempF),
     finalDoughTempF: readIndexedList(p, KEYS.finalDoughTempF, 'finalDoughTempF', nMix, base.finalDoughTempF),
     waterUsedF: readIndexedList(p, KEYS.waterUsedF, 'waterUsedF', nMix, base.waterUsedF),

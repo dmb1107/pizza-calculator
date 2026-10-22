@@ -8,13 +8,15 @@ and a 65% biga.**
 
 Live at **https://dmb1107.github.io/pizza-calculator/**
 
-Enter the batch size, your measured temperatures, and how long you want the
-cold ferment. The app returns:
+Enter the batch size and how long you want the cold ferment, then the
+temperatures you measure on the day, in the steps where you take them. The app
+returns:
 
 - gram weights for the biga and the final mix, with a copy-as-text button;
 - the target water temperature, which you hit by blending fridge-cold and tap
-  water as you pour (one card per mix when the batch is more than the Halo Core
-  holds and splits);
+  water as you pour. It sits in each mix's prep step, under the room, flour,
+  biga and bowl readings it is computed from, so a batch that is more than the
+  Halo Core holds, and splits, gets one target per mix;
 - a timeline with real clock times, planned forward from the biga start or
   backward from the bake time;
 - a guided step list with timers and mixer speeds drawn as the Core's lit
@@ -26,8 +28,8 @@ cold ferment. The app returns:
   temperature is in.
 
 The setup survives a refresh, and **Share setup** copies it as a link.
-**Reset**, above the panels, starts a new bake: it clears the day's
-temperatures, any DDT override, the timeline's start or target time, the step
+**Reset**, above the panels, starts a new bake: it clears today's readings,
+any DDT override, the timeline's start or target time, the step
 checkboxes and the timers, and keeps the batch settings and the log. Reference
 tables, the recipe's sources and the bake log open in drawers at the bottom of
 the page.
@@ -43,7 +45,9 @@ their hands.
 ## Status
 
 Tasks 0–11 are done and the site is live. The bake log (Task 11) was built
-across MESSAGE-45 to MESSAGE-50. See [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
+across MESSAGE-45 to MESSAGE-50; MESSAGE-51 to 53 were Dave's recipe review,
+and MESSAGE-54 moved the day's readings into the steps. See
+[`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
 ## Home screen icon
 

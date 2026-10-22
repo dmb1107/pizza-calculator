@@ -3,7 +3,7 @@ import { Markdown } from './Markdown';
 import { C } from '../lib/constants';
 import { formatAdy, formatGrams, formatPercent, formatTempF } from '../lib/format';
 import { buildRecipeText } from '../lib/recipeText';
-import type { BowlState, CalculatorResult, Warning } from '../lib/engine';
+import type { CalculatorResult, Warning } from '../lib/engine';
 
 /** Output cards — WEBSITE-SPEC-biga-calculator.md §7. */
 
@@ -81,55 +81,6 @@ export function IngredientsCard({ result }: { result: CalculatorResult }) {
   );
 }
 
-const BOWL_STATE_LABEL: Record<BowlState, string> = {
-  cold: 'cold bowl, held the biga',
-  room: 'bowl at room temperature',
-  warm: 'bowl warm from the previous mix',
-};
-
-/**
- * §7.2. One number, large: the target water temperature. Plus a single line of
- * instruction, and nothing else.
- *
- * There is deliberately no ice/tap split, no grams, and no note about whether
- * the number is warm or cold — the last of those would need a tap temperature,
- * which is no longer an input. The user reads the number and blends to it.
- *
- * When a batch runs as several mixes there is one card per mix, because they
- * are genuinely different numbers: every mix after the first starts in the bowl
- * the previous one just left. Each card stays as bare as a single one — the
- * reasoning lives in the step content, not here.
- */
-export function WaterCard({ result }: { result: CalculatorResult }) {
-  const split = result.mixes.length > 1;
-
-  return (
-    <Card title={split ? `Water — ${result.mixes.length} mixes` : 'Water'}>
-      <div className={split ? 'grid gap-4 sm:grid-cols-2' : undefined}>
-        {result.mixes.map((mix) => (
-          <div key={mix.index} className={split ? 'min-w-0' : undefined}>
-            <p className="text-stone-600 dark:text-stone-400">
-              {split ? `Mix ${mix.index}` : 'Water temperature'}
-            </p>
-            <p className="text-5xl font-bold tabular">
-              {formatTempF(mix.waterTempF)}
-              <span className="ml-1 text-2xl font-normal text-stone-500">°F</span>
-            </p>
-            {split && (
-              <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-                {BOWL_STATE_LABEL[mix.bowlState]}, {formatTempF(mix.bowlTempF)} °F
-              </p>
-            )}
-          </div>
-        ))}
-      </div>
-      <p className="mt-4 text-stone-700 dark:text-stone-300">
-        Blend fridge-cold and tap water to hit it, measuring as you pour.
-      </p>
-    </Card>
-  );
-}
-
 const WARNING_STYLES: Record<Warning['severity'], string> = {
   error:
     'border-red-400 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-950/50 dark:text-red-200',
@@ -137,8 +88,22 @@ const WARNING_STYLES: Record<Warning['severity'], string> = {
   info: 'border-stone-300 bg-stone-50 text-stone-800 dark:border-stone-700 dark:bg-stone-800/50 dark:text-stone-200',
 };
 
+/** One warning, in the strip or under a mix's water target (§7.3). */
+export function WarningItem({ warning: w }: { warning: Warning }) {
+  return (
+    <div className={`rounded-xl border p-3 ${WARNING_STYLES[w.severity]}`}>
+      {w.title && <p className="font-semibold">{w.title}</p>}
+      {/* Markdown: §7.3's capacity messages carry bold ("Mix it as **2
+          batches of 1625.0 g**"), and plain text would print the asterisks. */}
+      <Markdown className={`${w.title ? 'mt-1 ' : ''}text-sm leading-relaxed`}>{w.detail}</Markdown>
+    </div>
+  );
+}
+
 /**
  * §7.3. "Render above the step list, never hidden in a collapsed panel."
+ * The water warnings aren't here: they render under each mix's target, in
+ * its prep step (`MixReadings`).
  *
  * Errors first, then warnings, then information — a batch that can't be made
  * should not be reported below a note about splitting the mix. The sort is
@@ -156,12 +121,7 @@ export function WarningsList({ warnings }: { warnings: Warning[] }) {
   return (
     <section aria-label="Warnings" className="grid gap-2">
       {sorted.map((w) => (
-        <div key={w.id} className={`rounded-xl border p-3 ${WARNING_STYLES[w.severity]}`}>
-          {w.title && <p className="font-semibold">{w.title}</p>}
-          {/* Markdown: §7.3's capacity messages carry bold ("Mix it as **2
-              batches of 1625.0 g**"), and plain text would print the asterisks. */}
-          <Markdown className={`${w.title ? 'mt-1 ' : ''}text-sm leading-relaxed`}>{w.detail}</Markdown>
-        </div>
+        <WarningItem key={w.id} warning={w} />
       ))}
     </section>
   );

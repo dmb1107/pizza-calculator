@@ -48,7 +48,7 @@ export const REFERENCE: readonly ReferenceSection[] = [
 
 | Balls per mix | 3 | 6 | 9 |
 |---|---:|---:|---:|
-| Factor | 0.821 | 0.901 | 0.932 |
+| Factor | 0.821 | 0.902 | 0.932 |
 | At 30% | 0.89 | 0.97 | 1.01 |
 
 A 12-ball batch runs as two 6-ball mixes and reads the 6 column; 18 balls reads the 9.`,
@@ -67,11 +67,6 @@ export const SOURCES: readonly Source[] = [
     title: "PizzaBlab — Biga (Preferment)",
     url: "https://www.pizzablab.com/the-encyclopizza/biga-preferment/",
     note: "hydration, yeast, ripeness cues, mixing technique; 1% fresh yeast, 12–24 h at 16–18 °C",
-  },
-  {
-    title: "PizzaBlab — Dough Calculator",
-    url: "https://www.pizzablab.com/calculators/pizza-dough-calculator/",
-    note: "biga yeast for a room-temperature biga off the baseline time/temp; it doesn't model a refrigerated biga",
   },
   {
     title: "PizzaBlab — How to use yeast",

@@ -96,10 +96,6 @@ export function tokenValues(
     // — hard-coding which ones differ is a trap the next change springs.
     mixIndex: String(mix),
     nextMixIndex: String(mix + 1),
-    /** The next mix's target, read while standing at the end of this one. */
-    waterTempNext: formatTempF(
-      (result.mixes[mix] ?? result.mixes[result.mixes.length - 1]!).waterTempF,
-    ),
     // §4.8 — computed from the measured final dough temperature, or from DDT
     // while the calculator is still in planning mode.
     roomMin: String(Math.round(result.roomMinutes)),
@@ -142,7 +138,7 @@ export function tokenValues(
     // Inputs — trimmed, since the prose supplies the unit.
     balls: String(inputs.balls),
     ballWeight: trim(inputs.ballWeightG),
-    // `biga-6` stated 965 g, the default, whatever the user had measured.
+    // Bound, so `biga-6` names the constant: it once stated 965 g whatever was measured.
     bowlMassG: trim(C.BOWL_MASS_G),
     coldFerment: trim(schedule.coldFermentH),
     bigaFridge: trim(schedule.bigaFridgeH),

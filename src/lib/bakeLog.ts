@@ -1,6 +1,6 @@
 /**
  * The bake log's rules — WEBSITE-SPEC-biga-calculator.md §4.3 (normalization),
- * §6 Panel 3 (the FF in use) and §10 (what a bake stores, which mixes count).
+ * §6 Panel 2 (the FF in use) and §10 (what a bake stores, which mixes count).
  *
  * Pure and DOM-free, like the rest of `src/lib`. Storage and sync live in
  * `src/state`; this file only reads records.
@@ -12,7 +12,7 @@
  */
 
 import { C } from './constants';
-import { computeCapacity, computeFormula, computeThermal, solveFrictionFactorF, type BowlState } from './engine';
+import { computeCapacity, computeFormula, computeThermal, solveFrictionFactorF } from './engine';
 import { formatBallsPerMix, formatTempF } from './format';
 import { MIX_PHASES, PHASE_KEYS, frictionRateOf, phaseForStep, type PhaseKey } from './mixPhases';
 import { formatElapsed } from './timers';
@@ -66,22 +66,29 @@ export interface FormulaSnapshot {
 }
 
 /**
+ * The bowl-state selector's value, which bakes saved before MESSAGE-54 carry.
+ * Kept so a rewrite doesn't strip it; nothing reads it (§10).
+ */
+export type LegacyBowlState = 'cold' | 'room' | 'warm';
+
+/**
  * §10: "Save records the inputs as they stand." Every temperature is the
  * value the field held at the save, whether typed, left at its default or
  * arrived in a link (Dave's call, 28 Sep: nothing tracks which values were
  * typed). Two exceptions: a reading with no value is null, and the bowl
- * records whether its field still held the selector's prefill.
+ * records whether its field still held its prefill.
  */
 export interface LoggedMix {
   /** 1-based. */
   mix_index: number;
   /** After tearing: the model's `T_biga`. */
   biga_temp_at_mix_f: number;
-  bowl_state: BowlState;
+  /** Bakes before MESSAGE-54 only. Never written now, and nothing reads it. */
+  bowl_state?: LegacyBowlState;
   bowl_temp_f: number;
   /**
-   * True while the bowl field held the selector's prefill. A prefill is a
-   * guess biased high, so the mix doesn't count (§10).
+   * True while the bowl field held its prefill. A prefill is a guess biased
+   * high, so the mix doesn't count (§10).
    */
   bowl_prefilled: boolean;
   /** What was poured, not the target. Null if nothing was poured or filled. */
@@ -214,7 +221,7 @@ export function bakeFrictionFactorF(bake: LoggedBake, current: FormulaSnapshot =
 }
 
 // ---------------------------------------------------------------------------
-// §6 Panel 3 The FF in use
+// §6 Panel 2 The FF in use
 // ---------------------------------------------------------------------------
 
 /** A mix size as the pair it came from: 12 balls in 2 mixes is the same size as 6 in 1. */
@@ -276,7 +283,6 @@ function bake1NormalizedFf(): number {
       {
         mix_index: 1,
         biga_temp_at_mix_f: r.biga_temp_at_mix_f,
-        bowl_state: 'cold',
         bowl_temp_f: r.bowl_temp_f,
         bowl_prefilled: false,
         water_temp_used_f: r.water_temp_used_f,
@@ -295,7 +301,7 @@ function bake1NormalizedFf(): number {
 }
 
 /**
- * §6, Panel 3, step 4: the FF in use at every mix size until the log has a
+ * §6, Panel 2, step 4: the FF in use at every mix size until the log has a
  * counted bake (Dave's call, MESSAGE-52). The first counted bake at any size
  * retires it. `k` is the size bake 1 ran, which picks the badge.
  */
@@ -352,7 +358,7 @@ export function sizeHistories(bakes: readonly LoggedBake[], current: FormulaSnap
 }
 
 /**
- * §6, Panel 3: the FF in use at mix size `k`.
+ * §6, Panel 2: the FF in use at mix size `k`.
  *
  * 1. Counted bakes at `k`: the mean of the last three bakes' FFs.
  * 2. None at `k`, counted sizes on both sides: linear interpolation.
@@ -388,7 +394,7 @@ export function ffInUse(bakes: readonly LoggedBake[], k: MixSize, current: Formu
 }
 
 // ---------------------------------------------------------------------------
-// §6 Panel 3 The badge
+// §6 Panel 2 The badge
 // ---------------------------------------------------------------------------
 
 /**

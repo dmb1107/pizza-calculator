@@ -58,7 +58,7 @@ describe('recipe text', () => {
   });
 
   it('records the bowl mass, since it is now part of the model', () => {
-    expect(text()).toMatch(/Bowl\s+965 g/);
+    expect(text()).toMatch(/Bowl\s+963 g/);
   });
 
   it('marks the room time as planned until a dough temperature is measured', () => {

@@ -53,7 +53,6 @@ function mix(overrides: Partial<LoggedMix> = {}): LoggedMix {
   return {
     mix_index: 1,
     biga_temp_at_mix_f: 58,
-    bowl_state: 'cold',
     bowl_temp_f: 58,
     bowl_prefilled: false,
     water_temp_used_f: 63,
@@ -125,14 +124,14 @@ describe('§5 Bake log: normalization', () => {
   const minutes = (m: Partial<Record<PhaseKey, number>>) =>
     Object.fromEntries(MIX_PHASES.map((p) => [p.key, m[p.key] ?? p.referenceMin])) as Record<PhaseKey, number>;
 
-  it("solves bake 1's readings to 14.031045", () => {
+  it("solves bake 1's readings to 14.027531", () => {
     const status = mixStatus(bake(), mix());
-    expect(status.ff).toBeCloseTo(14.031045, 6);
+    expect(status.ff).toBeCloseTo(14.027531, 6);
   });
 
-  it('normalizes it to 10.791045 with Phase C at 6.5 min and A, B, D at their references', () => {
+  it('normalizes it to 10.787531 with Phase C at 6.5 min and A, B, D at their references', () => {
     const status = mixStatus(bake(), mix({ phase_seconds: { ...REFERENCE_SECONDS, c: BAKE_1.phaseCMin * 60 } }));
-    expect(status.ffNominal).toBeCloseTo(10.791045, 6);
+    expect(status.ffNominal).toBeCloseTo(10.787531, 6);
   });
 
   it('leaves an FF unchanged with every phase at its reference', () => {
@@ -194,7 +193,7 @@ describe('§10 which mixes count', () => {
   });
 
   it('still solves a mix that does not count, so the log can show it', () => {
-    expect(mixStatus(bake(), mix({ bowl_prefilled: true })).ff).toBeCloseTo(14.031045, 6);
+    expect(mixStatus(bake(), mix({ bowl_prefilled: true })).ff).toBeCloseTo(14.027531, 6);
   });
 
   it("can't solve a mix with no final or no water", () => {
@@ -244,7 +243,7 @@ describe('§5 Bake log: the FF in use', () => {
     for (const k of [{ balls: 3, nMix: 1 }, { balls: 13, nMix: 2 }, { balls: 19, nMix: 3 }, { balls: 24, nMix: 3 }]) {
       expect(ffInUse([], k).ff, `${k.balls} in ${k.nMix}`).toBe(BAKE_1_SEED.value);
     }
-    expect(BAKE_1_SEED.value).toBeCloseTo(10.791045, 6);
+    expect(BAKE_1_SEED.value).toBeCloseTo(10.787531, 6);
   });
 
   it('retires the seed with the first counted bake at any size', () => {
@@ -274,7 +273,7 @@ describe('§5 Bake log: the FF in use', () => {
       final_dough_temp_f: BAKE_1.finalTempF,
       phase_c_min: BAKE_1.phaseCMin,
     });
-    // 14.031045 less FRICTION_RATE[30] × 3 minutes of long Phase C.
+    // 14.027531 less FRICTION_RATE[30] × 3 minutes of long Phase C (963 g bowl).
     expect(BAKE_1_SEED.value).toBeCloseTo(solved.ff! - C.FRICTION_RATE[30] * (BAKE_1.phaseCMin - 3.5), 12);
     expect(BAKE_1_SEED.date).toBe('2026-08-21');
   });
@@ -444,12 +443,12 @@ describe('§4.4 the 120 °F warning under a low logged FF', () => {
   const hot = (ff: number) =>
     calculate({ balls: 3, ballWeightG: 240, roomTempF: 60, flourTempF: 60, bigaTempF: 45, frictionFactorF: ff });
 
-  it('asks for 108.68 °F at the hottest corner at FF 14', () => {
-    expect(hot(14).waterTempF.toFixed(2)).toBe('108.68');
-    expect(hot(14).warnings.map((w) => w.id)).not.toContain('water-above-tap');
+  it('asks for 108.63 °F at the hottest corner at FF 14', () => {
+    expect(hot(14).waterTempF.toFixed(2)).toBe('108.63');
+    expect(hot(14).mixes[0]!.warnings.map((w) => w.id)).not.toContain('water-above-tap');
   });
 
-  it('reaches 120 °F once the FF in use drops below 10.23', () => {
+  it('reaches 120 °F once the FF in use drops below 10.21', () => {
     let lo = 5;
     let hi = 14;
     for (let i = 0; i < 100; i++) {
@@ -457,16 +456,16 @@ describe('§4.4 the 120 °F warning under a low logged FF', () => {
       if (hot(m).waterTempF > C.WATER_MAX_F) lo = m;
       else hi = m;
     }
-    expect(lo.toFixed(2)).toBe('10.23');
-    expect(hot(10.22).warnings.map((w) => w.id)).toContain('water-above-tap');
-    expect(hot(10.24).warnings.map((w) => w.id)).not.toContain('water-above-tap');
+    expect(lo.toFixed(6)).toBe('10.213711');
+    expect(hot(10.2).mixes[0]!.warnings.map((w) => w.id)).toContain('water-above-tap');
+    expect(hot(10.22).mixes[0]!.warnings.map((w) => w.id)).not.toContain('water-above-tap');
   });
 
-  it("doesn't reach it at bake 1's normalized FF, 0.56 above the threshold", () => {
-    // MESSAGE-52: the FF in use before any counted bake.
-    expect(hot(BAKE_1_SEED.value).waterTempF.toFixed(3)).toBe('118.312');
-    expect(hot(BAKE_1_SEED.value).warnings.map((w) => w.id)).not.toContain('water-above-tap');
-    expect((BAKE_1_SEED.value - 10.228729).toFixed(2)).toBe('0.56');
+  it("doesn't reach it at bake 1's normalized FF, 0.57 above the threshold", () => {
+    // MESSAGE-52: the FF in use before any counted bake. 963 g bowl (MESSAGE-54).
+    expect(hot(BAKE_1_SEED.value).waterTempF.toFixed(3)).toBe('118.277');
+    expect(hot(BAKE_1_SEED.value).mixes[0]!.warnings.map((w) => w.id)).not.toContain('water-above-tap');
+    expect((BAKE_1_SEED.value - 10.213711).toFixed(2)).toBe('0.57');
   });
 
   it('reads the same with the water formula directly', () => {

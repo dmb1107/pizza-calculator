@@ -39,7 +39,9 @@ const BASE = {
    * (MESSAGE-29): the app supports only this mixer, and its bowl never changes.
    * Renamed from DEFAULT_BOWL_MASS_G because it is no longer a default.
    */
-  BOWL_MASS_G: 965,
+  // Weighed on a kitchen scale, Oct 2026 (MESSAGE-54). 965 was an earlier,
+  // rougher reading.
+  BOWL_MASS_G: 963,
   /**
    * §7.5. The Core has no number display: its LED indicator shows speed in
    * segments, a fully lit one 10% and a half-lit one 5% (Ooni help center).
@@ -92,7 +94,7 @@ const BASE = {
   // readings (`BAKE_1_SEED` in bakeLog.ts).
 
   /**
-   * §6, Panel 3. The FF in use at a mix size is the mean of its last three
+   * §6, Panel 2. The FF in use at a mix size is the mean of its last three
    * counted bakes, and a size counts as calibrated at three: the upper end of
    * the recipe's two to three per size, which give a mean and a spread.
    */
@@ -270,7 +272,7 @@ export const C = {
 } as const;
 
 /**
- * Heat capacity of the mixer bowl, cal/°C. 115.8 at the 965 g default —
+ * Heat capacity of the mixer bowl, cal/°C. 115.56 at the 963 g bowl —
  * comparable to the fresh flour, and larger than it below about 5 balls.
  *
  * The bowl absorbs friction energy alongside the dough. It is fixed mass while

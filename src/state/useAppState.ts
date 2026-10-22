@@ -66,7 +66,7 @@ function currentSearch(): string {
   return typeof window === 'undefined' ? '' : window.location.search;
 }
 
-/** The FF in use and the badge Panel 3 shows for it (§6). */
+/** The FF in use and the badge Panel 2 shows for it (§6). */
 export type FrictionInUse = FfInUse & { badge: { text: string; tone: BadgeTone } };
 
 export type SyncState =
@@ -135,7 +135,7 @@ export interface AppState {
   /** Clear a per-mix reading back to unread (the final temperature's "Clear"). */
   clearReading: (field: PerMixReading, index: number) => void;
   /**
-   * §10: the page's Reset, and its only one. Puts today's temperatures, the
+   * §10: the page's Reset, and its only one. Puts today's readings, the
    * DDT override and the timeline's anchor back to their defaults and clears
    * the step checkboxes and the timers; the batch settings and the saved bakes
    * stay, and the next save is a new bake.
@@ -408,7 +408,6 @@ export function useAppState(): AppState {
         roomTempF: inputs.roomTempF,
         flourTempF: inputs.flourSameAsRoom ? inputs.roomTempF : inputs.flourTempF,
         bigaTempF: inputs.bigaTempF,
-        bowlState: inputs.bowlState,
         bowlTempF: inputs.bowlTempF,
         frictionFactorF: friction.ff,
         ddtOverrideF: calibration.ddtOverrideF,

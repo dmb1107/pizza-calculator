@@ -62,19 +62,19 @@ In Italian practice, extra time goes into the biga rather than the ball proof. P
 
 **T_water = [ DDT × (Ct + C_bowl) − FF × Ct − Cb·T_biga − Cf·T_flour − Cs·T_room − C_bowl·T_bowl ] ÷ Cw**
 
-Specific heats: biga at 50% hydration 0.6133, flour 0.42, water 1.00, salt 0.21, stainless 0.12. A 965 g bowl contributes 115.8, about the same as the fresh flour and more than it below about 5 balls.
+Specific heats: biga at 50% hydration 0.6133, flour 0.42, water 1.00, salt 0.21, stainless 0.12. A 963 g bowl contributes 115.6, about the same as the fresh flour and more than it below about 5 balls.
 
 **The bowl matters in two ways.** Its *mass* has the bigger effect: friction heats everything in the bowl, including the bowl. At a 3-ball mix the bowl absorbs 18% of the mixer's work; at a 9-ball mix, 6.8%.
 
 Its *temperature* matters more than it seems, because it has two different coefficients. A bowl error changes the **dough** temperature by \`C_bowl/(Ct + C_bowl)\`: 0.10 °F per 1 °F at 6 balls, 0.18 at 3, so a 3 °F misreading costs 0.3 °F at 6 balls. It changes the **water target** by \`C_bowl/Cw\`, about three times as much because water is under a third of the system: 0.66 °F per °F at a 3-ball mix, 0.33 at 6, 0.22 at 9. You act on the water target, which is why the bowl is worth a five-second measurement.
 
-**So the formula depends on scale.** The bowl's mass is fixed while the dough scales, so the weights shift with batch size. That's also why the bowl can't be folded into FF: the same FF of 14 would show up as 11.5 °F in a 3-ball mix and 13.0 °F in a 9-ball one, so FF would appear to change with batch size when nothing about the mixing had.
+**So the formula depends on scale.** The bowl's mass is fixed while the dough scales, so the weights shift with batch size. That's also why the bowl can't be folded into FF: the same FF of 14 would show up as 11.5 °F in a 3-ball mix and 13.1 °F in a 9-ball one, so FF would appear to change with batch size when nothing about the mixing had.
 
 **What matters is the mix, not the batch.** A 12-ball batch runs as two 6-ball mixes, and the bowl holds one at a time, so it's two 6-ball systems rather than one 12-ball system. Treating it as one 12-ball system halves the bowl's share and sets the water target too low, by 1.5 to 6.2 °F across the supported range, most with the coldest biga, when the water is already at its hottest. Your kitchen temperature doesn't change it.
 
 **The same fixed mass is why small mixes need hot water.** At 3 balls the bowl is 18% of the system and only the water can make up for it, so with a cold biga in a cold kitchen the requirement reaches about 116 °F, against 100 °F for a 9-ball mix. Below 3 balls it goes beyond what a tap can supply, which is why 3 is the smallest supported batch. This follows the **mix**: a 12-ball batch is two 6-ball mixes, so it needs *hotter* water than a 9-ball batch.
 
-**Because the biga always ferments in the bowl, the temper is the only way to warm the bowl before the first mix.** An hour on the counter brings bowl and biga up together. Skipping it is the costliest shortcut in the schedule: each °F of biga temperature is worth about 2 °F of water, and at 3 balls a skipped temper pushes the requirement past 110 °F.
+**Because the biga always ferments in the bowl, the temper is the only way to warm the bowl before the first mix.** An hour on the counter brings bowl and biga up together. Without it, each degree the biga is colder costs about 2 °F of water, and at 3 balls the requirement goes past 110 °F.
 
 With a fridge-retarded biga you'll usually need **warm** water. The biga's thermal mass dominates, so the schedule controls dough temperature more than the water does.`,
   },
@@ -93,7 +93,7 @@ This is the easiest thing to mix up. A thermometer reads the dough after it has 
 
 For comparison, commercial spirals reach 20–26 °F on a full bread mix. This is a shorter profile on a smaller machine with a 10-minute rest in the middle, so a lower figure is expected.
 
-**One data point so far.** Bakes at 3 and 9 balls test the bowl model: if it's right, the solved FF comes out the same at both, even though the raw temperature rise differs (at FF 14, 11.5 vs 13.0). A difference in solved FF means different things depending on its direction:
+**One data point so far.** Bakes at 3 and 9 balls test the bowl model: if it's right, the solved FF comes out the same at both, even though the raw temperature rise differs (at FF 14, 11.5 vs 13.1). A difference in solved FF means different things depending on its direction:
 
 - **Higher at 3 balls than at 9**: the bowl term is too big. Nothing else predicts FF falling as the mix grows, so this result is clear.
 - **Higher at 9 balls than at 3**: either the bowl term is too small, or FF really does rise with mix size (the untested idea below). These two bakes can't tell those apart.
@@ -118,7 +118,7 @@ Piergiorgio Giorilli codified this dose. Italian Pizza Secrets gives it with a 1
 
 **The fresh-yeast dose is the sourced number.** The rest is unit conversion: fresh to instant at 0.30, instant to active dry at ×1.25, which gives exactly 0.375%.
 
-For a room-temperature biga at another time or temperature, use PizzaBlab's dough calculator. It calculates preferment yeast for room temperature only, so it can't check the retarded schedule; that one rests on an assumption (see *Refrigerate the biga*).`,
+The dose is set for that window. The retarded schedule gives the biga less fermentation than the window does, and rests on an assumption (see *Refrigerate the biga*).`,
   },
   {
     id: "mix-dont-knead",

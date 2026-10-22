@@ -207,7 +207,10 @@ describe('unknown tokens fail loudly', () => {
 describe('step summaries bind to real numbers', () => {
   it('fills biga-1 with the weight to put on the scale', () => {
     const step = STEPS.find((s) => s.id === 'biga-1');
-    expect(bindTokens(step?.summary ?? '', values)).toContain('611.2 g of flour');
+    // MESSAGE-54: the flour is broken up first, then weighed, so none left in
+    // the sieve comes out of the biga.
+    expect(bindTokens(step?.summary ?? '', values)).toContain('then weigh out 611.2 g.');
+    expect(bindTokens(step?.summary ?? '', values)).toContain('Weigh 305.6 g of water.');
   });
 
   it('binds each biga stage\'s planning point beside its range', () => {
@@ -215,7 +218,7 @@ describe('step summaries bind to real numbers', () => {
     const step = (id: string) => STEPS.find((s) => s.id === id);
     // MESSAGE-32: worded to hold at a plan outside the window too.
     expect(bindTokens(step('biga-4')?.summaryClassic ?? '', values)).toBe(
-      'At 61–65 °F, covered so it doesn\'t dry out. The Giorilli window is **16–18 hours**; the timeline plans **16 h**.',
+      'At 61–65 °F, covered so it doesn\'t dry out. The window is **16–18 hours**; the timeline plans **16 h**.',
     );
     expect(bindTokens(step('biga-4b')?.summary ?? '', values)).toContain(
       'for **18–20 hours**. The timeline plans 19 h.',

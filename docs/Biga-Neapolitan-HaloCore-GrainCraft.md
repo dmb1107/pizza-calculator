@@ -176,7 +176,7 @@ The calculator's classic track lets you set 12–18 h, with the 12–16 h end cr
 
 **Where 0.375% comes from.** The published figure is **1% fresh yeast**, the number Giorilli states and the only one that is sourced. The rest is unit conversion: fresh → IDY at 0.30, IDY → ADY at ×1.25, which gives exactly 0.375%.
 
-**For a room-temperature biga at another time or temperature, use [PizzaBlab's Dough Calculator](https://www.pizzablab.com/calculators/pizza-dough-calculator/) rather than extrapolating a table.** It calculates preferment yeast for room temperature only, so it can't check the retarded schedule.
+**The dose is set for that window.** This recipe doesn't give doses for other times or temperatures.
 
 **The retarded schedule rests on an assumption.** Giorilli's dose is set for 16–18 h at 61–65 °F. The retarded schedule (§7) gives the biga 2 h at room temperature, 18–20 h at 38–40 °F and an hour's temper. By this recipe's fermentation model, with the rate doubling every 17 °F as in the rise after balling (§8), that comes to about 11 hours' worth at 63 °F. The recipe assumes the biga is still ripe enough when it's pulled, and that the final dough's schedule makes up any shortfall. Bake 1 ran this schedule; nothing has measured the biga's rise on it. If the balls are consistently behind on bake day, add an hour to the biga's time at room temperature before changing the dose.
 
@@ -196,25 +196,23 @@ The window is wide. A biga ferments slowly, makes acid slowly and breaks down li
 
 ### Mixing: by hand, and mix, don't knead
 
-**Mix the biga by hand at every batch size.** PizzaBlab mixes it by hand, fingers in a claw, and warns against forming a cohesive mass.
+**Mix the biga by hand.** PizzaBlab mixes it by hand, fingers in a claw, and warns against forming a cohesive mass.
 
 Aim for **small-to-medium chunks, like gnocchi**, not a dough. A spiral mixer builds gluten, which a biga shouldn't have yet. That's what causes an over-mixed biga, which then doubles and looks riper than it is.
 
-**Mix and ferment the biga in the mixer bowl**, the same 965 g stainless bowl the final mix runs in. That's fixed for every bake, and it has two consequences: the bowl arrives at the final mix cold rather than at room temperature, and it's tied up for the whole ~21-hour biga schedule. §6 accounts for both.
+**Mix and ferment the biga in the mixer bowl**, the same 963 g stainless bowl the final mix runs in. That's fixed for every bake, and it has two consequences: the bowl arrives at the final mix cold rather than at room temperature, and it's tied up for the whole ~21-hour biga schedule. §6 accounts for both.
 
-Method: put the room-temperature biga water in the mixer bowl and add the yeast water. Add the flour. Make a claw with your hand and work your fingertips through it for **3–6 minutes, until no dry flour remains**, since dry flour never ferments. Break up any large chunks by hand.
+Method: put the room-temperature biga water in the mixer bowl and add the yeast water. Add the flour and work it in with your fingers **until no dry flour remains**, since dry flour never ferments. The mass stiffens fast; once it does, stop working it as one piece and tear it into gnocchi-sized chunks. **3–6 minutes in all.**
 
 Cover it so it doesn't dry out. PizzaBlab says a vent serves no purpose, so a closed lid is fine.
-
-*Because the biga is mixed by hand, the Halo Core's limits on small and stiff doughs don't apply to it, so no batch is too small or too stiff for the biga phase.*
 
 ### The temper: one hour you shouldn't skip
 
 On the retarded track the biga comes out of the fridge **one hour before you mix** and stays in the mixer bowl while it warms.
 
-**It's the easiest hour in the schedule to skip, and skipping it costs the most.** Of the temperatures you measure, the biga's moves the water target most: each degree of biga moves the required water by about two degrees, **1.9 °F at a 6-ball mix and 2.3 °F at a 3-ball one** (§6). A skipped temper is the usual reason the calculator asks for water hotter than a tap delivers.
+Of the temperatures you measure, the biga's moves the water target most: each degree of biga moves the required water by about two degrees, **1.9 °F at a 6-ball mix and 2.3 °F at a 3-ball one** (§6). A skipped temper is the usual reason the calculator asks for water hotter than a tap delivers.
 
-**Leave it in the bowl.** The 965 g stainless bowl is part of the thermal system, and the hour is meant to warm bowl and biga together. Tempering the biga on the counter leaves the bowl cold.
+**Leave it in the bowl.** The 963 g stainless bowl is part of the thermal system, and the hour is meant to warm bowl and biga together. Tempering the biga on the counter leaves the bowl cold.
 
 **Take both temperatures after crumbling the biga.** Handling warms it by about five degrees: on bake 1 it read **53 °F at pull and 58 °F once broken up**. The bowl doesn't warm with it, so read the bowl separately: hold the probe against the bowl wall for five seconds. Each degree of bowl temperature is worth 0.66 °F of water at a 3-ball mix.
 
@@ -230,7 +228,6 @@ At 61–65 °F the bacteria produce the **balance of lactic and acetic acid** th
 
 - [PizzaBlab — Biga (Preferment)](https://www.pizzablab.com/the-encyclopizza/biga-preferment/) — the most rigorous of these; hydration, yeast, ripeness cues, mixing technique; 1% fresh yeast, 12–24 h at 16–18 °C
 - [PizzaBlab — How to use yeast](https://www.pizzablab.com/learning-and-resources/ingredients/how-to-use-yeast/) — dry yeast rehydrates best near 104 °F; active dry yeast needs warm water; cold rehydration leaks glutathione
-- [PizzaBlab — Dough Calculator](https://www.pizzablab.com/calculators/pizza-dough-calculator/) — preferment yeast for a room-temperature biga only
 - [King Arthur — Desired dough temperature](https://www.kingarthurbaking.com/blog/2018/05/29/desired-dough-temperature) — with cool water, rehydrate active dry yeast in part of the recipe water at 110 °F
 - [Julian Sisofo — Contemporary pizza](https://juliansisofo.com/blog/Contemporarypizza) — a 50% biga with a warm start and then the fridge
 - [Baking With Theory — Biga & Biga Calculator](https://www.bakingwiththeory.com/theory/biga/) — Giorilli formula (44–45% hydration, 1% fresh yeast, short biga 16–20 h at 16–20 °C) and a time/temp calculator
@@ -261,9 +258,9 @@ Compute each component's heat capacity (`mass × specific heat`):
 | Fresh flour | 0.42 |
 | Water | 1.00 |
 | Salt | 0.21 |
-| **Stainless bowl (965 g → C = 115.8)** | **0.12** |
+| **Stainless bowl (963 g → C = 115.56)** | **0.12** |
 
-Let `Ct` be the four dough components summed, and `C_bowl` = 115.8.
+Let `Ct` be the four dough components summed, and `C_bowl` = 115.56.
 
 > ### **T_water = [ DDT × (Ct + C_bowl) − FF × Ct − Cb·T_biga − Cf·T_flour − Cs·T_room − C_bowl·T_bowl ] ÷ Cw**
 
@@ -308,18 +305,18 @@ A 12-ball batch reads the 6 row and 18 balls the 9 row.
 | Balls **per mix** | Bowl share | Rise diluted to | FF 14 appears as |
 |---|---:|---:|---:|
 | 3 | 17.9% | 82% | 11.5 °F |
-| 6 | 9.9% | 90% | 12.6 °F |
-| 9 | 6.8% | 93% | 13.0 °F |
+| 6 | 9.8% | 90% | 12.6 °F |
+| 9 | 6.8% | 93% | 13.1 °F |
 
-The table is keyed on mix size: 12 balls runs as two 6-ball mixes and reads the 6 row, and 18 balls runs as two 9-ball mixes and reads the 9 row. The bowl's share never falls below about **6.6%**, a floor set by the mixer's 2500 g capacity rather than by batch size: Ct is 0.6516 per gram of dough, so at the cap the share is 115.8 / (0.6516 × 2500 + 115.8) = 6.64%. A *split* batch can come closer to the cap than any unsplit one, since 19 × 257 g runs as two 2495 g mixes against 9 × 270 g's 2483 g.
+The table is keyed on mix size: 12 balls runs as two 6-ball mixes and reads the 6 row, and 18 balls runs as two 9-ball mixes and reads the 9 row. The bowl's share never falls below about **6.6%**, a floor set by the mixer's 2500 g capacity rather than by batch size: Ct is 0.6516 per gram of dough, so at the cap the share is 115.56 / (0.6516 × 2500 + 115.56) = 6.62%. A *split* batch can come closer to the cap than any unsplit one, since 19 × 257 g runs as two 2495 g mixes against 2494 g for 10 × 244 g, the largest batch that fits one mix.
 
-**That's why the bowl can't be folded into FF.** The apparent FF would drift from 11.5 to 13.0 across the range, and you'd conclude the mixer behaves differently at different scales when one constant is being read through three different dilutions.
+**That's why the bowl can't be folded into FF.** The apparent FF would drift from 11.5 to 13.1 across the range, and you'd conclude the mixer behaves differently at different scales when one constant is being read through three different dilutions.
 
-**Because the biga always ferments in the bowl (§5), the temper is the only way to warm the bowl before the first mix.** An hour on the counter warms bowl and biga together and raises the whole cold end of the system. Skipping it is the costliest shortcut in the schedule: each degree of biga temperature is worth about 2 °F of water, and at 3 balls a skipped temper pushes the requirement toward 100 °F.
+**Because the biga always ferments in the bowl (§5), the temper is the only way to warm the bowl before the first mix.** An hour on the counter warms bowl and biga together and raises the whole cold end of the system. Without it, each degree the biga is colder costs about 2 °F of water, and at 3 balls the requirement goes past 110 °F.
 
 ### Split batches: the thermal system is the mix, not the batch
 
-⚠️ **A 12-ball batch isn't a 12-ball thermal system. It's a 6-ball system, twice.** The bowl holds one mix at a time, so every heat capacity in the formula is computed from **per-mix** masses. Computing from batch totals halves the bowl's apparent share and sets the water target **2.6 °F low at 12 balls and 1.8 °F low at 18** with the biga at 58 °F, and anywhere from 1.5 to 6.2 °F low across the supported range, most with the coldest biga. It's the same kind of error as leaving the bowl out, only smaller.
+⚠️ **A 12-ball batch isn't a 12-ball thermal system. It's a 6-ball system, twice.** The bowl holds one mix at a time, so every heat capacity in the formula is computed from **per-mix** masses. Computing from batch totals halves the bowl's apparent share and sets the water target **2.6 °F low at 12 balls and 1.7 °F low at 18** with the biga at 58 °F, and anywhere from 1.5 to 6.2 °F low across the supported range, most with the coldest biga. It's the same kind of error as leaving the bowl out, only smaller.
 
 `FF` is per mix for the same reason: it's the rise the mixer puts into the dough actually in the bowl, and 14.03 was measured on a single 6-ball mix.
 
@@ -333,7 +330,7 @@ The table is keyed on mix size: 12 balls runs as two 6-ball mixes and reads the 
 
 **Why "upper bound", and why measure.** The bowl can't come off a mix warmer than the dough it held, so DDT bounds it, provided that mix finished at or below DDT. How far it cools toward the room during the 5-minute changeover has never been measured, and in a cold kitchen the room is further away. Read it before every mix after the first (below), and log it on the first split bake.
 
-At 12 balls that's a 5.3 °F spread in the water target between mix 1 and mix 2 (74.0 °F then 68.7 °F at the app's defaults: biga 58 °F, flour and room 70, FF 10.8), enough to matter.
+At 12 balls that's a 5.2 °F spread in the water target between mix 1 and mix 2 (74.0 °F then 68.8 °F at the app's defaults: biga 58 °F, flour and room 70, FF 10.8), enough to matter.
 
 **Rinsing sets the bowl.** The bowl is thin stainless, and running water brings it to roughly the rinse temperature within a minute. If a later mix's target comes out awkward, set the bowl deliberately rather than chasing it with the water.
 
@@ -351,7 +348,7 @@ Bake 1 gave 14.03 °F. The Phase C friction rate agrees: 1.00 °F/min on the dou
 
 ⚠️ **Bake 1 ran long, so 14.03 is the FF of its mix, not of the one in §8.** Its Phase C took 6.5 minutes against 3.5 at the middle of the range, and the whole mix 18.5 motor minutes against 13.4. At 1.08 °F a minute, Phase C's extra 3 minutes are 3.2 °F of the 14.03: with a 3.5-minute Phase C, bake 1 solves to **10.8**. Phases A, B and D ran another 2⅛ minutes over between them, split unrecorded, so even 10.8 is high by an amount bake 1 can't give. **The calculator uses 10.8 at every batch size** until the first bake logged with its phase times. If it's still high, the dough errs cool, which the probe step and the longer rise after balling both correct. From then on it works from the log, which corrects every bake to the middle of each phase's range (§12, *Log schema*).
 
-**One data point so far.** Bakes at 3 and 9 balls test the bowl model: if it's right, the solved FF comes out the same at both, while the *raw temperature rise* differs (at FF 14, 11.5 vs 13.0). Compare them only once both are corrected to the same mix times; a Phase C stretched or cut at the probe would otherwise look like a size effect. A difference in solved FF means different things depending on its direction:
+**One data point so far.** Bakes at 3 and 9 balls test the bowl model: if it's right, the solved FF comes out the same at both, while the *raw temperature rise* differs (at FF 14, 11.5 vs 13.1). Compare them only once both are corrected to the same mix times; a Phase C stretched or cut at the probe would otherwise look like a size effect. A difference in solved FF means different things depending on its direction:
 
 - **Higher at 3 balls than at 9**: the bowl term is too big. Nothing else predicts FF *falling* as the mix grows, so this result is clear.
 - **Higher at 9 balls than at 3**: either the bowl term is too small, or FF really does rise with mix size (the untested idea under *Measuring your friction factor*). These two bakes can't tell those apart.
@@ -368,7 +365,7 @@ The requirement climbs as the **mix** gets smaller, because the fixed-mass bowl 
 | Balls | 3 | 6 | 9 | 12 | 18 | 24 |
 |---|---:|---:|---:|---:|---:|---:|
 | Balls per mix | 3 | 6 | 9 | **6** | **9** | **8** |
-| Hottest water asked for (°F) | **116.3** | 106.4 | 99.9 | **103.1** | 99.9 | 100.7 |
+| Hottest water asked for (°F) | **116.2** | 106.4 | 99.9 | **103.1** | 99.9 | 100.7 |
 
 **Read the second row, not the first.** A 12-ball batch runs as two 6-ball mixes, so it needs *hotter* water than a 9-ball batch. The figure follows the mix, not the batch, and it doesn't fall smoothly as the batch grows.
 
@@ -482,7 +479,7 @@ Your Home Assistant sensors would show quickly whether anywhere in the house hol
 
 Beyond 36 h of cold ferment you're past documented practice and into your own calibration. Two options, in order of preference:
 
-1. **Lengthen the biga toward 24 h** (PizzaBlab's stated ceiling), with correspondingly less yeast per their calculator, and keep the dough's cold ferment moderate.
+1. **Lengthen the biga toward 24 h** (PizzaBlab's stated ceiling), with less yeast to match, and keep the dough's cold ferment moderate.
 2. **Keep the schedule and cut the biga yeast.** This departs from the codified method, and it's the change most likely to give you a weak, under-developed biga rather than a longer one.
 
 Do neither until the ~50 h version has worked twice.
@@ -492,18 +489,18 @@ Do neither until the ~50 h version has worked twice.
 ### Stage 1: Biga (mixed by hand)
 
 1. **Start the yeast.** Weigh the biga water. Take about ten times the ADY's weight of it, warm that portion to **100–110 °F**, stir in the ADY and leave it **10 minutes** (§5). The rest of the water stays at room temperature.
-2. While the yeast rehydrates, weigh the biga flour, then **break up the clumps while it's still dry**: whisk hard or push it through a coarse sieve. Weigh before you break it up, so flour lost in the sieve doesn't change the number.
+2. While the yeast rehydrates, **break up the clumps in the biga flour while it's dry**: whisk hard or push it through a coarse sieve. Then weigh it out, so flour left in the sieve doesn't come out of the biga.
    *Grain Craft arrives lumpy from the mill; the flour itself is fine. The lumps are only easy to break up while the flour is dry. A clump that survives into the biga keeps dry flour at its core that never ferments, and in a stiff 50% biga you can't find it by hand.*
 3. The room-temperature water and the yeast water go **into the mixer bowl**, where the biga ferments (§5). Add the flour.
-4. **Mix by hand for 3–6 min**, fingers in a claw, working through the mass. **Mix; don't knead.**
-   **Target: small-to-medium, gnocchi-sized chunks, and no dry flour anywhere.** It should look like crumbs, not dough. Break up large chunks by hand.
+4. **Mix by hand, 3–6 min in all.** Work the flour in with your fingers until none is dry, then tear the stiffening mass into gnocchi-sized chunks. **Mix; don't knead.**
+   **Target: small-to-medium, gnocchi-sized chunks, and no dry flour anywhere.** It should look like crumbs, not dough.
    *Don't use the mixer.* A spiral hook builds gluten, which a biga shouldn't have.
 5. Cover it so it can't dry out. Ferment according to your schedule in §7.
 6. **Pull at ~20% volume increase**: puffed chunks, a mild sour and alcoholic smell. Not doubled.
 
 ### Stage 2: Final mix (~15 min run time)
 
-Have everything weighed before you start, and the water already blended to temperature. **On a split batch, first split the tempered biga by weight into one portion per mix**, leave mix 1's in the bowl, cover the rest, and weigh out every mix's fresh flour and salt (§7).
+Have everything weighed before you start, and the water already blended to temperature. **On a split batch, first split the biga by weight into one portion per mix**, leave mix 1's in the bowl, cover the rest, and weigh out every mix's fresh flour and salt (§7).
 
 | Phase | Speed (lit segments) | Time | What |
 |---|---:|---:|---|
@@ -725,7 +722,6 @@ BIGA 65% @ 50% hyd  ·  TOTAL HYD 70%  ·  SALT 2.8%  ·  265 g BALLS  ·  DY 1.
  18 = one 1833.7 g-flour biga, split, 2 x 9-ball mixes. ONE BIGA AT EVERY SIZE.
  *ADY 0.375% of biga flour = 1% fresh = 0.30% IDY, Giorilli.
   Giorilli is a 44-45% biga; ours is 50% (wetter = faster). Pull on the cue.
-  Room-temp biga off baseline -> PizzaBlab calculator, not an extrapolated table.
   Retarded biga with this dose = an ASSUMPTION (5). Balls late -> +1 h biga RT.
  MINIMUM MACHINE BATCH = 3 BALLS. 2 balls clears the 500 g floor on paper,
   but the hook won't grip and the water math goes to 126 F.
@@ -755,14 +751,14 @@ SCHEDULE (retarded): biga 2h RT + 18-20h fridge -> 1h temper -> mix
        Classic alt: biga 16-18h @ 61-65F, then 6-8h fridge (~27-31 h).
 
 WATER TEMP (includes the bowl; no fixed multiplier works)
-  Ct = Cb+Cf+Cw+Cs (dough)   C_bowl = 965 x 0.12 = 115.8
+  Ct = Cb+Cf+Cw+Cs (dough)   C_bowl = 963 x 0.12 = 115.56
   T_bowl: MEASURE IT. Biga always ferments in the bowl, but tearing warms the
   biga ~5 F and not the bowl. 0.66 F of water per F of bowl at 3 balls.
   BOWL STATE: cold (=T_biga) / room (=T_room) / warm from last mix (=DDT,
   an UPPER BOUND - how far it cools in the changeover is unmeasured).
   SPLIT BATCHES: Ct is PER-MIX, not per-batch. 12 balls = a 6-ball system
   twice. Batch-total Ct lands the water 2.6 F low (12bl, biga 58). One water temp
-  PER MIX (12bl: 74.0 then 68.7). Re-measure biga AND bowl before each
+  PER MIX (12bl: 74.0 then 68.8). Re-measure biga AND bowl before each
   mix after the first.
   Rinse the bowl to set it - faster than chasing it with the water.
   T_water = [ DDT x (Ct+C_bowl) - FF x Ct - Cb.Tbiga - Cf.Tflour
@@ -773,7 +769,7 @@ WATER TEMP (includes the bowl; no fixed multiplier works)
 WATER = blend fridge-cold + tap to the target, measure as you pour.
         Retarded biga -> usually WARM water. Span 60-116 F over 3-24 balls;
         hottest at SMALL MIXES, and mix size != batch size:
-        3bl 116.3 / 6bl 106.4 / 9bl 99.9 / 12bl 103.1 (=2x6!) / 18bl 99.9 (=2x9)
+        3bl 116.2 / 6bl 106.4 / 9bl 99.9 / 12bl 103.1 (=2x6!) / 18bl 99.9 (=2x9)
         (worst case: biga 45, room 60). Tempered biga, 70 F room, 6bl: ~77 F.
         >120 F -> not tap-reachable. Cause is a biga that skipped its 1h
         temper; 1 F of biga is worth ~2 F of water. Fix upstream, not with a kettle.
@@ -830,7 +826,7 @@ BAKE gauge 750 F, FULL FLAME, 60-90 s, turn every 15-20 s. Do not push to 800+.
 | Phase C | 14 → 20.5 min (6.5 min @ 30%). Probably stretched because the probe read low: 4.4 °F under the 71.9 °F target today's formula gives (Dave's recollection; not logged) |
 | **Final dough** | **73.5 °F**, 1.5 °F under: exactly the water error |
 | **FF measured** | **14.03 °F** ✅ (solved from the inputs above) |
-| Bowl | 965 g stainless |
+| Bowl | 963 g stainless |
 
 **What it showed:**
 - The **bowl term** is required. Its *mass* matters most, but its temperature matters too (below).
@@ -840,7 +836,7 @@ BAKE gauge 750 F, FULL FLAME, 60-90 s, turn every 15-20 s. Do not push to 800+.
 - Total motor time was 18.5 min, against 13.4 at the middle of every phase's range (15 at the top of each). Phase C alone ran 3 minutes over, 3.2 °F of the 14.03 at 1.08 °F a minute: with a 3.5-minute Phase C, bake 1 solves to 10.8 (§6, *Friction factor: measured*).
 - Phases A and B added less heat than the friction rates predict. By the probe at 11 minutes the dough had risen 7.4 °F (dough alone, heat of hydration included), where 0.75 and 0.86 °F a minute give 8.25 to 9.46 over those 11 minutes before any heat of hydration, however the time was split between A and B. One bake, with Phase A's water guessed.
 
-⚠️ **FF = 14.03 was fitted with `T_bowl` assumed equal to 58 °F.** If the bowl was actually nearer the 53 °F pull temperature, the same measurement solves to **FF = 14.58**. Both fits reproduce bake 1 exactly, because the error was absorbed into FF at the batch size it was fitted at, which is why the two separate at other batch sizes:
+⚠️ **FF = 14.03 was fitted with `T_bowl` assumed equal to 58 °F.** If the bowl was actually nearer the 53 °F pull temperature, the same measurement solves to **FF = 14.57**. Both fits reproduce bake 1 exactly, because the error was absorbed into FF at the batch size it was fitted at, which is why the two separate at other batch sizes:
 
 | Balls | Water target, bowl-58 fit | Water target, bowl-53 fit | Divergence |
 |---:|---:|---:|---:|
@@ -849,9 +845,9 @@ BAKE gauge 750 F, FULL FLAME, 60-90 s, turn every 15-20 s. Do not push to 800+.
 | 9 | 62.9 °F | 62.4 °F | −0.55 |
 | 18 | 62.9 °F | 62.4 °F | −0.55 |
 
-Two rows are checks rather than results. **6 balls is exactly zero** because that's where FF was fitted, so both fits reproduce bake 1 there by construction. **18 balls equals 9** because 18 runs as two 9-ball mixes. Both fits are solved the same way from the logged inputs; bake 1 solves to 14.031, which also makes this log's "should have been 68.0 °F" exact.
+Two rows are checks rather than results. **6 balls is exactly zero** because that's where FF was fitted, so both fits reproduce bake 1 there by construction. **18 balls equals 9** because 18 runs as two 9-ball mixes. Both fits are solved the same way from the logged inputs; bake 1 solves to 14.028, which also makes this log's "should have been 68.0 °F" exact.
 
-**Next:** run 3 balls and 9 balls. If the bowl model is right, the solved FF comes out the same at both once each is corrected to the same mix times, while the raw rise differs (at FF 14, 11.5 vs 13.0 °F). How to read a difference in FF, including the one result these two bakes can't settle, is in §6, *Friction factor: measured*.
+**Next:** run 3 balls and 9 balls. If the bowl model is right, the solved FF comes out the same at both once each is corrected to the same mix times, while the raw rise differs (at FF 14, 11.5 vs 13.1 °F). How to read a difference in FF, including the one result these two bakes can't settle, is in §6, *Friction factor: measured*.
 
 **Measure the bowl on both:** one reading against the bowl wall at mix start. Without it the 3-ball bake can't be read cleanly: a bowl-temperature error and a wrong FF both show up as the same 1.6 °F in the same direction, and there's no way to tell them apart afterwards.
 
@@ -861,7 +857,7 @@ Two rows are checks rather than results. **6 balls is exactly zero** because tha
 |---|---|---|
 | **FF at 3, 6, 9 balls** | Log all inputs, run §8 exactly, probe immediately, solve with the §6 formula (below) | 2–3 each |
 | **Tap water temp** | Thermometer. Make it a form field, not a constant; it swings with the seasons | ongoing |
-| **Bowl mass** | Kitchen scale, once | ✅ 965 g → C = 115.8 |
+| **Bowl mass** | Kitchen scale, once | ✅ 963 g → C = 115.56 (Oct 2026) |
 | **FF at 6 balls** | Bake 1 | ✅ 14.03 °F, on a 6.5-min Phase C; 10.8 corrected to 3.5 min, the figure the calculator uses |
 | **FF at 3 and 9 balls** | The falsifiable test of the bowl model | ⬜ next |
 | **Actual fridge temp** | Probe on the shelf you use, not the dial | ✅ 42 °F (Sept 2026); set to 38–39 °F, then spot-check |

@@ -76,7 +76,7 @@ export function formatCoefficient(value: number, decimals: number): string {
 }
 
 /**
- * §6 balls per mix, for Panel 3's label, the badges and the log: a whole
+ * §6 balls per mix, for Panel 2's label, the badges and the log: a whole
  * number or with ½, ⅓ or ⅔ (MESSAGE-46). Every key is one of those, since
  * `nMix` is at most 3, so the fraction is exact where one decimal printed 19
  * balls in three mixes as "6.3". Anything else, which no batch produces,

@@ -2,32 +2,16 @@ import { useState } from 'react';
 import { Panel } from './Panel';
 import { Markdown } from './Markdown';
 import { CAPACITY } from '../content/capacity';
-import { Badge, NumberField, SegmentedField, SliderField, Stepper, ToggleField } from './fields';
+import { Badge, NumberField, SegmentedField, SliderField, Stepper } from './fields';
 import { BOUNDS, COLD_FERMENT_H } from '../state/defaults';
-import { bigaReadingCost, bowlReadingCost } from '../lib/engine';
-import { formatBallsPerMix, formatCoefficient, formatTempF } from '../lib/format';
+import { formatBallsPerMix, formatTempF } from '../lib/format';
 import type { AppState } from '../state/useAppState';
-import type { BowlState, Schedule } from '../state/types';
-
-/** The three input panels of §6. */
+import type { Schedule } from '../state/types';
 
 /**
- * §4.2. Each option prefills the bowl temperature from a value already in the
- * model — deliberately no new constants. This selects MIX 1; a split batch
- * always runs later mixes in the bowl that just finished the previous one.
+ * The two input panels of §6, Batch and Calibration. The day's readings
+ * aren't a panel: each sits in the step where it's taken (`MixReadings`).
  */
-const BOWL_STATE_OPTIONS: { value: BowlState; label: string; description: string }[] = [
-  { value: 'cold', label: 'Held the biga', description: 'Cold — the usual case' },
-  { value: 'room', label: 'Room temperature', description: 'Washed and left out' },
-  { value: 'warm', label: 'Warm from a previous mix', description: 'Straight off the last mix' },
-];
-
-/**
- * The biga hint's worked example, §6's "a 6 °F miss": how far off a guessed
- * reading might be. An illustration, not a model input — the figures it
- * produces are computed, on the basis the bowl field is actually on.
- */
-const BIGA_GUESS_EXAMPLE_F = 6;
 
 const SCHEDULE_OPTIONS: { value: Schedule; label: string; description: string }[] = [
   { value: 'retarded', label: 'Retarded biga', description: '2 h room, then 18–20 h fridge' },
@@ -95,106 +79,8 @@ export function BatchPanel(s: AppState) {
   );
 }
 
-export function TemperaturesPanel(s: AppState) {
-  const { inputs, setInput, commitReading, panels, togglePanel, result } = s;
-
-  // §4.2 / §6: show the coefficient that makes each field worth measuring,
-  // from the engine and on the right basis — see `bigaReadingCost`.
-  const { thermal } = result;
-  const bigaCost = bigaReadingCost(thermal, result.mixes[0]!.bowlTracksBiga, BIGA_GUESS_EXAMPLE_F);
-  const bowlCost = bowlReadingCost(thermal);
-  const bigaAt = (i: number) => inputs.bigaTempF[i] ?? inputs.bigaTempF[0]!;
-
-  // Every field here is a §10 reading, saved with the bake as it stands.
-  // Per-mix lists grow on first edit, so a single-mix setup keeps serializing
-  // as one value.
-
-  return (
-    <Panel
-      title="Today's temperatures"
-      summary={`Room ${formatTempF(inputs.roomTempF)} · Biga ${formatTempF(inputs.bigaTempF[0]!)} °F`}
-      open={panels.temperatures}
-      onToggle={() => togglePanel('temperatures')}
-    >
-      <div className="grid gap-6">
-        <NumberField
-          label="Room temperature"
-          unit="°F"
-          value={inputs.roomTempF}
-          onCommit={(v) => commitReading('roomTempF', v)}
-          min={BOUNDS.roomTempF.min}
-          max={BOUNDS.roomTempF.max}
-          step={BOUNDS.roomTempF.step}
-        />
-        <div>
-          <NumberField
-            label="Flour temperature"
-            unit="°F"
-            value={inputs.flourSameAsRoom ? inputs.roomTempF : inputs.flourTempF}
-            onCommit={(v) => commitReading('flourTempF', v)}
-            min={BOUNDS.flourTempF.min}
-            max={BOUNDS.flourTempF.max}
-            step={BOUNDS.flourTempF.step}
-            disabled={inputs.flourSameAsRoom}
-          />
-          <ToggleField
-            label="Same as room"
-            checked={inputs.flourSameAsRoom}
-            onChange={(v) => setInput('flourSameAsRoom', v)}
-          />
-        </div>
-        {result.mixes.map((mix) => {
-          const many = result.mixes.length > 1;
-          // "at mix" reads as the mix event on a single-mix batch, and as a
-          // label collision once each mix has its own pair.
-          const bigaLabel = many ? `Biga temperature — mix ${mix.index}` : 'Biga temperature at mix';
-          const bowlLabel = many ? `Bowl temperature — mix ${mix.index}` : 'Bowl temperature at mix';
-          const measuredBowl = inputs.bowlTempF[mix.index - 1] ?? null;
-          return (
-            <div key={mix.index} className="grid gap-6">
-              <NumberField
-                label={bigaLabel}
-                unit="°F"
-                value={bigaAt(mix.index - 1)}
-                onCommit={(v) => commitReading('bigaTempF', v, mix.index - 1)}
-                min={BOUNDS.bigaTempF.min}
-                max={BOUNDS.bigaTempF.max}
-                step={BOUNDS.bigaTempF.step}
-                hint={
-                  mix.index === 1
-                    ? `Measure it: of the temperatures you measure, this one moves the water target most. Each °F warmer here means about ${formatCoefficient(bigaCost.waterPerF, 1)} °F cooler water, so a ${BIGA_GUESS_EXAMPLE_F} °F guess costs ${formatTempF(bigaCost.waterF)} °F of water and ${formatTempF(bigaCost.doughF)} °F of finished dough. Take the reading after tearing the biga, not at the pull: handling gains about 5 °F that the bowl does not share.`
-                    : `Re-read it before this mix. The waiting biga has been warming toward room temperature while the previous mix ran. The app doesn't model that drift, because there's no data for it.`
-                }
-              />
-              {mix.index === 1 && (
-                <SegmentedField
-                  legend={many ? 'Bowl state at mix 1' : 'Bowl state at mix'}
-                  value={inputs.bowlState}
-                  options={BOWL_STATE_OPTIONS}
-                  onChange={(v) => setInput('bowlState', v)}
-                  hint="The biga always ferments in the mixer bowl, so the bowl is normally cold. Later mixes start in the bowl the previous mix just left. If a target comes out awkward, rinsing brings the bowl to about the rinse water's temperature in under a minute."
-                />
-              )}
-              <NumberField
-                label={bowlLabel}
-                unit="°F"
-                value={measuredBowl ?? mix.bowlTempF}
-                onCommit={(v) => commitReading('bowlTempF', v, mix.index - 1)}
-                min={BOUNDS.bowlTempF.min}
-                max={BOUNDS.bowlTempF.max}
-                step={BOUNDS.bowlTempF.step}
-                hint={`${measuredBowl == null ? `Prefilled from ${mix.index === 1 ? 'the bowl state above' : 'the previous mix'}. ` : 'Measured, which replaces the prefill. '}At this mix size each °F of bowl is worth ${formatCoefficient(bowlCost.waterPerF, 2)} °F of water, ${formatCoefficient(bowlCost.waterOverDough, 1)} times its effect on the dough, so it's worth measuring even though the dough barely changes.`}
-              />
-            </div>
-          );
-        })}
-      </div>
-    </Panel>
-  );
-}
-
 /**
- * §6 Panel 3. The FF is shown, not typed: it comes from the bake log by §6's
+ * §6 Panel 2. The FF is shown, not typed: it comes from the bake log by §6's
  * rule, and the badge says which step of the rule produced it. There is no
  * manual override (MESSAGE-45): a typed value would outrank the measurements.
  */

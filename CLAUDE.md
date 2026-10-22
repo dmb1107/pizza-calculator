@@ -120,6 +120,8 @@ question:
 | `FINDINGS-53-to-recipe-agent.md` | Reply to MESSAGE-52. All reproduced. §4.2's two app-default sentences weren't swept; §4.10's zero crossing is 56.0–56.7; 35 sits a minute above the middle of 29–39; our ingredients card still said "room temperature" for the biga water |
 | `MESSAGE-53.md` | Part 3, the last of Dave's review, and the reply to FINDINGS-53: one biga at every size (`nBiga`, `FLOUR_CAP_55`, the biga-split warning and the `PerBiga` scope removed); `mix-0`, split the biga once at `nMix > 1`; `biga-6`'s large-biga note; temper 1.5–2 h (planning 1.5) with Dave's waves; divide scales with total balls (timeline only); classic cold ferment 6–8 h, default 6 |
 | `FINDINGS-54-to-recipe-agent.md` | Reply to MESSAGE-53. All reproduced. Both parsers derived `repeatsPerMix` from the phase, so `mix-0` would have repeated: they now read §8.2a's span, each in its own way. `mix-0` says "tempered" on the classic track; §8.1 still names `{bigaCountSuffix}`; the temper times were rounded twice |
+| `MESSAGE-54.md` | Reply to FINDINGS-54. `BOWL_MASS_G` 965 → 963 (weighed; the seed re-solves to 10.787531); 10 × 244 g is the largest unsplit batch, not 9 × 270; **the readings move into `mix-1`** (Today's temperatures, the water card and the bowl-state selector removed; panels Batch and Calibration); steps name no sources; concept links "Read more: {title}" |
+| `FINDINGS-55-to-recipe-agent.md` | Reply to MESSAGE-54. All reproduced (the share at the cap is 6.624486%, both print 6.62%). The gate never checked a claim's `covers`; it does now, and it found `biga-4.detail`'s "2 hours" excused by a claim that didn't build it. `mix-0` still sends the baker to the changeover for the biga reading |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -177,10 +179,10 @@ stays independently observable; the app defaults flour to room (70 °F), which
 is what a bag of flour actually is. That part is `Cf/Cw`, which has no
 total-flour term in it: 0.392 °F lower at every batch size and ball weight. The
 vectors run at FF 14, and the app at the FF in use: until the log has a counted
-bake, bake 1's normalized 10.791045 at every mix size (MESSAGE-52), which adds
-`(14 − FF) × Ct/Cw` = 9.634. So the app sits **9.242 °F above** the vectors
-everywhere, and the 12-ball cards print 74.0 and 68.7 against the vectors' 64.8
-and 59.5. **Quote the conditions whenever you quote a rendered number**, FF
+bake, bake 1's normalized 10.787531 at every mix size (MESSAGE-52; 963 g
+bowl, MESSAGE-54), which adds `(14 − FF) × Ct/Cw` = 9.645. So the app sits
+**9.253 °F above** the vectors everywhere, and 12 balls' two mix-1 targets
+print 74.0 and 68.8 against the vectors' 64.7 and 59.5. **Quote the conditions whenever you quote a rendered number**, FF
 included; one without them cost a round of correspondence (FINDINGS-40).
 
 **Anything derivable from the formula constants is derived, never written down.**
@@ -264,7 +266,10 @@ reproduce-before-adopting step, made mandatory. Reproduce each one and add a
 claim, or classify it with a reason. Never widen `FIXED` just to go green: a
 computed value filed as fixed is the defect this exists to catch. A known
 disagreement the spec author must fix gets `knownWrong`, which is pinned both
-ways. **It walks every string a step carries** rather than a list of fields —
+ways. **A claim's `covers` must be literals at its location that its text
+builds** (FINDINGS-55): nothing checked them, so after the bowl change four
+claims still listed "965 g", "115.8", "13.0" and "0.901", and `biga-4.detail`'s
+"2 hours" was excused by a claim whose text never produced it. **It walks every string a step carries** rather than a list of fields —
 a list of six hid MESSAGE-31's per-track timers and every title — and reads the
 timeline's stage titles and descriptions (`STAGE_INFO` in `timeline.ts`). Concepts
 and §9 sections are walked the same way: until FINDINGS-52 it read only their
@@ -326,7 +331,9 @@ cross-multiplication, never a rounded float. **There is no typed FF and no
 override**: a typed value would outrank the measurements. `BAKE_1_SEED` ships
 in code, so a new device and a friend's browser start from it. **Its value is
 bake 1's readings (`BAKE_1_READINGS`) solved and normalized for Phase C by the
-log's own functions**, 10.791045, never typed (MESSAGE-52).
+log's own functions**, 10.787531 at the 963 g bowl, never typed (MESSAGE-52).
+It moved from 10.791045 when the bowl was weighed (MESSAGE-54) without anyone
+touching it, which is the point.
 
 **Per-mix readings are read by index, except the biga.** `bowlTempF`,
 `finalDoughTempF` and `waterUsedF` hold one entry per mix, and a missing entry
@@ -334,18 +341,36 @@ is that mix unread: the bowl's warm prefill, DDT in §4.8's mean, the target
 for the log. `atMix` carried mix 1's bowl forward and printed mix 2's water
 4.6 °F too warm (FINDINGS-46); `bowlReadingAt` and `finalReadings` exist so
 that can't recur. Only the biga carries forward, because it is the same biga
-until re-read (§6).
+until re-read (§6). Display through the same functions: the old panel showed
+mix 1's biga on mix 3 while the engine used mix 2's (FINDINGS-55).
+
+**The day's readings live in `mix-1`, not in a panel** (§6 *Readings in the
+steps*, MESSAGE-54, Dave's call). `MixReadings` renders room and flour (with
+"Same as room") on mix 1 only, biga and bowl on every mix, then that mix's
+water target directly under them, then that mix's water warnings. There is
+no Today's temperatures panel, no water card and **no bowl-state selector**:
+mix 1's bowl prefills from its biga reading, later mixes from DDT
+(`bowlPrefillF`), and a reading always wins. Labels and hints are §6's table
+and nothing more: no sensitivity figures beside the fields. The water
+warnings belong to a mix (`MixTarget.warnings`), never the strip; the strip
+keeps capacity, overnight stages and the stagger. `bigaReadingCost`,
+`bowlReadingCost` and `bowlTracksBiga` stay in the engine because §7.2's two
+bases are tested, though nothing renders them. A link's `bowlst` is ignored;
+don't reuse the key.
 
 **Save records the inputs as they stand** (§10 *Capture and saving*, Dave's
 call in MESSAGE-47). Nothing tracks which values were typed or when: a
 default left in place (room 70, biga 58) and a value from a link are
 readings. A bake stores plain temperatures, with `null` for a water or final
 that has no value, and `bowl_prefilled` from the bowl field's own prefill
-state (§6), because a prefill is biased high and the mix mustn't count. **The
+state (§6), because a prefill is biased high and the mix mustn't count. New
+bakes don't write `bowl_state`; an older bake keeps it (`LegacyBowlState`,
+carried so a rewrite doesn't strip it) and nothing reads it, so an unknown
+value is dropped rather than rejecting the bake. **The
 page's Reset starts a new bake, and it is the only reset** (`NewBakeReset`,
 above the panels; MESSAGE-48 removed the Steps header's). It asks, then
 `inputsForNewBake` and `persistedForNewBake` decide every field: today's
-temperatures (Panel 2, water poured, final readings), the DDT override and
+readings (those in the prep steps, water poured, final readings), the DDT override and
 the timeline's anchor go back to their defaults; the checkboxes, timers and
 session bake are cleared; batch settings, schedule adjustments, the timeline
 mode, the open panels and the log stay. In backward mode the hook then takes
@@ -572,7 +597,9 @@ don't inline a `toFixed` somewhere else.
   the app supports only the Halo Core, whose bowl never changes. There is no
   field, no persistence and no URL key; a stored or linked value from before
   is ignored. `computeThermal` still takes a mass so engine tests can vary it,
-  but the app always passes the constant.
+  but the app always passes the constant. It is **963 g**, weighed on a
+  kitchen scale (MESSAGE-54); 965 was an earlier, rougher reading. Every
+  bowl-dependent pin moved in the last decimals, and the seed re-solved itself.
 - **There is no opening size** (MESSAGE-51, Dave's call): no diameter, no
   thickness note, no `thickerThanDefault`. The detail-block condition set is
   exactly `nMix > 1`, and a test requires a block for each condition, so one
@@ -639,7 +666,7 @@ don't inline a `toFixed` somewhere else.
   **printed** per-mix dough (a test pins 2374.96 g → "2375.0" → fires). The
   engine's old hand-worded capacity warnings are gone.
 - **The FF comes from the bake log** (§6, MESSAGE-45). With nothing counted it
-  is bake 1's normalized FF, 10.791045, at every mix size (MESSAGE-52; there is
+  is bake 1's normalized FF, 10.787531, at every mix size (MESSAGE-52; there is
   no `DEFAULT_FF`); the first counted bake at any size retires the seed (a size without its own bakes
   borrows by interpolation, or the nearest size held flat). A stored
   `frictionFactors` map from before is ignored. **Keyed on balls per mix** as

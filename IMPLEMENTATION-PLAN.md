@@ -5,14 +5,15 @@ Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
 **Status:** Tasks 0–11 complete, on the bowl-aware thermal model with **per-mix
-weights**, the ice calculation removed, and **MESSAGE-53 applied**, the last of
-Dave's three-part recipe review: one biga at every size, `mix-0` to split it,
-a 1.5–2 h temper, a divide that scales with balls, and a 6–8 h classic cold
-ferment. MESSAGE-52 before it set the cooldown term at 35 min, bake 1's
-normalized FF in use until a counted bake, and a probe target with no FF
-term; MESSAGE-51 dropped sources that use oil or sugar. The bake log, synced
-through a private GitHub repository, sets the FF in use. FINDINGS-54 is the
-last thing sent.
+weights**, the ice calculation removed, and **MESSAGE-54 applied**: the bowl
+weighed at 963 g, and the day's readings moved into each mix's prep step
+(`mix-1`), with that mix's water target and water warnings under them. The
+Today's temperatures panel, the water card and the bowl-state selector are
+gone; the panels are Batch and Calibration. MESSAGE-53 before it, the last
+of Dave's three-part recipe review, made one biga at every size, `mix-0` to
+split it, a 1.5–2 h temper, a divide that scales with balls, and a 6–8 h
+classic cold ferment. The bake log, synced through a private GitHub
+repository, sets the FF in use. FINDINGS-55 is the last thing sent.
 
 ---
 

@@ -37,7 +37,6 @@ const CUSTOM: Inputs = {
   flourSameAsRoom: false,
   flourTempF: 62,
   bigaTempF: [58.5, 61],
-  bowlState: 'room',
   bowlTempF: [71.5, null],
   bigaFridgeH: 18.5,
   bigaRoomOnlyH: 14,
@@ -53,6 +52,14 @@ describe('URL serialization', () => {
     const decoded = decodeInputs(encodeInputs(CUSTOM));
     expect(decoded.bigaTempF).toEqual([58.5, 61]);
     expect(decoded.bowlTempF).toEqual([71.5, null]);
+  });
+
+  it("ignores the removed bowl-state selector's parameter", () => {
+    // §6 (MESSAGE-54): an old link carrying `bowlst` opens with it ignored and
+    // the bowl on its prefill, unless the link also carries a bowl reading.
+    expect(decodeInputs('bowlst=r')).toEqual(DEFAULT_INPUTS);
+    expect(decodeInputs('bowlst=w&bowlt=61').bowlTempF).toEqual([61]);
+    expect(encodeInputs(CUSTOM)).not.toContain('bowlst');
   });
 
   it('reads a pre-per-mix link as a length-1 list', () => {
@@ -219,7 +226,7 @@ describe('localStorage persistence', () => {
     const s = fakeStorage();
     const value = {
       calibration: { ddtOverrideF: 73 },
-      panels: { batch: true, temperatures: true, calibration: false },
+      panels: { batch: true, calibration: false },
       bigaStartAtIso: '2026-08-21T13:00:00.000Z',
       timelineMode: 'backward' as const,
       bakeAtIso: '2026-08-23T22:00:00.000Z',
@@ -285,15 +292,14 @@ describe('localStorage persistence', () => {
 });
 
 describe('§10 Reset starts a new bake', () => {
-  it("puts the day's temperatures back to their defaults and keeps the batch settings", () => {
+  it("puts today's readings back to their defaults and keeps the batch settings", () => {
     const next = inputsForNewBake(CUSTOM);
-    // The day's temperatures: Panel 2, the water poured, the final readings.
+    // Today's readings: those in the prep steps, the water poured, the final readings.
     expect(next).toMatchObject({
       roomTempF: DEFAULT_INPUTS.roomTempF,
       flourSameAsRoom: DEFAULT_INPUTS.flourSameAsRoom,
       flourTempF: DEFAULT_INPUTS.flourTempF,
       bigaTempF: DEFAULT_INPUTS.bigaTempF,
-      bowlState: DEFAULT_INPUTS.bowlState,
       bowlTempF: DEFAULT_INPUTS.bowlTempF,
       finalDoughTempF: DEFAULT_INPUTS.finalDoughTempF,
       waterUsedF: DEFAULT_INPUTS.waterUsedF,
@@ -309,7 +315,7 @@ describe('§10 Reset starts a new bake', () => {
       temperH: CUSTOM.temperH,
     });
     // Nothing else: every key of the inputs is one of the two lists above.
-    const reset = ['roomTempF', 'flourSameAsRoom', 'flourTempF', 'bigaTempF', 'bowlState', 'bowlTempF', 'finalDoughTempF', 'waterUsedF'];
+    const reset = ['roomTempF', 'flourSameAsRoom', 'flourTempF', 'bigaTempF', 'bowlTempF', 'finalDoughTempF', 'waterUsedF'];
     const kept = ['balls', 'ballWeightG', 'schedule', 'coldFermentH', 'bigaFridgeH', 'bigaRoomOnlyH', 'temperH'];
     expect(Object.keys(DEFAULT_INPUTS).sort()).toEqual([...reset, ...kept].sort());
   });
@@ -318,7 +324,7 @@ describe('§10 Reset starts a new bake', () => {
   // timer, a saved bake, and panels that differ from their defaults.
   const MID_BAKE: Persisted = {
     calibration: { ddtOverrideF: 73 },
-    panels: { batch: false, temperatures: true, calibration: true },
+    panels: { batch: false, calibration: true },
     bigaStartAtIso: '2026-09-26T15:00:00.000Z',
     timelineMode: 'backward',
     bakeAtIso: '2026-09-28T23:30:00.000Z',

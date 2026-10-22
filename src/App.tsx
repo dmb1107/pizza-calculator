@@ -5,8 +5,8 @@ import { AboutDrawer, ReferenceDrawer } from './components/ReferenceDrawers';
 import { BakeLogDrawer } from './components/BakeLog';
 import { NewBakeReset } from './components/NewBakeReset';
 import { StepList } from './components/StepList';
-import { IngredientsCard, TargetsCard, WarningsList, WaterCard } from './components/cards';
-import { BatchPanel, CalibrationPanel, TemperaturesPanel } from './components/panels';
+import { IngredientsCard, TargetsCard, WarningsList } from './components/cards';
+import { BatchPanel, CalibrationPanel } from './components/panels';
 import { TimelineCard } from './components/TimelineCard';
 import { useAppState } from './state/useAppState';
 import { C } from './lib/constants';
@@ -14,7 +14,8 @@ import { formatPercent } from './lib/format';
 
 /**
  * The §6 input panels, the §7 output cards, the §4.7 timeline, the §8.2 step
- * list, and four drawers: §8.3 concepts, §9 reference tables, §11 About and
+ * list (where the day's readings and each mix's water target sit, in `mix-1`),
+ * and four drawers: §8.3 concepts, §9 reference tables, §11 About and
  * the §10 bake log.
  *
  * Warnings sit above the step list (§7.3) and are never inside a collapsed
@@ -69,14 +70,12 @@ export default function App() {
         {/* §10: Reset starts a new bake, above the panels it clears. */}
         <NewBakeReset onReset={state.startNewBake} />
         <BatchPanel {...state} />
-        <TemperaturesPanel {...state} />
         <CalibrationPanel {...state} onOpenLog={openLog} />
       </div>
 
       <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-3">
         <WarningsList warnings={state.alerts} />
         <IngredientsCard result={result} />
-        <WaterCard result={result} />
         <TargetsCard result={result} />
         <TimelineCard {...state} />
       </div>
