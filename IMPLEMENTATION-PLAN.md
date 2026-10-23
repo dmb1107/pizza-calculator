@@ -16,7 +16,8 @@ classic cold ferment. The bake log, synced through a private GitHub
 repository, sets the FF in use. MESSAGE-55 (wording, and `mix-1`'s link to
 `thermal-model`) is applied, and so is MESSAGE-56: the "Water poured"
 field is gone, and the log records each mix's water target as the water
-used. FINDINGS-57 is the last thing sent.
+used. MESSAGE-57 (documents only: the Phase B drift's basis in §10, the
+recipe's leftovers) is applied, and FINDINGS-58 is the last thing sent.
 
 ---
 

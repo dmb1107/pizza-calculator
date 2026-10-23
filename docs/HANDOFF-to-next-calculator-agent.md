@@ -9,15 +9,18 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-56 and FINDINGS-57 (23 October).
+MESSAGE-57 and FINDINGS-58 (23 October).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-56, and FINDINGS-57 is the
+- **The correspondence is applied through MESSAGE-57, and FINDINGS-58 is the
   last thing sent.** No pin of any kind is live (`knownWrong` is empty).
+  MESSAGE-57 changed documents only: §10's basis for the Phase B drift
+  (reproduced, every mix swept) and the recipe's leftovers from MESSAGE-53
+  and 54. PR #13 (MESSAGE-56) is live.
   MESSAGE-56 (Dave's change) removed the "Water poured" field: the log
   records each mix's water target, to the tenth, as the water used, and the
   page asks for a blend within 1 °F. A stored water outside 38–120 °F
@@ -100,7 +103,7 @@ Don't trust any status here that you can check instead (§7).
   MESSAGE-51 to 54 and FINDINGS-52 to 55, after Dave had spent a round
   reviewing a site four messages behind: check `gh run list` and the live
   page's script hash, and offer a PR when branches pile up. PR #11 carried
-  MESSAGE-55. **Every FINDINGS says whether the live site is current**
+  MESSAGE-55, and PR #13 MESSAGE-56. **Every FINDINGS says whether the live site is current**
   (promised in FINDINGS-56): name the last message it serves, checked
   against the live script, not the merge. PR #4, from
   another session, added the pizza icon (`public/`) and CLAUDE.md's rule to

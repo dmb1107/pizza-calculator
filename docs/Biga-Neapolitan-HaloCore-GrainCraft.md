@@ -88,7 +88,7 @@ The Core takes **0.5–2.5 kg dough** and caps flour at **1505 g at 66%+ hydrati
 
 | Balls | Biga | Final mix |
 |---|---|---|
-| **12** | **One biga**: 1222.5 g flour + 611.2 g water + 4.58 g ADY (1833.7 g), which fits | Split the biga into **2 × 916.9 g** and run **two 6-ball final mixes** |
+| **12** | **One biga**: 1222.5 g flour + 611.2 g water + 4.58 g ADY (1833.7 g) | Split the biga into **2 × 916.9 g** and run **two 6-ball final mixes** |
 | **18** | **One biga**: 1833.7 g flour + 916.9 g water + 6.88 g ADY (2750.6 g) | Split the biga into **2 × 1375.3 g** and run **two 9-ball final mixes** |
 
 ⚠️ **A split batch needs its water temperature calculated for each mix.** The thermal system is the mix, and the bowl is in a different state for each one (§6).
@@ -320,13 +320,12 @@ The table is keyed on mix size: 12 balls runs as two 6-ball mixes and reads the 
 
 `FF` is per mix for the same reason: it's the rise the mixer puts into the dough actually in the bowl, and 14.03 was measured on a single 6-ball mix.
 
-**The bowl is in a different state for each mix.** There are three states, and each takes its value from something already measured:
+**The bowl is in a different state for each mix, so each mix's prep step asks for a reading.** Until you enter one, the calculator takes `T_bowl` from a value it already has, and a reading always replaces it:
 
-| Bowl state | Take `T_bowl` from | When |
+| Mix | Take `T_bowl` from | Why |
 |---|---|---|
-| **Cold, held the biga** | biga temperature | Mix 1, and every single-mix batch |
-| **Room temperature** | room temperature | Bowl washed and left out |
-| **Warm from the previous mix** | DDT | Mix 2 onward: *an upper bound; measure it* |
+| **Mix 1**, and every single-mix batch | biga temperature | The bowl held the biga |
+| **Mix 2 onward** | DDT | The bowl just held a mix: *an upper bound* |
 
 **Why "upper bound", and why measure.** The bowl can't come off a mix warmer than the dough it held, so DDT bounds it, provided that mix finished at or below DDT. How far it cools toward the room during the 5-minute changeover has never been measured, and in a cold kitchen the room is further away. Read it before every mix after the first (below), and log it on the first split bake.
 
@@ -346,7 +345,7 @@ At 12 balls that's a 5.2 °F spread in the water target between mix 1 and mix 2 
 
 Bake 1 gave 14.03 °F. The Phase C friction rate agrees: 1.00 °F/min on the dough and bowl together is 1.11 °F/min for the dough alone, against 1.08 predicted.
 
-⚠️ **Bake 1 ran long, so 14.03 is the FF of its mix, not of the one in §8.** Its Phase C took 6.5 minutes against 3.5 at the middle of the range, and the whole mix 18.5 motor minutes against 13.4. At 1.08 °F a minute, Phase C's extra 3 minutes are 3.2 °F of the 14.03: with a 3.5-minute Phase C, bake 1 solves to **10.8**. Phases A, B and D ran another 2⅛ minutes over between them, split unrecorded, so even 10.8 is high by an amount bake 1 can't give. **The calculator uses 10.8 at every batch size** until the first bake logged with its phase times. If it's still high, the dough errs cool, which the probe step and the longer rise after balling both correct. From then on it works from the log, which corrects every bake to the middle of each phase's range (§12, *Log schema*).
+⚠️ **Bake 1 ran long, so 14.03 is the FF of its mix, not of the one in §8.** Its Phase C took 6.5 minutes against 3.5 at the middle of the range, and the whole mix 18.5 motor minutes against 13.4. At 1.08 °F a minute, Phase C's extra 3 minutes are 3.2 °F of the 14.03: with a 3.5-minute Phase C, bake 1 solves to **10.8**. Phases A, B and D ran another 2⅛ minutes over between them, split unrecorded, so even 10.8 is high by an amount bake 1 can't give. **The calculator uses 10.8 at every batch size** until the first counted bake, and from then on works from the log, which corrects every bake to the middle of each phase's range (§12, *Log schema*). A mix counts only if it has a final dough temperature, a bowl reading rather than the prefill, all four phase times, and a water target inside 38–120 °F. If 10.8 is still high, the dough errs cool, which the probe step and the longer rise after balling both correct.
 
 **One data point so far.** Bakes at 3 and 9 balls test the bowl model: if it's right, the solved FF comes out the same at both, while the *raw temperature rise* differs (at FF 14, 11.5 vs 13.1). Compare them only once both are corrected to the same mix times; a Phase C stretched or cut at the probe would otherwise look like a size effect. A difference in solved FF means different things depending on its direction:
 
@@ -360,7 +359,7 @@ Bake 1 gave 14.03 °F. The Phase C friction rate agrees: 1.00 °F/min on the dou
 
 **Within 1 °F is close enough.** Each degree off moves the dough about 0.3 °F. The calculator logs the target as the water you used, so a miss also ends up in your friction factor, at 0.33 °F of FF per degree.
 
-**Don't re-blend the Phase B water.** It waits a few minutes and drifts slightly toward room temperature, an estimated 0.3 °F of dough or less with a tempered biga in a 70 °F kitchen. The friction factor absorbs most of that.
+**Don't re-blend the Phase B water.** It waits about 6 minutes on average and drifts toward room temperature. Assuming the jug loses 2–4% of its gap to the room each minute (not measured), that moves the dough up to about 0.3 °F with a tempered biga in a 70 °F kitchen, and up to about 1.3 °F with a 45 °F biga in a 60 °F kitchen. The drift runs the same way on most bakes, so the friction factor absorbs most of it.
 
 **Fridge water covers roughly 38–60 °F; the tap and warmer cover the rest.** On the retarded-biga schedule the biga arrives at 45–60 °F, and across the supported range (3 to 24 balls, 240–300 g each, kitchens from 60 to 84 °F) the required water spans about **60 °F to 118 °F.** At the default 265 g ball it's **60–116 °F.** Those extremes are corners: the top needs a 45 °F biga in a 60 °F kitchen. With the biga tempered to 58 °F in a 70 °F kitchen, a 6-ball mix asks for about 77 °F.
 
@@ -758,8 +757,8 @@ WATER TEMP (includes the bowl; no fixed multiplier works)
   Ct = Cb+Cf+Cw+Cs (dough)   C_bowl = 963 x 0.12 = 115.56
   T_bowl: MEASURE IT. Biga always ferments in the bowl, but tearing warms the
   biga ~5 F and not the bowl. 0.66 F of water per F of bowl at 3 balls.
-  BOWL STATE: cold (=T_biga) / room (=T_room) / warm from last mix (=DDT,
-  an UPPER BOUND - how far it cools in the changeover is unmeasured).
+  BOWL UNTIL READ: mix 1 = T_biga, later mixes = DDT (an UPPER BOUND -
+  how far it cools in the changeover is unmeasured).
   SPLIT BATCHES: Ct is PER-MIX, not per-batch. 12 balls = a 6-ball system
   twice. Batch-total Ct lands the water 2.6 F low (12bl, biga 58). One water temp
   PER MIX (12bl: 74.0 then 68.8). Re-measure biga AND bowl before each
@@ -768,7 +767,7 @@ WATER TEMP (includes the bowl; no fixed multiplier works)
   T_water = [ DDT x (Ct+C_bowl) - FF x Ct - Cb.Tbiga - Cf.Tflour
               - Cs.Troom - C_bowl.Tbowl ] / Cw
   FF = 14.0 F MEASURED (bake 1; its Phase C ran 6.5 min). 10.8 IN USE
-  (Phase C corrected to 3.5 min) at every batch size until a logged bake.
+  (Phase C corrected to 3.5 min) at every batch size until a counted bake.
   FF is the rise in the DOUGH ALONE.
 WATER = blend fridge-cold + tap to within 1 F of the target.
         Retarded biga -> usually WARM water. Span 60-116 F over 3-24 balls;
@@ -860,7 +859,6 @@ Two rows are checks rather than results. **6 balls is exactly zero** because tha
 | Measure | How | Reps |
 |---|---|---|
 | **FF at 3, 6, 9 balls** | Log all inputs, run §8 exactly, probe immediately, solve with the §6 formula (below) | 2–3 each |
-| **Tap water temp** | Thermometer. Make it a form field, not a constant; it swings with the seasons | ongoing |
 | **Bowl mass** | Kitchen scale, once | ✅ 963 g → C = 115.56 (Oct 2026) |
 | **FF at 6 balls** | Bake 1 | ✅ 14.03 °F, on a 6.5-min Phase C; 10.8 corrected to 3.5 min, the figure the calculator uses |
 | **FF at 3 and 9 balls** | The falsifiable test of the bowl model | ⬜ next |
@@ -897,7 +895,7 @@ room_temp_f, flour_temp_f
 per mix (mix_index 1, 2, ...):
   biga_temp_at_pull_f               <- before tearing; the bowl's likely temperature
   biga_temp_at_mix_f                <- after tearing; the value the model calls T_biga
-  bowl_state, bowl_temp_f           <- MEASURE at mix start; do not default
+  bowl_temp_f                       <- MEASURE at mix start; do not default
   phase_a_water_g, water_temp_used_f
   phase_a/b/c/d_seconds             <- actual time of each phase
   ddt_target_f, probe_temp_f, final_dough_temp_f
