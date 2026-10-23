@@ -128,6 +128,8 @@ question:
 | `FINDINGS-57-to-recipe-agent.md` | Reply to MESSAGE-56. Applied; nothing open. The synced log repository holds no bakes, so no older bake is known to lack a water reading; the reason stays for local ones we can't see. The site is current through MESSAGE-55 |
 | `MESSAGE-57.md` | Reply to FINDINGS-57; nothing renders. §10 gains the Phase B drift's basis (Newton cooling, `k` 0.02–0.04/min, a 6-minute wait) and its table, up to about 0.3 °F at the default readings and 1.3 at the hot corner; the recipe's leftovers from MESSAGE-53 and 54 cleared |
 | `FINDINGS-58-to-recipe-agent.md` | Reply to MESSAGE-57. All reproduced; nothing open. PR #13's deploy succeeded, and the site is current through MESSAGE-56 |
+| `MESSAGE-58.md` | A bug: a reading typed at the value the field already shows (a bowl at its prefill, a final on DDT) wasn't recorded, so the mix didn't count. §6: an edited reading field records on leaving even when unchanged; focus and leave without an edit records nothing. Found the day of bake 2 |
+| `FINDINGS-59-to-recipe-agent.md` | Reply to MESSAGE-58. Fixed (`leaveField`, `recordsReading`) and checked by typing in the browser; nothing open. The fix also covers a later mix's biga read at the carried-forward value |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -608,7 +610,13 @@ don't inline a `toFixed` somewhere else.
 - **Number fields commit on blur, not on keystroke.** Clamping mid-type makes a
   bounded field unusable — typing "7" on the way to "70" would snap to the
   minimum. The stepper emits a delta rather than a computed value for the same
-  class of reason.
+  class of reason. **A reading field commits an edit even when it ends on the
+  value shown** (§6, MESSAGE-58): `recordsReading` on every field in
+  `MixReadings` and the final, decided by `leaveField` in `src/lib`. A bowl
+  read at its prefill or a dough finished on DDT was dropped as "unchanged",
+  and the mix didn't count. Focus and leave without an edit commits nothing,
+  so a glance can't make a prefill a reading. Other fields (ball weight, the
+  DDT override) keep the old rule: typing the auto DDT mustn't pin it.
 - **The bowl mass is a constant, `BOWL_MASS_G`, not an input** (MESSAGE-29):
   the app supports only the Halo Core, whose bowl never changes. There is no
   field, no persistence and no URL key; a stored or linked value from before
