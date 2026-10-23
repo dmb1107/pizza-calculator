@@ -50,7 +50,6 @@ export const DEFAULT_INPUTS: Inputs = {
   bigaRoomOnlyH: 16,
   temperH: 1.5,
   finalDoughTempF: [null],
-  waterUsedF: [null],
 };
 
 /**
@@ -70,7 +69,6 @@ export function inputsForNewBake(prev: Inputs): Inputs {
     bigaTempF: DEFAULT_INPUTS.bigaTempF,
     bowlTempF: DEFAULT_INPUTS.bowlTempF,
     finalDoughTempF: DEFAULT_INPUTS.finalDoughTempF,
-    waterUsedF: DEFAULT_INPUTS.waterUsedF,
   };
 }
 
@@ -155,8 +153,6 @@ export const BOUNDS = {
 
   /** Wide: this is a reading off a probe, and a wild one should be visible. */
   finalDoughTempF: { min: 55, max: 95, step: 0.1 },
-  /** What was poured: wide enough for the whole blend, fridge to hot tap. */
-  waterUsedF: { min: 32, max: 140, step: 0.1 },
 } as const;
 
 export type BoundedField = keyof typeof BOUNDS;

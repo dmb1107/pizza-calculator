@@ -358,6 +358,10 @@ Bake 1 gave 14.03 °F. The Phase C friction rate agrees: 1.00 °F/min on the dou
 
 **Blend fridge-cold water with tap water until the thermometer reads the target.** You don't need to calculate the blend or use ice: pour, stir, read, adjust. Water is the one ingredient you can check before you commit it.
 
+**Within 1 °F is close enough.** Each degree off moves the dough about 0.3 °F. The calculator logs the target as the water you used, so a miss also ends up in your friction factor, at 0.33 °F of FF per degree.
+
+**Don't re-blend the Phase B water.** It waits a few minutes and drifts slightly toward room temperature, an estimated 0.3 °F of dough or less with a tempered biga in a 70 °F kitchen. The friction factor absorbs most of that.
+
 **Fridge water covers roughly 38–60 °F; the tap and warmer cover the rest.** On the retarded-biga schedule the biga arrives at 45–60 °F, and across the supported range (3 to 24 balls, 240–300 g each, kitchens from 60 to 84 °F) the required water spans about **60 °F to 118 °F.** At the default 265 g ball it's **60–116 °F.** Those extremes are corners: the top needs a 45 °F biga in a 60 °F kitchen. With the biga tempered to 58 °F in a 70 °F kitchen, a 6-ball mix asks for about 77 °F.
 
 The requirement climbs as the **mix** gets smaller, because the fixed-mass bowl is a bigger share of a small system:
@@ -766,7 +770,7 @@ WATER TEMP (includes the bowl; no fixed multiplier works)
   FF = 14.0 F MEASURED (bake 1; its Phase C ran 6.5 min). 10.8 IN USE
   (Phase C corrected to 3.5 min) at every batch size until a logged bake.
   FF is the rise in the DOUGH ALONE.
-WATER = blend fridge-cold + tap to the target, measure as you pour.
+WATER = blend fridge-cold + tap to within 1 F of the target.
         Retarded biga -> usually WARM water. Span 60-116 F over 3-24 balls;
         hottest at SMALL MIXES, and mix size != batch size:
         3bl 116.2 / 6bl 106.4 / 9bl 99.9 / 12bl 103.1 (=2x6!) / 18bl 99.9 (=2x9)
@@ -910,6 +914,6 @@ notes_crumb, notes_cornicione, notes_base
 
 **Then correct it to the middle of each phase's range:** subtract `rate × (actual − mid-range)` for each phase, at 0.75 °F/min for A, 0.86 for B and D and 1.08 for C, with mid-range at A 3.5 min, B 5.5, C 3.5 and D 52½ s. A mix run at mid-range needs no correction; one whose Phase C was stretched to 5.5 minutes at the probe loses 2.2 °F.
 
-The calculator logs only the FF inputs: per bake the batch, formula, room and flour; per mix the biga, bowl, water used, final dough temperature and phase times. The rest of this list is for your own notes.
+The calculator logs only the FF inputs: per bake the batch, formula, room and flour; per mix the biga, bowl, water target (logged as the water used), final dough temperature and phase times. The rest of this list is for your own notes.
 
 Capture `gauge_temp_f` alongside `stone_ir_f` at least a few times. The built-in gauge and the stone surface measure different things, and the mapping between them is the one bake number that carries over to any other oven.

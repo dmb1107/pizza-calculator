@@ -14,7 +14,9 @@ of Dave's three-part recipe review, made one biga at every size, `mix-0` to
 split it, a 1.5–2 h temper, a divide that scales with balls, and a 6–8 h
 classic cold ferment. The bake log, synced through a private GitHub
 repository, sets the FF in use. MESSAGE-55 (wording, and `mix-1`'s link to
-`thermal-model`) is applied, and FINDINGS-56 is the last thing sent.
+`thermal-model`) is applied, and so is MESSAGE-56: the "Water poured"
+field is gone, and the log records each mix's water target as the water
+used. FINDINGS-57 is the last thing sent.
 
 ---
 
@@ -707,9 +709,9 @@ has the rules (§4.3 normalization, §4.8 split-batch `T_actual`, §6 Panel 3,
       and writes again; deletions travel both ways. Tested against a fake
       repository.
 - [x] **Capture without typing:** the phase timers stop (Stop, or ticking the
-      step) and the stopped time is the phase time; poured water in Phase A
-      (with "Poured at the target"), a final temperature at the end of every
-      mix. Save records the inputs as they stand (MESSAGE-47: no tracking of
+      step) and the stopped time is the phase time; a final temperature at
+      the end of every mix. The water is logged as each mix's target
+      (MESSAGE-56; there is no water-poured field). Save records the inputs as they stand (MESSAGE-47: no tracking of
       what was typed), and a bake is dated by its first mix. The card after
       the last mix shows every phase time beside its range, what counts, and
       saves; saving over an earlier-date bake asks first. Mix sizes print

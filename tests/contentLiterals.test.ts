@@ -1233,6 +1233,9 @@ const FIXED: Record<Loc, readonly string[]> = {
   'reference:mixer-speed': ['15 RPM', '66%'],
   // Column keys: the table is indexed by balls per mix.
   'reference:friction-rate': ['3', '6', '9'],
+  // The blending tolerance, Dave's call (MESSAGE-56): the log takes the
+  // target as the water used, so the page asks for a blend within 1 °F.
+  'reference:water-temperature': ['1 °F'],
   // §11: what each published source states — cited, not computed. "100%" is
   // Ooni's 300 RPM anchor. PizzaBlab's 104 °F and King Arthur's 110 °F are
   // biga-1's; Grain Craft's protein; the year of AVPN's regulations; "00" and
@@ -1363,6 +1366,7 @@ describe('§8.1 numbers in component copy are classified too', () => {
     '750 °F, full flame, 60–90 s, turning every 15–20 s.': 'bake-2 procedure, the same figures FIXED under bake-2.summary',
     'bake 1’s figure': 'names bake 1 — an index, not a quantity',
     'Grain Craft 00': 'the flour grade in the product name',
+    'within 1 °F of it': "§7.2's blending tolerance, Dave's call (MESSAGE-56), as reference:water-temperature has it",
   };
 
   /** Attributes that carry words a person reads. `className` and the like are not copy. */
@@ -1450,6 +1454,17 @@ describe('§8.1 numbers in component copy are classified too', () => {
       .filter(({ text }) => /\d/.test(residue(text)))
       .map(({ f, text }) => `${f}: ${JSON.stringify(residue(text))}`);
     expect(orphans.join('\n'), 'bind it to the engine, or classify it here with a reason').toBe('');
+  });
+
+  it('renders no water-poured field (MESSAGE-56)', () => {
+    // §10: the log takes each mix's water target, so mix-2 asks for nothing
+    // and the log card has no button to fill it. Read from every component's
+    // copy, digits or not.
+    const copy = (readdirSync('src', { recursive: true }) as string[])
+      .filter((f) => f.endsWith('.tsx'))
+      .flatMap((f) => copyIn(readFileSync(join('src', f), 'utf8')).map((text) => `${f}: ${text}`));
+    expect(copy.length, 'the walker read no copy').toBeGreaterThan(100);
+    expect(copy.filter((t) => /poured/i.test(t))).toEqual([]);
   });
 
   it('keeps no stale entry', () => {

@@ -265,7 +265,7 @@ Without this the log learns the baker's corrections as mixer friction. A mix who
 
 **There is no ice calculation and no tap/ice split. Output the target temperature only.**
 
-The user blends fridge-cold water with tap water by hand, measuring as they pour. Fridge water covers ~38–60 °F and tap covers upward, so the whole reachable band is available without arithmetic.
+The user blends fridge-cold water with tap water by hand until the thermometer reads within 1 °F of the target. Fridge water covers ~38–60 °F and tap covers upward, so the whole reachable band is available without arithmetic.
 
 **Two warnings, one at each end.** ⚠️ *This supersedes MESSAGE-3's "one warning, and only one" — that instruction was written before anyone had swept the small-batch corner, and it left the reachable failure uncovered while guarding the unreachable one.*
 
@@ -739,7 +739,7 @@ Group into two panels: **Batch** open by default, **Calibration** collapsed with
 
 ### Readings in the steps
 
-⚠️ **The Today's temperatures panel was removed in MESSAGE-54** (Dave's call, 22 Oct 2026). With the readings at the top of the page it wasn't clear when to take them. Each reading now sits in the step where it's taken, rendered the way Phase A's water-poured field is (§10). Nothing previews the water target before bake day, and nothing needs to: until a reading is entered, the engine uses the default or prefill below, as before.
+⚠️ **The Today's temperatures panel was removed in MESSAGE-54** (Dave's call, 22 Oct 2026). With the readings at the top of the page it wasn't clear when to take them. Each reading now sits in the step where it's taken, rendered the way `mix-7`'s final dough temperature is (§10). Nothing previews the water target before bake day, and nothing needs to: until a reading is entered, the engine uses the default or prefill below, as before.
 
 | Field | Step | Instances | Default or prefill | Label and hint |
 |---|---|---|---|---|
@@ -804,11 +804,11 @@ Note this is *separate* from bowl dilution — the bowl explains why the same FF
 Two columns, **Biga** and **Final mix**, gram weights large enough to read at arm's length. A "copy as text" button.
 
 ### 7.2 Water target
-**One number, large: the target water temperature**, in each mix's `mix-1`, directly under that mix's readings (§6, *Readings in the steps*). Plus a one-line instruction — blend fridge-cold and tap water to hit it, measuring as you pour. ⚠️ Until MESSAGE-54 this was a card at the top of the page, computed from the Today's temperatures panel.
+**One number, large: the target water temperature**, in each mix's `mix-1`, directly under that mix's readings (§6, *Readings in the steps*). Plus a one-line instruction, which renders as written: "Blend fridge-cold and tap water to within 1 °F of it." The log takes this target as the water used (§10), which is why the line gives a tolerance. Copy-as-text says the same. ⚠️ Until MESSAGE-54 this was a card at the top of the page, computed from the Today's temperatures panel.
 
 Nothing else. No split, no grams, no ice, and no commentary about whether the number is warm or cold — the user reads the number and blends to it.
 
-**When `nMix > 1`, each mix's prep step shows its own target.** They are genuinely different numbers, not a repeat: mix 2 starts in a bowl that just ran mix 1, so at 12 × 265 g the targets are 74.0 °F and 68.8 °F at app defaults (64.7 °F and 59.5 °F at the §5 vector conditions, which run at FF 14), both on the default bowl prefills. Label each "Mix {mixIndex} water target". A batch that doesn't split shows "Water target", like the water-poured and final fields. The reason they differ lives in `mix-8`'s detail, not beside the number.
+**When `nMix > 1`, each mix's prep step shows its own target.** They are genuinely different numbers, not a repeat: mix 2 starts in a bowl that just ran mix 1, so at 12 × 265 g the targets are 74.0 °F and 68.8 °F at app defaults (64.7 °F and 59.5 °F at the §5 vector conditions, which run at FF 14), both on the default bowl prefills. Label each "Mix {mixIndex} water target". A batch that doesn't split shows "Water target", like the final reading. The reason they differ lives in `mix-8`'s detail, not beside the number.
 
 Each target computes from that mix's own biga and bowl readings, so it updates as the user enters what they measured.
 
@@ -1566,7 +1566,7 @@ The Core has no number display. Its LED indicator shows the speed in segments: a
 A 12-ball batch runs as two 6-ball mixes and reads the 6 column; 18 balls reads the 9.
 
 ### Water temperature
-Blend fridge-cold water with tap water to reach the target, measuring as you pour. Fridge water gets to about 38 °F; the tap covers the warmer end. Across the supported range (3–24 balls, 240–300 g, biga 45–60 °F, room 60–84 °F) the required water spans about **60–118 °F**, and **60–116 °F** at the default 265 g ball. The top of that range needs a 45 °F biga in a 60 °F kitchen, which the biga's 1-hour temper prevents. It's hottest for *small mixes*, not small batches. You won't need ice, and the app doesn't calculate a blend ratio.
+Blend fridge-cold water with tap water to within 1 °F of the target. Fridge water gets to about 38 °F; the tap covers the warmer end. Across the supported range (3–24 balls, 240–300 g, biga 45–60 °F, room 60–84 °F) the required water spans about **60–118 °F**, and **60–116 °F** at the default 265 g ball. The top of that range needs a 45 °F biga in a 60 °F kitchen, which the biga's 1-hour temper prevents. It's hottest for *small mixes*, not small batches. You won't need ice, and the app doesn't calculate a blend ratio.
 
 ---
 
@@ -1587,7 +1587,7 @@ Auto-populate each bake from the session's inputs so only the measured values ne
 | Mix | `mix_index` | 1-based; a split batch logs one row per mix |
 | Mix | `biga_temp_at_mix_f` | after tearing: what the model calls `T_biga` |
 | Mix | `bowl_temp_f`, `bowl_prefilled` | the temperature at mix start; whether the field still held its prefill (§4.2). ⚠️ `bowl_state` was dropped with the selector in MESSAGE-54; older bakes keep the field, and nothing reads it |
-| Mix | `water_temp_used_f` | what was poured, not the target; `null` if empty |
+| Mix | `water_temp_used_f` | the mix's water target, to the tenth (*Capture and saving*). An older bake keeps the reading it was saved with |
 | Mix | `final_dough_temp_f` | every mix, not only the last; `null` if empty |
 | Mix | `phase_seconds` | A, B, C and D, each from its phase's timer |
 | Mix | `excluded` | Dave's switch; false by default |
@@ -1609,7 +1609,7 @@ Pauses aren't normalized. The rest has a fixed timer, and nothing measures what 
 ### Capture and saving
 
 - **Reset starts a new bake.** A **Reset** button near the top of the page asks first. The baker presses it when starting a new bake, and it is the page's only reset: ⚠️ the Steps header's own Reset, which cleared the checkboxes alone, is removed, so no two controls share the label. Every input is classified, and a test keeps it that way:
-  - **Reset to defaults:** the readings in the prep steps (room, flour and its "Same as room" switch, each mix's biga and bowl), each mix's water poured and final reading, the DDT override (back to auto) and the timeline's anchor. The last two are per-bake choices: a stale override silently moves the water target and the rise, and a stale anchor puts every stage in the past.
+  - **Reset to defaults:** the readings in the prep steps (room, flour and its "Same as room" switch, each mix's biga and bowl), each mix's final reading, the DDT override (back to auto) and the timeline's anchor. The last two are per-bake choices: a stale override silently moves the water target and the rise, and a stale anchor puts every stage in the past.
   - **Cleared:** the step checkboxes, the timers, and the link to the saved bake, so the next save is a new bake.
   - **Kept:** balls, ball weight, schedule and cold ferment, the schedule's adjustments (fridge hours, the classic biga's room hours, temper), which end of the timeline is held, which panels are open, this device's sync settings, and saved bakes. The anchor is the held time, not the mode: a Reset in either mode starts the schedule now.
 
@@ -1620,7 +1620,8 @@ Pauses aren't normalized. The rest has a fixed timer, and nothing measures what 
   > [Reset] [Cancel]
 
 - **Save records the inputs as they stand**, from the Save button on the card after the last mix, including values that arrived in a link. **Nothing the log stores comes later in the schedule**, so the bake is saved at the end of the mix, once the last final dough temperature is in, not when the pizzas are baked (Dave, 28 Sep 2026). Saving again replaces this bake. Saving over a bake from an earlier date asks first, with "Save as a new bake" (the current inputs) or "Replace the bake from {date}", as a safety net for a forgotten Reset. The bake's date is the day mix 1's Phase A timer started. ⚠️ **Dave's call (28 Sep 2026): no tracking of which values were typed, and when.** An earlier version counted a reading only if it had been typed since the last reset, treated values from a link as defaults, and let only the water be confirmed.
-- **The water poured** is asked for at Phase A; "Poured at the target" fills it with the target.
+- **The water is logged as its target** (Dave's call, 23 Oct 2026). The baker blends to within 1 °F of the target (§7.2), and Save records each mix's target, to the tenth, as `water_temp_used_f`, like any other input as it stands. A biga or bowl reading changed after the pour moves the logged water with it, so if a reading was wrong when the water was blended, exclude the mix. The log card shows the value as "Water target". ⚠️ **Removed:** the "Water poured" field in `mix-2` and its "Poured at the target" button, on the step and on the log card.
+  **Why the field went.** It was read once, at Phase A's pour, so it never saw the one real loss: the Phase B water, 40% of the total, waits 4–10 minutes and drifts toward the room. By estimate, not measurement, that drift is under 0.3 °F of dough at app defaults and about 1 °F at the hot corner (3 × 265 g, biga 45 °F, room 60 °F), which Phase C's probe range covers. It runs the same way on most bakes, since the water is usually warmer than the room, so FF absorbs most of it. What the field caught was a blend that missed the target. A 1 °F miss moves the dough by `Cw/(Ct + C_bowl)`, 0.27, 0.30 and 0.31 °F at 3, 6 and 9 balls per mix, and the solved FF by `Cw/Ct` = 0.33. In a mean of three bakes, a one-off miss moves the next target by a third of the miss; at a size with one counted bake, by all of it.
 - **Phase times come only from the logged timers** (§7.5). A timer stops on Stop or when its step is ticked, and the stopped time is the phase time. A phase still running at save isn't captured, there is no manual entry, and times aren't clamped to the printed ranges. The log card shows each phase time beside its range. A timer ticked late inflates its phase at that speed's rate: two minutes of Phase C is 2.16 °F of FF. That stands out on the card, and excluding the mix is the fix.
 - **A bake under another formula** is kept and shown with its reason, and isn't solved until the formula moves and the code to solve it from its snapshot exists.
 
@@ -1628,7 +1629,8 @@ Pauses aren't normalized. The rest has a fixed timer, and nothing measures what 
 
 A mix feeds the FF in use only if:
 
-- its final dough temperature and water poured have values;
+- its final dough temperature has a value, and so does its water (always, on a bake saved since MESSAGE-56);
+- its water is inside `WATER_MIN_F`–`WATER_MAX_F` (38–120 °F). A target outside that band can't be blended, so it isn't what went in. On the log card the reason reads "the water target was out of blending range";
 - its bowl holds a reading, not its prefill;
 - all four phase times were captured;
 - its bake's snapshot matches the current formula and speeds;
@@ -1636,7 +1638,7 @@ A mix feeds the FF in use only if:
 
 Every mix stays in the log whether it counts or not, and the log shows which don't and why. The card lists every reading before saving, so a default left in place (room 70, biga 58) is visible there; it saves as a reading.
 
-**What each reading is worth.** A 1 °F error moves the solved FF by `TOT/Ct` for the final reading (1.22, 1.11 and 1.07 °F at 3, 6 and 9 balls per mix), by `Cb/Ct` = 0.53 for the biga, `Cw/Ct` = 0.33 for the water, `C_bowl/Ct` for the bowl (0.22, 0.11, 0.07) and `Cf/Ct` = 0.13 for the flour. Room moves it only 0.005 through the salt, but it is the regression's variable.
+**What each reading is worth.** A 1 °F error moves the solved FF by `TOT/Ct` for the final reading (1.22, 1.11 and 1.07 °F at 3, 6 and 9 balls per mix), by `Cb/Ct` = 0.53 for the biga, `Cw/Ct` = 0.33 for the water (a blend that misses the target, since the log takes the target), `C_bowl/Ct` for the bowl (0.22, 0.11, 0.07) and `Cf/Ct` = 0.13 for the flour. Room moves it only 0.005 through the salt, but it is the regression's variable.
 
 **A bowl left at its prefill leaves the mix out, and weighting can't fix it,** because the error has a direction. The cold prefill is the biga's post-tearing reading, and bake 1 showed the biga gains about 5 °F in tearing that the bowl doesn't share. The warm prefill is `DDT`, an upper bound. Both overstate the bowl, and an overstated bowl understates FF: 5 °F is 0.55 °F of FF at 6 balls per mix and 1.09 at 3. A bowl value that arrived in a link is a reading, not a prefill.
 

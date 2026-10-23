@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BAKE_1_SEED, MIX_PHASES, currentFormulaSnapshot, mixStatus, type LoggedBake } from '../src/lib/bakeLog';
 import { calculate } from '../src/lib/engine';
+import { formatTempF, roundTo } from '../src/lib/format';
 import {
   EMPTY_LOG,
   GITHUB_KEY,
@@ -350,9 +351,14 @@ describe('the session as a bake (§10)', () => {
   const measured: Inputs = {
     ...DEFAULT_INPUTS,
     bowlTempF: [57],
-    waterUsedF: [63],
     finalDoughTempF: [73.5],
   };
+
+  /** Each mix's water target, as the page computes it for a session. */
+  const targets = (inputs: Inputs) =>
+    calculate({ ...inputs, frictionFactorF: BAKE_1_SEED.value, flourTempF: inputs.flourTempF }).mixes.map(
+      (m) => m.waterTempF,
+    );
 
   it('names the bake by the local date and time it was saved', () => {
     expect(newBakeId(NOW)).toBe('2026-09-28-193005');
@@ -370,7 +376,9 @@ describe('the session as a bake (§10)', () => {
       flour_temp_f: 70,
       flour_follows_room: true,
     });
-    expect(b.mixes[0]).toMatchObject({ biga_temp_at_mix_f: 58, bowl_temp_f: 57, bowl_prefilled: false, water_temp_used_f: 63, final_dough_temp_f: 73.5 });
+    expect(b.mixes[0]).toMatchObject({ biga_temp_at_mix_f: 58, bowl_temp_f: 57, bowl_prefilled: false, final_dough_temp_f: 73.5 });
+    // §10 (MESSAGE-56): the water is the target, to the tenth.
+    expect(b.mixes[0]!.water_temp_used_f).toBe(roundTo(targets(measured)[0]!, 1));
     // §10: dropped with the selector in MESSAGE-54.
     expect(b.mixes[0]).not.toHaveProperty('bowl_state');
     expect(b.mixes[0]!.phase_seconds).toEqual({ a: 210, b: 330, c: 210, d: 52.5 });
@@ -386,15 +394,45 @@ describe('the session as a bake (§10)', () => {
     expect(mixStatus(b, b.mixes[0]!).counted).toBe(true);
   });
 
-  it('records a bowl prefill as a prefill, a missing water or final as null', () => {
-    const b = session({ ...measured, bowlTempF: [null], waterUsedF: [null], finalDoughTempF: [null] });
-    expect(b.mixes[0]).toMatchObject({ bowl_temp_f: 58, bowl_prefilled: true, water_temp_used_f: null, final_dough_temp_f: null });
-    expect(mixStatus(b, b.mixes[0]!).reasons).toEqual(['final', 'water', 'bowl']);
+  it('records a bowl prefill as a prefill, a missing final as null, and the water always', () => {
+    const inputs = { ...measured, bowlTempF: [null], finalDoughTempF: [null] };
+    const b = session(inputs);
+    expect(b.mixes[0]).toMatchObject({ bowl_temp_f: 58, bowl_prefilled: true, final_dough_temp_f: null });
+    expect(b.mixes[0]!.water_temp_used_f).toBe(roundTo(targets(inputs)[0]!, 1));
+    expect(mixStatus(b, b.mixes[0]!).reasons).toEqual(['final', 'bowl']);
+  });
+
+  it("logs each mix's water target to the tenth that mix-1 prints (MESSAGE-56)", () => {
+    // Several readings per mix, so the targets land on varied hundredths.
+    for (const bigaTempF of [[52.3, 55.1], [58, 58], [60, 61.7]]) {
+      for (const bowlTempF of [[null, null], [55.5, 71.2], [60.04, null]]) {
+        const inputs = { ...measured, balls: 12, bigaTempF, bowlTempF, finalDoughTempF: [73, 75] };
+        const b = session(inputs, phaseTimers(2));
+        b.mixes.forEach((m, i) => {
+          const target = targets(inputs)[i]!;
+          expect(formatTempF(m.water_temp_used_f!), `mix ${i + 1}`).toBe(formatTempF(target));
+          expect(m.water_temp_used_f).toBe(Number(formatTempF(target)));
+        });
+      }
+    }
+  });
+
+  it("leaves out a mix whose target can't be blended, through the session (MESSAGE-56)", () => {
+    // 3 × 240 g at the hot corner, bowl on its prefill, with FF 8 asks for
+    // water past what a tap delivers, so the stored water isn't what went in.
+    const inputs: Inputs = {
+      ...measured, balls: 3, ballWeightG: 240, bigaTempF: [45], bowlTempF: [null], roomTempF: 60, flourTempF: 60,
+    };
+    const result = calculate({ ...inputs, frictionFactorF: 8 });
+    expect(result.waterTempF).toBeGreaterThan(120);
+    const b = sessionBake({ inputs, result, timers: phaseTimers(1) }, NOW, newBakeId(NOW));
+    expect(b.mixes[0]!.water_temp_used_f).toBe(roundTo(result.waterTempF, 1));
+    expect(mixStatus(b, b.mixes[0]!).reasons).toEqual(['waterRange', 'bowl']);
   });
 
   it("reads mix 2's bowl by index: mix 1's reading doesn't make mix 2's a measurement", () => {
     const b = session(
-      { ...measured, balls: 12, bowlTempF: [57], waterUsedF: [63, 60], finalDoughTempF: [73, 75] },
+      { ...measured, balls: 12, bowlTempF: [57], finalDoughTempF: [73, 75] },
       phaseTimers(2),
     );
     expect(b.mixes.map((m) => m.bowl_prefilled)).toEqual([false, true]);
@@ -403,7 +441,7 @@ describe('the session as a bake (§10)', () => {
   it('dates a bake by the day its first mix started, so a split batch past midnight stays on one day', () => {
     const lateStart = new Date(2026, 8, 27, 23, 50).getTime();
     const b = session(
-      { ...measured, balls: 12, bowlTempF: [57, 72], waterUsedF: [63, 60], finalDoughTempF: [73, 75] },
+      { ...measured, balls: 12, bowlTempF: [57, 72], finalDoughTempF: [73, 75] },
       phaseTimers(2, lateStart),
     );
     expect(b.date).toBe('2026-09-27');
@@ -432,7 +470,7 @@ describe('the session as a bake (§10)', () => {
     expect(phaseSeconds(running, 'mix-5', 2, 2)).toBeNull();
     expect(runningPhases(running, 2, 2)).toEqual(['c']);
     const b = session(
-      { ...measured, balls: 12, bowlTempF: [57, 72], waterUsedF: [63, 60], finalDoughTempF: [73, 75], bigaTempF: [58, 59] },
+      { ...measured, balls: 12, bowlTempF: [57, 72], finalDoughTempF: [73, 75], bigaTempF: [58, 59] },
       running,
     );
     expect(b.n_mix).toBe(2);
@@ -441,7 +479,7 @@ describe('the session as a bake (§10)', () => {
 
   it("carries mix 1's biga forward to mix 2 until re-read (§6)", () => {
     const b = session(
-      { ...measured, balls: 12, bowlTempF: [57, 72], waterUsedF: [63, 60], finalDoughTempF: [73, 75] },
+      { ...measured, balls: 12, bowlTempF: [57, 72], finalDoughTempF: [73, 75] },
       phaseTimers(2),
     );
     expect(b.mixes[1]!.biga_temp_at_mix_f).toBe(58);

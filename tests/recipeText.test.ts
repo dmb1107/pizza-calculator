@@ -37,7 +37,8 @@ describe('recipe text', () => {
     // §5 six-ball vector.
     const out = text();
     expect(out).toContain('68.1 °F');
-    expect(out).toContain('blend fridge-cold and tap water to hit it');
+    // §7.2 (MESSAGE-56): a tolerance, since the log takes the target.
+    expect(out).toContain('blend fridge-cold and tap water to within 1 °F of it');
   });
 
   it('warms only the yeast water, as biga-1 does', () => {

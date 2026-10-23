@@ -71,11 +71,8 @@ export interface Inputs {
    * later mixes unread rather than copying its last entry forward.
    */
   finalDoughTempF: (number | null)[];
-  /**
-   * §10. The water temperature actually poured, per mix. null until typed or
-   * filled with the target ("Poured at the target"); the log records null.
-   */
-  waterUsedF: (number | null)[];
+  // §10 (MESSAGE-56): there is no water-poured input. The log takes each
+  // mix's water target as the water used.
 }
 
 /**
@@ -99,7 +96,7 @@ export interface RunningTimer {
 }
 
 /** A temperature the bake log records (§10), set through `commitReading`. */
-export type ReadingField = 'roomTempF' | 'flourTempF' | 'bigaTempF' | 'bowlTempF' | 'waterUsedF' | 'finalDoughTempF';
+export type ReadingField = 'roomTempF' | 'flourTempF' | 'bigaTempF' | 'bowlTempF' | 'finalDoughTempF';
 
 /** Which panels are open. Batch is open by default; Calibration is collapsed. */
 export interface PanelPrefs {

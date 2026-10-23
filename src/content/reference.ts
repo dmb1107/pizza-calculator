@@ -56,7 +56,7 @@ A 12-ball batch runs as two 6-ball mixes and reads the 6 column; 18 balls reads 
   {
     id: "water-temperature",
     title: "Water temperature",
-    body: `Blend fridge-cold water with tap water to reach the target, measuring as you pour. Fridge water gets to about 38 °F; the tap covers the warmer end. Across the supported range (3–24 balls, 240–300 g, biga 45–60 °F, room 60–84 °F) the required water spans about **60–118 °F**, and **60–116 °F** at the default 265 g ball. The top of that range needs a 45 °F biga in a 60 °F kitchen, which the biga's 1-hour temper prevents. It's hottest for *small mixes*, not small batches. You won't need ice, and the app doesn't calculate a blend ratio.`,
+    body: `Blend fridge-cold water with tap water to within 1 °F of the target. Fridge water gets to about 38 °F; the tap covers the warmer end. Across the supported range (3–24 balls, 240–300 g, biga 45–60 °F, room 60–84 °F) the required water spans about **60–118 °F**, and **60–116 °F** at the default 265 g ball. The top of that range needs a 45 °F biga in a 60 °F kitchen, which the biga's 1-hour temper prevents. It's hottest for *small mixes*, not small batches. You won't need ice, and the app doesn't calculate a blend ratio.`,
   },
 ];
 

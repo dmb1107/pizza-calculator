@@ -160,6 +160,8 @@ describe('§10 which mixes count', () => {
   it.each([
     ['final', { final_dough_temp_f: null }],
     ['water', { water_temp_used_f: null }],
+    ['waterRange', { water_temp_used_f: 120.1 }],
+    ['waterRange', { water_temp_used_f: 37.9 }],
     ['bowl', { bowl_prefilled: true }],
     ['phases', { phase_seconds: { ...REFERENCE_SECONDS, d: null } }],
     ['excluded', { excluded: true }],
@@ -172,6 +174,21 @@ describe('§10 which mixes count', () => {
   it("counts a default left in place: room 70 and biga 58 are readings (Dave's call, MESSAGE-47)", () => {
     const b = bake({ room_temp_f: 70, flour_temp_f: 70, flour_follows_room: true });
     expect(mixStatus(b, mix({ biga_temp_at_mix_f: 58 })).counted).toBe(true);
+  });
+
+  it('counts a water at either end of the blending range (38 and 120 °F)', () => {
+    // §10 (MESSAGE-56): inside WATER_MIN_F–WATER_MAX_F, inclusive.
+    expect(mixStatus(bake(), mix({ water_temp_used_f: C.WATER_MIN_F })).reasons).toEqual([]);
+    expect(mixStatus(bake(), mix({ water_temp_used_f: C.WATER_MAX_F })).reasons).toEqual([]);
+  });
+
+  it('still solves an older bake from the water it was typed with', () => {
+    // Bakes saved before MESSAGE-56 carry the water poured, not the target.
+    // Each °F of water is Cw/Ct = 0.33 °F of FF, so the reading moves the solve.
+    const at63 = mixStatus(bake(), mix({ water_temp_used_f: 63 })).ff!;
+    const at64 = mixStatus(bake(), mix({ water_temp_used_f: 64 })).ff!;
+    expect(at63).toBeCloseTo(14.027531, 6);
+    expect(at63 - at64).toBeCloseTo(0.333, 3);
   });
 
   it('lists every reason, in §10 order', () => {
