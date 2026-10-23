@@ -62,7 +62,8 @@ export function buildRecipeText(result: CalculatorResult): string {
   } else {
     lines.push(row('Target', `${formatTempF(result.waterTempF)} °F`));
   }
-  lines.push(row('', 'blend fridge-cold and tap water to hit it'));
+  // §7.2: the line under the target, as copy-as-text gives it.
+  lines.push(row('', 'blend fridge-cold and tap water to within 1 °F of it'));
   lines.push('');
 
   lines.push('TARGETS');

@@ -29,7 +29,8 @@ const KEYS = {
   bigaRoomOnlyH: 'bigart',
   temperH: 'temper',
   finalDoughTempF: 'dought',
-  waterUsedF: 'water',
+  // 'water' carried the water poured until MESSAGE-56. An old link that has
+  // it opens with it ignored; don't reuse the key.
 } as const satisfies Record<keyof Inputs, string>;
 
 /** How many mixes the batch runs as — the length a by-index list is padded to. */
@@ -125,7 +126,6 @@ export function encodeInputs(inputs: Inputs): string {
     encodeIndexedList(inputs.finalDoughTempF, nMix),
     inputs.finalDoughTempF.every((v) => v == null),
   );
-  put(KEYS.waterUsedF, encodeIndexedList(inputs.waterUsedF, nMix), inputs.waterUsedF.every((v) => v == null));
 
   return p.toString();
 }
@@ -271,7 +271,6 @@ export function decodeInputs(search: string, base: Inputs = DEFAULT_INPUTS): Inp
     temperH: readNumber(p, KEYS.temperH, 'temperH', base.temperH),
     bowlTempF: readOptionalNumberList(p, KEYS.bowlTempF, 'bowlTempF', base.bowlTempF),
     finalDoughTempF: readIndexedList(p, KEYS.finalDoughTempF, 'finalDoughTempF', nMix, base.finalDoughTempF),
-    waterUsedF: readIndexedList(p, KEYS.waterUsedF, 'waterUsedF', nMix, base.waterUsedF),
   };
 }
 

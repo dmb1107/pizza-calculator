@@ -124,6 +124,8 @@ question:
 | `FINDINGS-55-to-recipe-agent.md` | Reply to MESSAGE-54. All reproduced (the share at the cap is 6.624486%, both print 6.62%). The gate never checked a claim's `covers`; it does now, and it found `biga-4.detail`'s "2 hours" excused by a claim that didn't build it. `mix-0` still sends the baker to the changeover for the biga reading |
 | `MESSAGE-55.md` | Reply to FINDINGS-55; no figure moves. `mix-0` sends the baker to each later mix's prep step; both our label choices kept ("Water target" at one mix, no unit in labels); `mix-1` links `thermal-model`, and §8.3 still asks the Calibration panel to link `friction-factor` |
 | `FINDINGS-56-to-recipe-agent.md` | Reply to MESSAGE-55. Applied; nothing open. No component had ever linked a concept: §8.3's two card links went unbuilt from the start. `mix-1`'s field covers one, and the Calibration panel now has the other |
+| `MESSAGE-56.md` | Dave's change: **the "Water poured" field goes, and the log records each mix's water target** (to the tenth, stored) as the water used. The page asks for a blend within 1 °F; a mix whose water is outside 38–120 °F doesn't count. Keep the Calibration panel's `friction-factor` link |
+| `FINDINGS-57-to-recipe-agent.md` | Reply to MESSAGE-56. Applied; nothing open. The synced log repository holds no bakes, so no older bake is known to lack a water reading; the reason stays for local ones we can't see. The site is current through MESSAGE-55 |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -337,10 +339,9 @@ log's own functions**, 10.787531 at the 963 g bowl, never typed (MESSAGE-52).
 It moved from 10.791045 when the bowl was weighed (MESSAGE-54) without anyone
 touching it, which is the point.
 
-**Per-mix readings are read by index, except the biga.** `bowlTempF`,
-`finalDoughTempF` and `waterUsedF` hold one entry per mix, and a missing entry
-is that mix unread: the bowl's warm prefill, DDT in §4.8's mean, the target
-for the log. `atMix` carried mix 1's bowl forward and printed mix 2's water
+**Per-mix readings are read by index, except the biga.** `bowlTempF` and
+`finalDoughTempF` hold one entry per mix, and a missing entry is that mix
+unread: the bowl's warm prefill, and DDT in §4.8's mean. `atMix` carried mix 1's bowl forward and printed mix 2's water
 4.6 °F too warm (FINDINGS-46); `bowlReadingAt` and `finalReadings` exist so
 that can't recur. Only the biga carries forward, because it is the same biga
 until re-read (§6). Display through the same functions: the old panel showed
@@ -366,16 +367,24 @@ don't reuse the key.
 **Save records the inputs as they stand** (§10 *Capture and saving*, Dave's
 call in MESSAGE-47). Nothing tracks which values were typed or when: a
 default left in place (room 70, biga 58) and a value from a link are
-readings. A bake stores plain temperatures, with `null` for a water or final
-that has no value, and `bowl_prefilled` from the bowl field's own prefill
-state (§6), because a prefill is biased high and the mix mustn't count. New
+readings. A bake stores plain temperatures, with `null` for a final that
+has no value, and `bowl_prefilled` from the bowl field's own prefill state
+(§6), because a prefill is biased high and the mix mustn't count. **The
+water is logged as its target** (MESSAGE-56, Dave's call): there is no
+water-poured field, and Save stores each mix's target `roundTo(…, 1)`, what
+`mix-1` prints, in `water_temp_used_f`. Stored, never derived on read: a
+corrected constant must not recompute what went into the bowl. A mix whose
+stored water is outside `WATER_MIN_F`–`WATER_MAX_F` doesn't count
+(`waterRange`), since a target past either end can't be blended. Older bakes
+keep the water they were typed with, and a `null` there still leaves the
+mix out. A link's `water` is ignored; don't reuse the key. New
 bakes don't write `bowl_state`; an older bake keeps it (`LegacyBowlState`,
 carried so a rewrite doesn't strip it) and nothing reads it, so an unknown
 value is dropped rather than rejecting the bake. **The
 page's Reset starts a new bake, and it is the only reset** (`NewBakeReset`,
 above the panels; MESSAGE-48 removed the Steps header's). It asks, then
 `inputsForNewBake` and `persistedForNewBake` decide every field: today's
-readings (those in the prep steps, water poured, final readings), the DDT override and
+readings (those in the prep steps and the final readings), the DDT override and
 the timeline's anchor go back to their defaults; the checkboxes, timers and
 session bake are cleared; batch settings, schedule adjustments, the timeline
 mode, the open panels and the log stay. In backward mode the hook then takes

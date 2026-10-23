@@ -91,7 +91,11 @@ export interface LoggedMix {
    * high, so the mix doesn't count (§10).
    */
   bowl_prefilled: boolean;
-  /** What was poured, not the target. Null if nothing was poured or filled. */
+  /**
+   * The mix's water target to the tenth, as Save records it (MESSAGE-56).
+   * Bakes saved before then carry the typed water poured, and null where none
+   * was typed.
+   */
   water_temp_used_f: number | null;
   /** Null until read. */
   final_dough_temp_f: number | null;
@@ -147,7 +151,7 @@ export function snapshotMatches(a: FormulaSnapshot, b: FormulaSnapshot): boolean
 // ---------------------------------------------------------------------------
 
 /** Why a mix doesn't feed the FF in use, in §10's order. */
-export type NotCountedReason = 'final' | 'water' | 'bowl' | 'phases' | 'formula' | 'excluded';
+export type NotCountedReason = 'final' | 'water' | 'waterRange' | 'bowl' | 'phases' | 'formula' | 'excluded';
 
 export interface MixStatus {
   /**
@@ -174,9 +178,15 @@ export function phaseMinutes(mix: LoggedMix): Record<PhaseKey, number> | null {
 }
 
 /**
- * §10 *Which mixes count*: a final and a water reading, a bowl that isn't the
- * prefill, all four phase times, the current formula and speeds, and not
- * excluded. A default left in place (room 70, biga 58) is a reading.
+ * §10 *Which mixes count*: a final and a water reading, a water inside
+ * `WATER_MIN_F`–`WATER_MAX_F` (a target outside it can't be blended, so it
+ * isn't what went in), a bowl that isn't the prefill, all four phase times,
+ * the current formula and speeds, and not excluded. A default left in place
+ * (room 70, biga 58) is a reading.
+ *
+ * The range reads the stored water, so it needs no record of whether a
+ * warning fired. A water of null happens only on a bake saved before
+ * MESSAGE-56, when the water poured was typed.
  */
 export function mixStatus(bake: LoggedBake, mix: LoggedMix, current: FormulaSnapshot = currentFormulaSnapshot()): MixStatus {
   const reasons: NotCountedReason[] = [];
@@ -184,6 +194,7 @@ export function mixStatus(bake: LoggedBake, mix: LoggedMix, current: FormulaSnap
   const water = mix.water_temp_used_f;
   if (final == null) reasons.push('final');
   if (water == null) reasons.push('water');
+  else if (water < C.WATER_MIN_F || water > C.WATER_MAX_F) reasons.push('waterRange');
   if (mix.bowl_prefilled) reasons.push('bowl');
   const minutes = phaseMinutes(mix);
   if (!minutes) reasons.push('phases');

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Markdown } from './Markdown';
 import { StepTimer } from './StepTimer';
-import { BakeLogCard, FinalTempCapture, WaterPouredCapture } from './BakeLog';
+import { BakeLogCard, FinalTempCapture } from './BakeLog';
 import { MixReadings } from './MixReadings';
 import { conceptById } from '../content/concepts';
 import { parseTimerLabel } from '../lib/timers';
@@ -96,7 +96,7 @@ function StepRow({
   checked: boolean;
   onToggleChecked: () => void;
   onOpenConcept: (id: string) => void;
-  /** Rendered inside the step, below the summary: the readings in mix-1, mix-2 and mix-7. */
+  /** Rendered inside the step, below the summary: the readings in mix-1 and mix-7. */
   extra?: React.ReactNode;
   /** The timer control, when this step names a duration. */
   timer?: React.ReactNode;
@@ -387,13 +387,11 @@ export function StepList({
                     onOpenConcept={onOpenConcept}
                     // §6 / §10: each reading is captured in the step where it
                     // is taken — room, flour, biga and bowl with the water
-                    // target in the prep step, the poured water in Phase A,
-                    // each mix's final temperature at its end.
+                    // target in the prep step, each mix's final temperature
+                    // at its end. The log takes the target as the water used.
                     extra={
                       step.id === 'mix-1' ? (
                         <MixReadings state={state} mixIndex={mixIndex} />
-                      ) : step.id === 'mix-2' ? (
-                        <WaterPouredCapture state={state} mixIndex={mixIndex} />
                       ) : step.id === 'mix-7' ? (
                         <FinalTempCapture state={state} mixIndex={mixIndex} />
                       ) : undefined

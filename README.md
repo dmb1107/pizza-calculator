@@ -22,8 +22,8 @@ returns:
 - a guided step list with timers and mixer speeds drawn as the Core's lit
   segments, where every step expands into the reasoning behind it;
 - a bake log that solves the mixer's friction factor from each bake's measured
-  temperatures and phase times, and sets the friction factor the next water
-  target uses. The four mixer-phase timers it reads are tagged **Logged**, and
+  temperatures, water targets and phase times, and sets the friction factor
+  the next water target uses. The four mixer-phase timers it reads are tagged **Logged**, and
   the bake is saved from the card after the last mix, once the final dough
   temperature is in.
 

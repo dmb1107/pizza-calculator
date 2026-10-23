@@ -84,8 +84,10 @@ export function MixReadings({ state, mixIndex }: { state: AppState; mixIndex: nu
         />
       </div>
 
-      {/* §7.2: one number, large, and one line. The water warnings (§4.4)
-          render under it rather than in the strip (§7.3). */}
+      {/* §7.2: one number, large, and one line. The line gives a tolerance
+          because the log takes this target as the water used (§10). The
+          water warnings (§4.4) render under it rather than in the strip
+          (§7.3). */}
       <div className="mt-4 border-t border-stone-200 pt-3 dark:border-stone-800">
         <p className="text-stone-600 dark:text-stone-400">
           {split ? `Mix ${mixIndex} water target` : 'Water target'}
@@ -95,7 +97,7 @@ export function MixReadings({ state, mixIndex }: { state: AppState; mixIndex: nu
           <span className="ml-1 text-2xl font-normal text-stone-500">°F</span>
         </p>
         <p className="mt-2 text-stone-700 dark:text-stone-300">
-          Blend fridge-cold and tap water to hit it, measuring as you pour.
+          Blend fridge-cold and tap water to within 1 °F of it.
         </p>
         {mix.warnings.length > 0 && (
           <div className="mt-3 grid gap-2">

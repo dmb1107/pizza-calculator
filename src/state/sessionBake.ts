@@ -14,6 +14,7 @@
 import { MIX_PHASES, currentFormulaSnapshot, type LoggedBake, type PhaseKey } from '../lib/bakeLog';
 import type { LocalLog } from './bakeLogStore';
 import { atMix, type CalculatorResult } from '../lib/engine';
+import { roundTo } from '../lib/format';
 import { instanceKey } from '../lib/stepInstances';
 import type { Inputs, RunningTimer } from './types';
 
@@ -62,8 +63,9 @@ export interface SessionState {
 }
 
 /**
- * The session as it would be logged now: the inputs as they stand. A final
- * or water reading with no value is null, and the bowl records whether its
+ * The session as it would be logged now: the inputs as they stand, and each
+ * mix's water target as its water. A final reading with no value is null,
+ * and the bowl records whether its
  * field still holds its prefill (§10), so the log can leave those mixes out.
  */
 export function sessionBake(s: SessionState, now: Date, bakeId: string): LoggedBake {
@@ -89,7 +91,10 @@ export function sessionBake(s: SessionState, now: Date, bakeId: string): LoggedB
       bowl_temp_f: mix.bowlTempF,
       // By index, as the engine reads it: no reading of its own is the prefill.
       bowl_prefilled: (inputs.bowlTempF[i] ?? null) == null,
-      water_temp_used_f: inputs.waterUsedF[i] ?? null,
+      // §10 (MESSAGE-56): the water is logged as its target, to the tenth
+      // `mix-1` prints. Stored, never derived on read: it is what went into
+      // the bowl, so a corrected constant must not recompute it.
+      water_temp_used_f: roundTo(mix.waterTempF, 1),
       final_dough_temp_f: inputs.finalDoughTempF[i] ?? null,
       phase_seconds: Object.fromEntries(
         MIX_PHASES.map((p) => [p.key, phaseSeconds(timers, p.stepId, mix.index, nMix)]),

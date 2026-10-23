@@ -17,7 +17,7 @@ import {
   type NotCountedReason,
   type PhaseKey,
 } from '../lib/bakeLog';
-import { formatBallsPerMix, formatCoefficient, formatTempF, roundTo } from '../lib/format';
+import { formatBallsPerMix, formatCoefficient, formatTempF } from '../lib/format';
 import { describeSpec, formatElapsed } from '../lib/timers';
 import { formatTimeOfDay } from '../lib/timeline';
 import { BOUNDS } from '../state/defaults';
@@ -38,7 +38,9 @@ import type { AppState } from '../state/useAppState';
 
 const REASON: Record<NotCountedReason, string> = {
   final: 'no final dough temperature',
-  water: 'no water poured',
+  // Only a bake saved before MESSAGE-56, when the water poured was typed.
+  water: 'no water reading',
+  waterRange: 'the water target was out of blending range',
   bowl: 'the bowl is a prefill, not a reading',
   phases: 'a phase time is missing',
   formula: 'mixed under another formula or other speeds',
@@ -61,42 +63,6 @@ const smallButtonClass =
 // ---------------------------------------------------------------------------
 // Captures in the steps
 // ---------------------------------------------------------------------------
-
-/** Phase A: the water temperature actually poured, for the log (§10). */
-export function WaterPouredCapture({ state, mixIndex }: { state: AppState; mixIndex: number }) {
-  const { inputs, result, commitReading, pourAtTarget } = state;
-  const i = mixIndex - 1;
-  const target = result.mixes[i]?.waterTempF ?? result.waterTempF;
-  const poured = inputs.waterUsedF[i] ?? null;
-  const many = result.capacity.nMix > 1;
-
-  return (
-    <div className="mt-4 rounded-lg border border-stone-300 p-3 dark:border-stone-700">
-      <NumberField
-        label={many ? `Water temperature poured — mix ${mixIndex}` : 'Water temperature poured'}
-        unit="°F"
-        value={poured ?? roundTo(target, 1)}
-        onCommit={(v) => commitReading('waterUsedF', v, i)}
-        min={BOUNDS.waterUsedF.min}
-        max={BOUNDS.waterUsedF.max}
-        step={BOUNDS.waterUsedF.step}
-        // One wording before and after, so nothing above the button moves
-        // when it is tapped.
-        hint={`Read it in the jug as you pour. The target is ${formatTempF(target)} °F.`}
-      />
-      {/* The same height either way, so nothing below the tap moves up or down. */}
-      <div className="mt-2 flex min-h-touch items-center">
-        {poured != null ? (
-          <span className="text-sm text-stone-600 dark:text-stone-400">The log records this reading.</span>
-        ) : (
-          <button type="button" onClick={() => pourAtTarget(i, target)} className={smallButtonClass}>
-            Poured at the target
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
 
 /**
  * The end of each mix: its final dough temperature. §4.8 times the ball rise
@@ -194,7 +160,7 @@ function PhaseRow({ phase, seconds, running }: { phase: MixPhase; seconds: numbe
 
 /** What the log will record, and the button that saves it (§10). */
 export function BakeLogCard({ state, onOpenLog }: { state: AppState; onOpenLog: () => void }) {
-  const { sessionDraft: draft, sessionBakeId, saveConflict: conflict, saveSessionBake, pourAtTarget, result, log, timers, sync, github } =
+  const { sessionDraft: draft, sessionBakeId, saveConflict: conflict, saveSessionBake, log, timers, sync, github } =
     state;
   const saved = !conflict && log.bakes.some((b) => b.bake_id === sessionBakeId);
   const nMix = draft.n_mix;
@@ -203,9 +169,9 @@ export function BakeLogCard({ state, onOpenLog }: { state: AppState; onOpenLog: 
     <div className="rounded-xl border border-stone-300 bg-white p-4 dark:border-stone-700 dark:bg-stone-900">
       <h4 className="text-lg font-semibold">Log this bake</h4>
       <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-        Saving records every reading below as it stands, defaults included. A mix feeds the friction factor when it
-        has a final dough temperature and a water poured, its bowl was measured, and all four phase times were
-        captured. The four timers tagged Logged capture them when you stop them or tick the step. A phase run to its cue can fall
+        Saving records every reading below as it stands, defaults included, and each mix&apos;s water target as the
+        water used. A mix feeds the friction factor when it has a final dough temperature, its water target is
+        inside blending range, its bowl was measured, and all four phase times were captured. The four timers tagged Logged capture them when you stop them or tick the step. A phase run to its cue can fall
         outside its range, and the log corrects for that. If a timer ran on after its phase ended, leave that mix out
         in the bake log.
       </p>
@@ -218,10 +184,8 @@ export function BakeLogCard({ state, onOpenLog }: { state: AppState; onOpenLog: 
       </ul>
 
       {draft.mixes.map((mix) => {
-        const i = mix.mix_index - 1;
         const status = mixStatus(draft, mix);
         const running = runningPhases(timers, mix.mix_index, nMix);
-        const target = result.mixes[i]?.waterTempF ?? result.waterTempF;
         return (
           <div key={mix.mix_index} className="mt-3">
             {nMix > 1 && <h5 className="text-sm font-semibold">{`Mix ${mix.mix_index}`}</h5>}
@@ -232,17 +196,8 @@ export function BakeLogCard({ state, onOpenLog }: { state: AppState; onOpenLog: 
                 value={`${formatTempF(mix.bowl_temp_f)} °F`}
                 status={mix.bowl_prefilled ? <Note>{`A prefill: read it in “${PREP_STEP_TITLE}”`}</Note> : null}
               />
-              <ReadingRow
-                label="Water poured"
-                value={tempOrDash(mix.water_temp_used_f)}
-                status={
-                  mix.water_temp_used_f == null ? (
-                    <button type="button" onClick={() => pourAtTarget(i, target)} className={smallButtonClass}>
-                      Poured at the target
-                    </button>
-                  ) : null
-                }
-              />
+              {/* §10 (MESSAGE-56): the target, as Save records it. No button. */}
+              <ReadingRow label="Water target" value={tempOrDash(mix.water_temp_used_f)} status={null} />
               <ReadingRow
                 label="Final dough"
                 value={tempOrDash(mix.final_dough_temp_f)}

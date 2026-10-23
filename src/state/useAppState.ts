@@ -17,7 +17,6 @@ import {
   type LoggedBake,
   type MixSize,
 } from '../lib/bakeLog';
-import { roundTo } from '../lib/format';
 import { capacityAlerts, splitHint } from '../lib/capacity';
 import { defaultDdtF } from '../lib/constants';
 import {
@@ -130,8 +129,6 @@ export interface AppState {
 
   /** §10: set a reading. `index` is the mix (0-based) for per-mix readings. */
   commitReading: (field: ReadingField, value: number, index?: number) => void;
-  /** §10: "Poured at the target" fills the water poured with the mix's target. */
-  pourAtTarget: (index: number, targetF: number) => void;
   /** Clear a per-mix reading back to unread (the final temperature's "Clear"). */
   clearReading: (field: PerMixReading, index: number) => void;
   /**
@@ -355,15 +352,6 @@ export function useAppState(): AppState {
     (field: ReadingField, value: number, index = 0) => {
       if (!Number.isFinite(value)) return;
       writeReading(field, value, index);
-    },
-    [writeReading],
-  );
-
-  /** The target, to the tenth a thermometer shows, becomes the water poured. */
-  const pourAtTarget = useCallback(
-    (index: number, targetF: number) => {
-      if (!Number.isFinite(targetF)) return;
-      writeReading('waterUsedF', roundTo(targetF, 1), index);
     },
     [writeReading],
   );
@@ -678,7 +666,6 @@ export function useAppState(): AppState {
     mixSizeKey,
     setDdtOverride,
     commitReading,
-    pourAtTarget,
     clearReading,
     startNewBake,
     log,

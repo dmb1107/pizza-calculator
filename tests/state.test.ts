@@ -42,7 +42,6 @@ const CUSTOM: Inputs = {
   bigaRoomOnlyH: 14,
   temperH: 1.75,
   finalDoughTempF: [73.5, 74],
-  waterUsedF: [64.2, null],
 };
 
 describe('URL serialization', () => {
@@ -68,16 +67,23 @@ describe('URL serialization', () => {
     expect(decodeInputs('bowlt=66').bowlTempF).toEqual([66]);
   });
 
-  it('reads final and poured-water readings by index, padded to the mixes', () => {
+  it('reads final readings by index, padded to the mixes', () => {
     // 12 × 265 g is two mixes. Mix 1 read, mix 2 not yet: "73~", which can't
     // be mistaken for a bare value.
-    const twoMix = { ...DEFAULT_INPUTS, balls: 12, finalDoughTempF: [73], waterUsedF: [null, 60.5] };
+    const twoMix = { ...DEFAULT_INPUTS, balls: 12, finalDoughTempF: [73] };
     const encoded = encodeInputs(twoMix);
     expect(new URLSearchParams(encoded).get('dought')).toBe('73~');
-    expect(new URLSearchParams(encoded).get('water')).toBe('~60.5');
-    const decoded = decodeInputs(encoded);
-    expect(decoded.finalDoughTempF).toEqual([73, null]);
-    expect(decoded.waterUsedF).toEqual([null, 60.5]);
+    expect(decodeInputs(encoded).finalDoughTempF).toEqual([73, null]);
+  });
+
+  it("ignores the removed water-poured parameter (MESSAGE-56)", () => {
+    // §10: the log takes each mix's water target. An old link's `water` opens
+    // with it ignored, like `bowlst`, and nothing writes the key.
+    expect(decodeInputs('water=63')).toEqual(DEFAULT_INPUTS);
+    expect(decodeInputs('balls=12&water=~60.5&dought=73~')).toEqual(
+      decodeInputs('balls=12&dought=73~'),
+    );
+    expect(new URLSearchParams(encodeInputs(CUSTOM)).has('water')).toBe(false);
   });
 
   it('reads a link from before per-mix finals as the batch reading, so its rise is unchanged', () => {
@@ -294,7 +300,7 @@ describe('localStorage persistence', () => {
 describe('§10 Reset starts a new bake', () => {
   it("puts today's readings back to their defaults and keeps the batch settings", () => {
     const next = inputsForNewBake(CUSTOM);
-    // Today's readings: those in the prep steps, the water poured, the final readings.
+    // Today's readings: those in the prep steps and the final readings.
     expect(next).toMatchObject({
       roomTempF: DEFAULT_INPUTS.roomTempF,
       flourSameAsRoom: DEFAULT_INPUTS.flourSameAsRoom,
@@ -302,7 +308,6 @@ describe('§10 Reset starts a new bake', () => {
       bigaTempF: DEFAULT_INPUTS.bigaTempF,
       bowlTempF: DEFAULT_INPUTS.bowlTempF,
       finalDoughTempF: DEFAULT_INPUTS.finalDoughTempF,
-      waterUsedF: DEFAULT_INPUTS.waterUsedF,
     });
     // Balls, ball weight, schedule, cold ferment, and the schedule's adjustments.
     expect(next).toMatchObject({
@@ -315,7 +320,7 @@ describe('§10 Reset starts a new bake', () => {
       temperH: CUSTOM.temperH,
     });
     // Nothing else: every key of the inputs is one of the two lists above.
-    const reset = ['roomTempF', 'flourSameAsRoom', 'flourTempF', 'bigaTempF', 'bowlTempF', 'finalDoughTempF', 'waterUsedF'];
+    const reset = ['roomTempF', 'flourSameAsRoom', 'flourTempF', 'bigaTempF', 'bowlTempF', 'finalDoughTempF'];
     const kept = ['balls', 'ballWeightG', 'schedule', 'coldFermentH', 'bigaFridgeH', 'bigaRoomOnlyH', 'temperH'];
     expect(Object.keys(DEFAULT_INPUTS).sort()).toEqual([...reset, ...kept].sort());
   });
