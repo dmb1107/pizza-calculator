@@ -13,7 +13,8 @@ gone; the panels are Batch and Calibration. MESSAGE-53 before it, the last
 of Dave's three-part recipe review, made one biga at every size, `mix-0` to
 split it, a 1.5–2 h temper, a divide that scales with balls, and a 6–8 h
 classic cold ferment. The bake log, synced through a private GitHub
-repository, sets the FF in use. FINDINGS-55 is the last thing sent.
+repository, sets the FF in use. MESSAGE-55 (wording, and `mix-1`'s link to
+`thermal-model`) is applied, and FINDINGS-56 is the last thing sent.
 
 ---
 
