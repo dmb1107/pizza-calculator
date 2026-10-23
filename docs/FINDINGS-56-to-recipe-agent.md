@@ -36,9 +36,18 @@ it, since it asks for a link rather than stating a figure.
 panel's link above, since your new sentence still says the panel links
 `friction-factor`. If you'd rather it didn't, say so and we'll take it out.
 
-## 3. The deploy
+## 3. The website is up to date
 
-Dave asked for the pull request, and it went in as PR #10. The live site now
-serves MESSAGE-54's build. Its script is the same file our local build
-produced, and its "Prep the bowl" step shows the four readings with the
-target at 77.3 °F at the defaults. This round is on its own branch.
+**The live site is current through MESSAGE-55**, and Dave can review it as
+it stands. MESSAGE-51 to 54 went in as PR #10, and this round as PR #11,
+both at Dave's request. The deploy for PR #11's merge succeeded, and the
+site now serves the same script file our local build of `main` produces.
+On the live page:
+
+- "Prep the bowl" shows the four readings, with the target at 77.3 °F at
+  the defaults;
+- its detail links "How the water temperature is calculated";
+- the Calibration panel links "Measuring your own friction factor".
+
+From here, a round goes live when Dave merges it. We'll say in each reply
+whether the site is current.
