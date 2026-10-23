@@ -14,6 +14,10 @@ import type { AppState } from '../state/useAppState';
  * shows its value or the default the engine is using, so nothing is hidden
  * until a reading is entered. Labels and hints are §6's table, and only those:
  * no sensitivity figures beside the fields (Dave's call, MESSAGE-54).
+ *
+ * Every field here `recordsReading` (MESSAGE-58): a bowl read at its prefill
+ * is a reading, and so is a later mix's biga read at the value carried
+ * forward, which would otherwise follow a correction to the mix before it.
  */
 export function MixReadings({ state, mixIndex }: { state: AppState; mixIndex: number }) {
   const { inputs, result, setInput, commitReading } = state;
@@ -36,6 +40,7 @@ export function MixReadings({ state, mixIndex }: { state: AppState; mixIndex: nu
               unit="°F"
               value={inputs.roomTempF}
               onCommit={(v) => commitReading('roomTempF', v)}
+              recordsReading
               min={BOUNDS.roomTempF.min}
               max={BOUNDS.roomTempF.max}
               step={BOUNDS.roomTempF.step}
@@ -46,6 +51,7 @@ export function MixReadings({ state, mixIndex }: { state: AppState; mixIndex: nu
                 unit="°F"
                 value={inputs.flourSameAsRoom ? inputs.roomTempF : inputs.flourTempF}
                 onCommit={(v) => commitReading('flourTempF', v)}
+                recordsReading
                 min={BOUNDS.flourTempF.min}
                 max={BOUNDS.flourTempF.max}
                 step={BOUNDS.flourTempF.step}
@@ -64,6 +70,7 @@ export function MixReadings({ state, mixIndex }: { state: AppState; mixIndex: nu
           unit="°F"
           value={atMix(inputs.bigaTempF, i)}
           onCommit={(v) => commitReading('bigaTempF', v, i)}
+          recordsReading
           min={BOUNDS.bigaTempF.min}
           max={BOUNDS.bigaTempF.max}
           step={BOUNDS.bigaTempF.step}
@@ -73,6 +80,7 @@ export function MixReadings({ state, mixIndex }: { state: AppState; mixIndex: nu
           unit="°F"
           value={measuredBowl ?? mix.bowlTempF}
           onCommit={(v) => commitReading('bowlTempF', v, i)}
+          recordsReading
           min={BOUNDS.bowlTempF.min}
           max={BOUNDS.bowlTempF.max}
           step={BOUNDS.bowlTempF.step}

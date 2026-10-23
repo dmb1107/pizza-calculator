@@ -9,15 +9,20 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-57 and FINDINGS-58 (23 October).
+MESSAGE-58 and FINDINGS-59 (23 October).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-57, and FINDINGS-58 is the
+- **The correspondence is applied through MESSAGE-58, and FINDINGS-59 is the
   last thing sent.** No pin of any kind is live (`knownWrong` is empty).
+  MESSAGE-58 reported a live bug on the day of bake 2: a reading typed at
+  the value the field already showed (a bowl at its prefill, a final on
+  DDT) wasn't recorded, so the mix didn't count. Fixed with `leaveField`
+  and `recordsReading`, and checked by typing in the browser, since the
+  edit tracking lives in the component where no test reaches it.
   MESSAGE-57 changed documents only: §10's basis for the Phase B drift
   (reproduced, every mix swept) and the recipe's leftovers from MESSAGE-53
   and 54. PR #13 (MESSAGE-56) is live.
@@ -284,6 +289,7 @@ true and what they need to change.
 | `bakeLogSync.test.ts` | The local log's parsing and edits; sync against a fake repository (push, pull, stale write, deletions both ways, a refused token, an unreachable repo, offline, an unparseable file); `mergeAfterSync`; the session as a bake (entry dates, prefills, phase times by instance, no `bowl_state`, each mix's water as its target to the printed tenth, a target past 120 °F leaving the mix out); an older bake's `bowl_state` kept, and an unknown one dropped without rejecting the bake | A sync result applied over edits made while it ran would drop them |
 | `timeline.test.ts` | §4.7 durations, the stage sequence on both schedules, daylight saving. §4.8's overhead table at six ball counts (the divide scales with balls), the 25.0–29.9 band at its two corners, classic at its 6 h cold ferment. §7.4's "19 h (18–20)" on every stage, written out. The centring at `nMix` 3 (middle dough on time) and a changeover overrun landing whole on the first dough (MESSAGE-38). **Backward mode pinned to hand-written clock times** on both schedules and at `nMix` 2; exact landing on the bake across fractional durations; the overnight windows against a brute-force scan | A wrong order sums to the right total. Summing hours × 3.6e6 landed 1 ms early and printed the minute before |
 | `capacity.test.ts` | §7.3: which capacity message fires and when, its bound wording, the binding-limit guards (flour cap never first for a mix), the one-biga line exactly when the batch splits, the below-minimum guard silent across the range, decisions on the **printed** per-mix dough, the near-limit ball list across 240–300 g. §7.5 segment states (lit / dim / off), and the chip's smaller line for every speed step | The spec says conditions are decided on displayed values; 2374.96 g prints 2375.0 and must fire. **The ball list can't see the 5%**: it holds for any threshold from 94.03% to 98.11%, so the edge test is what pins the threshold |
+| `fieldCommit.test.ts` | §6's rule for leaving a number field (MESSAGE-58): an edited reading commits even at the value shown, through to `bowl_prefilled: false` and a counted mix; no edit commits nothing; other fields keep the old rule | A bowl read at its prefill and a final on DDT were dropped as unchanged. The edit tracking itself is in `NumberField` and only a browser check reaches it |
 | `recipeText.test.ts` | Copy-as-text, and the dough total rounded once (2501.9 at 9 × 272 g, never the 2501.7 its rounded parts sum to) | The gate doesn't read `recipeText.ts` |
 | `timers.test.ts` | Timer state derived from an absolute start and `now`, windows as earliest → latest. Every step's timer, resolved per schedule and bound with the real token table, parses as a duration. The generator's `timerMinutes` and the runtime parser agree on every fixed label (seconds included) | `biga-4` said "per schedule" and had no timer for the longest stage in the recipe. Seconds are where two parsers of one label could part |
 

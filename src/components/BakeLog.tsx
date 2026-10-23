@@ -96,6 +96,8 @@ export function FinalTempCapture({ state, mixIndex }: { state: AppState; mixInde
         unit="°F"
         value={measured ?? result.ddtF}
         onCommit={(v) => commitReading('finalDoughTempF', v, i)}
+        // §6 (MESSAGE-58): a dough finished on DDT is a reading of DDT.
+        recordsReading
         min={BOUNDS.finalDoughTempF.min}
         max={BOUNDS.finalDoughTempF.max}
         step={BOUNDS.finalDoughTempF.step}

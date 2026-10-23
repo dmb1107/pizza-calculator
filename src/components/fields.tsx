@@ -1,4 +1,5 @@
-import { useEffect, useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { leaveField } from '../lib/fieldCommit';
 
 /**
  * Input primitives.
@@ -27,7 +28,12 @@ function Hint({ children }: { children: ReactNode }) {
  * Clamping mid-type is what makes a bounded number field unusable — typing "7"
  * on the way to "70" would snap to the minimum. So the raw text is held locally
  * and only parsed, clamped and committed when the field is left or Enter is
- * pressed.
+ * pressed (`leaveField`).
+ *
+ * `recordsReading` marks a field that holds a reading (§6, MESSAGE-58): an
+ * edit commits even when it ends on the value shown, so a bowl read at its
+ * prefill or a dough finished on DDT is recorded. Without an edit, leaving
+ * commits nothing.
  */
 export function NumberField({
   label,
@@ -40,6 +46,7 @@ export function NumberField({
   hint,
   disabled = false,
   badge,
+  recordsReading = false,
 }: {
   label: string;
   value: number;
@@ -51,9 +58,14 @@ export function NumberField({
   hint?: ReactNode;
   disabled?: boolean;
   badge?: ReactNode;
+  recordsReading?: boolean;
 }) {
   const id = useId();
   const [draft, setDraft] = useState(String(value));
+  // Whether the text was edited since the field took focus. onInput as well
+  // as onChange: React's onChange skips an input event that leaves the text
+  // as it was, and typing a digit over itself is still an edit.
+  const edited = useRef(false);
 
   // Follow the value when it changes elsewhere (a link, the room-temp toggle),
   // but never while the field is being typed into.
@@ -62,14 +74,10 @@ export function NumberField({
   }, [value]);
 
   const commit = () => {
-    const parsed = Number(draft);
-    if (draft.trim() === '' || !Number.isFinite(parsed)) {
-      setDraft(String(value));
-      return;
-    }
-    const clamped = Math.min(max, Math.max(min, parsed));
-    setDraft(String(clamped));
-    if (clamped !== value) onCommit(clamped);
+    const left = leaveField(draft, value, { min, max, edited: edited.current, recordsReading });
+    edited.current = false;
+    setDraft(left.draft);
+    if (left.commit !== null) onCommit(left.commit);
   };
 
   return (
@@ -88,7 +96,16 @@ export function NumberField({
           max={max}
           step={step}
           disabled={disabled}
-          onChange={(e) => setDraft(e.target.value)}
+          onFocus={() => {
+            edited.current = false;
+          }}
+          onInput={() => {
+            edited.current = true;
+          }}
+          onChange={(e) => {
+            edited.current = true;
+            setDraft(e.target.value);
+          }}
           onBlur={commit}
           onKeyDown={(e) => {
             if (e.key === 'Enter') e.currentTarget.blur();
