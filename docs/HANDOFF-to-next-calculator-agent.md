@@ -93,7 +93,10 @@ Don't trust any status here that you can check instead (§7).
   Task 11 with MESSAGE-45 to 50 and FINDINGS-51. PR #10 (23 October) carried
   MESSAGE-51 to 54 and FINDINGS-52 to 55, after Dave had spent a round
   reviewing a site four messages behind: check `gh run list` and the live
-  page's script hash, and offer a PR when branches pile up. PR #4, from
+  page's script hash, and offer a PR when branches pile up. PR #11 carried
+  MESSAGE-55. **Every FINDINGS says whether the live site is current**
+  (promised in FINDINGS-56): name the last message it serves, checked
+  against the live script, not the merge. PR #4, from
   another session, added the pizza icon (`public/`) and CLAUDE.md's rule to
   bring `README.md` current before opening a PR. The session branch restarts from `main` after each
   merge, so a new round starts on `main` plus nothing.
