@@ -9,22 +9,26 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-54 and FINDINGS-55 (22 October).
+MESSAGE-55 and FINDINGS-56 (23 October).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-54, and FINDINGS-55 is the
+- **The correspondence is applied through MESSAGE-55, and FINDINGS-56 is the
   last thing sent.** No pin of any kind is live (`knownWrong` is empty).
+  MESSAGE-55 moved no figure: `mix-0`'s pointer to the prep step, both of our
+  label choices written into §6 and §7.2, and `mix-1` linking
+  `thermal-model`. The Calibration panel's `friction-factor` link, asked for
+  by §8.3 since the start and never built, went in with it.
   MESSAGE-54 weighed the bowl at 963 g (the seed re-solved itself to
   10.787531, and every water target moved by about 0.01 °F), named 10 × 244 g
   as the largest unsplit batch, and **moved the day's readings into `mix-1`**:
   no Today's temperatures panel, no water card, no bowl-state selector, and
   each mix's water target under its readings with its own warnings. Steps
   name no sources since then. FINDINGS-55 left one note: `mix-0` still says
-  the changeover step asks for the biga reading.
+  the changeover step asks for the biga reading (fixed in MESSAGE-55).
   MESSAGE-51, 52 and 53 are Dave's three-part recipe review, now complete.
   MESSAGE-53 made one biga at every size (no `nBiga`, no `PerBiga` scope),
   added `mix-0` (split the biga, once, at `nMix > 1`), set the temper to
@@ -86,11 +90,10 @@ Don't trust any status here that you can check instead (§7).
 - **Git state.** PRs #1, #2, #3, #5 and #6 merged MESSAGE-30 to 41 and
   Task 10's status into `main`, each with a merge commit. PR #7 made the
   step timers count up, PR #8 carried FINDINGS-43 to 44, and PR #9 carried
-  Task 11 with MESSAGE-45 to 50 and FINDINGS-51. **Nothing since has
-  reached `main`:** the branches `message-51` to `message-54` are pushed,
-  each built on the one before, and unmerged, so the live site is still PR
-  #9's build. MESSAGE-54 found Dave reviewing a build from before MESSAGE-51.
-  Offer him a PR from the latest branch; don't open one unasked. PR #4, from
+  Task 11 with MESSAGE-45 to 50 and FINDINGS-51. PR #10 (23 October) carried
+  MESSAGE-51 to 54 and FINDINGS-52 to 55, after Dave had spent a round
+  reviewing a site four messages behind: check `gh run list` and the live
+  page's script hash, and offer a PR when branches pile up. PR #4, from
   another session, added the pizza icon (`public/`) and CLAUDE.md's rule to
   bring `README.md` current before opening a PR. The session branch restarts from `main` after each
   merge, so a new round starts on `main` plus nothing.

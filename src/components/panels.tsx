@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Panel } from './Panel';
 import { Markdown } from './Markdown';
 import { CAPACITY } from '../content/capacity';
+import { conceptById } from '../content/concepts';
 import { Badge, NumberField, SegmentedField, SliderField, Stepper } from './fields';
 import { BOUNDS, COLD_FERMENT_H } from '../state/defaults';
 import { formatBallsPerMix, formatTempF } from '../lib/format';
@@ -91,8 +92,11 @@ const FRICTION_HINT: Record<1 | 2 | 3 | 4, string> = {
   4: 'Your bake log has no bake yet with every reading and phase time. The first one replaces this at every mix size.',
 };
 
-export function CalibrationPanel(s: AppState & { onOpenLog: () => void }) {
-  const { inputs, panels, togglePanel, friction, calibration, setDdtOverride, autoDdtF, ddtF, mixSize, onOpenLog } = s;
+/** §8.3: the calibration panel links `friction-factor`. */
+const FRICTION_CONCEPT_ID = 'friction-factor';
+
+export function CalibrationPanel(s: AppState & { onOpenLog: () => void; onOpenConcept: (id: string) => void }) {
+  const { inputs, panels, togglePanel, friction, calibration, setDdtOverride, autoDdtF, ddtF, mixSize, onOpenLog, onOpenConcept } = s;
 
   const ddtIsAuto = calibration.ddtOverrideF === null;
   const estimated = friction.badge.tone === 'estimate';
@@ -114,13 +118,23 @@ export function CalibrationPanel(s: AppState & { onOpenLog: () => void }) {
           </div>
           <p className="mt-1.5 text-2xl font-semibold tabular">{`${formatTempF(friction.ff)} °F`}</p>
           <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">{FRICTION_HINT[friction.source.step]}</p>
-          <button
-            type="button"
-            onClick={onOpenLog}
-            className="mt-2 min-h-touch rounded-lg border border-stone-300 px-4 font-medium active:bg-stone-100 dark:border-stone-600 dark:active:bg-stone-800"
-          >
-            Open the bake log
-          </button>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onOpenLog}
+              className="min-h-touch rounded-lg border border-stone-300 px-4 font-medium active:bg-stone-100 dark:border-stone-600 dark:active:bg-stone-800"
+            >
+              Open the bake log
+            </button>
+            {/* §7.5: a concept link reads "Read more: {title}". */}
+            <button
+              type="button"
+              onClick={() => onOpenConcept(FRICTION_CONCEPT_ID)}
+              className="min-h-touch rounded-lg border border-stone-300 px-3 text-sm font-medium active:bg-stone-100 dark:border-stone-600 dark:active:bg-stone-800"
+            >
+              Read more: {conceptById(FRICTION_CONCEPT_ID)?.title ?? FRICTION_CONCEPT_ID}
+            </button>
+          </div>
         </div>
 
         <div>

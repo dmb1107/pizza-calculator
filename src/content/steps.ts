@@ -226,7 +226,7 @@ Leave the biga in the mixer bowl. The {bowlMassG} g stainless bowl is part of th
 
 Weigh the biga portions rather than judging them by eye. The biga carries 65% of each mix's flour and all of its yeast, so an uneven split changes each mix's formula, not just its size.
 
-The waiting portions warm toward room temperature while the earlier mixes run. That's expected: the changeover step asks you to measure the biga again before each later mix.`,
+The waiting portions warm toward room temperature while the earlier mixes run. That's expected: each later mix's prep step asks you to measure the biga again.`,
   },
   {
     id: "mix-1",
@@ -241,6 +241,7 @@ The fresh flour isn't sieved. Its lumps break up in Phase A; the biga flour is s
 **Take the biga's temperature after you crumble it.** The water target needs the biga's temperature when it meets the water, and handling warms it: on bake 1 the biga read **53 °F at pull and 58 °F once broken up**.
 
 The bowl doesn't warm with the biga, so read it separately, against the inside wall. Each degree of bowl temperature is worth 0.66 °F of water at a 3-ball mix.`,
+    concepts: ["thermal-model"],
     repeatsPerMix: true,
   },
   {

@@ -122,6 +122,8 @@ question:
 | `FINDINGS-54-to-recipe-agent.md` | Reply to MESSAGE-53. All reproduced. Both parsers derived `repeatsPerMix` from the phase, so `mix-0` would have repeated: they now read §8.2a's span, each in its own way. `mix-0` says "tempered" on the classic track; §8.1 still names `{bigaCountSuffix}`; the temper times were rounded twice |
 | `MESSAGE-54.md` | Reply to FINDINGS-54. `BOWL_MASS_G` 965 → 963 (weighed; the seed re-solves to 10.787531); 10 × 244 g is the largest unsplit batch, not 9 × 270; **the readings move into `mix-1`** (Today's temperatures, the water card and the bowl-state selector removed; panels Batch and Calibration); steps name no sources; concept links "Read more: {title}" |
 | `FINDINGS-55-to-recipe-agent.md` | Reply to MESSAGE-54. All reproduced (the share at the cap is 6.624486%, both print 6.62%). The gate never checked a claim's `covers`; it does now, and it found `biga-4.detail`'s "2 hours" excused by a claim that didn't build it. `mix-0` still sends the baker to the changeover for the biga reading |
+| `MESSAGE-55.md` | Reply to FINDINGS-55; no figure moves. `mix-0` sends the baker to each later mix's prep step; both our label choices kept ("Water target" at one mix, no unit in labels); `mix-1` links `thermal-model`, and §8.3 still asks the Calibration panel to link `friction-factor` |
+| `FINDINGS-56-to-recipe-agent.md` | Reply to MESSAGE-55. Applied; nothing open. No component had ever linked a concept: §8.3's two card links went unbuilt from the start. `mix-1`'s field covers one, and the Calibration panel now has the other |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -353,7 +355,10 @@ mix 1's bowl prefills from its biga reading, later mixes from DDT
 (`bowlPrefillF`), and a reading always wins. Labels and hints are §6's table
 and nothing more: no sensitivity figures beside the fields. The water
 warnings belong to a mix (`MixTarget.warnings`), never the strip; the strip
-keeps capacity, overnight stages and the stagger. `bigaReadingCost`,
+keeps capacity, overnight stages and the stagger. The target stays bare: its
+`thermal-model` link is `mix-1`'s `concepts` field, under the detail
+(MESSAGE-55). The only concept link outside a step is the Calibration
+panel's `friction-factor` (§8.3). `bigaReadingCost`,
 `bowlReadingCost` and `bowlTracksBiga` stay in the engine because §7.2's two
 bases are tested, though nothing renders them. A link's `bowlst` is ignored;
 don't reuse the key.

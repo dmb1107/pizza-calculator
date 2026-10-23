@@ -743,12 +743,13 @@ Group into two panels: **Batch** open by default, **Calibration** collapsed with
 
 | Field | Step | Instances | Default or prefill | Label and hint |
 |---|---|---|---|---|
-| Room temp (°F) | `mix-1` | mix 1 only | 70 | *Room (°F)* |
-| Flour temp (°F) | `mix-1` | mix 1 only | = room, with a "Same as room" switch | *Flour (°F)* |
-| Biga temp (°F) | `mix-1` | every mix | mix 1: **58**; later mixes: the previous mix's biga reading | *Biga, after crumbling (°F)*. No hint |
-| Bowl temp (°F) | `mix-1` | every mix | mix 1: that mix's biga reading; later mixes: `DDT` (§4.2) | *Bowl (°F)*. Hint on mix 1: "Hold the probe against the inside wall of the bowl for five seconds." On later mixes: "The bowl is warm from the last mix. Read it again." |
+| Room temp (°F) | `mix-1` | mix 1 only | 70 | *Room* |
+| Flour temp (°F) | `mix-1` | mix 1 only | = room, with a "Same as room" switch | *Flour* |
+| Biga temp (°F) | `mix-1` | every mix | mix 1: **58**; later mixes: the previous mix's biga reading | *Biga, after crumbling*. No hint |
+| Bowl temp (°F) | `mix-1` | every mix | mix 1: that mix's biga reading; later mixes: `DDT` (§4.2) | *Bowl*. Hint on mix 1: "Hold the probe against the inside wall of the bowl for five seconds." On later mixes: "The bowl is warm from the last mix. Read it again." |
 
 - **Placement.** The fields sit under `mix-1`'s summary and values: room and flour first on mix 1, then biga and bowl. **That mix's water target sits directly under them** (§7.2), so it updates as each reading goes in, and the water is blended before Phase A.
+- **Labels carry no unit.** Every temperature field prints °F beside the box.
 - **No sensitivity figures beside the fields.** ⚠️ Earlier versions showed °F of water per °F of reading beside the biga and bowl fields; Dave found the hint confusing (22 Oct 2026). The coefficients stay in §4.2 and §7.2 for testing, and `mix-1`, `mix-8` and `biga-6` explain them in prose.
 - **Biga default 58 °F**, the one value ever measured (bake 1, after tearing); it was 64, unsourced. Of the temperatures the baker measures, it moves the water target most: `(Cb + C_bowl)/Cw`, −1.92 at 6 balls and −2.25 at 3, while the bowl still holds its prefill (which follows the biga on mix 1), and `Cb/Cw` = −1.59 once the bowl is read (§7.2).
 - **Per-mix readings are arrays of length `nMix`.** `mix-1#k` binds mix k's biga and bowl; room and flour are global. ⚠️ **Read the bowl by index; never carry it forward.** A later mix with no bowl reading of its own takes its prefill, not an earlier mix's reading. The biga carries forward, the bowl doesn't. The first build carried mix 1's bowl forward, so measuring it at 60 °F on 12 × 265 g set mix 2's water to 63.6 °F against 59.0: `C_bowl/Cw × (DDT − reading)` too warm on every later mix (FINDINGS-46).
@@ -807,7 +808,7 @@ Two columns, **Biga** and **Final mix**, gram weights large enough to read at ar
 
 Nothing else. No split, no grams, no ice, and no commentary about whether the number is warm or cold — the user reads the number and blends to it.
 
-**When `nMix > 1`, each mix's prep step shows its own target.** They are genuinely different numbers, not a repeat: mix 2 starts in a bowl that just ran mix 1, so at 12 × 265 g the targets are 74.0 °F and 68.8 °F at app defaults (64.7 °F and 59.5 °F at the §5 vector conditions, which run at FF 14), both on the default bowl prefills. Label each "Mix {mixIndex} water target". The reason they differ lives in `mix-8`'s detail, not beside the number.
+**When `nMix > 1`, each mix's prep step shows its own target.** They are genuinely different numbers, not a repeat: mix 2 starts in a bowl that just ran mix 1, so at 12 × 265 g the targets are 74.0 °F and 68.8 °F at app defaults (64.7 °F and 59.5 °F at the §5 vector conditions, which run at FF 14), both on the default bowl prefills. Label each "Mix {mixIndex} water target". A batch that doesn't split shows "Water target", like the water-poured and final fields. The reason they differ lives in `mix-8`'s detail, not beside the number.
 
 Each target computes from that mix's own biga and bowl readings, so it updates as the user enters what they measured.
 
@@ -865,7 +866,7 @@ The guard cannot fire inside the input ranges: the smallest single mix is 735.8 
 
 ⚠️ **Editorial guidance about step content belongs here, not inside §8.2.** An earlier draft put this note between the block marker and its blockquote, which is a parse hazard (a scanner reasonably reads the marker as ending at the first non-quoted line) and mixes spec voice into content that renders verbatim. **§8.2 contains only content.** Anything that tells an implementer *how* to write or place content goes in the section that governs it.
 
-The two water warnings mirror each other — same failure ("you cannot get there by blending"), opposite end, and both point the user upstream rather than at the water card. Neither one puts commentary on the card itself; §7.2 stays bare.
+The two water warnings mirror each other — same failure ("you cannot get there by blending"), opposite end, and both point the user upstream rather than at the target. Neither one adds commentary beside the number; §7.2 stays bare.
 
 ### 7.4 Timeline
 Vertical list of stages with clock times and durations. Highlight "now" if the session is in progress.
@@ -1064,7 +1065,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 >
 > Weigh the biga portions rather than judging them by eye. The biga carries 65% of each mix's flour and all of its yeast, so an uneven split changes each mix's formula, not just its size.
 >
-> The waiting portions warm toward room temperature while the earlier mixes run. That's expected: the changeover step asks you to measure the biga again before each later mix.
+> The waiting portions warm toward room temperature while the earlier mixes run. That's expected: each later mix's prep step asks you to measure the biga again.
 
 ---
 
@@ -1081,6 +1082,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 > **Take the biga's temperature after you crumble it.** The water target needs the biga's temperature when it meets the water, and handling warms it: on bake 1 the biga read **53 °F at pull and 58 °F once broken up**.
 >
 > The bowl doesn't warm with the biga, so read it separately, against the inside wall. Each degree of bowl temperature is worth 0.66 °F of water at a 3-ball mix.
+**concepts:** thermal-model
 
 ---
 
@@ -1409,7 +1411,7 @@ A bare token on a per-mix step is then a **visible** error rather than one that 
 
 ### 8.3 Concepts
 
-Longer background pieces that don't belong to a single step. Render as a drawer, modal, or `/concepts/:id` route. Steps link to them via the `concepts` field; the calculator cards should also link to the relevant ones — `thermal-model` from the water card, `friction-factor` from the calibration panel.
+Longer background pieces that don't belong to a single step. Render as a drawer, modal, or `/concepts/:id` route. Steps link to them via the `concepts` field. `mix-1` links `thermal-model`, since the water target sits in that step, and the calibration panel links `friction-factor`.
 
 ```ts
 interface Concept { id: string; title: string; body: string; /* markdown */ }
@@ -1674,7 +1676,7 @@ Link these from an About page. The recipe draws on these published sources.
 
 1. Calculation module + unit tests against §5, **including the bake-1 regression test.** Get this green before writing any UI. The bowl term and the `FF × Ct` work term are the two places this goes wrong silently.
 2. Input panels with URL and browser-storage state.
-3. Ingredients, water, and warnings cards — **both** water warnings (§4.4), not just the cold one.
+3. Ingredients card, each mix's readings and water target in `mix-1` (§6, §7.2), and the warnings — **both** water warnings (§4.4), not just the cold one.
 4. Timeline, forward mode.
 5. Step list with disclosure and persisted checkboxes. **Render `detail` as markdown** — it contains tables and multi-paragraph prose. Diff your `steps.ts` against §8 before moving on; truncated explanations are the most likely way this build goes wrong.
 6. Timers.

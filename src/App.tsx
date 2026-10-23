@@ -70,7 +70,7 @@ export default function App() {
         {/* §10: Reset starts a new bake, above the panels it clears. */}
         <NewBakeReset onReset={state.startNewBake} />
         <BatchPanel {...state} />
-        <CalibrationPanel {...state} onOpenLog={openLog} />
+        <CalibrationPanel {...state} onOpenLog={openLog} onOpenConcept={setConcept} />
       </div>
 
       <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-3">
