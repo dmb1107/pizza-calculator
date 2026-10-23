@@ -10,8 +10,8 @@
  */
 
 import { computeCapacity, computeFormula } from '../lib/engine';
-import { BOUNDS, DEFAULT_INPUTS, clampField } from './defaults';
-import type { BowlState, Inputs, Schedule } from './types';
+import { BOUNDS, COLD_FERMENT_H, DEFAULT_INPUTS, clampColdFerment, clampField } from './defaults';
+import type { Inputs, Schedule } from './types';
 
 const KEYS = {
   balls: 'balls',
@@ -22,7 +22,8 @@ const KEYS = {
   flourSameAsRoom: 'flsame',
   flourTempF: 'flour',
   bigaTempF: 'biga',
-  bowlState: 'bowlst',
+  // 'bowlst' carried the bowl-state selector until MESSAGE-54. An old link
+  // that has it opens with it ignored; don't reuse the key.
   bowlTempF: 'bowlt',
   bigaFridgeH: 'fridge',
   bigaRoomOnlyH: 'bigart',
@@ -47,10 +48,6 @@ function encodeIndexedList(values: readonly (number | null)[], nMix: number): st
 }
 
 const SCHEDULE_CODE: Record<Schedule, string> = { retarded: 'r', classic: 'c' };
-
-/** §4.2 bowl states, abbreviated for the query string. */
-const BOWL_STATE_CODE: Record<BowlState, string> = { cold: 'c', room: 'r', warm: 'w' };
-const BOWL_STATE_BY_CODE: Record<string, BowlState> = { c: 'cold', r: 'room', w: 'warm' };
 
 /**
  * §7. Per-mix values ride as a delimited list. A single value still decodes to
@@ -81,7 +78,12 @@ export function encodeInputs(inputs: Inputs): string {
 
   put(KEYS.balls, num(inputs.balls), inputs.balls === DEFAULT_INPUTS.balls);
   put(KEYS.ballWeightG, num(inputs.ballWeightG), inputs.ballWeightG === DEFAULT_INPUTS.ballWeightG);
-  put(KEYS.coldFermentH, num(inputs.coldFermentH), inputs.coldFermentH === DEFAULT_INPUTS.coldFermentH);
+  // Default by track: a classic link without `cold` means 6, a retarded one 24.
+  put(
+    KEYS.coldFermentH,
+    num(inputs.coldFermentH),
+    inputs.coldFermentH === COLD_FERMENT_H[inputs.schedule].default,
+  );
   put(KEYS.schedule, SCHEDULE_CODE[inputs.schedule], inputs.schedule === DEFAULT_INPUTS.schedule);
   put(KEYS.roomTempF, num(inputs.roomTempF), inputs.roomTempF === DEFAULT_INPUTS.roomTempF);
   put(
@@ -108,12 +110,7 @@ export function encodeInputs(inputs: Inputs): string {
     inputs.bigaRoomOnlyH === DEFAULT_INPUTS.bigaRoomOnlyH,
   );
   put(KEYS.temperH, num(inputs.temperH), inputs.temperH === DEFAULT_INPUTS.temperH);
-  put(
-    KEYS.bowlState,
-    BOWL_STATE_CODE[inputs.bowlState],
-    inputs.bowlState === DEFAULT_INPUTS.bowlState,
-  );
-  // Measured bowl temperatures override the selector, so they travel too.
+  // Measured bowl temperatures override the prefill, so they travel too.
   put(
     KEYS.bowlTempF,
     encodeList(inputs.bowlTempF),
@@ -250,7 +247,17 @@ export function decodeInputs(search: string, base: Inputs = DEFAULT_INPUTS): Inp
   return {
     balls,
     ballWeightG,
-    coldFermentH: readNumber(p, KEYS.coldFermentH, 'coldFermentH', base.coldFermentH),
+    // §4.7: clamped into the track's range. Absent, the track's default,
+    // unless `base` already carries a value for this track.
+    coldFermentH: clampColdFerment(
+      schedule,
+      readNumber(
+        p,
+        KEYS.coldFermentH,
+        'coldFermentH',
+        schedule === base.schedule ? base.coldFermentH : COLD_FERMENT_H[schedule].default,
+      ),
+    ),
     schedule,
     roomTempF,
     flourSameAsRoom,
@@ -262,7 +269,6 @@ export function decodeInputs(search: string, base: Inputs = DEFAULT_INPUTS): Inp
     bigaFridgeH: readNumber(p, KEYS.bigaFridgeH, 'bigaFridgeH', base.bigaFridgeH),
     bigaRoomOnlyH: readNumber(p, KEYS.bigaRoomOnlyH, 'bigaRoomOnlyH', base.bigaRoomOnlyH),
     temperH: readNumber(p, KEYS.temperH, 'temperH', base.temperH),
-    bowlState: BOWL_STATE_BY_CODE[p.get(KEYS.bowlState) ?? ''] ?? base.bowlState,
     bowlTempF: readOptionalNumberList(p, KEYS.bowlTempF, 'bowlTempF', base.bowlTempF),
     finalDoughTempF: readIndexedList(p, KEYS.finalDoughTempF, 'finalDoughTempF', nMix, base.finalDoughTempF),
     waterUsedF: readIndexedList(p, KEYS.waterUsedF, 'waterUsedF', nMix, base.waterUsedF),

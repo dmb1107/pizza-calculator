@@ -2,7 +2,7 @@
  * Browser-storage persistence — WEBSITE-SPEC-biga-calculator.md §2 and §6.
  *
  * Preferences and the session persist to browser storage. The FF doesn't: it
- * is computed from the bake log each time (§6, Panel 3), and a map stored by
+ * is computed from the bake log each time (§6, Panel 2), and a map stored by
  * an earlier version is ignored. The log itself is in `bakeLogStore.ts`.
  * Everything here takes
  * the storage object as an argument rather than reaching for the global, so it
@@ -105,7 +105,6 @@ function parsePanels(raw: unknown): PanelPrefs {
   const bool = (v: unknown, fallback: boolean) => (typeof v === 'boolean' ? v : fallback);
   return {
     batch: bool(raw['batch'], DEFAULT_PANELS.batch),
-    temperatures: bool(raw['temperatures'], DEFAULT_PANELS.temperatures),
     calibration: bool(raw['calibration'], DEFAULT_PANELS.calibration),
   };
 }
@@ -128,7 +127,7 @@ export function loadPersisted(storage: StorageLike | null): Persisted {
   const ddtRaw = calibrationRaw['ddtOverrideF'];
 
   return {
-    // A `frictionFactors` map stored before the log is ignored (§6, Panel 3):
+    // A `frictionFactors` map stored before the log is ignored (§6, Panel 2):
     // the FF comes from the log, and a typed value would outrank it.
     calibration: {
       ddtOverrideF:

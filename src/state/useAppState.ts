@@ -29,7 +29,14 @@ import {
   type Timeline,
 } from '../lib/timeline';
 import { timerDueAt, type RunningTimer, type TimerSpec } from '../lib/timers';
-import { DEFAULT_INPUTS, clampField, inputsForNewBake, persistedForNewBake, type BoundedField } from './defaults';
+import {
+  DEFAULT_INPUTS,
+  applyInput,
+  clampField,
+  inputsForNewBake,
+  persistedForNewBake,
+  type BoundedField,
+} from './defaults';
 import { browserStorage, loadPersisted, savePersisted } from './storage';
 import {
   loadGitHubConfig,
@@ -59,7 +66,7 @@ function currentSearch(): string {
   return typeof window === 'undefined' ? '' : window.location.search;
 }
 
-/** The FF in use and the badge Panel 3 shows for it (§6). */
+/** The FF in use and the badge Panel 2 shows for it (§6). */
 export type FrictionInUse = FfInUse & { badge: { text: string; tone: BadgeTone } };
 
 export type SyncState =
@@ -128,7 +135,7 @@ export interface AppState {
   /** Clear a per-mix reading back to unread (the final temperature's "Clear"). */
   clearReading: (field: PerMixReading, index: number) => void;
   /**
-   * §10: the page's Reset, and its only one. Puts today's temperatures, the
+   * §10: the page's Reset, and its only one. Puts today's readings, the
    * DDT override and the timeline's anchor back to their defaults and clears
    * the step checkboxes and the timers; the batch settings and the saved bakes
    * stay, and the next save is a new bake.
@@ -305,13 +312,7 @@ export function useAppState(): AppState {
   }, [storage, log]);
 
   const setInput = useCallback(<K extends keyof Inputs>(key: K, value: Inputs[K]) => {
-    setInputs((prev) => {
-      const next = { ...prev, [key]: value };
-      // The flour tracks the room while the toggle is on, in both directions.
-      if (key === 'roomTempF' && next.flourSameAsRoom) next.flourTempF = next.roomTempF;
-      if (key === 'flourSameAsRoom' && value === true) next.flourTempF = next.roomTempF;
-      return next;
-    });
+    setInputs((prev) => applyInput(prev, key, value));
   }, []);
 
   const commitNumber = useCallback(
@@ -331,7 +332,7 @@ export function useAppState(): AppState {
     setInputs((prev) => {
       const current = prev[key];
       if (typeof current !== 'number') return prev;
-      return { ...prev, [key]: clampField(key, current + delta) };
+      return applyInput(prev, key, clampField(key, current + delta) as Inputs[typeof key]);
     });
   }, []);
 
@@ -407,7 +408,6 @@ export function useAppState(): AppState {
         roomTempF: inputs.roomTempF,
         flourTempF: inputs.flourSameAsRoom ? inputs.roomTempF : inputs.flourTempF,
         bigaTempF: inputs.bigaTempF,
-        bowlState: inputs.bowlState,
         bowlTempF: inputs.bowlTempF,
         frictionFactorF: friction.ff,
         ddtOverrideF: calibration.ddtOverrideF,
@@ -520,6 +520,7 @@ export function useAppState(): AppState {
       // §4.8: computed from the measured dough temperature, not chosen.
       ballRoomTempH: result.roomMinutes / 60,
       nMix: result.capacity.nMix,
+      balls: inputs.balls,
       coldFermentH: inputs.coldFermentH,
       temperH: inputs.temperH,
     }),
@@ -527,6 +528,8 @@ export function useAppState(): AppState {
       inputs.bigaFridgeH,
       inputs.bigaRoomOnlyH,
       result.roomMinutes,
+      result.capacity.nMix,
+      inputs.balls,
       inputs.coldFermentH,
       inputs.temperH,
     ],

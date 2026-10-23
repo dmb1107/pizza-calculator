@@ -39,7 +39,9 @@ const BASE = {
    * (MESSAGE-29): the app supports only this mixer, and its bowl never changes.
    * Renamed from DEFAULT_BOWL_MASS_G because it is no longer a default.
    */
-  BOWL_MASS_G: 965,
+  // Weighed on a kitchen scale, Oct 2026 (MESSAGE-54). 965 was an earlier,
+  // rougher reading.
+  BOWL_MASS_G: 963,
   /**
    * §7.5. The Core has no number display: its LED indicator shows speed in
    * segments, a fully lit one 10% and a half-lit one 5% (Ooni help center).
@@ -59,7 +61,8 @@ const BASE = {
   MAX_DOUGH: 2500, // g
   MIN_DOUGH: 500, // g
   FLOUR_CAP_66: 1505, // g, at 66%+ hydration (final mix)
-  FLOUR_CAP_55: 1610, // g, at 55-59% hydration (biga)
+  // No FLOUR_CAP_55 since MESSAGE-53: it only ever split the biga, which is
+  // mixed by hand, and Phase A's 55% dough is under FLOUR_CAP_66's tighter cap.
   /**
    * Ooni's published maximum continuous operating time for the spiral hook,
    * minutes (help center, §11). Read by the profile assertion in
@@ -76,28 +79,6 @@ const BASE = {
    */
   PHASE_C_MAX_MIN: 5.5,
 
-  /**
-   * §4.9. Gozney Tread stone capacity, inches. Thickness is referenced to
-   * `DEFAULT_BALL_G` on the full stone, so this is the only geometry constant.
-   *
-   * ⚠️ MESSAGE-19 removed `TARGET_THICKNESS_FACTOR` (0.083, "the classic
-   * Neapolitan band") and `G_PER_OZ`. The factor had no source — it was 265 g
-   * on this stone, 0.08265, rounded up — and once the reference is stated as
-   * the default ball on the full stone, it, `G_PER_OZ` and π all cancel.
-   */
-  TREAD_MAX_DIAMETER_IN: 12,
-  /**
-   * §4.9. The capped `bulk-2` note shows from this many percent thicker than
-   * the default ball, compared against the PRINTED percentage.
-   *
-   * ⚠️ Provenance: **Dave's judgment** of where the extra thickness is
-   * noticeable in the bake (MESSAGE-21). Not a published figure — a user's own
-   * baking experience is a legitimate source for a threshold like this, and it
-   * is labelled as his so it can't read as a standard. Below it, a heavier ball
-   * is still capped at 12 inches and simply isn't worth a note.
-   */
-  THICKER_NOTE_MIN_PERCENT: 10,
-
   // Speed. Two anchors, one measured and one published; the line through them
   // is DERIVED below (MESSAGE-28).
   RPM_AT_5_PCT: 60, // MEASURED: 20 hook revolutions in 20 s at 5% (first-bake calibration)
@@ -108,16 +89,12 @@ const BASE = {
 
   // Defaults
   DEFAULT_BALL_G: 265,
-  /**
-   * °F, bake 1 (6 balls; its Phase C ran 6.5 min). The rise the mixer
-   * produces in the DOUGH ALONE — see §4.3. Read only while the log has no
-   * counted bake (§6, Panel 3): the fallback at every mix size but 6, where
-   * bake 1's seed applies (`BAKE_1_SEED` in bakeLog.ts).
-   */
-  DEFAULT_FF: 14.0,
+  // No DEFAULT_FF since MESSAGE-52: before the log has a counted bake, the FF
+  // in use at every mix size is bake 1's normalized FF, solved from its
+  // readings (`BAKE_1_SEED` in bakeLog.ts).
 
   /**
-   * §6, Panel 3. The FF in use at a mix size is the mean of its last three
+   * §6, Panel 2. The FF in use at a mix size is the mean of its last three
    * counted bakes, and a size counts as calibrated at three: the upper end of
    * the recipe's two to three per size, which give a mean and a spread.
    */
@@ -167,15 +144,18 @@ const BASE = {
   CHANGEOVER_H: 5 / 60,
 
   /**
-   * §4.7. Divide-and-ball, in hours. The quantity is **20 minutes**; the 0.33
-   * the spec table displays is a rounded rendering of it.
+   * §4.7 (MESSAGE-53). Divide and ball, in MINUTES: `DIVIDE_BASE_MIN +
+   * DIVIDE_PER_BALL_MIN × balls`, divided by 60 once (`divideBallH` in
+   * timeline.ts). ESTIMATES: Dave hasn't timed a divide. The base is the middle
+   * of `bulk-2`'s 10–15 min rest; the per-ball figure keeps 6 balls at the
+   * flat 20 minutes this replaced.
    *
-   * ⚠️ Expressed as 20/60 rather than 0.33 deliberately. Baking the displayed
-   * figure into the source is exactly the "never treat a displayed value as an
-   * input" error §4.7 warns about — and it is worth 0.0033 h, which is the
-   * whole of the 28.41-vs-28.42 disagreement at nMix 3.
+   * ⚠️ Minutes, not hours. A rounded hour figure is the "displayed value as an
+   * input" error §4.7 warns about: 0.33 for 20/60 was the whole of the
+   * 28.41-vs-28.42 disagreement at nMix 3.
    */
-  DIVIDE_BALL_H: 20 / 60,
+  DIVIDE_BASE_MIN: 12.5,
+  DIVIDE_PER_BALL_MIN: 1.25,
   /**
    * §4.7. Biga out of the fridge before mixing, in hours. Retarded only — on
    * the classic track the biga is already at room temperature and this stage is
@@ -192,7 +172,14 @@ const BASE = {
 
   // Shaped rise time — §4.8
   BASE_ROOM_MIN: 90, // at DDT
-  COOLDOWN_EQUIV_MIN: 150, // cooldown's equivalent fermentation at DDT (a modelling estimate)
+  /**
+   * Minutes at DDT: the extra fermentation a ball gets on its way down to
+   * fridge temperature, beyond what the fridge itself gives. ESTIMATED, not
+   * measured (MESSAGE-52): `Q_DOUBLING_F` applied to a 265 g ball cooling
+   * 75 → 40 °F in 3–4 h gives 29–39. It depends on how fast the fridge cools
+   * the balls, so a new fridge or a move means measuring it again.
+   */
+  COOLDOWN_EQUIV_MIN: 35,
   Q_DOUBLING_F: 17,
   ROOM_MIN_CLAMP: [45, 180],
 } as const;
@@ -233,10 +220,12 @@ const FRESH_FLOUR_FRACTION = 1 - BASE.BIGA_FRACTION;
 const FRESH_WATER_FRACTION = BASE.HYDRATION - BASE.BIGA_FRACTION * BASE.BIGA_HYDRATION;
 
 /**
- * §5. How far below its vector value a rendered water target sits, in °F,
- * wherever FF falls back to 14.0. At 6 balls per mix the app reads the seeded
- * 14.03, which adds `(14.03 − 14) × Ct/Cw` on top (engine.test.ts, 'adds the
- * seeded friction factor').
+ * §5. The flour part of the gap between a rendered water target and its
+ * vector value, in °F: the app's flour at room (70) against the vectors' 69.
+ * The FF in use supplies the rest. Before the log has a counted bake that is
+ * bake 1's normalized 10.791045 against the vectors' 14, which adds
+ * `(14 − FF) × Ct/Cw` = 9.634 the other way: the app sits 9.242 °F above the
+ * vectors (engine.test.ts, 'adds the FF in use at every mix size').
  *
  * The vectors pin flour at 69 °F so the flour term stays independently
  * observable; the app defaults flour to room (70 °F), which is what a bag of
@@ -283,7 +272,7 @@ export const C = {
 } as const;
 
 /**
- * Heat capacity of the mixer bowl, cal/°C. 115.8 at the 965 g default —
+ * Heat capacity of the mixer bowl, cal/°C. 115.56 at the 963 g bowl —
  * comparable to the fresh flour, and larger than it below about 5 balls.
  *
  * The bowl absorbs friction energy alongside the dough. It is fixed mass while

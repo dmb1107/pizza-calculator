@@ -29,6 +29,14 @@ Three parse edge cases are already handled; all three cost a debugging round:
 import re, json
 spec=open('docs/WEBSITE-SPEC-biga-calculator.md').read()
 body=spec[spec.index('### 8.2 Steps'):spec.index('### 8.3 Concepts')]
+# 8.2a declares the repeating steps in prose: "Mark **`mix-1` ... `mix-8`** with
+# `repeatsPerMix: true`". Read here as a numeric range; tests/steps.test.ts reads
+# it as a span of step order, so the two agree only if both find the same steps.
+# This was derived from the phase until MESSAGE-53's mix-0, a mix-phase step that
+# runs once.
+rm_span=re.search(r'Mark \*\*`([a-z]+)-(\d+)` \u2026 `\1-(\d+)`\*\* with `repeatsPerMix: true`', spec)
+if not rm_span: raise SystemExit('8.2a: no repeatsPerMix range found')
+REPEATING={'%s-%d'%(rm_span.group(1),n) for n in range(int(rm_span.group(2)),int(rm_span.group(3))+1)}
 def field(c,n):
     m=re.search(r'^\*\*%s:\*\*\s*(.*)$'%n, c, re.M); return m.group(1).strip() if m else None
 def bq(c,marker):
@@ -84,7 +92,7 @@ for c in body.split('\n#### ')[1:]:
        'timerClassic':field(c,r'timer \(classic\)'),'speed':field(c,'speed'),'watchFor':field(c,'watchFor'),
        'concepts':field(c,'concepts'),'detail':bq(c,'**detail:**'),
        'troubleshoot':table(c,'**troubleshoot:**'),
-       'repeatsPerMix':ph=='mix','suppressOnFinal':bool(rm and 'suppress' in rm.lower()),
+       'repeatsPerMix':h.group(1) in REPEATING,'suppressOnFinal':bool(rm and 'suppress' in rm.lower()),
        'shownWhen':sw.group(1) if sw else None}
     # Every **marker:** line must be one this grammar knows. A marker nothing
     # parses is prose that silently never renders - see the note below.
@@ -107,6 +115,10 @@ for c in body.split('\n#### ')[1:]:
         t=bq(c,m.group(0))
         if t: s['warningWhen']={'condition':m.group(1),'text':t}
     steps.append(s)
+for rid in sorted(REPEATING):
+    st=next((x for x in steps if x['id']==rid), None)
+    if st is None or st['phase']!='mix':
+        raise SystemExit('8.2a: %s repeats but is not a mix-phase step' % rid)
 def tpl(x): return x.replace('\\','\\\\').replace('`','\\`').replace('${','\\${')
 def parse_timer(l):
     # Minutes, or seconds (mix-7's 45-60 s, MESSAGE-32) as fractions of a minute.
@@ -300,8 +312,7 @@ def italic_quote(text, lead):
 panel1 = spec[spec.index('### Panel 1'):spec.index('### Panel 2')]
 capacity = [
     ('split', quote_after('**Split required')),
-    ('bigaSplit', quote_after('**Biga split required')),
-    ('divideBiga', italic_quote(cap, "keep §4.5's line:")),
+    ('divideBiga', italic_quote(cap, '**One biga, divided')),
     ('nearLimit', quote_after('**Near the limit')),
     ('belowMinimum', quote_after('- **As a guard')),
     ('minimumAtInput', italic_quote(cap, 'shows, next to the field:')),

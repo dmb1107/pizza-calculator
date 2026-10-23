@@ -48,7 +48,7 @@ export const REFERENCE: readonly ReferenceSection[] = [
 
 | Balls per mix | 3 | 6 | 9 |
 |---|---:|---:|---:|
-| Factor | 0.821 | 0.901 | 0.932 |
+| Factor | 0.821 | 0.902 | 0.932 |
 | At 30% | 0.89 | 0.97 | 1.01 |
 
 A 12-ball batch runs as two 6-ball mixes and reads the 6 column; 18 balls reads the 9.`,
@@ -56,7 +56,7 @@ A 12-ball batch runs as two 6-ball mixes and reads the 6 column; 18 balls reads 
   {
     id: "water-temperature",
     title: "Water temperature",
-    body: `Blend fridge-cold water with tap water to reach the target, measuring as you pour. Fridge water gets to about 38 °F; the tap covers the warmer end. Across the supported range (3–24 balls, 240–300 g, biga 45–60 °F, room 60–84 °F) the required water spans **53–109 °F**, and **53–107 °F** at the default 265 g ball. It's hottest for *small mixes*, not small batches. You won't need ice, and the app doesn't calculate a blend ratio.`,
+    body: `Blend fridge-cold water with tap water to reach the target, measuring as you pour. Fridge water gets to about 38 °F; the tap covers the warmer end. Across the supported range (3–24 balls, 240–300 g, biga 45–60 °F, room 60–84 °F) the required water spans about **60–118 °F**, and **60–116 °F** at the default 265 g ball. The top of that range needs a 45 °F biga in a 60 °F kitchen, which the biga's 1-hour temper prevents. It's hottest for *small mixes*, not small batches. You won't need ice, and the app doesn't calculate a blend ratio.`,
   },
 ];
 
@@ -69,19 +69,19 @@ export const SOURCES: readonly Source[] = [
     note: "hydration, yeast, ripeness cues, mixing technique; 1% fresh yeast, 12–24 h at 16–18 °C",
   },
   {
-    title: "PizzaBlab — Dough Calculator",
-    url: "https://www.pizzablab.com/calculators/pizza-dough-calculator/",
-    note: "for biga yeast off the baseline time/temp",
+    title: "PizzaBlab — How to use yeast",
+    url: "https://www.pizzablab.com/learning-and-resources/ingredients/how-to-use-yeast/",
+    note: "dry yeast rehydrates best near 104 °F; active dry yeast needs warm water",
   },
   {
-    title: "Gozney — 100% Biga Pizza Dough",
-    url: "https://us.gozney.com/blogs/recipes/100-biga-pizza-dough-recipe",
-    note: "1% yeast, 16–18 h at 61–64 °F, hand-mixed",
+    title: "King Arthur — Desired dough temperature",
+    url: "https://www.kingarthurbaking.com/blog/2018/05/29/desired-dough-temperature",
+    note: "with cool water, rehydrate active dry yeast in part of the recipe water at 110 °F",
   },
   {
-    title: "Ooni / Marco Fuso — 100% Biga using Halo Pro",
-    url: "https://ooni.com/blogs/recipes/ooni-100-biga-dough-using-halo-pro",
-    note: "the fridge-retarded schedule",
+    title: "Julian Sisofo — Contemporary pizza",
+    url: "https://juliansisofo.com/blog/Contemporarypizza",
+    note: "a 50% biga with a warm start and then the fridge; balls 1–2 h at room temperature after the fridge",
   },
   {
     title: "Ooni help center — Halo Core min/max capacity and hydration limits",
@@ -92,11 +92,6 @@ export const SOURCES: readonly Source[] = [
     title: "Ooni help center — Halo Core speed settings",
     url: "https://ooni.com/pages/help-center?a=Halo-Core-Speed-Settings%3A-Percentage-to-RPM-Explained---id--J1HYTOEHRCiv1ONI2mRgqg",
     note: "5% increments, the lit/half-lit indicator, 300 RPM at 100%. Its low-end RPM chart is wrong; see the mixer speed reference",
-  },
-  {
-    title: "Stadler Made — Biga",
-    url: "https://www.stadlermade.com/pizza/ingredients/biga/",
-    note: "warm-kitchen workaround",
   },
   {
     title: "Baking With Theory — Biga",
@@ -112,6 +107,16 @@ export const SOURCES: readonly Source[] = [
     title: "Giochi di Gusto — How to make Biga at home",
     url: "https://www.giochidigusto.it/en/how-to-make-biga-at-home-the-complete-and-definitive-method/",
     note: "Giorilli's hydration: 45%, up to 50% only for semolina or less-refined flours",
+  },
+  {
+    title: "Grain Craft — Neapolitan product sheet",
+    url: "https://www.graincraft.com/wp-content/uploads/2020/04/NeapolitanProductSheet.pdf",
+    note: "12.2–12.8% protein, unbleached, sold as a 00 type. Its nutrition panel's ash figure is a USDA database value for enriched flour, not a milled specification",
+  },
+  {
+    title: "AVPN — International Regulations, 2024",
+    url: "https://www.pizzanapoletana.org/public/pdf/Disciplinare-2024-ENG.pdf",
+    note: "per liter of water: 40–60 g salt, 1.6–1.8 kg flour; no fat or sugar in the dough (§2.1.2)",
   },
 ];
 

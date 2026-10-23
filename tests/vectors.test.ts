@@ -65,15 +65,10 @@ describe('spec §5 test vectors are internally consistent', () => {
   it('splits capacity per the §4.5 rules', () => {
     for (const v of BATCH_VECTORS) {
       const doughTotal = v.F * C.DOUGH_YIELD;
-      const bigaMass = v.bigaFlour + v.bigaWater;
       expect(
         Math.max(1, Math.ceil(Math.max(doughTotal / C.MAX_DOUGH, v.F / C.FLOUR_CAP_66))),
         `nMix for ${v.balls} balls`,
       ).toBe(v.nMix);
-      expect(
-        Math.max(1, Math.ceil(Math.max(v.bigaFlour / C.FLOUR_CAP_55, bigaMass / C.MAX_DOUGH))),
-        `nBiga for ${v.balls} balls`,
-      ).toBe(v.nBiga);
     }
   });
 
@@ -124,8 +119,8 @@ describe('constants', () => {
     within(C.DOUGH_YIELD, 1 + C.HYDRATION + C.SALT, 1e-10, 'DOUGH_YIELD');
   });
 
-  it('gives the bowl a heat capacity of 115.8 at the 965 g default', () => {
-    within(C.BOWL_MASS_G * C.C_BOWL_SPECIFIC_HEAT, 115.8, 0.05, 'C_bowl');
+  it('gives the bowl a heat capacity of 115.56 at its weighed 963 g', () => {
+    within(C.BOWL_MASS_G * C.C_BOWL_SPECIFIC_HEAT, 115.56, 1e-9, 'C_bowl');
   });
 
   it('maps 5% dial to the measured 60 RPM', () => {

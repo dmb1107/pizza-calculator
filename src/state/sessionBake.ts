@@ -64,8 +64,7 @@ export interface SessionState {
 /**
  * The session as it would be logged now: the inputs as they stand. A final
  * or water reading with no value is null, and the bowl records whether its
- * field still holds the selector's prefill (§10), so the log can leave those
- * mixes out.
+ * field still holds its prefill (§10), so the log can leave those mixes out.
  */
 export function sessionBake(s: SessionState, now: Date, bakeId: string): LoggedBake {
   const { inputs, result, timers } = s;
@@ -87,7 +86,6 @@ export function sessionBake(s: SessionState, now: Date, bakeId: string): LoggedB
       mix_index: mix.index,
       // The biga carries mix 1's reading forward until re-read (§6).
       biga_temp_at_mix_f: atMix(inputs.bigaTempF, i),
-      bowl_state: mix.bowlState,
       bowl_temp_f: mix.bowlTempF,
       // By index, as the engine reads it: no reading of its own is the prefill.
       bowl_prefilled: (inputs.bowlTempF[i] ?? null) == null,

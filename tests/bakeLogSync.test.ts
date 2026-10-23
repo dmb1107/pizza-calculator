@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MIX_PHASES, currentFormulaSnapshot, mixStatus, type LoggedBake } from '../src/lib/bakeLog';
+import { BAKE_1_SEED, MIX_PHASES, currentFormulaSnapshot, mixStatus, type LoggedBake } from '../src/lib/bakeLog';
 import { calculate } from '../src/lib/engine';
 import {
   EMPTY_LOG,
@@ -57,7 +57,6 @@ function bake(id: string, overrides: Partial<LoggedBake> = {}): LoggedBake {
       {
         mix_index: 1,
         biga_temp_at_mix_f: 58,
-        bowl_state: 'cold',
         bowl_temp_f: 58,
         bowl_prefilled: false,
         water_temp_used_f: 63,
@@ -71,6 +70,19 @@ function bake(id: string, overrides: Partial<LoggedBake> = {}): LoggedBake {
 }
 
 describe('the local log', () => {
+  it("keeps an older bake's bowl_state, and needs none", () => {
+    // §10 (MESSAGE-54): new bakes don't write it; older ones keep it, and
+    // nothing reads it, so a value the selector never wrote is dropped
+    // rather than rejecting the bake.
+    const good = bake('2026-09-28-120000');
+    expect(good.mixes[0]).not.toHaveProperty('bowl_state');
+    expect(parseBake(good)).toEqual(good);
+    const older = { ...good, mixes: [{ ...good.mixes[0], bowl_state: 'cold' }] };
+    expect(parseBake(older)).toEqual(older);
+    const odd = parseBake({ ...good, mixes: [{ ...good.mixes[0], bowl_state: 'hot' }] });
+    expect(odd).toEqual(good);
+  });
+
   it('round-trips through storage', () => {
     const s = fakeStorage();
     const log = upsertBake(EMPTY_LOG, bake('2026-09-28-120000'));
@@ -85,7 +97,6 @@ describe('the local log', () => {
       { ...good, date: 'Sunday' },
       { ...good, balls: 'six' },
       { ...good, mixes: [] },
-      { ...good, mixes: [{ ...good.mixes[0], bowl_state: 'hot' }] },
       { ...good, room_temp_f: '70' },
       { ...good, formula: { ...good.formula, hydration: '70%' } },
       // The shape an earlier build stored: a reading with an "entered" flag.
@@ -331,7 +342,8 @@ describe('the session as a bake (§10)', () => {
     ).flat();
 
   const session = (inputs: Inputs, timers = phaseTimers(1)) => {
-    const result = calculate({ ...inputs, frictionFactorF: 14.03, flourTempF: inputs.flourTempF });
+    // The FF the page would use; the log stores readings, not the FF.
+    const result = calculate({ ...inputs, frictionFactorF: BAKE_1_SEED.value, flourTempF: inputs.flourTempF });
     return sessionBake({ inputs, result, timers }, NOW, newBakeId(NOW));
   };
 
@@ -359,6 +371,8 @@ describe('the session as a bake (§10)', () => {
       flour_follows_room: true,
     });
     expect(b.mixes[0]).toMatchObject({ biga_temp_at_mix_f: 58, bowl_temp_f: 57, bowl_prefilled: false, water_temp_used_f: 63, final_dough_temp_f: 73.5 });
+    // §10: dropped with the selector in MESSAGE-54.
+    expect(b.mixes[0]).not.toHaveProperty('bowl_state');
     expect(b.mixes[0]!.phase_seconds).toEqual({ a: 210, b: 330, c: 210, d: 52.5 });
     expect(mixStatus(b, b.mixes[0]!)).toMatchObject({ counted: true, reasons: [] });
   });

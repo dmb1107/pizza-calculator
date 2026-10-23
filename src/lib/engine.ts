@@ -15,6 +15,7 @@
 
 import { C, bowlHeatCapacity, defaultDdtF } from './constants';
 import { formatTempF } from './format';
+import { FRICTION_AFTER_PROBE_F } from './mixPhases';
 
 // ---------------------------------------------------------------------------
 // §4.1 Formula
@@ -90,7 +91,7 @@ export interface Thermal {
   cSalt: number;
   /** Dough only: Cb + Cf + Cw + Cs. The friction work term uses THIS. */
   cTotal: number;
-  /** Heat capacity of the mixer bowl. 115.8 at the 965 g default. */
+  /** Heat capacity of the mixer bowl. 115.56 at the 963 g bowl. */
   cBowl: number;
   /** cTotal + cBowl. The system the temperature is averaged over. */
   cSystem: number;
@@ -280,56 +281,43 @@ export function solveFrictionFactorF(
 // The only thing left is the sub-38 °F warning in `buildWarnings` below.
 
 // ---------------------------------------------------------------------------
-// §4.2 Bowl state
+// §4.2 Bowl prefill
 // ---------------------------------------------------------------------------
 
 /**
- * How the bowl arrives at a given mix. Each option prefills the bowl
- * temperature from a value already in the model — deliberately no new
- * constants.
- */
-export type BowlState =
-  /** Held the biga. Default for mix 1 and for every single-mix batch. */
-  | 'cold'
-  /** Washed and left on the counter, or a second biga that fermented elsewhere. */
-  | 'room'
-  /** Straight off the previous mix. Default for mix 2 and later. */
-  | 'warm';
-
-/**
- * §4.2. The prefill only — the field stays editable and a measurement always
- * wins.
+ * §4.2. The bowl's prefill at mix `index` (0-based), until the baker reads
+ * it. Each row is a value already in the model — deliberately no new
+ * constants — and a reading always wins.
  *
- * `warm` uses DDT as an upper bound (§4.2, MESSAGE-25): the bowl can't come
- * off mix 1 warmer than the dough it held, provided mix 1 finished at or below
- * DDT. How far it cools during the 5-minute changeover has never been
- * measured, so it is not modelled — `mix-8` asks for a reading instead.
+ * - **Mix 1:** that mix's biga reading. The biga ferments in the mixer bowl,
+ *   so the bowl starts near it.
+ * - **Later mixes:** `DDT`, an upper bound (§4.2, MESSAGE-25). The bowl can't
+ *   come off a mix warmer than the dough it held, provided that mix finished
+ *   at or below DDT. How far it cools during the changeover has never been
+ *   measured, so it is not modelled; each later mix's prep step asks for a
+ *   reading instead.
+ *
+ * ⚠️ There is no bowl-state selector (MESSAGE-54): with the bowl read in every
+ * mix's prep step it was a second control for the same number.
  */
-export function bowlTempForState(
-  state: BowlState,
-  { bigaTempF, roomTempF, ddtF }: { bigaTempF: number; roomTempF: number; ddtF: number },
-): number {
-  switch (state) {
-    case 'cold':
-      return bigaTempF;
-    case 'room':
-      return roomTempF;
-    case 'warm':
-      return ddtF;
-  }
+export function bowlPrefillF(index: number, { bigaTempF, ddtF }: { bigaTempF: number; ddtF: number }): number {
+  return index === 0 ? bigaTempF : ddtF;
 }
 
 /**
- * §4.2's two bases, as the Today's temperatures panel quotes them. What a
- * reading error costs depends on whether the bowl figure moves with it:
+ * §7.2's two bases for the biga's sensitivity. Nothing on the page prints
+ * them (MESSAGE-54 removed the field hints); the tests pin both, and `mix-1`,
+ * `mix-8` and `biga-6` explain them in prose. What a reading error costs
+ * depends on whether the bowl figure moves with it:
  *
- * - **tracking** — the bowl field is the `cold` prefill, i.e. the biga reading
- *   itself, so a wrong biga reading is a wrong bowl too: `(Cb + C_bowl)/Cw`.
- * - **held** — the bowl is measured, or prefilled from something else (room,
- *   DDT), so it stays put when the biga moves: `Cb/Cw`, scale-invariant.
+ * - **tracking** — the bowl is mix 1's prefill, i.e. the biga reading itself,
+ *   so a wrong biga reading is a wrong bowl too: `(Cb + C_bowl)/Cw`.
+ * - **held** — the bowl is read, or prefilled from `DDT` on a later mix, so it
+ *   stays put when the biga moves: `Cb/Cw`, scale-invariant.
  *
  * Quoting the tracking figure beside a measured bowl overstates the effect by
- * 41% at 3 balls of the default weight — the panel did exactly that until FINDINGS-25.
+ * 41% at 3 balls of the default weight; the old panel hint did exactly that
+ * until FINDINGS-25.
  *
  * Magnitudes: warmer biga means cooler water and warmer dough, and the prose
  * supplies the direction.
@@ -382,16 +370,15 @@ export function bowlReadingCost(thermal: Thermal): {
 // §4.5 Capacity splits
 // ---------------------------------------------------------------------------
 
+/**
+ * §4.5. One biga at every size (MESSAGE-53, Dave's call): it is mixed by hand
+ * and ferments in the mixer bowl, so no machine cap applies to it. At
+ * `nMix > 1` it is divided by weight, once, in `mix-0`.
+ */
 export interface Capacity {
   /** Number of separate final mixes the Halo Core needs. */
   nMix: number;
-  /** Number of separate biga batches. */
-  nBiga: number;
   doughPerMix: number;
-  bigaMassPerBatch: number;
-  bigaFlourPerBatch: number;
-  /** One biga divides by weight across several final mixes. The 12-ball case. */
-  divideBigaAcrossMixes: boolean;
 }
 
 /** §4.5. */
@@ -400,24 +387,11 @@ export function computeCapacity(f: Formula): Capacity {
     1,
     Math.ceil(Math.max(f.doughTotal / C.MAX_DOUGH, f.flourTotal / C.FLOUR_CAP_66)),
   );
-  const nBiga = Math.max(
-    1,
-    Math.ceil(Math.max(f.bigaFlour / C.FLOUR_CAP_55, f.bigaMass / C.MAX_DOUGH)),
-  );
-  const doughPerMix = f.doughTotal / nMix;
-
-  return {
-    nMix,
-    nBiga,
-    doughPerMix,
-    bigaMassPerBatch: f.bigaMass / nBiga,
-    bigaFlourPerBatch: f.bigaFlour / nBiga,
-    divideBigaAcrossMixes: nBiga < nMix,
-  };
+  return { nMix, doughPerMix: f.doughTotal / nMix };
 }
 
 /**
- * §6 Panel 3. The key the friction-factor map is stored under: FF is per-mix
+ * §6 Panel 2. The key the friction-factor map is stored under: FF is per-mix
  * by definition (§4.2), so a 12-ball batch — two 6-ball mixes — reads and
  * files under 6. Fractional on an odd split (13 balls → 6.5), and deliberately
  * not rounded: §6 is exact-match only, so 6.5 must not read the 6 or 7 entry.
@@ -434,14 +408,16 @@ export function ballsPerMix(b: BatchInputs): number {
  * §4.6. The temperature to expect partway through the mix, before Phases C and
  * D add their friction.
  *
- * Two corrections from bake 1: the friction still to come is diluted by the
- * bowl's thermal mass, and the 10-minute rest sheds heat in proportion to the
- * dough-to-room gap rather than a flat 1 °F.
+ * The friction still to come is Phases C and D at their reference times and
+ * friction rates (MESSAGE-52), diluted by the bowl's thermal mass. The
+ * 10-minute rest sheds heat in proportion to the dough-to-room gap rather than
+ * a flat 1 °F. No FF: it decides where the dough is when probed, which is what
+ * the probe measures, and not what C and D still add.
  *
- * At FF 14 in a 70 °F room: 3 balls 72.2 · 6 balls 71.8 · 9 balls 70.5.
+ * In a 70 °F room: 3 balls 72.3 · 6 balls 71.9 · 9 balls 70.6.
  */
 export interface ProbeParts {
-  /** `0.33 × FF × Ct/TOT` — friction still to come after the probe, as a probe reads it. */
+  /** `FRICTION_AFTER_PROBE_F × Ct/TOT` — friction still to come after the probe, as a probe reads it. */
   frictionRemainingF: number;
   /** `0.2 × (DDT − T_room)`, signed: positive when the rest cools the dough. */
   restSignedF: number;
@@ -453,7 +429,7 @@ export interface ProbeParts {
 }
 
 /**
- * §4.6 decomposed, per §4.10. The ONE place the probe's 0.33 and 0.2 live —
+ * §4.6 decomposed, per §4.10. The ONE place the probe's formula lives —
  * `computeProbeTargetF` is built from this, so the parts the step prints and the
  * target the summary prints cannot come from two copies of the formula.
  *
@@ -463,16 +439,14 @@ export interface ProbeParts {
  */
 export function computeProbeParts({
   ddtF,
-  frictionFactorF,
   roomTempF,
   thermal,
 }: {
   ddtF: number;
-  frictionFactorF: number;
   roomTempF: number;
   thermal: Thermal;
 }): ProbeParts {
-  const frictionRemainingF = 0.33 * frictionFactorF * (thermal.cTotal / thermal.cSystem);
+  const frictionRemainingF = FRICTION_AFTER_PROBE_F * (thermal.cTotal / thermal.cSystem);
   const restSignedF = 0.2 * (ddtF - roomTempF);
   const gapF = frictionRemainingF - restSignedF;
   return {
@@ -486,35 +460,6 @@ export function computeProbeParts({
 
 export function computeProbeTargetF(args: Parameters<typeof computeProbeParts>[0]): number {
   return computeProbeParts(args).targetF;
-}
-
-// ---------------------------------------------------------------------------
-// §4.9 Opening diameter
-// ---------------------------------------------------------------------------
-
-export interface Opening {
-  /** What to open to: the default ball's thickness, capped at the stone. */
-  openDiameterIn: number;
-  /**
-   * How much thicker than the default ball on the full stone, in percent —
-   * zero until the cap binds. Unrounded. Whether `bulk-2`'s block shows is
-   * decided on the PRINTED value (`thickerThanDefault` in stepInstances.ts),
-   * never on this: a block that fires on 12.02 > 12 prints "12.0 rather than 12".
-   */
-  thicknessPercentOver: number;
-}
-
-/**
- * §4.9. The reference is the default ball on the full stone. Holding that
- * thickness, diameter scales with the square root of the weight ratio, and
- * the oven caps it — past which the pizza runs thicker instead.
- */
-export function computeOpening(ballWeightG: number): Opening {
-  const ratio = ballWeightG / C.DEFAULT_BALL_G;
-  return {
-    openDiameterIn: C.TREAD_MAX_DIAMETER_IN * Math.min(1, Math.sqrt(ratio)),
-    thicknessPercentOver: Math.max(0, ratio - 1) * 100,
-  };
 }
 
 /**
@@ -637,28 +582,21 @@ export interface Warning {
 }
 
 /**
- * §7.3. Warnings are derived data, so they belong here rather than in a
- * component — the UI just renders them, above the step list and never inside a
- * collapsed panel.
+ * §4.4. One mix's water warnings, rendered under that mix's target in its
+ * prep step (§7.3, MESSAGE-54) rather than in the strip. Two, one at each
+ * end. They mirror each other: same failure ("you cannot get there by
+ * blending"), opposite end, and both point the user upstream rather than at
+ * the target, which stays bare per §7.2.
+ *
+ * Per mix, because each mix has its own target: a later mix starts in a
+ * warmer bowl, so its target is lower and only it could cross 38 °F.
+ *
+ * MESSAGE-3's "one warning, and only one" is withdrawn by MESSAGE-4 §2 — it
+ * was written before anyone had swept the small-batch corner, so it guarded
+ * the unreachable failure and left the reachable one bare.
  */
-function buildWarnings(
-  waterTempF: number,
-  staggerUncentred: number,
-): Warning[] {
+export function waterWarnings(waterTempF: number): Warning[] {
   const w: Warning[] = [];
-
-  // §7.3 *Capacity* — split, biga split, near the limit, below the minimum —
-  // lives in `capacity.ts` (MESSAGE-29): its wording is the spec's, bound
-  // through the token table, and its thresholds are decided on printed values,
-  // neither of which belongs in the engine.
-
-  // §4.4. Two warnings, one at each end. They mirror each other: same failure
-  // ("you cannot get there by blending"), opposite end, and both point the user
-  // upstream rather than at the water card, which stays bare per §7.2.
-  //
-  // MESSAGE-3's "one warning, and only one" is withdrawn by MESSAGE-4 §2 — it
-  // was written before anyone had swept the small-batch corner, so it guarded
-  // the unreachable failure and left the reachable one bare.
   if (waterTempF < C.WATER_MIN_F) {
     w.push({
       id: 'water-below-fridge',
@@ -676,6 +614,22 @@ function buildWarnings(
       detail: `${formatTempF(waterTempF)} °F is hotter than a home tap delivers. Don't heat water to reach it; fix the cause. It's almost always a biga that skipped its 1-hour temper: each °F of biga temperature is worth about 2 °F of water, so an hour on the counter closes the gap faster than anything you can do at the sink.`,
     });
   }
+  return w;
+}
+
+/**
+ * §7.3. The strip's engine warnings. Derived data, so they belong here rather
+ * than in a component — the UI just renders them, above the step list and
+ * never inside a collapsed panel.
+ *
+ * §7.3 *Capacity* — split, the divided biga, near the limit, below the
+ * minimum — lives in `capacity.ts` (MESSAGE-29): its wording is the spec's,
+ * bound through the token table, and its thresholds are decided on printed
+ * values, neither of which belongs in the engine. The water warnings belong
+ * to a mix (`waterWarnings`).
+ */
+function buildWarnings(staggerUncentred: number): Warning[] {
+  const w: Warning[] = [];
 
   // §4.7 / §7.3. Only when the ball rise hit its floor with stagger left over.
   // Quantitative and conditional by design: a blanket caveat about a failure
@@ -723,13 +677,8 @@ export interface CalculatorInputs extends BatchInputs {
   bigaTempF: PerMix<number>;
   frictionFactorF: number;
   /**
-   * §4.2. How the bowl arrives at MIX 1. Later mixes are always 'warm' — they
-   * start in the bowl that just finished the previous mix.
-   */
-  bowlState?: BowlState;
-  /**
-   * §4.2. Measured bowl temperature per mix, overriding that mix's prefill. A
-   * measurement always wins.
+   * §4.2. Measured bowl temperature per mix, overriding that mix's prefill
+   * (`bowlPrefillF`). A measurement always wins.
    *
    * ⚠️ Read by index (`bowlReadingAt`), never carried forward: mix 1's bowl
    * says nothing about mix 2's, which starts warm from mix 1. A scalar is
@@ -758,15 +707,16 @@ export interface CalculatorInputs extends BatchInputs {
 export interface MixTarget {
   /** 1-based. */
   index: number;
-  bowlState: BowlState;
   bowlTempF: number;
   /**
-   * §4.2. True while the bowl figure is the `cold` prefill — the biga reading
-   * itself — so the two move together. A measurement, or any other state,
-   * holds the bowl. Selects the basis for `bigaReadingCost`.
+   * §4.2. True while the bowl figure is mix 1's prefill — the biga reading
+   * itself — so the two move together. A reading, or a later mix's `DDT`
+   * prefill, holds the bowl. Selects §7.2's basis for `bigaReadingCost`.
    */
   bowlTracksBiga: boolean;
   waterTempF: number;
+  /** §4.4's water warnings for this mix's target, shown under it (§7.3). */
+  warnings: Warning[];
 }
 
 export interface CalculatorResult {
@@ -775,16 +725,14 @@ export interface CalculatorResult {
   thermal: Thermal;
   /** The DDT actually used, override or default. */
   ddtF: number;
-  /** Mix 1's water target — the headline figure, and the only one when nMix is 1. */
+  /** Mix 1's water target, and the only one when nMix is 1. */
   waterTempF: number;
-  /** One entry per mix. §7.2 renders a card each when there is more than one. */
+  /** One entry per mix. §7.2: each mix's prep step shows its own target. */
   mixes: MixTarget[];
   capacity: Capacity;
   probeTargetF: number;
   /** §4.10. The target's parts, per mix at the user's inputs. `probeTargetF === probe.targetF`. */
   probe: ProbeParts;
-  /** §4.9. Opening diameter, and how much thicker than the default ball, for the entered weight. */
-  opening: Opening;
   /** §4.8 room-temperature minutes before the fridge. */
   roomMinutes: number;
   /**
@@ -868,25 +816,20 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
     roomTempF: inputs.roomTempF,
   };
 
-  // §4.2 / §10. Mix 1 takes the user's bowl state; every later mix starts in
-  // the bowl that just finished the one before it.
+  // §4.2. Mix 1's bowl held the biga; every later mix starts in the bowl
+  // that just finished the one before it.
   const mixes: MixTarget[] = Array.from({ length: capacity.nMix }, (_, i) => {
-    const bowlState: BowlState = i === 0 ? (inputs.bowlState ?? 'cold') : 'warm';
     const bigaTempF = atMix(inputs.bigaTempF, i);
-    const prefill = bowlTempForState(bowlState, {
-      bigaTempF,
-      roomTempF: inputs.roomTempF,
-      ddtF,
-    });
     // A measurement always wins, at every mix — its own mix's measurement.
     const measured = bowlReadingAt(inputs.bowlTempF, i);
-    const bowlTempF = measured ?? prefill;
+    const bowlTempF = measured ?? bowlPrefillF(i, { bigaTempF, ddtF });
+    const waterTempF = computeWaterTempF({ ...baseTemps, bigaTempF, bowlTempF }, thermal);
     return {
       index: i + 1,
-      bowlState,
       bowlTempF,
-      bowlTracksBiga: measured == null && bowlState === 'cold',
-      waterTempF: computeWaterTempF({ ...baseTemps, bigaTempF, bowlTempF }, thermal),
+      bowlTracksBiga: measured == null && i === 0,
+      waterTempF,
+      warnings: waterWarnings(waterTempF),
     };
   });
 
@@ -900,7 +843,6 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
   const uncentred = staggerUncentredMin(roomMinutes, capacity.nMix);
   const probe = computeProbeParts({
     ddtF,
-    frictionFactorF: inputs.frictionFactorF,
     roomTempF: inputs.roomTempF,
     thermal,
   });
@@ -915,15 +857,12 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
     capacity,
     probeTargetF: probe.targetF,
     probe,
-    opening: computeOpening(inputs.ballWeightG),
     roomMinutes,
     ballRoomMinutes: plannedBallRiseH(roomMinutes, capacity.nMix) * 60,
     roomMinutesIsPlanned,
     staggerUncentredMin: uncentred,
     effectiveFinalTempF,
-    // Warnings key off mix 1; a later mix is always warmer-bowled and so
-    // never colder, and the hot end is what mix 1 already worst-cases.
-    warnings: buildWarnings(waterTempF, uncentred),
+    warnings: buildWarnings(uncentred),
   };
 }
 

@@ -1,13 +1,8 @@
 /** Application state shapes — WEBSITE-SPEC-biga-calculator.md §6. */
 
-import type { BowlState } from '../lib/engine';
-
-export type { BowlState };
-
 /**
  * §4.7. `retarded` is 2 h at room temperature then ~19 h in the fridge — the
- * Ooni/Marco Fuso schedule, and the answer for a kitchen that won't hold a
- * band. `classic` is 12–18 h at 61–65 °F, which gives the truer acid profile.
+ * retarded schedule, and the answer for a kitchen that won't hold a band. `classic` is 12–18 h at 61–65 °F, which gives the truer acid profile.
  */
 export type Schedule = 'retarded' | 'classic';
 
@@ -29,7 +24,8 @@ export interface Inputs {
   coldFermentH: number;
   schedule: Schedule;
 
-  // Panel 2 — Today's temperatures
+  // §6 *Readings in the steps*: room and flour on mix 1's `mix-1`, biga and
+  // bowl on every mix's.
   roomTempF: number;
   /** When true, flour temperature tracks the room and the field is disabled. */
   flourSameAsRoom: boolean;
@@ -41,23 +37,19 @@ export interface Inputs {
    * moves the required water 11.5 °F and the finished dough 3.5 °F.
    *
    * ⚠️ One entry per mix. The waiting biga warms toward the room while an
-   * earlier mix runs and that drift is not modelled, so `mix-8` asks for a
-   * fresh reading instead. Index 0 is mix 1; a length-1 array applies to every
-   * mix, which is what an older shared link decodes to.
+   * earlier mix runs and that drift is not modelled, so each later mix's prep
+   * step asks for a fresh reading. Index 0 is mix 1; a missing entry carries
+   * the previous mix's reading forward, and a length-1 array is what an older
+   * shared link decodes to.
    */
   bigaTempF: number[];
   /**
-   * §4.2. How the bowl arrives at MIX 1. Later mixes are always 'warm'.
-   * Prefills `bowlTempF` from a value already in the model.
-   */
-  bowlState: BowlState;
-  /**
-   * §4.2. Measured bowl temperature, overriding the selector's prefill. null
-   * uses the prefill. A measurement always wins — the biga gains ~5 °F from
-   * tearing and the bowl does not.
+   * §4.2. Measured bowl temperature, overriding the prefill (mix 1: its biga
+   * reading; later mixes: DDT). null uses the prefill. A measurement always
+   * wins — the biga gains ~5 °F from tearing and the bowl does not.
    *
-   * ⚠️ One entry per mix, like `bigaTempF`. null at any index uses that mix's
-   * prefill from the bowl state.
+   * ⚠️ One entry per mix, read by index: null at any index uses that mix's
+   * prefill, never an earlier mix's reading.
    */
   bowlTempF: (number | null)[];
 
@@ -66,7 +58,7 @@ export interface Inputs {
   bigaFridgeH: number;
   /** Classic only. 12–18 h at 61–65 °F. */
   bigaRoomOnlyH: number;
-  /** 2–3 h. */
+  /** 1.5–2 h (MESSAGE-53). */
   temperH: number;
 
   /**
@@ -89,7 +81,7 @@ export interface Inputs {
 /**
  * Preferences that aren't inputs. These persist to browser storage rather than
  * the URL (§2). The FF isn't here: it is computed from the bake log each time
- * (§6, Panel 3), and a map stored by an earlier version is ignored.
+ * (§6, Panel 2), and a map stored by an earlier version is ignored.
  */
 export interface Calibration {
   /** null uses the §4.3 default: 75 °F for <=6 balls, 74 °F for 7+. */
@@ -109,10 +101,9 @@ export interface RunningTimer {
 /** A temperature the bake log records (§10), set through `commitReading`. */
 export type ReadingField = 'roomTempF' | 'flourTempF' | 'bigaTempF' | 'bowlTempF' | 'waterUsedF' | 'finalDoughTempF';
 
-/** Which panels are open. Batch is open by default; the others are collapsed. */
+/** Which panels are open. Batch is open by default; Calibration is collapsed. */
 export interface PanelPrefs {
   batch: boolean;
-  temperatures: boolean;
   calibration: boolean;
 }
 

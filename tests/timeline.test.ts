@@ -20,14 +20,19 @@ import type { Schedule } from '../src/state/types';
 
 /** Timeline — WEBSITE-SPEC-biga-calculator.md §4.7. TZ is pinned to America/New_York. */
 
+/** The app's defaults: 6 balls, a 1.5 h temper since MESSAGE-53 (2.5 before). */
 const DEFAULTS: ScheduleAdjustments = {
   bigaFridgeH: 19,
   bigaRoomOnlyH: 16,
   ballRoomTempH: 1.5,
   nMix: 1,
+  balls: 6,
   coldFermentH: 24,
-  temperH: 2.5,
+  temperH: 1.5,
 };
+
+/** Classic's defaults: its cold ferment is 6–8 h, default 6 (MESSAGE-53). */
+const CLASSIC: ScheduleAdjustments = { ...DEFAULTS, coldFermentH: 6 };
 
 const HOUR_MS = 3_600_000;
 
@@ -40,32 +45,32 @@ describe('§4.7 stage durations', () => {
       bigaTemper: 1,
       mix: 0.5,
       bulkRest: 1,
-      divideBall: C.DIVIDE_BALL_H,
+      divideBall: 20 / 60, // 6 balls: 12.5 + 1.25 × 6 minutes
       ballRoomTemp: 1.5,
       coldFerment: 24,
-      temper: 2.5,
+      temper: 1.5,
     });
   });
 
   it('matches the classic RT column', () => {
-    expect(stageDurations('classic', DEFAULTS)).toEqual({
+    expect(stageDurations('classic', CLASSIC)).toEqual({
       bigaRoomTemp: 0,
       bigaFridge: 0,
       bigaRoomOnly: 16,
       bigaTemper: 0,
       mix: 0.5,
       bulkRest: 1,
-      divideBall: C.DIVIDE_BALL_H,
+      divideBall: 20 / 60,
       ballRoomTemp: 1.5,
-      coldFerment: 24,
-      temper: 2.5,
+      coldFerment: 6,
+      temper: 1.5,
     });
   });
 
-  it('totals 51.83 h retarded and 45.83 h classic at the defaults', () => {
+  it('totals 50.83 h retarded and 26.83 h classic at the defaults', () => {
     const start = new Date(2026, 7, 21, 9, 0);
-    expect(buildTimeline({ startAt: start, schedule: 'retarded', adjustments: DEFAULTS }).totalH).toBeCloseTo(51.83, 2);
-    expect(buildTimeline({ startAt: start, schedule: 'classic', adjustments: DEFAULTS }).totalH).toBeCloseTo(45.83, 2);
+    expect(buildTimeline({ startAt: start, schedule: 'retarded', adjustments: DEFAULTS }).totalH).toBeCloseTo(50.8333, 4);
+    expect(buildTimeline({ startAt: start, schedule: 'classic', adjustments: CLASSIC }).totalH).toBeCloseTo(26.8333, 4);
   });
 
   /**
@@ -89,85 +94,79 @@ describe('§4.7 stage durations', () => {
       }).totalH;
 
     it.each([
-      [6, 34],
-      [24, 52],
-      [36, 64],
+      [6, 33],
+      [24, 51],
+      [36, 63],
     ])('%i h cold ferment gives ~%i h total', (cold, expected) => {
       // "Those are midpoints; each carries a ±2 h spread."
       expect(Math.abs(totalAt(cold) - expected)).toBeLessThanOrEqual(2);
     });
 
-    it('keeps fixed overhead inside the stated 25.6–30.8 h band', () => {
+    it('keeps fixed overhead inside the stated 25.0–29.9 h band', () => {
       for (const cold of [6, 12, 24, 30, 36]) {
         const overhead = totalAt(cold) - cold;
-        expect(overhead, `overhead at ${cold} h cold`).toBeGreaterThanOrEqual(25.6);
-        expect(overhead, `overhead at ${cold} h cold`).toBeLessThanOrEqual(30.8);
+        expect(overhead, `overhead at ${cold} h cold`).toBeGreaterThanOrEqual(25.0);
+        expect(overhead, `overhead at ${cold} h cold`).toBeLessThanOrEqual(29.9);
       }
     });
 
-    it('holds the overhead constant, so total is always coldFerment + ~28 h', () => {
+    it('holds the overhead constant, so total is always coldFerment + ~27 h', () => {
       // Everything outside the cold ferment is fixed, so the relationship is
       // linear with slope exactly 1 — a stage accidentally scaling with the
       // cold ferment would show up here.
       const overheads = [6, 12, 24, 30, 36].map((c) => totalAt(c) - c);
       for (const o of overheads) expect(o).toBeCloseTo(overheads[0] as number, 10);
-      expect(overheads[0]).toBeCloseTo(27.83, 2);
+      expect(overheads[0]).toBeCloseTo(26.8333, 4);
     });
 
     /**
-     * §4.8 quotes fixed overhead as **25.6–30.8 h** across the full input
-     * ranges, with **27.8 h at the defaults**. The defaults are asserted as an
-     * equality; the band is a range check.
+     * §4.8 quotes fixed overhead as **25.0–29.9 h** across the full input
+     * ranges at `nMix = 1` on the retarded track, with **26.8 h at the
+     * defaults** (MESSAGE-53). The defaults are asserted as an equality; the
+     * band is a range check.
      *
-     * `bulkRest` (1 h) and `divideBall` (0.33 h) are FIXED by §4.7 and are not
-     * inputs. The recipe's "45–60 min" for the bulk rest is guidance to the
-     * baker — rest until the gluten relaxes — not a scheduling variable, and
-     * 60 min is the planning number. Flexing either is what put an earlier
-     * version of this band at 25.3.
+     * `bulkRest` (1 h) is FIXED by §4.7 and is not an input: the recipe's
+     * "45–60 min" is guidance to the baker, and 60 min is the planning number.
+     * `divideBall` scales with the ball count since MESSAGE-53.
      */
-    it('is exactly 27.8 h at the defaults', () => {
-      expect(overheadOf(DEFAULTS)).toBeCloseTo(27.83, 2);
+    it('is exactly 26.8 h at the defaults', () => {
+      expect(overheadOf(DEFAULTS)).toBeCloseTo(26.8333, 4);
     });
 
-    it('spans exactly 25.6–30.8 h across the full input ranges', () => {
-      // The extremes use the shaped-rise CLAMP bounds (45 and 180 min), not the
-      // 71–144 min of the §4.8 table, which spans only +2 to −5 °F from DDT.
-      // Both ends are tight.
+    it('spans exactly 25.0–29.9 h across the full input ranges', () => {
+      // The extremes use the shaped-rise CLAMP bounds (45 and 180 min). The
+      // low end is 3 balls, an 18 h fridge and a 1.5 h temper; the high end
+      // 10 × 240 g, the largest single mix, with a 20 h fridge and a 2 h
+      // temper. Both ends are tight.
       const lowest: ScheduleAdjustments = {
-        bigaFridgeH: 18, bigaRoomOnlyH: 16, ballRoomTempH: 45 / 60, nMix: 1, coldFermentH: 24, temperH: 2,
+        bigaFridgeH: 18, bigaRoomOnlyH: 16, ballRoomTempH: 45 / 60, nMix: 1, balls: 3, coldFermentH: 24, temperH: 1.5,
       };
       const highest: ScheduleAdjustments = {
-        bigaFridgeH: 20, bigaRoomOnlyH: 16, ballRoomTempH: 180 / 60, nMix: 1, coldFermentH: 24, temperH: 3,
+        bigaFridgeH: 20, bigaRoomOnlyH: 16, ballRoomTempH: 180 / 60, nMix: 1, balls: 10, coldFermentH: 24, temperH: 2,
       };
-      expect(overheadOf(lowest)).toBeCloseTo(25.58, 2);
-      expect(overheadOf(highest)).toBeCloseTo(30.83, 2);
+      expect(overheadOf(lowest)).toBeCloseTo(25.0208, 4);
+      expect(overheadOf(highest)).toBeCloseTo(29.9167, 4);
 
       // The band is quoted to one decimal, so compare at that precision.
       for (const a of [lowest, DEFAULTS, highest]) {
         const rounded = Math.round(overheadOf(a) * 10) / 10;
-        expect(rounded, 'above the band').toBeGreaterThanOrEqual(25.6);
-        expect(rounded, 'below the band').toBeLessThanOrEqual(30.8);
+        expect(rounded, 'above the band').toBeGreaterThanOrEqual(25.0);
+        expect(rounded, 'below the band').toBeLessThanOrEqual(29.9);
       }
     });
 
-    /**
-     * A known simplification, recorded so it stays known rather than becoming
-     * an undiscovered bug. §4.7 models `divideBall` as a flat 20 min; the real
-     * time scales at roughly 1 min per ball on top of a fixed 10–15 min rest,
-     * so 3 balls takes ~15 min and 18 takes ~30. The worst case is ~10 min in
-     * a 52-hour schedule — 0.3% — and modelling it would change no decision.
-     *
-     * Deliberately NOT built. This test pins the flat behaviour so a future
-     * scaling rule is a conscious change rather than an accident.
-     */
-    it('models divide-and-ball as a flat 20 min, independent of batch size', () => {
-      // Batch size is not a parameter of the schedule at all — that is the
-      // simplification, stated structurally rather than by sampling sizes.
-      for (const schedule of ['retarded', 'classic'] as const) {
-        expect(stageDurations(schedule, DEFAULTS).divideBall).toBeCloseTo(0.33, 2);
+    it('scales divide-and-ball with the total ball count (MESSAGE-53)', () => {
+      // 12.5 min plus 1.25 per ball, written out: 16.25 at 3, 20 at 6,
+      // 23.75 at 9, 27.5 at 12, 35 at 18, 42.5 at 24.
+      for (const [balls, minutes] of [[3, 16.25], [6, 20], [9, 23.75], [12, 27.5], [18, 35], [24, 42.5]] as const) {
+        for (const schedule of ['retarded', 'classic'] as const) {
+          expect(stageDurations(schedule, { ...DEFAULTS, balls }).divideBall * 60, `${balls} balls`).toBeCloseTo(minutes, 9);
+        }
       }
-      expect(buildTimeline({ startAt: start, schedule: 'retarded', adjustments: DEFAULTS })
-        .stages.find((x) => x.key === 'divideBall')?.durationH).toBeCloseTo(0.33, 2);
+      // Timeline only: the rise after balling is not shortened for it.
+      expect(stageDurations('retarded', { ...DEFAULTS, balls: 12 }).ballRoomTemp).toBe(
+        stageDurations('retarded', DEFAULTS).ballRoomTemp,
+      );
     });
   });
 
@@ -177,18 +176,24 @@ describe('§4.7 stage durations', () => {
       buildTimeline({ startAt: start, schedule, adjustments: { ...DEFAULTS, ...a } }).totalH;
 
     it('bigaFridge 18–20', () => {
-      expect(total({ bigaFridgeH: 18 })).toBeCloseTo(50.83, 2);
-      expect(total({ bigaFridgeH: 20 })).toBeCloseTo(52.83, 2);
+      expect(total({ bigaFridgeH: 18 })).toBeCloseTo(49.8333, 4);
+      expect(total({ bigaFridgeH: 20 })).toBeCloseTo(51.8333, 4);
     });
 
     it('bigaRoomOnly 12–18', () => {
-      expect(total({ bigaRoomOnlyH: 12 }, 'classic')).toBeCloseTo(41.83, 2);
-      expect(total({ bigaRoomOnlyH: 18 }, 'classic')).toBeCloseTo(47.83, 2);
+      expect(total({ bigaRoomOnlyH: 12, coldFermentH: 6 }, 'classic')).toBeCloseTo(22.8333, 4);
+      expect(total({ bigaRoomOnlyH: 18, coldFermentH: 6 }, 'classic')).toBeCloseTo(28.8333, 4);
+    });
+
+    it('classic totals 26.8–28.8 h at a 16 h biga, ~27–31 h across 16–18 (MESSAGE-53)', () => {
+      expect(total({ coldFermentH: 6 }, 'classic')).toBeCloseTo(26.8333, 4);
+      expect(total({ coldFermentH: 8 }, 'classic')).toBeCloseTo(28.8333, 4);
+      expect(total({ bigaRoomOnlyH: 18, coldFermentH: 8 }, 'classic')).toBeCloseTo(30.8333, 4);
     });
 
     it('ballRoomTemp 1–2', () => {
-      expect(total({ ballRoomTempH: 1 })).toBeCloseTo(51.33, 2);
-      expect(total({ ballRoomTempH: 2 })).toBeCloseTo(52.33, 2);
+      expect(total({ ballRoomTempH: 1 })).toBeCloseTo(50.3333, 4);
+      expect(total({ ballRoomTempH: 2 })).toBeCloseTo(51.3333, 4);
     });
 
     it('keeps stagger on the planning basis, tied to the timeline', () => {
@@ -306,50 +311,40 @@ describe('§4.7 stage durations', () => {
     });
 
     it.each([
-      [1, 0.5, 1.5, 27.83],
-      [2, 1.083, 1.208, 28.12],
-      // Settled by MESSAGE-6 §3, and I was wrong. 28.41 came from `divideBall`
-      // being the literal 0.33 rather than the 20 minutes it actually is —
-      // a displayed figure baked into the source, which is the same error one
-      // level deeper than the one I was reporting. At 20/60 every route gives
-      // 28.4167.
-      [3, 1.667, 0.917, 28.42],
-    ])('nMix %i: mix %f h, rise %f h, overhead %f h', (nMix, mix, rise, overheadH) => {
-      // §4.7's table, all three asserted. 28.42 was the figure an earlier draft
-      // attached to nMix 2 — right arithmetic, wrong batch size, which is why
-      // it reproduced whenever anyone checked it in isolation.
-      const d = stageDurations('retarded', { ...DEFAULTS, nMix });
-      expect(d.mix).toBeCloseTo(mix, 2);
-      expect(d.ballRoomTemp).toBeCloseTo(rise, 2);
-      const total =
-        buildTimeline({ startAt: start, schedule: 'retarded', adjustments: { ...DEFAULTS, nMix } })
-          .totalH - DEFAULTS.coldFermentH;
-      expect(total).toBeCloseTo(overheadH, 2);
+      [3, 1, 0.5, 0.2708, 1.5, 26.7708],
+      [6, 1, 0.5, 0.3333, 1.5, 26.8333],
+      [9, 1, 0.5, 0.3958, 1.5, 26.8958],
+      [12, 2, 1.0833, 0.4583, 1.2083, 27.25],
+      [18, 2, 1.0833, 0.5833, 1.2083, 27.375],
+      [24, 3, 1.6667, 0.7083, 0.9167, 27.7917],
+    ])('%i balls, nMix %i: mix %f h, divide %f h, rise %f h, overhead %f h', (balls, nMix, mix, divide, rise, overheadH) => {
+      // §4.8's table since MESSAGE-53, all six asserted, at 265 g on target.
+      // With the divide scaling, the overhead depends on the ball count as
+      // well as nMix. (MESSAGE-6: an earlier 28.41 came from `divideBall` as
+      // the literal 0.33, a displayed figure baked into the source.)
+      const a = { ...DEFAULTS, nMix, balls };
+      const d = stageDurations('retarded', a);
+      expect(d.mix).toBeCloseTo(mix, 4);
+      expect(d.divideBall).toBeCloseTo(divide, 4);
+      expect(d.ballRoomTemp).toBeCloseTo(rise, 4);
+      const total = buildTimeline({ startAt: start, schedule: 'retarded', adjustments: a }).totalH - a.coldFermentH;
+      expect(total).toBeCloseTo(overheadH, 4);
     });
 
-    it('puts fixed overhead at 28.1 h when nMix is 2', () => {
+    it('adds the second mix, takes half the stagger back off the rise, and adds the longer divide', () => {
       const overhead = (a: ScheduleAdjustments) =>
         buildTimeline({ startAt: start, schedule: 'retarded', adjustments: a }).totalH -
         a.coldFermentH;
-
-      // The 25.6–30.8 band in §4.7 is explicitly nMix = 1 only.
-      expect(overhead(DEFAULTS)).toBeCloseTo(27.83, 2);
-
-      // ⚠️ §4.7 asserts 28.4 h here, which is 27.83 + 0.58 — the second mix and
-      // the changeover, and nothing else. But the SAME section then subtracts
-      // half the stagger (0.29 h) from `ballRoomTemp`, which necessarily takes
-      // it back out of the overhead. Both cannot hold at once; 28.12 is the
-      // figure consistent with the rules as written.
-      //
-      // RAISED WITH THE RECIPE AGENT. The two numbers look like they were
-      // computed in separate passes — "90 min becomes 72" has the same
-      // fingerprint, being 72.5 exactly.
-      expect(overhead({ ...DEFAULTS, nMix: 2 })).toBeCloseTo(28.12, 2);
-
-      // What §4.7's superseded 28.4 would require: the mix change with the
-      // stagger correction left out.
-      const withoutStagger = overhead({ ...DEFAULTS, nMix: 2 }) + mixStaggerH(2) / 2;
-      expect(withoutStagger).toBeCloseTo(28.42, 2);
+      // The 25.0–29.9 band in §4.8 is nMix = 1 only.
+      expect(overhead(DEFAULTS)).toBeCloseTo(26.8333, 4);
+      // 12 balls: + 0.5833 (a mix and a changeover) − 0.2917 (half the
+      // stagger) + 0.125 (7.5 more minutes of divide) = 27.25.
+      const twelve = overhead({ ...DEFAULTS, nMix: 2, balls: 12 });
+      expect(twelve).toBeCloseTo(27.25, 4);
+      expect(twelve - overhead(DEFAULTS)).toBeCloseTo(
+        0.5 + C.CHANGEOVER_H - mixStaggerH(2) / 2 + (C.DIVIDE_PER_BALL_MIN * 6) / 60,
+        9,
+      );
     });
 
     it('leaves every other stage untouched by nMix', () => {
@@ -361,13 +356,13 @@ describe('§4.7 stage durations', () => {
     });
 
     it('coldFerment 6–36', () => {
-      expect(total({ coldFermentH: 6 })).toBeCloseTo(33.83, 2);
-      expect(total({ coldFermentH: 36 })).toBeCloseTo(63.83, 2);
+      expect(total({ coldFermentH: 6 })).toBeCloseTo(32.8333, 4);
+      expect(total({ coldFermentH: 36 })).toBeCloseTo(62.8333, 4);
     });
 
-    it('temper 2–3', () => {
-      expect(total({ temperH: 2 })).toBeCloseTo(51.33, 2);
-      expect(total({ temperH: 3 })).toBeCloseTo(52.33, 2);
+    it('temper 1.5–2', () => {
+      expect(total({ temperH: 1.5 })).toBeCloseTo(50.8333, 4);
+      expect(total({ temperH: 2 })).toBeCloseTo(51.3333, 4);
     });
   });
 });
@@ -429,7 +424,7 @@ describe('§4.7 stage sequence', () => {
   });
 
   it('runs the classic stages in that order, with bigaRoomOnly for the fridge', () => {
-    expect(keysFor('classic')).toEqual(CLASSIC_SEQUENCE);
+    expect(keysFor('classic', CLASSIC)).toEqual(CLASSIC_SEQUENCE);
   });
 
   it('holds the sequence at nMix 2, where `mix` and `ballRoomTemp` both move', () => {
@@ -630,44 +625,45 @@ describe('backward mode', () => {
       (st) => [st.key, st.startsAt.getTime()] as const,
     );
 
-  it('puts every retarded stage at its hand-computed time (51 h 50 min back)', () => {
+  it('puts every retarded stage at its hand-computed time (50 h 50 min back)', () => {
     expect(golden('retarded', DEFAULTS)).toEqual([
-      ['bigaRoomTemp', local(1, 14, 10)], // Thu
-      ['bigaFridge', local(1, 16, 10)], //   + 2 h
-      ['bigaTemper', local(2, 11, 10)], //   + 19 h, Fri
-      ['mix', local(2, 12, 10)], //          + 1 h
-      ['bulkRest', local(2, 12, 40)], //     + 30 min
-      ['divideBall', local(2, 13, 40)], //   + 1 h
-      ['ballRoomTemp', local(2, 14, 0)], //  + 20 min
-      ['coldFerment', local(2, 15, 30)], //  + 90 min
-      ['temper', local(3, 15, 30)], //       + 24 h, Sat; + 2.5 h = 18:00
+      ['bigaRoomTemp', local(1, 15, 10)], // Thu
+      ['bigaFridge', local(1, 17, 10)], //   + 2 h
+      ['bigaTemper', local(2, 12, 10)], //   + 19 h, Fri
+      ['mix', local(2, 13, 10)], //          + 1 h
+      ['bulkRest', local(2, 13, 40)], //     + 30 min
+      ['divideBall', local(2, 14, 40)], //   + 1 h
+      ['ballRoomTemp', local(2, 15, 0)], //  + 20 min
+      ['coldFerment', local(2, 16, 30)], //  + 90 min
+      ['temper', local(3, 16, 30)], //       + 24 h, Sat; + 1.5 h = 18:00
     ]);
   });
 
-  it('puts every classic stage at its hand-computed time (45 h 50 min back)', () => {
-    expect(golden('classic', DEFAULTS)).toEqual([
-      ['bigaRoomOnly', local(1, 20, 10)], // Thu
-      ['mix', local(2, 12, 10)], //          + 16 h
-      ['bulkRest', local(2, 12, 40)],
-      ['divideBall', local(2, 13, 40)],
-      ['ballRoomTemp', local(2, 14, 0)],
-      ['coldFerment', local(2, 15, 30)],
-      ['temper', local(3, 15, 30)],
+  it('puts every classic stage at its hand-computed time (26 h 50 min back)', () => {
+    expect(golden('classic', CLASSIC)).toEqual([
+      ['bigaRoomOnly', local(2, 15, 10)], // Fri
+      ['mix', local(3, 7, 10)], //           + 16 h, Sat
+      ['bulkRest', local(3, 7, 40)], //      + 30 min
+      ['divideBall', local(3, 8, 40)], //    + 1 h
+      ['ballRoomTemp', local(3, 9, 0)], //   + 20 min
+      ['coldFerment', local(3, 10, 30)], //  + 90 min
+      ['temper', local(3, 16, 30)], //       + 6 h; + 1.5 h = 18:00
     ]);
   });
 
-  it('carries a split batch’s longer mix and shorter rise to the second', () => {
-    // nMix 2: mix 65 min, rise 90 − 17.5 = 72.5 min. 52 h 7.5 min back.
-    expect(golden('retarded', { ...DEFAULTS, nMix: 2 })).toEqual([
-      ['bigaRoomTemp', local(1, 13, 52, 30)],
-      ['bigaFridge', local(1, 15, 52, 30)],
-      ['bigaTemper', local(2, 10, 52, 30)],
-      ['mix', local(2, 11, 52, 30)],
-      ['bulkRest', local(2, 12, 57, 30)],
-      ['divideBall', local(2, 13, 57, 30)],
-      ['ballRoomTemp', local(2, 14, 17, 30)],
-      ['coldFerment', local(2, 15, 30)],
-      ['temper', local(3, 15, 30)],
+  it('carries a split batch’s longer mix, shorter rise and longer divide to the second', () => {
+    // 12 balls, nMix 2: mix 65 min, divide 27.5 min, rise 90 − 17.5 = 72.5
+    // min. 51 h 15 min back.
+    expect(golden('retarded', { ...DEFAULTS, nMix: 2, balls: 12 })).toEqual([
+      ['bigaRoomTemp', local(1, 14, 45)],
+      ['bigaFridge', local(1, 16, 45)], //    + 2 h
+      ['bigaTemper', local(2, 11, 45)], //    + 19 h
+      ['mix', local(2, 12, 45)], //           + 1 h
+      ['bulkRest', local(2, 13, 50)], //      + 65 min
+      ['divideBall', local(2, 14, 50)], //    + 1 h
+      ['ballRoomTemp', local(2, 15, 17, 30)], // + 27.5 min
+      ['coldFerment', local(2, 16, 30)], //   + 72.5 min
+      ['temper', local(3, 16, 30)], //        + 24 h
     ]);
   });
 
@@ -690,8 +686,8 @@ describe('backward mode', () => {
   });
 
   it('counts back in real hours across the end of daylight saving', () => {
-    // Clocks go back at 02:00 on Sun 1 Nov 2026. 51 h 50 min before 18:00 EST
-    // is 15:10 EDT on Fri 30 Oct — calendar arithmetic would say 14:10.
+    // Clocks go back at 02:00 on Sun 1 Nov 2026. 50 h 50 min before 18:00 EST
+    // is 16:10 EDT on Fri 30 Oct — calendar arithmetic would say 15:10.
     const t = timelineFor({
       mode: 'backward',
       bigaStartAt: new Date(0),
@@ -699,12 +695,14 @@ describe('backward mode', () => {
       schedule: 'retarded',
       adjustments: DEFAULTS,
     });
-    expect(t.startsAt.getTime()).toBe(new Date(2026, 9, 30, 15, 10).getTime());
-    expect((t.bakeAt.getTime() - t.startsAt.getTime()) / HOUR_MS).toBeCloseTo(51 + 50 / 60, 9);
+    expect(t.startsAt.getTime()).toBe(new Date(2026, 9, 30, 16, 10).getTime());
+    expect((t.bakeAt.getTime() - t.startsAt.getTime()) / HOUR_MS).toBeCloseTo(50 + 50 / 60, 9);
   });
 
   it('holds the start going forward and the bake going backward', () => {
-    const start = new Date(2026, 9, 1, 14, 10);
+    // The default schedule from this start bakes at BAKE; 6 h more cold moves
+    // whichever end isn't held.
+    const start = new Date(2026, 9, 1, 15, 10);
     const longer = { ...DEFAULTS, coldFermentH: 30 };
     const fwd = timelineFor({ mode: 'forward', bigaStartAt: start, bakeAt: BAKE, schedule: 'retarded', adjustments: longer });
     const back = timelineFor({ mode: 'backward', bigaStartAt: start, bakeAt: BAKE, schedule: 'retarded', adjustments: longer });
@@ -736,29 +734,39 @@ describe('§4.7 windows that keep every step out of the small hours', () => {
   const spans = (mode: 'forward' | 'backward', schedule: Schedule, a: ScheduleAdjustments) =>
     socialWindows({ mode, day: DAY, schedule, adjustments: a }).map((w) => [w.from.getTime(), w.to.getTime()]);
 
-  it('gives 9:00 AM–8:00 PM for a retarded start at 24 h — the one case the old copy was right', () => {
-    expect(spans('forward', 'retarded', DEFAULTS)).toEqual([[q(9), q(20)]]);
+  // Each window worked by hand from the stage offsets: every action start,
+  // and the bake, in 06:00–24:00. Retarded at 24 h cold: the temper starts
+  // at S + 1:20 the next day but one, and the bake at S + 2:50, so the start
+  // must be before 21:10 — and after 9:00, for the biga's temper at S + 21 h.
+  it('gives 9:00 AM–9:00 PM for a retarded start at 24 h', () => {
+    expect(spans('forward', 'retarded', DEFAULTS)).toEqual([[q(9), q(21)]]);
   });
 
-  it('gives 2:00 PM–11:45 PM for a classic start at 24 h, where 9 a.m. is itself overnight', () => {
-    expect(spans('forward', 'classic', DEFAULTS)).toEqual([[q(14), q(23, 45)]]);
+  it('gives 2:00–9:00 PM for a classic start at its 6 h cold ferment, where 9 a.m. is itself overnight', () => {
+    // The mix at S + 16 h and the trays into the fridge at S + 19:20 need S
+    // from 14:00; the bake at S + 26:50 needs it before 21:10.
+    expect(spans('forward', 'classic', CLASSIC)).toEqual([[q(14), q(21)]]);
   });
 
   it('moves with the cold ferment', () => {
-    expect(spans('forward', 'retarded', { ...DEFAULTS, coldFermentH: 6 })).toEqual([[q(9), q(14)]]);
-    expect(spans('forward', 'retarded', { ...DEFAULTS, coldFermentH: 12 })).toEqual([[q(16, 45), q(21, 45)]]);
+    // 6 h: the bake at S + 8:50 must fall before midnight, so the start is
+    // before 15:10. 18 h: the temper at S + 19:20 must be after 06:00.
+    expect(spans('forward', 'retarded', { ...DEFAULTS, coldFermentH: 6 })).toEqual([[q(9), q(15)]]);
+    expect(spans('forward', 'retarded', { ...DEFAULTS, coldFermentH: 18 })).toEqual([[q(10, 45), q(21, 45)]]);
   });
 
   it('can be two windows', () => {
-    expect(spans('forward', 'classic', { ...DEFAULTS, coldFermentH: 12 })).toEqual([
-      [q(14), q(14)],
-      [q(22, 45), q(23, 45)],
+    // 12 h: the bake at S + 14:50 allows a 9:00 start alone before 9:10, and
+    // the temper at S + 13:20 allows nothing again until 16:40.
+    expect(spans('forward', 'retarded', { ...DEFAULTS, coldFermentH: 12 })).toEqual([
+      [q(9), q(9)],
+      [q(16, 45), q(21, 45)],
     ]);
   });
 
   it('gives bake times in backward mode', () => {
-    // The forward window shifted by 51 h 50 min, rounded inward to quarters.
-    expect(spans('backward', 'retarded', DEFAULTS)).toEqual([[q(13), q(23, 45)]]);
+    // The forward window shifted by 50 h 50 min, rounded inward to quarters.
+    expect(spans('backward', 'retarded', DEFAULTS)).toEqual([[q(12), q(23, 45)]]);
   });
 
   it('matches a brute-force scan exactly', () => {
@@ -767,7 +775,7 @@ describe('§4.7 windows that keep every step out of the small hours', () => {
     for (const mode of ['forward', 'backward'] as const) {
       for (const schedule of ['retarded', 'classic'] as const) {
         for (let cold = 6; cold <= 36; cold += 1) {
-          for (const temperH of [2, 2.5, 3]) {
+          for (const temperH of [1.5, 1.75, 2]) {
             const a = { ...DEFAULTS, coldFermentH: cold, temperH };
             const windows = socialWindows({ mode, day: DAY, schedule, adjustments: a });
             const inWindow = new Set<number>();
@@ -853,9 +861,9 @@ describe('§7.4 a planning point shows its range', () => {
       'divideBall: 20 min',
       'ballRoomTemp: 1 h 30 min',
       'coldFerment: 24 h',
-      'temper: 2 h 30 min (2–3 h)',
+      'temper: 1 h 30 min (1.5–2 h)',
     ]);
-    expect(shown('classic').slice(0, 2)).toEqual(['bigaRoomOnly: 16 h (16–18)', 'mix: 30 min']);
+    expect(shown('classic', CLASSIC).slice(0, 2)).toEqual(['bigaRoomOnly: 16 h (16–18)', 'mix: 30 min']);
   });
 
   it('drops the range for a classic ferment planned off the Giorilli window', () => {

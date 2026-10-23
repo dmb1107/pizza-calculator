@@ -43,14 +43,14 @@ function asWarning(id: string, severity: Warning['severity'], markdown: string):
  * messages name is a batch or per-mix quantity, the same for every mix.
  */
 export function capacityAlerts(result: CalculatorResult, tokens: Record<string, string>): Warning[] {
-  const { nMix, nBiga } = result.capacity;
+  const { nMix } = result.capacity;
   const say = (text: string) => bindTokens(text, tokens);
   const out: Warning[] = [];
 
   if (nMix > 1) out.push(asWarning('capacity-split', 'warn', say(CAPACITY.split)));
-  if (nBiga > 1) out.push(asWarning('capacity-biga-split', 'warn', say(CAPACITY.bigaSplit)));
-  // §4.5's line, kept by §7.3 for the case one biga feeds several mixes.
-  if (nBiga < nMix) out.push(asWarning('capacity-divide-biga', 'info', say(CAPACITY.divideBiga)));
+  // §4.5's line, information, after the split: one biga at every size
+  // (MESSAGE-53), divided by weight whenever the batch splits.
+  if (nMix > 1) out.push(asWarning('capacity-divide-biga', 'info', say(CAPACITY.divideBiga)));
   if (printedPerMix(result) >= NEAR_LIMIT_FRACTION * C.MAX_DOUGH) {
     out.push(asWarning('capacity-near-limit', 'warn', say(CAPACITY.nearLimit)));
   }

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { calculate, type CalculatorInputs } from '../src/lib/engine';
 import { bindTokens, tokenValues, unboundTokens, type ScheduleTokens } from '../src/lib/bindTokens';
 import { C } from '../src/lib/constants';
-import { detailConditionContext } from '../src/lib/stepInstances';
 import { formatTempF } from '../src/lib/format';
 import { CONCEPTS } from '../src/content/concepts';
 import { STEPS } from '../src/content/steps';
@@ -24,7 +23,7 @@ const SCHEDULE: ScheduleTokens = {
   bigaFridgeH: 19,
   bigaRoomOnlyH: 16,
   coldFermentH: 24,
-  temperH: 2.5,
+  temperH: 1.5,
 };
 
 const values = tokenValues(calculate(INPUTS), SCHEDULE);
@@ -35,7 +34,7 @@ function allContent(): { where: string; text: string }[] {
   // Every string a step carries, walked rather than listed — a list missed
   // MESSAGE-31's per-track timers (timerLabelRetarded / timerLabelClassic) and
   // every title, the same blind spot the literal gate had. Conditional blocks
-  // count: they carry tokens of their own ({nBiga}, {staggerUncentred}) and
+  // count: they carry tokens of their own ({nMix}, {staggerUncentred}) and
   // render. Only identifiers and condition expressions are skipped.
   const walk = (where: string, value: unknown): void => {
     if (typeof value === 'string') out.push({ where, text: value });
@@ -134,11 +133,11 @@ describe('per-mix scope', () => {
 
 describe('bound values', () => {
   it('matches the §5 six-ball vector', () => {
-    // Per-biga and per-mix at 6 balls, where nBiga and nMix are both 1, so
-    // these equal the batch totals from the §5 vector.
-    expect(values['bigaFlourPerBiga']).toBe('611.2');
-    expect(values['bigaWaterPerBiga']).toBe('305.6');
-    expect(values['bigaADYPerBiga']).toBe('2.29');
+    // The biga's are batch totals at every size (one biga, MESSAGE-53); the
+    // per-mix ones equal them at 6 balls, where nMix is 1.
+    expect(values['bigaFlour']).toBe('611.2');
+    expect(values['bigaWater']).toBe('305.6');
+    expect(values['bigaADY']).toBe('2.29');
     expect(values['freshFlourPerMix']).toBe('329.1');
     expect(values['saltPerMix']).toBe('26.3');
   });
@@ -161,15 +160,15 @@ describe('bound values', () => {
     // "Divide to 265 g", not "265.0 g" — but "611.2 g" keeps its decimal.
     expect(values['ballWeight']).toBe('265');
     expect(values['balls']).toBe('6');
-    expect(values['temper']).toBe('2.5');
+    expect(values['temper']).toBe('1.5');
     expect(values['coldFerment']).toBe('24');
-    expect(values['bigaFlourPerBiga']).toContain('.');
+    expect(values['bigaFlour']).toContain('.');
   });
 
   it('carries the probe target and DDT as temperatures', () => {
     expect(values['ddt']).toBe('75.0');
-    // §5: 6 balls at FF 14 in a 70 °F room.
-    expect(values['probeTarget']).toBe('71.8');
+    // §5: 6 balls in a 70 °F room (no FF term since MESSAGE-52).
+    expect(values['probeTarget']).toBe('71.9');
   });
 
   it('plans the room time at 90 min until a dough temperature is measured', () => {
@@ -177,7 +176,7 @@ describe('bound values', () => {
     expect(values['finalDoughTemp']).toBe('75.0');
 
     const measured = tokenValues(calculate({ ...INPUTS, finalDoughTempF: 73 }), SCHEDULE);
-    expect(measured['roomMin']).toBe('110');
+    expect(measured['roomMin']).toBe('101');
     expect(measured['finalDoughTemp']).toBe('73.0');
   });
 
@@ -197,7 +196,7 @@ describe('unknown tokens fail loudly', () => {
   });
 
   it('reports them', () => {
-    expect(unboundTokens('{a} and {bigaFlourPerBiga} and {b}', values)).toEqual(['a', 'b']);
+    expect(unboundTokens('{a} and {bigaFlour} and {b}', values)).toEqual(['a', 'b']);
   });
 
   it('leaves text with no tokens alone', () => {
@@ -208,7 +207,10 @@ describe('unknown tokens fail loudly', () => {
 describe('step summaries bind to real numbers', () => {
   it('fills biga-1 with the weight to put on the scale', () => {
     const step = STEPS.find((s) => s.id === 'biga-1');
-    expect(bindTokens(step?.summary ?? '', values)).toContain('611.2 g of flour');
+    // MESSAGE-54: the flour is broken up first, then weighed, so none left in
+    // the sieve comes out of the biga.
+    expect(bindTokens(step?.summary ?? '', values)).toContain('then weigh out 611.2 g.');
+    expect(bindTokens(step?.summary ?? '', values)).toContain('Weigh 305.6 g of water.');
   });
 
   it('binds each biga stage\'s planning point beside its range', () => {
@@ -216,13 +218,13 @@ describe('step summaries bind to real numbers', () => {
     const step = (id: string) => STEPS.find((s) => s.id === id);
     // MESSAGE-32: worded to hold at a plan outside the window too.
     expect(bindTokens(step('biga-4')?.summaryClassic ?? '', values)).toBe(
-      'At 61–65 °F, covered so it doesn\'t dry out. The Giorilli window is **16–18 hours**; the timeline plans **16 h**.',
+      'At 61–65 °F, covered so it doesn\'t dry out. The window is **16–18 hours**; the timeline plans **16 h**.',
     );
     expect(bindTokens(step('biga-4b')?.summary ?? '', values)).toContain(
       'for **18–20 hours**. The timeline plans 19 h.',
     );
     expect(bindTokens(step('bake-1')?.summary ?? '', values)).toContain(
-      '**2–3 hours** before baking; the timeline plans 2.5 h.',
+      '**1½–2 hours** before the first launch; the timeline plans 1.5 h.',
     );
   });
 
@@ -234,13 +236,15 @@ describe('step summaries bind to real numbers', () => {
       bindTokens(block, tokenValues(calculate({ ...INPUTS, balls, finalDoughTempF }), SCHEDULE));
     // 12 balls, dough on its DDT of 74 °F: 90 per dough, 72.5 planned.
     expect(at(12)).toContain('At 74.0 °F a single mix would rest 90 min; this batch rests 73.');
-    // 24 balls at a measured 76 °F: 71.2 per dough, held at the 45-minute floor.
-    expect(at(24, 76)).toContain('At 76.0 °F a single mix would rest 71 min; this batch rests 45.');
+    // 24 balls at a measured 76 °F: 80.2 per dough, 45.2 planned, above the floor.
+    expect(at(24, 76)).toContain('At 76.0 °F a single mix would rest 80 min; this batch rests 45.');
+    // At 77 °F: 75.6 per dough, and the correction is held at the 45-minute floor.
+    expect(at(24, 77)).toContain('At 77.0 °F a single mix would rest 76 min; this batch rests 45.');
   });
 
   it('fills mix-4 with the probe target', () => {
     const step = STEPS.find((s) => s.id === 'mix-4');
-    expect(bindTokens(step?.summary ?? '', values)).toContain('71.8 °F');
+    expect(bindTokens(step?.summary ?? '', values)).toContain('71.9 °F');
   });
 });
 
@@ -250,26 +254,31 @@ describe('§4.10 tokens', () => {
     tokenValues(calculate({ ...INPUTS, ...over }), SCHEDULE).probeGapPhrase;
 
   it('says below, above, or right at DDT — never a signed number', () => {
-    // 6 balls, 70 °F room, FF 14: the usual case.
-    expect(phraseAt({})).toBe('3.2 °F below DDT');
-    // 3 balls, 60 °F room, FF 10: the rest cools the dough more than Phases C
-    // and D warm it, so the target sits ABOVE DDT. Bake 2 is a 3-ball bake
-    // that measures FF, in a kitchen that could be this cold.
-    expect(phraseAt({ balls: 3, roomTempF: 60, flourTempF: 60, frictionFactorF: 10 })).toBe('0.3 °F above DDT');
-    // Same kitchen at FF 11.1: the gap is +0.006, so the printed target is
-    // 75.0 against a printed DDT of 75.0 — and the sentence must not say
-    // "0.0 °F below".
-    expect(phraseAt({ balls: 3, roomTempF: 60, flourTempF: 60, frictionFactorF: 11.1 })).toBe('right at DDT');
-    // And from the other side of zero: at FF 11.0 the gap is −0.02.
-    expect(phraseAt({ balls: 3, roomTempF: 60, flourTempF: 60, frictionFactorF: 11 })).toBe('right at DDT');
+    // 6 balls, 70 °F room: the usual case.
+    expect(phraseAt({})).toBe('3.1 °F below DDT');
+    // Since MESSAGE-52 the gap has no FF term, and at 3 × 265 g it crosses zero
+    // only in a room of 56.4 °F, below the 60 °F input floor. The phrase must
+    // still read right if the range widens, so these rooms sit outside it.
+    // At 54 °F the rest cools the dough more than Phases C and D warm it, and
+    // the target sits ABOVE DDT.
+    const cold = { balls: 3, ballWeightG: 265 };
+    expect(phraseAt({ ...cold, roomTempF: 54, flourTempF: 54 })).toBe('0.5 °F above DDT');
+    // At 56.6 °F the gap is +0.04: the printed target is 75.0 against a
+    // printed DDT of 75.0, and the sentence must not say "0.0 °F below".
+    expect(phraseAt({ ...cold, roomTempF: 56.6, flourTempF: 56.6 })).toBe('right at DDT');
+    // And from the other side of zero: at 56.2 °F the gap is −0.04.
+    expect(phraseAt({ ...cold, roomTempF: 56.2, flourTempF: 56.2 })).toBe('right at DDT');
+    // FF doesn't move it.
+    expect(phraseAt({ ...cold, roomTempF: 54, flourTempF: 54, frictionFactorF: 8 })).toBe('0.5 °F above DDT');
   });
 
   it('prints the magnitude of the printed DDT minus the printed target, exactly', () => {
     // §4.10: "The number must equal |printed DDT − printed target| exactly."
-    // Swept across the directions and the zero crossing.
+    // Swept across the directions and the zero crossing, which lies below the
+    // 60 °F input floor since MESSAGE-52, so the rooms start at 50.
     for (const balls of [3, 6, 9, 12, 18]) {
-      for (let room = 60; room <= 84; room += 0.5) {
-        for (const ff of [8, 10, 11, 11.1, 12, 14, 14.03, 16]) {
+      for (let room = 50; room <= 84; room += 0.5) {
+        for (const ff of [8, 10.791045, 14]) {
           const inputs = { ...INPUTS, balls, roomTempF: room, flourTempF: room, frictionFactorF: ff };
           const v = tokenValues(calculate(inputs), SCHEDULE);
           const printed = Number(v.ddt) - Number(v.probeTarget);
@@ -306,35 +315,3 @@ describe('§4.10 tokens', () => {
   });
 });
 
-/**
- * §4.9: "a condition that triggers prose must be decided on the values the
- * prose will print." These replace the FINDINGS-18 pins: at 267 g the old
- * block fired on 12.02 > 12 and printed "12.0 inches" and "0.083 rather than
- * 0.083". Now it reads the number it prints.
- */
-describe('§4.9 the capped block shows exactly when its printed number reaches THICKER_NOTE_MIN_PERCENT', () => {
-  const at = (ballWeightG: number) => {
-    const r = calculate({ ...INPUTS, ballWeightG });
-    const v = tokenValues(r, SCHEDULE);
-    return { printed: v.thicknessPercentOver, shows: detailConditionContext(r, v).thickerThanDefault };
-  };
-
-  it('stays hidden below 10%, as printed, and shows from it', () => {
-    // 10 is Dave's call (MESSAGE-21): where the thickness is noticeable in the
-    // bake. Before it the block fired from 1%, a floor against printing "0%".
-    expect(at(240)).toEqual({ printed: '0', shows: false });
-    expect(at(265)).toEqual({ printed: '0', shows: false });
-    expect(at(266)).toEqual({ printed: '0', shows: false }); // capped by 0.02 in
-    expect(at(267)).toEqual({ printed: '1', shows: false }); // capped, and below the note
-    expect(at(290)).toEqual({ printed: '9', shows: false }); // 9.43% raw
-    expect(at(291)).toEqual({ printed: '10', shows: true }); // 9.81% raw — the printed value decides
-    expect(at(300)).toEqual({ printed: '13', shows: true });
-  });
-
-  it('never disagrees with its own sentence anywhere in the input range', () => {
-    for (let g = 240; g <= 300; g++) {
-      const { printed, shows } = at(g);
-      expect(shows, `${g} g prints ${printed}%`).toBe(Number(printed) >= C.THICKER_NOTE_MIN_PERCENT);
-    }
-  });
-});

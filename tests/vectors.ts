@@ -17,7 +17,7 @@ export const VECTOR_CONDITIONS = {
   tBowlF: 58,
   tFlourF: 69,
   tRoomF: 70,
-  bowlMassG: 965,
+  bowlMassG: 963,
 } as const;
 
 export interface BatchVector {
@@ -41,18 +41,17 @@ export interface BatchVector {
   ddtF: number;
   waterTempF: number;
   probeTargetF: number;
-  nBiga: number;
   nMix: number;
 }
 
 export const BATCH_VECTORS: readonly BatchVector[] = [
-  { balls: 3,  ballG: 265, F: 470.2,  bigaFlour: 305.6,  bigaWater: 152.8, bigaADY: 1.15, freshFlour: 164.6, freshWater: 176.3,  phaseA: 105.8, phaseB: 70.5,  salt: 13.2, Ct: 529.4,  ddtF: 75, waterTempF: 73.7, probeTargetF: 72.2, nBiga: 1, nMix: 1 },
-  { balls: 6,  ballG: 265, F: 940.4,  bigaFlour: 611.2,  bigaWater: 305.6, bigaADY: 2.29, freshFlour: 329.1, freshWater: 352.6,  phaseA: 211.6, phaseB: 141.1, salt: 26.3, Ct: 1058.8, ddtF: 75, waterTempF: 68.1, probeTargetF: 71.8, nBiga: 1, nMix: 1 },
-  { balls: 9,  ballG: 265, F: 1410.6, bigaFlour: 916.9,  bigaWater: 458.4, bigaADY: 3.44, freshFlour: 493.7, freshWater: 529.0,  phaseA: 317.4, phaseB: 211.6, salt: 39.5, Ct: 1588.1, ddtF: 74, waterTempF: 63.0, probeTargetF: 70.5, nBiga: 1, nMix: 1 },
-  { balls: 12, ballG: 265, F: 1880.8, bigaFlour: 1222.5, bigaWater: 611.2, bigaADY: 4.58, freshFlour: 658.3, freshWater: 705.3,  phaseA: 423.2, phaseB: 282.1, salt: 52.7, Ct: 1058.8, ddtF: 74, waterTempF: 64.8, probeTargetF: 70.6, nBiga: 1, nMix: 2 },
-  { balls: 18, ballG: 265, F: 2821.1, bigaFlour: 1833.7, bigaWater: 916.9, bigaADY: 6.88, freshFlour: 987.4, freshWater: 1057.9, phaseA: 634.8, phaseB: 423.2, salt: 79.0, Ct: 1588.1, ddtF: 74, waterTempF: 63.0, probeTargetF: 70.5, nBiga: 2, nMix: 2 },
-  { balls: 5,  ballG: 270, F: 798.4,  bigaFlour: 519.0,  bigaWater: 259.5, bigaADY: 1.95, freshFlour: 279.5, freshWater: 299.4,  phaseA: 179.6, phaseB: 119.8, salt: 22.4, Ct: 898.9,  ddtF: 75, waterTempF: 69.1, probeTargetF: 71.9, nBiga: 1, nMix: 1 },
-  { balls: 7,  ballG: 260, F: 1076.4, bigaFlour: 699.7,  bigaWater: 349.8, bigaADY: 2.62, freshFlour: 376.7, freshWater: 403.7,  phaseA: 242.2, phaseB: 161.5, salt: 30.1, Ct: 1211.9, ddtF: 74, waterTempF: 64.1, probeTargetF: 70.6, nBiga: 1, nMix: 1 },
+  { balls: 3,  ballG: 265, F: 470.2,  bigaFlour: 305.6,  bigaWater: 152.8, bigaADY: 1.15, freshFlour: 164.6, freshWater: 176.3,  phaseA: 105.8, phaseB: 70.5,  salt: 13.2, Ct: 529.4,  ddtF: 75, waterTempF: 73.6, probeTargetF: 72.3, nMix: 1 },
+  { balls: 6,  ballG: 265, F: 940.4,  bigaFlour: 611.2,  bigaWater: 305.6, bigaADY: 2.29, freshFlour: 329.1, freshWater: 352.6,  phaseA: 211.6, phaseB: 141.1, salt: 26.3, Ct: 1058.8, ddtF: 75, waterTempF: 68.1, probeTargetF: 71.9, nMix: 1 },
+  { balls: 9,  ballG: 265, F: 1410.6, bigaFlour: 916.9,  bigaWater: 458.4, bigaADY: 3.44, freshFlour: 493.7, freshWater: 529.0,  phaseA: 317.4, phaseB: 211.6, salt: 39.5, Ct: 1588.1, ddtF: 74, waterTempF: 63.0, probeTargetF: 70.6, nMix: 1 },
+  { balls: 12, ballG: 265, F: 1880.8, bigaFlour: 1222.5, bigaWater: 611.2, bigaADY: 4.58, freshFlour: 658.3, freshWater: 705.3,  phaseA: 423.2, phaseB: 282.1, salt: 52.7, Ct: 1058.8, ddtF: 74, waterTempF: 64.7, probeTargetF: 70.7, nMix: 2 },
+  { balls: 18, ballG: 265, F: 2821.1, bigaFlour: 1833.7, bigaWater: 916.9, bigaADY: 6.88, freshFlour: 987.4, freshWater: 1057.9, phaseA: 634.8, phaseB: 423.2, salt: 79.0, Ct: 1588.1, ddtF: 74, waterTempF: 63.0, probeTargetF: 70.6, nMix: 2 },
+  { balls: 5,  ballG: 270, F: 798.4,  bigaFlour: 519.0,  bigaWater: 259.5, bigaADY: 1.95, freshFlour: 279.5, freshWater: 299.4,  phaseA: 179.6, phaseB: 119.8, salt: 22.4, Ct: 898.9,  ddtF: 75, waterTempF: 69.1, probeTargetF: 72.0, nMix: 1 },
+  { balls: 7,  ballG: 260, F: 1076.4, bigaFlour: 699.7,  bigaWater: 349.8, bigaADY: 2.62, freshFlour: 376.7, freshWater: 403.7,  phaseA: 242.2, phaseB: 161.5, salt: 30.1, Ct: 1211.9, ddtF: 74, waterTempF: 64.1, probeTargetF: 70.7, nMix: 1 },
 ];
 
 /**
@@ -66,21 +65,22 @@ export const BAKE_1 = {
   balls: 6,
   ballG: 265,
   /**
-   * 14.031 solved from these inputs with the §4.3 form (MESSAGE-25). The 14.04
-   * carried before could not be reproduced from any logged input; at 14.04
-   * the pins below read 73.508 and 67.97.
+   * The regression's input. Solved from these readings with the §4.3 form it
+   * is 14.028 at the weighed 963 g bowl (14.031 at the earlier 965 g,
+   * MESSAGE-54). The 14.04 carried before could not be reproduced from any
+   * logged input; at 14.04 and 965 g the pins below read 73.508 and 67.97.
    */
   ff: 14.03,
   tBigaF: 58,
   tBowlF: 58,
   tFlourF: 69,
   tRoomF: 70,
-  bowlMassG: 965,
+  bowlMassG: 963,
   ddtF: 75,
   /** What was actually used on the day. */
   waterUsedF: 63.0,
-  /** What the corrected model says it should have been. */
-  waterRequiredF: 68.0,
+  /** What the corrected model says it should have been: 67.988 at 963 g (MESSAGE-54). */
+  waterRequiredF: 67.99,
   /** Predicted, and measured on the day. */
   finalTempF: 73.5,
   /**
@@ -101,8 +101,8 @@ export const BOWL_DILUTION: readonly {
   apparentFF: number;
 }[] = [
   { ballsPerMix: 3, bowlShare: 0.179, apparentFF: 11.5 },
-  { ballsPerMix: 6, bowlShare: 0.099, apparentFF: 12.6 },
-  { ballsPerMix: 9, bowlShare: 0.068, apparentFF: 13.0 },
+  { ballsPerMix: 6, bowlShare: 0.098, apparentFF: 12.6 },
+  { ballsPerMix: 9, bowlShare: 0.068, apparentFF: 13.1 },
 ];
 
 /**
@@ -110,23 +110,27 @@ export const BOWL_DILUTION: readonly {
  * rather than by any batch size:
  *
  *     C_bowl / (Ct_per_gram × MAX_DOUGH + C_bowl)
- *     115.8  / (0.6516      × 2500      + 115.8)  = 6.637%
+ *     115.56 / (0.651551    × 2500      + 115.56) = 6.6245%
+ *
+ * (963 g bowl. §5 prints 6.62%; MESSAGE-54's 6.624020 used Ct per gram
+ * rounded to 0.6516 first.)
  *
  * An infimum, approached but never reached, since a mix cannot sit exactly at
  * the cap.
  *
  * ⚠️ Both earlier attempts anchored on a configuration and both were wrong.
- * 6.8% was the 9 × 265 g figure; my 6.68% was 9 × 270 g, the largest UNSPLIT
- * mix — but a SPLIT batch gets closer to the cap than any unsplit one. 19 × 257 g
- * runs as two mixes of 2495.2 g and reaches 6.649%, and it is the true minimum
+ * 6.8% was the 9 × 265 g figure; 6.68% was 9 × 270 g, taken for the largest
+ * UNSPLIT mix (10 × 244 g is, at 2493.7 g and 6.640%, MESSAGE-54) — but a SPLIT
+ * batch gets closer to the cap than any unsplit one. 19 × 257 g runs as two
+ * mixes of 2495.2 g and reaches 6.636%, and it is the true minimum
  * over the whole 3–24 × 240–300 g grid. My sweep missed it by only trying four
  * ball weights. Anchoring on the cap is the only form that survives a change to
  * the ball-weight range or the nMix rule.
  */
-export const BOWL_SHARE_FLOOR = 0.06637;
+export const BOWL_SHARE_FLOOR = 0.066245;
 
 /** §5. The configuration that comes closest to the cap, and so to the infimum. */
-export const BOWL_SHARE_MINIMUM_CASE = { balls: 19, ballG: 257, share: 0.06649 } as const;
+export const BOWL_SHARE_MINIMUM_CASE = { balls: 19, ballG: 257, share: 0.066364 } as const;
 
 /**
  * §5. A split batch reads off its own mix size: 12 balls off the 6 row, 18 off
@@ -145,67 +149,74 @@ export const BOWL_DILUTION_SPLIT: readonly { balls: number; sameAsBalls: number 
  */
 export const OBSERVED_RATE_VECTORS: readonly { balls: number; ctOverTot: number; at30: number }[] = [
   { balls: 3, ctOverTot: 0.821, at30: 0.89 },
-  { balls: 6, ctOverTot: 0.901, at30: 0.97 },
+  { balls: 6, ctOverTot: 0.902, at30: 0.97 },
   { balls: 9, ctOverTot: 0.932, at30: 1.01 },
-  { balls: 12, ctOverTot: 0.901, at30: 0.97 },
+  { balls: 12, ctOverTot: 0.902, at30: 0.97 },
   { balls: 18, ctOverTot: 0.932, at30: 1.01 },
 ];
 
-/** §5 bowl-mode vectors — 265 g, FF 14, biga 58, room 70, flour 69. */
-export const BOWL_MODE_VECTORS: readonly {
+/**
+ * §5 bowl-temperature vectors — 265 g, FF 14, biga 58, room 70, flour 69.
+ * Mix 1's water with the bowl at 58 (the biga, which is mix 1's prefill), at
+ * 70 and at DDT. Keyed by temperature since MESSAGE-54 removed the selector
+ * whose modes these columns were; the middle column matches no prefill now
+ * and stays to pin the bowl term at a third temperature.
+ */
+export const BOWL_TEMP_VECTORS: readonly {
   balls: number;
-  cold: number;
-  room: number;
-  warm: number;
+  at58: number;
+  at70: number;
+  atDdt: number;
 }[] = [
-  { balls: 3, cold: 73.7, room: 65.8, warm: 62.5 },
-  { balls: 6, cold: 68.1, room: 64.1, warm: 62.5 },
-  { balls: 9, cold: 63.0, room: 60.4, warm: 59.5 },
-  { balls: 12, cold: 64.8, room: 60.8, warm: 59.5 },
-  { balls: 18, cold: 63.0, room: 60.4, warm: 59.5 },
+  { balls: 3, at58: 73.6, at70: 65.8, atDdt: 62.5 },
+  { balls: 6, at58: 68.1, at70: 64.1, atDdt: 62.5 },
+  { balls: 9, at58: 63.0, at70: 60.4, atDdt: 59.5 },
+  { balls: 12, at58: 64.7, at70: 60.8, atDdt: 59.5 },
+  { balls: 18, at58: 63.0, at70: 60.4, atDdt: 59.5 },
 ];
 
 /**
  * §4.6. The probe gap is mix-size dependent; there is no flat `DDT − 4`.
+ * Room 70 °F. Independent of FF since MESSAGE-52: the friction still to come
+ * is Phases C and D at their reference times and rates.
  *
- * Settled by MESSAGE-5 §3: §4.6 now agrees with §5 at 70.6 / 70.5. 12 and 6
- * differ despite sharing a mix size because mix size sets the friction term
- * while TOTAL balls sets DDT (74 vs 75), and the gap also carries
- * `0.2 × (DDT − T_room)`.
+ * 12 and 6 differ despite sharing a mix size because mix size sets the
+ * friction term while TOTAL balls sets DDT (74 vs 75), and the gap also
+ * carries `0.2 × (DDT − T_room)`.
  */
 export const PROBE_GAP_VECTORS: readonly { balls: number; belowDdt: number }[] = [
-  { balls: 3, belowDdt: 2.79 },
-  { balls: 6, belowDdt: 3.16 },
-  { balls: 9, belowDdt: 3.51 },
-  { balls: 12, belowDdt: 3.36 },
-  { balls: 18, belowDdt: 3.51 },
+  { balls: 3, belowDdt: 2.720 },
+  { balls: 6, belowDdt: 3.086 },
+  { balls: 9, belowDdt: 3.425 },
+  { balls: 12, belowDdt: 3.286 },
+  { balls: 18, belowDdt: 3.425 },
 ];
 
-/** §4.8 shaped rise time, at DDT 75. */
 /**
  * §4.8 / §5 shaped rise. **`roomMin` depends only on `T_actual − DDT`**, so
  * every row carries its DDT. This vector used to be keyed on dough temperature
  * alone with DDT 75 assumed by the test — the shape that put every table one
  * row off at 7+ balls, where DDT is 74 (MESSAGE-21). §5's two DDT 74 rows are
- * marked; the rest is §4.8's offset table at both DDTs.
+ * marked; the rest is §4.8's offset table at both DDTs. `COOLDOWN_EQUIV_MIN`
+ * 35 since MESSAGE-52 (150 before).
  */
 export const ROOM_MINUTES: readonly { ddtF: number; finalTempF: number; roomMin: number }[] = [
-  { ddtF: 75, finalTempF: 77, roomMin: 71 },
-  { ddtF: 75, finalTempF: 76, roomMin: 80 },
+  { ddtF: 75, finalTempF: 77, roomMin: 80 },
+  { ddtF: 75, finalTempF: 76, roomMin: 85 },
   { ddtF: 75, finalTempF: 75, roomMin: 90 },
-  { ddtF: 75, finalTempF: 74, roomMin: 100 },
-  { ddtF: 75, finalTempF: 73, roomMin: 110 },
-  { ddtF: 75, finalTempF: 72, roomMin: 121 },
-  { ddtF: 75, finalTempF: 71, roomMin: 133 },
-  { ddtF: 75, finalTempF: 70, roomMin: 144 },
-  { ddtF: 74, finalTempF: 76, roomMin: 71 },
-  { ddtF: 74, finalTempF: 75, roomMin: 80 },
+  { ddtF: 75, finalTempF: 74, roomMin: 95 },
+  { ddtF: 75, finalTempF: 73, roomMin: 101 },
+  { ddtF: 75, finalTempF: 72, roomMin: 106 },
+  { ddtF: 75, finalTempF: 71, roomMin: 112 },
+  { ddtF: 75, finalTempF: 70, roomMin: 118 },
+  { ddtF: 74, finalTempF: 76, roomMin: 80 },
+  { ddtF: 74, finalTempF: 75, roomMin: 85 },
   { ddtF: 74, finalTempF: 74, roomMin: 90 }, // §5
-  { ddtF: 74, finalTempF: 73, roomMin: 100 },
-  { ddtF: 74, finalTempF: 72, roomMin: 110 }, // §5
-  { ddtF: 74, finalTempF: 71, roomMin: 121 },
-  { ddtF: 74, finalTempF: 70, roomMin: 133 },
-  { ddtF: 74, finalTempF: 69, roomMin: 144 },
+  { ddtF: 74, finalTempF: 73, roomMin: 95 },
+  { ddtF: 74, finalTempF: 72, roomMin: 101 }, // §5
+  { ddtF: 74, finalTempF: 71, roomMin: 106 },
+  { ddtF: 74, finalTempF: 70, roomMin: 112 },
+  { ddtF: 74, finalTempF: 69, roomMin: 118 },
 ];
 
 /**
@@ -228,8 +239,9 @@ export const THERMAL_WEIGHTS = { biga: 0.5311, flour: 0.1306, water: 0.3331, sal
  * batch is three 8-ball mixes, not one 6500 g monster.
  *
  * ⚠️ The largest single mix is a SPLIT one: 19 × 257 g runs as two 2495 g
- * mixes, against 9 × 270 g's 2483 g. The true minimum therefore sits at
- * 19 × 257 g (53.210 °F) rather than 9 × 270 g (53.224 °F) — immaterial at
+ * mixes, against 10 × 244 g's 2494 g, the largest unsplit batch (MESSAGE-54;
+ * 9 × 270 g was named before). The true minimum therefore sits at
+ * 19 × 257 g (53.203 °F) rather than 10 × 244 g (53.205 °F) — immaterial at
  * the published precision, but this comment and §5 both named the wrong
  * corner, and the sweep could not see the right one because 257 g was never
  * sampled. It is now.
@@ -241,7 +253,7 @@ export const WATER_REACHABILITY = {
   bigaF: { min: 45, max: 60 },
   roomF: { min: 60, max: 84 },
   /** Across the whole permitted envelope. */
-  spans: { min: 53.2, max: 108.7 },
+  spans: { min: 53.2, max: 108.6 },
   /** At the 265 g default ball weight. */
   spans265: { min: 53.3, max: 106.6 },
   /** §4.4 guard thresholds. Neither fires anywhere in the envelope at FF 14. */
@@ -265,18 +277,18 @@ export const PER_BATCH_MAX_WATER: readonly { balls: number; maxWaterF: number }[
   { balls: 9, maxWaterF: 90.3 },
   { balls: 12, maxWaterF: 93.4 },
   { balls: 18, maxWaterF: 90.3 },
-  { balls: 24, maxWaterF: 91.1 },
+  { balls: 24, maxWaterF: 91.0 },
 ];
 
 /**
- * §5. Had `MIN_BALLS` stayed at 1 the maximum would be 152.2 °F at 1 × 240 g.
+ * §5. Had `MIN_BALLS` stayed at 1 the maximum would be 152.1 °F at 1 × 240 g (FF 14, 963 g bowl).
  * Kept because it is the reason the minimum exists — MESSAGE-4 §13 asked that
  * these not simply vanish when the sweeps were re-bounded.
  */
 export const BELOW_MIN_BALLS_WATER: readonly { balls: number; ballG: number; maxWaterF: number }[] = [
-  { balls: 1, ballG: 240, maxWaterF: 152.2 },
-  { balls: 1, ballG: 265, maxWaterF: 146.0 },
-  { balls: 2, ballG: 265, maxWaterF: 116.5 },
+  { balls: 1, ballG: 240, maxWaterF: 152.1 },
+  { balls: 1, ballG: 265, maxWaterF: 145.9 },
+  { balls: 2, ballG: 265, maxWaterF: 116.4 },
 ];
 
 /** Assertion tolerances. §5: +/-0.1 g, +/-0.1 degF. */

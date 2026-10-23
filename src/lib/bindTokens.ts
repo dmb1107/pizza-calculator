@@ -13,11 +13,9 @@ import { C } from './constants';
 import {
   formatAdy,
   formatGrams,
-  formatInches,
   formatPercentNumber,
   formatProbeGapPhrase,
   formatTempF,
-  formatWhole,
 } from './format';
 import { mixStaggerH, observedRate, type CalculatorResult } from './engine';
 
@@ -86,12 +84,6 @@ export function tokenValues(
     phaseAPercent: formatPercentNumber(C.PHASE_A_FRACTION),
     phaseBPercent: formatPercentNumber(1 - C.PHASE_A_FRACTION),
 
-    // §4.9 — `bulk-2`. Rounded once each from the unrounded values.
-    // `thickerThanDefault` is decided on the printed percentage, so this token
-    // is also what decides whether the capped block shows.
-    openDiameterIn: formatInches(result.opening.openDiameterIn),
-    thicknessPercentOver: formatWhole(result.opening.thicknessPercentOver),
-    defaultBallG: trim(C.DEFAULT_BALL_G),
     /**
      * §4.6. Phase C's rate AS A THERMOMETER READS IT — the dough-only 1.08
      * °F/min times `Ct/TOT`. "About 1 °F per minute" is only true at 6 balls
@@ -104,12 +96,6 @@ export function tokenValues(
     // — hard-coding which ones differ is a trap the next change springs.
     mixIndex: String(mix),
     nextMixIndex: String(mix + 1),
-    /** The next mix's target, read while standing at the end of this one. */
-    waterTempNext: formatTempF(
-      (result.mixes[mix] ?? result.mixes[result.mixes.length - 1]!).waterTempF,
-    ),
-    /** " × 2 bigas" when the biga splits, empty otherwise. §8.2 `biga-1`. */
-    bigaCountSuffix: capacity.nBiga > 1 ? ` × ${capacity.nBiga} bigas` : '',
     // §4.8 — computed from the measured final dough temperature, or from DDT
     // while the calculator is still in planning mode.
     roomMin: String(Math.round(result.roomMinutes)),
@@ -118,17 +104,13 @@ export function tokenValues(
     ballRoomMin: String(Math.round(result.ballRoomMinutes)),
     finalDoughTemp: formatTempF(result.effectiveFinalTempF),
 
-    // §8.2 per-biga values. `biga-1` and `biga-3` are per-biga steps: at 18
-    // balls the batch total is 1833.7 g, which is above the 1610 g the machine
-    // handles at this hydration — which is *why* it splits, so showing it as
-    // one weight to scale out would be actively wrong.
-    bigaFlourPerBiga: formatGrams(formula.bigaFlour / capacity.nBiga),
-    bigaWaterPerBiga: formatGrams(formula.bigaWater / capacity.nBiga),
-    bigaADYPerBiga: formatAdy(formula.bigaADY / capacity.nBiga),
-    bigaFlourTotal: formatGrams(formula.bigaFlour),
-    nBiga: String(capacity.nBiga),
+    // §8.2 biga values: batch totals, bare, since there is one biga at every
+    // size (MESSAGE-53 retired the `PerBiga` scope with `nBiga`).
+    bigaFlour: formatGrams(formula.bigaFlour),
+    bigaWater: formatGrams(formula.bigaWater),
+    bigaADY: formatAdy(formula.bigaADY),
 
-    // §8.2 per-mix values. Same class of error one scope down.
+    // §8.2 per-mix values: a batch total on a per-mix step pours double.
     freshFlourPerMix: formatGrams(formula.freshFlour / capacity.nMix),
     bigaMassPerMix: formatGrams(formula.bigaMass / capacity.nMix),
     nMix: String(capacity.nMix),
@@ -145,7 +127,6 @@ export function tokenValues(
      * the two drift apart.
      */
     maxRunMin: trim(C.MAX_RUN_MIN),
-    treadMaxDiameterIn: trim(C.TREAD_MAX_DIAMETER_IN),
 
     // §7.3 *Capacity* (MESSAGE-29). Batch and per-mix dough, and the three
     // limits the messages name — bound, not typed, like `maxRunMin`.
@@ -153,12 +134,11 @@ export function tokenValues(
     doughPerMix: formatGrams(capacity.doughPerMix),
     maxDoughG: trim(C.MAX_DOUGH),
     minDoughG: trim(C.MIN_DOUGH),
-    bigaFlourCapG: trim(C.FLOUR_CAP_55),
 
     // Inputs — trimmed, since the prose supplies the unit.
     balls: String(inputs.balls),
     ballWeight: trim(inputs.ballWeightG),
-    // `biga-6` stated 965 g, the default, whatever the user had measured.
+    // Bound, so `biga-6` names the constant: it once stated 965 g whatever was measured.
     bowlMassG: trim(C.BOWL_MASS_G),
     coldFerment: trim(schedule.coldFermentH),
     bigaFridge: trim(schedule.bigaFridgeH),

@@ -40,6 +40,16 @@ describe('recipe text', () => {
     expect(out).toContain('blend fridge-cold and tap water to hit it');
   });
 
+  it('warms only the yeast water, as biga-1 does', () => {
+    // MESSAGE-51: ADY rehydrates in about ten times its weight of the biga
+    // water at 100–110 °F; the rest of the water stays at room temperature.
+    // The whole biga water printed "(room temperature)" before.
+    const out = text();
+    expect(out).toMatch(/^ +Water +305\.6 g$/m);
+    expect(out).toMatch(/^ +ADY +2\.29 g\n +in about 10× its weight of the water at 100–110 °F for 10 minutes;\n +the rest of the water at room temperature$/m);
+    expect(out).not.toContain('(room temperature)');
+  });
+
   it('shows both bassinage additions as weighable grams', () => {
     // The bake-1 bug: "~60% of the water" caused a guess and cost a data point.
     const out = text();
@@ -48,13 +58,13 @@ describe('recipe text', () => {
   });
 
   it('records the bowl mass, since it is now part of the model', () => {
-    expect(text()).toMatch(/Bowl\s+965 g/);
+    expect(text()).toMatch(/Bowl\s+963 g/);
   });
 
   it('marks the room time as planned until a dough temperature is measured', () => {
     expect(text()).toContain('planned at DDT 75.0 °F');
     const measured = text({ finalDoughTempF: 72 });
-    expect(measured).toContain('121 min');
+    expect(measured).toContain('106 min');
     expect(measured).toContain('final dough 72.0 °F against DDT 75.0 °F');
   });
 
@@ -90,9 +100,11 @@ describe('recipe text', () => {
     expect(out).toContain('divide the one biga by weight');
   });
 
-  it('names the biga split at 18 balls', () => {
+  it('keeps one biga at 18 balls, divided by weight (MESSAGE-53)', () => {
     const out = text({ balls: 18 });
-    expect(out).toMatch(/Split\s+2 batches/);
+    expect(out).toMatch(/^ +Flour +1833\.7 g$/m);
+    expect(out).not.toMatch(/batches of/);
+    expect(out).toContain('2 mixes of ~2437.5 g — divide the one biga by weight');
   });
 
   it('gives the water as one target with no split, at any temperature', () => {

@@ -11,7 +11,6 @@
 
 export const CAPACITY = {
   split: `**Too much dough for one mix — this batch is split.** {balls} balls is {doughTotal} g of dough, and the Halo Core takes at most {maxDoughG} g. Mix it as **{nMix} batches of {doughPerMix} g**, one after another in the same bowl. The amounts and steps below are already per mix.`,
-  bigaSplit: `**Too much biga for one bowl — make {nBiga}.** {bigaFlourTotal} g of biga flour is over the Core's {bigaFlourCapG} g limit for a stiff dough. Mix {nBiga} bigas of {bigaFlourPerBiga} g flour each. Only one can ferment in the mixer bowl; the other ferments elsewhere.`,
   divideBiga: `Mix one biga, then divide it by weight into {nMix} portions for {nMix} separate final mixes.`,
   nearLimit: `**Close to the Core's limit.** {doughPerMix} g per mix is within 5% of the {maxDoughG} g maximum. It will mix, but there's little margin — weigh carefully.`,
   belowMinimum: `**Too little dough for the mixer.** {doughPerMix} g is under the Halo Core's {minDoughG} g minimum — the hook won't grip it. Make more balls.`,

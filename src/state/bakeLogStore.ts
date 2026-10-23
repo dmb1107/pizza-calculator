@@ -14,11 +14,11 @@
 import {
   PHASE_KEYS,
   type FormulaSnapshot,
+  type LegacyBowlState,
   type LoggedBake,
   type LoggedMix,
   type PhaseKey,
 } from '../lib/bakeLog';
-import type { BowlState } from '../lib/engine';
 import type { StorageLike } from './storage';
 
 export const LOG_KEY = 'biga-calculator:log:v1';
@@ -45,7 +45,7 @@ export const EMPTY_LOG: LocalLog = { bakes: [], shas: {}, dirty: [], deleted: []
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
-const BOWL_STATES: readonly BowlState[] = ['cold', 'room', 'warm'];
+const LEGACY_BOWL_STATES: readonly LegacyBowlState[] = ['cold', 'room', 'warm'];
 
 function parseSnapshot(raw: unknown): FormulaSnapshot | null {
   if (!isRecord(raw) || !isRecord(raw['speeds'])) return null;
@@ -73,13 +73,18 @@ function parseMix(raw: unknown): LoggedMix | null {
   if (!isNum(biga) || !isNum(bowl) || typeof prefilled !== 'boolean' || water === undefined || final === undefined) {
     return null;
   }
+  // §10: bakes before MESSAGE-54 carry the selector's value. Kept so a rewrite
+  // doesn't strip it; nothing reads it, so an unrecognised one is dropped
+  // rather than rejecting the bake.
   const bowlState = raw['bowl_state'];
-  if (!BOWL_STATES.includes(bowlState as BowlState)) return null;
+  const legacy = LEGACY_BOWL_STATES.includes(bowlState as LegacyBowlState)
+    ? { bowl_state: bowlState as LegacyBowlState }
+    : {};
   const seconds = raw['phase_seconds'];
   return {
     mix_index: raw['mix_index'],
     biga_temp_at_mix_f: biga,
-    bowl_state: bowlState as BowlState,
+    ...legacy,
     bowl_temp_f: bowl,
     bowl_prefilled: prefilled,
     water_temp_used_f: water,

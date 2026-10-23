@@ -28,11 +28,13 @@ export function buildRecipeText(result: CalculatorResult): string {
 
   lines.push('BIGA');
   lines.push(row('Flour', `${formatGrams(formula.bigaFlour)} g`));
-  lines.push(row('Water', `${formatGrams(formula.bigaWater)} g (room temperature)`));
+  lines.push(row('Water', `${formatGrams(formula.bigaWater)} g`));
   lines.push(row('ADY', `${formatAdy(formula.bigaADY)} g`));
-  if (capacity.nBiga > 1) {
-    lines.push(row('Split', `${capacity.nBiga} batches of ~${formatGrams(capacity.bigaMassPerBatch)} g`));
-  }
+  // §8.2 biga-1 (MESSAGE-51): the yeast rehydrates in warm water taken from
+  // the biga water, and the rest stays at room temperature. Figures as biga-1
+  // prints them; the §8 gate doesn't read this file.
+  lines.push(row('', 'in about 10× its weight of the water at 100–110 °F for 10 minutes;'));
+  lines.push(row('', 'the rest of the water at room temperature'));
   lines.push('');
 
   lines.push('FINAL MIX');
@@ -46,10 +48,7 @@ export function buildRecipeText(result: CalculatorResult): string {
   lines.push(row('  Phase B', `${formatGrams(formula.phaseBWater)} g in 3 additions`));
   lines.push(row('Salt', `${formatGrams(formula.salt)} g`));
   if (capacity.nMix > 1) {
-    const how = capacity.divideBigaAcrossMixes
-      ? `${capacity.nMix} mixes of ~${formatGrams(capacity.doughPerMix)} g — divide the one biga by weight`
-      : `${capacity.nMix} mixes of ~${formatGrams(capacity.doughPerMix)} g`;
-    lines.push(row('Split', how));
+    lines.push(row('Split', `${capacity.nMix} mixes of ~${formatGrams(capacity.doughPerMix)} g — divide the one biga by weight`));
   }
   lines.push('');
 
@@ -87,12 +86,12 @@ export function buildRecipeText(result: CalculatorResult): string {
   lines.push('CONDITIONS');
   lines.push(row('Room', `${formatTempF(inputs.roomTempF)} °F`));
   lines.push(row('Flour', `${formatTempF(inputs.flourTempF)} °F`));
-  // Per mix when they differ — mix-8 (the changeover) asks for a fresh
-  // reading of both before each subsequent mix.
+  // Per mix when they differ: each later mix's prep step (mix-1) asks for a
+  // fresh reading of both.
   for (const mix of result.mixes) {
     const label = result.mixes.length > 1 ? ` (mix ${mix.index})` : '';
     lines.push(row(`Biga at mix${label}`, `${formatTempF(atMix(inputs.bigaTempF, mix.index - 1))} °F`));
-    lines.push(row(`Bowl at mix${label}`, `${formatTempF(mix.bowlTempF)} °F (${mix.bowlState})`));
+    lines.push(row(`Bowl at mix${label}`, `${formatTempF(mix.bowlTempF)} °F`));
   }
   lines.push(row('Friction', `${formatTempF(inputs.frictionFactorF)} °F`));
   lines.push(row('Bowl', `${formatGramsWhole(C.BOWL_MASS_G)} g`));
