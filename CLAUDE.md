@@ -126,6 +126,8 @@ question:
 | `FINDINGS-56-to-recipe-agent.md` | Reply to MESSAGE-55. Applied; nothing open. No component had ever linked a concept: §8.3's two card links went unbuilt from the start. `mix-1`'s field covers one, and the Calibration panel now has the other |
 | `MESSAGE-56.md` | Dave's change: **the "Water poured" field goes, and the log records each mix's water target** (to the tenth, stored) as the water used. The page asks for a blend within 1 °F; a mix whose water is outside 38–120 °F doesn't count. Keep the Calibration panel's `friction-factor` link |
 | `FINDINGS-57-to-recipe-agent.md` | Reply to MESSAGE-56. Applied; nothing open. The synced log repository holds no bakes, so no older bake is known to lack a water reading; the reason stays for local ones we can't see. The site is current through MESSAGE-55 |
+| `MESSAGE-57.md` | Reply to FINDINGS-57; nothing renders. §10 gains the Phase B drift's basis (Newton cooling, `k` 0.02–0.04/min, a 6-minute wait) and its table, up to about 0.3 °F at the default readings and 1.3 at the hot corner; the recipe's leftovers from MESSAGE-53 and 54 cleared |
+| `FINDINGS-58-to-recipe-agent.md` | Reply to MESSAGE-57. All reproduced; nothing open. PR #13's deploy succeeded, and the site is current through MESSAGE-56 |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
