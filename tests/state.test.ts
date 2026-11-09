@@ -183,9 +183,9 @@ describe('URL serialization', () => {
     });
 
     it("clamps the cold ferment into the track's range, and defaults by track", () => {
-      // §4.7, §6 Panel 1: retarded 6–36 (24), classic 6–8 (6).
+      // §4.7, §6 Panel 1: retarded 6–48 (24) since MESSAGE-59, classic 6–8 (6).
       expect(COLD_FERMENT_H).toEqual({
-        retarded: { min: 6, max: 36, step: 1, default: 24 },
+        retarded: { min: 6, max: 48, step: 1, default: 24 },
         classic: { min: 6, max: 8, step: 1, default: 6 },
       });
       expect(decodeInputs('sched=c&cold=24').coldFermentH).toBe(8);
@@ -376,14 +376,14 @@ describe('field clamping', () => {
     expect(clampField('ballWeightG', 200)).toBe(240);
     expect(clampField('ballWeightG', 400)).toBe(300);
     expect(clampField('coldFermentH', 0)).toBe(6);
-    expect(clampField('coldFermentH', 100)).toBe(36);
+    expect(clampField('coldFermentH', 100)).toBe(48);
   });
 
   it('clamps the cold ferment when the schedule changes (§4.7)', () => {
     const retarded = { ...DEFAULT_INPUTS, coldFermentH: 24 };
     const classic = applyInput(retarded, 'schedule', 'classic');
     expect(classic.coldFermentH).toBe(8);
-    // Back to retarded, the value is inside 6–36 and stays.
+    // Back to retarded, the value is inside 6–48 and stays.
     expect(applyInput(classic, 'schedule', 'retarded').coldFermentH).toBe(8);
     // A cold ferment set past the classic range is held to it.
     expect(applyInput(classic, 'coldFermentH', 30).coldFermentH).toBe(8);

@@ -4,12 +4,15 @@ import { C } from '../lib/constants';
 import type { Calibration, Inputs, PanelPrefs, Persisted, Schedule } from './types';
 
 /**
- * §4.7, §6 Panel 1 (MESSAGE-53). The cold ferment by track. A classic biga
- * arrives fully ripe from 16–18 h at room temperature, so its dough gets a
- * short cold ferment: 6–8 h, default 6. The retarded track keeps 6–36, 24.
+ * §4.7, §6 Panel 1. The cold ferment by track. A classic biga arrives fully
+ * ripe from 16–18 h at room temperature, so its dough gets a short cold
+ * ferment: 6–8 h, default 6 (MESSAGE-53). The retarded track runs to 48 h
+ * (MESSAGE-59): on bake 2, balls from one dough had more flavor at 48 h than
+ * at 24 and didn't over-proof. The default stays 24 until a full batch at
+ * 48 h, Dave's call.
  */
 export const COLD_FERMENT_H: Record<Schedule, { min: number; max: number; step: number; default: number }> = {
-  retarded: { min: 6, max: 36, step: 1, default: 24 },
+  retarded: { min: 6, max: 48, step: 1, default: 24 },
   classic: { min: 6, max: 8, step: 1, default: 6 },
 };
 

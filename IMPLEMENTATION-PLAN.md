@@ -18,7 +18,11 @@ repository, sets the FF in use. MESSAGE-55 (wording, and `mix-1`'s link to
 field is gone, and the log records each mix's water target as the water
 used. MESSAGE-57 (documents only: the Phase B drift's basis in §10, the
 recipe's leftovers) is applied, and so is MESSAGE-58's fix: a reading typed
-at the value its field shows is recorded. FINDINGS-59 is the last thing sent.
+at the value its field shows is recorded. **MESSAGE-59 is applied**: the bake
+log corrects **Phase C only** (bakes 2 and 3 are the first counted bakes, at
+9.438894 and 9.456327, and the FF in use at 6 balls per mix is their mean
+9.447610), and the retarded cold ferment runs to **6–48 h**, default still 24.
+FINDINGS-60 is the last thing sent.
 
 ---
 
@@ -691,9 +695,11 @@ has the rules (§4.3 normalization, §4.8 split-batch `T_actual`, §6 Panel 3,
 §10, and §5's *Bake log* pins).
 
 - [x] **The log** (`src/lib/bakeLog.ts`): readings, never an FF. Each mix is
-      solved on read (§4.3), then normalized to the middle of every phase's
-      range, the references derived from the step timers (A 3.5, B 5.5, C 3.5,
-      D 52.5 s). A formula snapshot per bake; only a matching one counts.
+      solved on read (§4.3), then corrected for its Phase C time alone
+      (MESSAGE-59), the reference derived from that step's timer (3.5 min) at
+      the 30% rate. All four phase times are still logged and still required
+      for a mix to count. A formula snapshot per bake; only a matching one
+      counts.
 - [x] **Which mixes count** (§10, as MESSAGE-47 left it): a final and a water
       reading, a bowl that isn't the prefill, all four phase times, a
       matching snapshot, not excluded. Defaults left in place are readings.

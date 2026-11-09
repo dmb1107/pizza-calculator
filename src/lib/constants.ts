@@ -223,8 +223,8 @@ const FRESH_WATER_FRACTION = BASE.HYDRATION - BASE.BIGA_FRACTION * BASE.BIGA_HYD
  * §5. The flour part of the gap between a rendered water target and its
  * vector value, in °F: the app's flour at room (70) against the vectors' 69.
  * The FF in use supplies the rest. Before the log has a counted bake that is
- * bake 1's normalized 10.791045 against the vectors' 14, which adds
- * `(14 − FF) × Ct/Cw` = 9.634 the other way: the app sits 9.242 °F above the
+ * bake 1's normalized 10.787531 against the vectors' 14, which adds
+ * `(14 − FF) × Ct/Cw` = 9.645 the other way: the app sits 9.253 °F above the
  * vectors (engine.test.ts, 'adds the FF in use at every mix size').
  *
  * The vectors pin flour at 69 °F so the flour term stays independently

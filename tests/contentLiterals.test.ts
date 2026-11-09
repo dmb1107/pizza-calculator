@@ -724,19 +724,37 @@ const CLAIMS: readonly Claim[] = [
     holds: () => Math.abs((C.SALT / C.HYDRATION) * 1000 - AVPN.saltG[0]) < 1e-9,
     covers: ['70%', '2.8%', '40 g'],
   },
-  // MESSAGE-51's recommendation is the input's default, and its untested
-  // lengths are the input's bounds, which the title states too.
+  // MESSAGE-59's recommendation is still the input's default, which the
+  // concept recommends until a full batch at 48 h.
   {
     at: 'concept:schedule-architecture',
     restates: 'the cold-ferment default',
-    text: `**Use ${DEFAULT_INPUTS.coldFermentH} h cold.**`,
+    text: `**Use ${DEFAULT_INPUTS.coldFermentH} h cold for now.**`,
     covers: ['24 h'],
   },
+  /**
+   * The untested lengths the concept names. Only the lower one is a bound:
+   * MESSAGE-59 raised the maximum to 48 h and baked it, so 36 h is now a
+   * length inside the range rather than its end, and it is classified rather
+   * than built. `covers` says which of the two this text produces.
+   */
   {
     at: 'concept:schedule-architecture',
-    restates: 'BOUNDS.coldFermentH',
-    text: `${BOUNDS.coldFermentH.min} h and ${BOUNDS.coldFermentH.max} h are inside the calculator's range`,
-    covers: ['6 h', '36 h'],
+    restates: "COLD_FERMENT_H.retarded.min, the one bound this sentence still states",
+    text: `${COLD_FERMENT_H.retarded.min} h and 36 h are inside the calculator's range`,
+    covers: ['6 h'],
+  },
+  /**
+   * MESSAGE-59. The span the balls sit in the fridge: the retarded track's
+   * default at one end and its maximum at the other, so raising either moves
+   * this sentence. It was "24–36 hours", classified, until the maximum went
+   * to 48.
+   */
+  {
+    at: 'bulk-3.detail',
+    restates: 'COLD_FERMENT_H.retarded, default to maximum',
+    text: `Over ${COLD_FERMENT_H.retarded.default}–${COLD_FERMENT_H.retarded.max} hours in the fridge`,
+    covers: ['24–48 hours'],
   },
   {
     at: 'concept:schedule-architecture',
@@ -748,7 +766,7 @@ const CLAIMS: readonly Claim[] = [
     at: 'concept:schedule-architecture',
     restates: 'BOUNDS.coldFermentH, in the title',
     text: `Why the cold ferment is ${BOUNDS.coldFermentH.min}–${BOUNDS.coldFermentH.max} h`,
-    covers: ['6–36 h'],
+    covers: ['6–48 h'],
   },
 
   // --- concepts: the thermal model ------------------------------------------
@@ -1172,7 +1190,6 @@ const FIXED: Record<Loc, readonly string[]> = {
   // Procedure: balling, trays, fridge. (bulk-1's 45–60 is PLANNING_RANGE_H, claimed.)
   'bulk-2.summary': ['10–15 min'],
   'bulk-2.timerLabel': ['10–15 min'],
-  'bulk-3.detail': ['24–36 hours'],
   'bulk-4.summary': ['38–40 °F', '4 hours'],
   // A cooling time is a claim about a 265 g ball specifically, so the weight
   // is its index rather than a stale default.
@@ -1207,11 +1224,14 @@ const FIXED: Record<Loc, readonly string[]> = {
   // "00" is the flour grade, as in giorilli-standard; AVPN's figures are
   // claimed above.
   'concept:formula-rationale': ['60–90 second', '12.5%', '44–50%', '45%', '00'],
-  // "72" is the multi-day cold ferment the title argues against. PizzaBlab's
-  // 12–24 h and biga lunga's 24 h at 39 °F are published; so is Sisofo's 24 h
-  // in the fridge, which shares its literal with the claimed default and so
-  // is covered by that claim at this location's granularity.
-  'concept:schedule-architecture': ['72', '50-hour', '12–24 h', '39 °F'],
+  // "48 h" and "48-hour" are bake 2's result and the full batch that would
+  // decide the default; the range itself is claimed in the title. "36 h" is an
+  // untested length inside the range, no longer its end (MESSAGE-59).
+  // "38–39 °F" is Dave's fridge setting on bake 2. PizzaBlab's 12–24 h and biga
+  // lunga's 24 h at 39 °F are published; so is Sisofo's 24 h in the fridge,
+  // which shares its literal with the claimed default and so is covered by
+  // that claim at this location's granularity.
+  'concept:schedule-architecture': ['48 h', '48-hour', '36 h', '38–39 °F', '12–24 h', '39 °F'],
   // "Multiply DDT by 4" is the standard method being rejected. "Bake 1" is the
   // bake's number. The 100 °F and 110 °F figures are claimed above.
   'concept:thermal-model': ['4', '12-ball', '6-ball', '3 balls', '1'],
@@ -1357,11 +1377,17 @@ describe('§8.1 every numeric literal in §8 is classified', () => {
  * - attributes only: the probe card said Phases C and D add "about 3.7 °F",
  *   wrong at every batch size, and the timeline said "starting between 9 a.m.
  *   and 8 p.m. keeps every step in daylight", true only for the retarded
- *   schedule at 24 h. Both were JSX text (Task 8).
+ *   schedule at 24 h. Both were JSX text (Task 8);
+ * - inside JSX only: copy held in a lookup table outside it was invisible.
+ *   The Calibration panel's `FRICTION_HINT` still said each bake is corrected
+ *   "to the middle of every phase time" after MESSAGE-59, and the Batch
+ *   panel's two schedule descriptions carried four figures nothing checked.
+ *   Found by reinstating the stale hint and watching the phrase guard below
+ *   pass (MESSAGE-59).
  */
 describe('§8.1 numbers in component copy are classified too', () => {
   const COMPONENT_FIXED: Record<string, string> = {
-    'Biga at 61–65 °F': 'the published fermentation band — procedure',
+    '61–65 °F': 'the published fermentation band — procedure, in the biga card and the schedule radio',
     'between midnight and 6 a.m.': 'the definition `isUnsocialHour` implements — §4.7 "between midnight and 6 AM"',
     '750 °F, full flame, 60–90 s, turning every 15–20 s.': 'bake-2 procedure, the same figures FIXED under bake-2.summary',
     'bake 1’s figure': 'names bake 1 — an index, not a quantity',
@@ -1377,12 +1403,27 @@ describe('§8.1 numbers in component copy are classified too', () => {
   type Node = { type: string; [key: string]: unknown };
   const isNode = (v: unknown): v is Node => typeof v === 'object' && v !== null && typeof (v as Node).type === 'string';
 
+  /**
+   * Markup rather than prose: a CSS color, or a list of two or more
+   * lowercase CSS-ish tokens at least one of which is hyphenated or prefixed
+   * — a Tailwind class list. "48 h" and "2 h room, then 18–20 h fridge" are
+   * not markup by this rule, and neither is any sentence.
+   */
+  const MARKUP = /^(#[0-9a-f]{3,8}|[a-z0-9][-a-z0-9:/.[\]%]*(\s+[a-z0-9][-a-z0-9:/.[\]%]*)+)$/i;
+  const isMarkupText = (text: string): boolean => {
+    const t = text.trim();
+    return MARKUP.test(t) && (/[-:]/.test(t) || /^#[0-9a-f]{3,8}$/i.test(t));
+  };
+
   /** Every piece of copy in one component file. */
   function copyIn(src: string): string[] {
     const out: string[] = [];
     const push = (text: string) => {
       const t = text.replace(/\s+/g, ' ').trim();
-      if (t) out.push(t);
+      // Markup is never copy, wherever it is reached from: a nested object's
+      // stroke color and a default `className` parameter both arrive here
+      // with `copy` already true.
+      if (t && !isMarkupText(t)) out.push(t);
     };
     const visit = (node: unknown, copy: boolean): void => {
       if (Array.isArray(node)) return node.forEach((n) => visit(n, copy));
@@ -1411,6 +1452,13 @@ describe('§8.1 numbers in component copy are classified too', () => {
         case 'TemplateLiteral':
           if (copy) for (const q of node['quasis'] as Node[]) push((q['value'] as { cooked: string }).cooked);
           return visit(node['expressions'], copy);
+        // A string in an object or array literal is copy too: `FRICTION_HINT`
+        // and `SCHEDULE_OPTIONS` render theirs. Markup is skipped by shape
+        // rather than by key, since a Tailwind map's keys are tones.
+        case 'Property':
+          return visit(node['value'], true);
+        case 'ArrayExpression':
+          return (node['elements'] as unknown[])?.forEach((el) => visit(el, true));
       }
       for (const [key, value] of Object.entries(node)) {
         if (key !== 'type' && (Array.isArray(value) || isNode(value))) visit(value, copy);
@@ -1437,11 +1485,26 @@ describe('§8.1 numbers in component copy are classified too', () => {
       const a = <p hint="attr 1" className="x-2">jsx 3 {n} text</p>;
       const b = <F label={\`tpl 4 \${n} tail 5\`} />;
       const c = <p>{on ? 'ternary 6' : \`nested \${inner ? \`deep 7\` : 'q 8'}\`}</p>;
+      const d = { one: 'table 9', two: \`table tpl 10\`, nested: { three: 'deep table 11' } };
+      const e = ['array 12', { four: 'array table 13' }];
+      const f = { tone: 'border-red-400 dark:bg-red-950/50', stroke: '#fafaf9' };
+      function g({ className = 'text-stone-700 dark:text-stone-300' }) { return className; }
     `).join(' | ');
-    for (const n of ['attr 1', 'jsx 3', 'text', 'tpl 4', 'tail 5', 'ternary 6', 'deep 7', 'q 8']) {
+    for (const n of [
+      'attr 1', 'jsx 3', 'text', 'tpl 4', 'tail 5', 'ternary 6', 'deep 7', 'q 8',
+      // A lookup table renders its strings: FRICTION_HINT and SCHEDULE_OPTIONS
+      // sat outside JSX and were read by nothing (MESSAGE-59).
+      'table 9', 'table tpl 10', 'deep table 11', 'array 12', 'array table 13',
+    ]) {
       expect(found, n).toContain(n);
     }
     expect(found, 'className is not copy').not.toContain('x-2');
+    // Markup is skipped by shape, wherever it is reached from.
+    for (const m of ['border-red-400', '#fafaf9', 'text-stone-700']) {
+      expect(found, m).not.toContain(m);
+    }
+    // ...but a short prose string of bare tokens is not markup.
+    expect(copyIn(`const h = { a: '48 h' };`), '48 h').toContain('48 h');
   });
 
   it('leaves no numeric UI string unclassified', () => {
@@ -1465,6 +1528,36 @@ describe('§8.1 numbers in component copy are classified too', () => {
       .flatMap((f) => copyIn(readFileSync(join('src', f), 'utf8')).map((text) => `${f}: ${text}`));
     expect(copy.length, 'the walker read no copy').toBeGreaterThan(100);
     expect(copy.filter((t) => /poured/i.test(t))).toEqual([]);
+  });
+
+  /**
+   * MESSAGE-59 retired the four-phase correction, and the Calibration panel's
+   * step-1 badge still told the baker "Each bake is corrected to the middle of
+   * every phase time first." It has no digit in it, so nothing above could see
+   * it: the gate classifies numbers, and a worded claim passes by
+   * construction. This is the phrase guard for the retired idea, over
+   * component copy and over the generated §8 content, the way MESSAGE-56's
+   * water-poured guard reads both.
+   *
+   * It bans the correction being applied to more than Phase C, not the word
+   * "phase": the log still reads all four timers, the card still prints each
+   * phase beside its range, and `friction-factor` still says the calculator
+   * takes each phase's time from its timer. Those are true.
+   */
+  it('says nowhere that the log corrects more than Phase C (MESSAGE-59)', () => {
+    const RETIRED = [/middle of (every|each) phase/i, /(all four|every) phases? (is|are) corrected/i];
+    const copy = (readdirSync('src', { recursive: true }) as string[])
+      .filter((f) => f.endsWith('.tsx'))
+      .flatMap((f) => copyIn(readFileSync(join('src', f), 'utf8')).map((text) => `${f}: ${text}`));
+    expect(copy.length, 'the walker read no copy').toBeGreaterThan(100);
+
+    // Every string the generated content carries, walked the way the rest of
+    // this suite walks it rather than listed.
+    const content = [...CONTENT.entries()].map(([loc, text]) => `${loc}: ${text}`);
+    expect(content.length, 'no §8 content read').toBeGreaterThan(50);
+
+    const offenders = [...copy, ...content].filter((t) => RETIRED.some((re) => re.test(t)));
+    expect(offenders, 'the log corrects Phase C alone (§4.3)').toEqual([]);
   });
 
   it('keeps no stale entry', () => {

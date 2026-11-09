@@ -425,7 +425,7 @@ Expect the first dough to be a little further along: slacker on the bench, possi
     timerLabel: `{ballRoomMin} min`,
     detail: `**Oil the trays; don't flour them.**
 
-Flour absorbs water. It pulls moisture out of the dough surface and turns to paste. Over 24–36 hours in the fridge, which dries things even under a lid, you get gluey patches where the flour hydrated and a dry skin everywhere else. The skin resists opening and tears at the cornicione instead of stretching.
+Flour absorbs water. It pulls moisture out of the dough surface and turns to paste. Over 24–48 hours in the fridge, which dries things even under a lid, you get gluey patches where the flour hydrated and a dry skin everywhere else. The skin resists opening and tears at the cornicione instead of stretching.
 
 Flour dusting comes from **wooden** dough boxes, which breathe and buffer moisture. Aluminum does neither, so flour on aluminum has nowhere to go but into the dough.
 

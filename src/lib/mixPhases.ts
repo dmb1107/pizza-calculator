@@ -51,6 +51,20 @@ export const MIX_PHASES: readonly MixPhase[] = (() => {
   });
 })();
 
+/**
+ * §4.3 (MESSAGE-59). The one phase the bake log corrects. Phase C is the
+ * phase `mix-4` sets from the probe reading, so its time carries the baker's
+ * correction rather than the dough's own behaviour. A, B and D are run to
+ * their cues, and correcting them would rest on the 15% and 20% rates, which
+ * no bake has measured. Pinned by key, as `mix-4` and `mix-6` are pinned by
+ * id: which phase that is, is something a person classifies.
+ */
+export const CORRECTED_PHASE: MixPhase = (() => {
+  const p = MIX_PHASES.find((q) => q.key === 'c');
+  if (!p) throw new Error('no Phase C to correct');
+  return p;
+})();
+
 /** Phase by step id, for the timers that capture them. */
 export function phaseForStep(stepId: string): MixPhase | undefined {
   return MIX_PHASES.find((p) => p.stepId === stepId);
@@ -74,8 +88,10 @@ export const PHASES_AFTER_PROBE: readonly MixPhase[] = (() => {
 
 /**
  * §4.6 (MESSAGE-52). Dough-only friction still to come after the probe:
- * each later phase's `FRICTION_RATE` times its reference time, the same
- * references the log normalizes to. 1.08 × 3.5 + 0.86 × 52.5/60 = 4.5325 °F.
+ * each later phase's `FRICTION_RATE` times its reference time.
+ * 1.08 × 3.5 + 0.86 × 52.5/60 = 4.5325 °F. Phase C's reference is also the
+ * one the log corrects to (§4.3); Phase D's is read here alone, since
+ * MESSAGE-59 left D out of the log's correction.
  * No FF: the probe measures where the dough is, and this is what C and D add.
  */
 export const FRICTION_AFTER_PROBE_F = PHASES_AFTER_PROBE.reduce(

@@ -270,7 +270,7 @@ function MixOutcome({ status }: { status: ReturnType<typeof mixStatus> }) {
   const why = status.reasons.map((r) => REASON[r]).join('; ');
   if (status.ff == null) return <p className="mt-1 text-sm text-amber-900 dark:text-amber-200">{`Not solved yet: ${why}.`}</p>;
   const solved = `solves to ${formatTempF(status.ff)} °F`;
-  const nominal = status.ffNominal == null ? '' : `, ${formatTempF(status.ffNominal)} °F at the middle of every phase range`;
+  const nominal = status.ffNominal == null ? '' : `, ${formatTempF(status.ffNominal)} °F with Phase C at the middle of its range`;
   return status.counted ? (
     <p className="mt-1 text-sm text-emerald-800 dark:text-emerald-300">{`Counts. This mix ${solved}${nominal}.`}</p>
   ) : (

@@ -14,10 +14,10 @@
 import { C } from './constants';
 import { computeCapacity, computeFormula, computeThermal, solveFrictionFactorF } from './engine';
 import { formatBallsPerMix, formatTempF } from './format';
-import { MIX_PHASES, PHASE_KEYS, frictionRateOf, phaseForStep, type PhaseKey } from './mixPhases';
+import { CORRECTED_PHASE, MIX_PHASES, PHASE_KEYS, frictionRateOf, phaseForStep, type PhaseKey } from './mixPhases';
 import { formatElapsed } from './timers';
 
-export { MIX_PHASES, PHASE_KEYS, phaseForStep, type MixPhase, type PhaseKey } from './mixPhases';
+export { CORRECTED_PHASE, MIX_PHASES, PHASE_KEYS, phaseForStep, type MixPhase, type PhaseKey } from './mixPhases';
 
 // ---------------------------------------------------------------------------
 // §4.3 The mix profile and normalization
@@ -39,12 +39,16 @@ export function loggedTimerTag(
 }
 
 /**
- * §4.3. `ffNominal = FF − Σ FRICTION_RATE[speed] × (actualMin − referenceMin)`.
- * Both sides are dough-only, so there is no `Ct/TOT` factor. Durations are not
- * clamped to their printed ranges: the recipe runs A, B and D to their cues.
+ * §4.3 (MESSAGE-59). `ffNominal = FF − FRICTION_RATE[30] × (actualMin(C) −
+ * referenceMin(C))`. Both sides are dough-only, so there is no `Ct/TOT`
+ * factor. Phases A, B and D are left alone: the baker runs them to their cues,
+ * so their times record how the dough behaved. The rate and the reference come
+ * from the phase itself, never typed, so a moved range re-normalizes every
+ * bake. The time is not clamped to the printed range.
  */
-export function normalizeFrictionFactorF(ff: number, phaseMinutes: Readonly<Record<PhaseKey, number>>): number {
-  return MIX_PHASES.reduce((acc, p) => acc - frictionRateOf(p.dial) * (phaseMinutes[p.key] - p.referenceMin), ff);
+export function normalizeFrictionFactorF(ff: number, phaseCMin: number): number {
+  const p = CORRECTED_PHASE;
+  return ff - frictionRateOf(p.dial) * (phaseCMin - p.referenceMin);
 }
 
 // ---------------------------------------------------------------------------
@@ -160,7 +164,11 @@ export interface MixStatus {
    * the formula, so solving under today's would compute a mix nobody made.
    */
   ff: number | null;
-  /** `ff` normalized to the reference profile; null without all four phase times. */
+  /**
+   * `ff` corrected for Phase C's time (§4.3); null without `ff` or without
+   * Phase C's time. A, B and D aren't read, so bake 1 has one even though it
+   * logged no other phase. Counting still needs all four (§10).
+   */
   ffNominal: number | null;
   counted: boolean;
   reasons: NotCountedReason[];
@@ -217,7 +225,9 @@ export function mixStatus(bake: LoggedBake, mix: LoggedMix, current: FormulaSnap
       { waterTempF: water, finalTempF: final },
     );
   }
-  const ffNominal = ff != null && minutes ? normalizeFrictionFactorF(ff, minutes) : null;
+  const phaseCSec = mix.phase_seconds[CORRECTED_PHASE.key];
+  const phaseCMin = phaseCSec != null && Number.isFinite(phaseCSec) && phaseCSec > 0 ? phaseCSec / 60 : null;
+  const ffNominal = ff != null && phaseCMin != null ? normalizeFrictionFactorF(ff, phaseCMin) : null;
   return { ff, ffNominal, counted: reasons.length === 0, reasons };
 }
 
@@ -273,10 +283,11 @@ export const BAKE_1_READINGS = {
 } as const;
 
 /**
- * Bake 1 solved from its readings by the log's own solve (14.031045), then
- * normalized for Phase C, the one phase time it recorded: A, B and D stand at
- * their references (10.791045). Computed, never typed (MESSAGE-52). Solved
- * under today's formula: bake 1 was mixed on it.
+ * Bake 1 solved from its readings by the log's own solve, then corrected for
+ * Phase C, the one phase time it recorded. Computed, never typed (MESSAGE-52).
+ * Since MESSAGE-59 the correction reads Phase C alone, so this is bake 1's
+ * `ffNominal` whatever A, B and D took, and nothing here stands them at their
+ * references. Solved under today's formula: bake 1 was mixed on it.
  */
 function bake1NormalizedFf(): number {
   const r = BAKE_1_READINGS;
@@ -303,12 +314,9 @@ function bake1NormalizedFf(): number {
       },
     ],
   };
-  const { ff } = mixStatus(bake, bake.mixes[0]!);
-  if (ff == null) throw new Error("bake 1's readings don't solve");
-  const minutes = Object.fromEntries(
-    MIX_PHASES.map((p) => [p.key, p.key === 'c' ? r.phase_c_min : p.referenceMin]),
-  ) as Record<PhaseKey, number>;
-  return normalizeFrictionFactorF(ff, minutes);
+  const { ffNominal } = mixStatus(bake, bake.mixes[0]!);
+  if (ffNominal == null) throw new Error("bake 1's readings don't solve");
+  return ffNominal;
 }
 
 /**
