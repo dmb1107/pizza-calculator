@@ -211,9 +211,9 @@ Cover it so it doesn't dry out. PizzaBlab says a vent serves no purpose, so a cl
 
 On the retarded track the biga comes out of the fridge **one hour before you mix** and stays in the mixer bowl while it warms.
 
-Of the temperatures you measure, the biga's moves the water target most: each degree of biga moves the required water by about two degrees, **1.9 °F at a 6-ball mix and 2.3 °F at a 3-ball one** (§6). A skipped temper is the usual reason the calculator asks for water hotter than a tap delivers.
+Of the temperatures you measure, the biga's moves the water target most: each degree of biga moves the required water by **1.59 °F** at every batch size, with the bowl read on its own (§6). Skip the temper and the bowl stays as cold as the biga, so each degree the two are colder costs **1.9 °F at a 6-ball mix and 2.3 °F at a 3-ball one**. A skipped temper is the usual reason the calculator asks for water hotter than a tap delivers.
 
-**Leave it in the bowl.** The 963 g stainless bowl is part of the thermal system, and the hour is meant to warm bowl and biga together. Tempering the biga on the counter leaves the bowl cold.
+**Leave it in the bowl.** The 963 g stainless bowl is part of the thermal system, and the hour warms the bowl too, faster than the biga. On bakes 2 and 3 the bowl came out of the temper 9–10.5 °F warmer than the biga (64.5 against 54 °F in a 67.3 °F kitchen; 59 against 50 in a 68 °F one). Until you read the bowl, the calculator takes it at the biga's temperature, so its mix-1 water target runs about 3 °F warm at 6 balls and 6 °F at 3.
 
 **Take both temperatures after crumbling the biga.** Handling warms it by about five degrees: on bake 1 it read **53 °F at pull and 58 °F once broken up**. The bowl doesn't warm with it, so read the bowl separately: hold the probe against the bowl wall for five seconds. Each degree of bowl temperature is worth 0.66 °F of water at a 3-ball mix.
 
@@ -265,11 +265,11 @@ Let `Ct` be the four dough components summed, and `C_bowl` = 115.56.
 
 > ### **T_water = [ DDT × (Ct + C_bowl) − FF × Ct − Cb·T_biga − Cf·T_flour − Cs·T_room − C_bowl·T_bowl ] ÷ Cw**
 
-**`T_bowl` defaults to `T_biga`**, since the biga always ferments in the mixer bowl (§5) and 19 hours of contact brings them to the same temperature.
+**`T_bowl` defaults to `T_biga`**, since the biga always ferments in the mixer bowl (§5) and 19 hours of contact brings them to the same temperature in the fridge. The temper doesn't keep them there: on bakes 2 and 3 the bowl read 9–10.5 °F above the biga at mix 1 (§5, *The temper*).
 
-⚠️ **That doesn't survive the last ten minutes before mixing, as bake 1 showed.** The biga read **53 °F at pull and 58 °F after being broken up**: five degrees from handling and air exposure that the bowl didn't share. The same log backs this up: the Phase C friction rate *climbed* from 0.82 to 1.00 °F/min during the mix, which is what a bowl catching up looks like.
+⚠️ **Handling moves the biga as well, as bake 1 showed.** The biga read **53 °F at pull and 58 °F after being broken up**: five degrees from handling and air exposure that the bowl didn't share. The same log backs this up: the Phase C friction rate *climbed* from 0.82 to 1.00 °F/min during the mix, which is what a bowl catching up looks like.
 
-**So measure the bowl:** one reading against the bowl wall at mix start, five seconds. The 19 hours of contact equalize bowl and biga, but crumbling warms only the biga, and the gap is worth 3.3 °F of water at 3 balls (table below).
+**So measure the bowl:** one reading against the bowl wall at mix start, five seconds. The 19 hours of contact equalize bowl and biga, but the temper warms the bowl faster, and a 10 °F gap is worth 3.3 °F of water at 6 balls and 6.6 at 3.
 
 **⚠️ FF is the rise the mixer produces in the dough *alone*.** That's why the work term is `FF × Ct` and not `FF × (Ct + C_bowl)`. Get it wrong and the formula returns a water temperature several degrees off with no sign of the error.
 
@@ -313,7 +313,7 @@ The table is keyed on mix size: 12 balls runs as two 6-ball mixes and reads the 
 
 **That's why the bowl can't be folded into FF.** The apparent FF would drift from 11.5 to 13.1 across the range, and you'd conclude the mixer behaves differently at different scales when one constant is being read through three different dilutions.
 
-**Because the biga always ferments in the bowl (§5), the temper is the only way to warm the bowl before the first mix.** An hour on the counter warms bowl and biga together and raises the whole cold end of the system. Without it, each degree the biga is colder costs about 2 °F of water, and at 3 balls the requirement goes past 110 °F.
+**Because the biga always ferments in the bowl (§5), the temper is the only way to warm the bowl before the first mix.** An hour on the counter warms the bowl as well as the biga, the bowl faster, and raises the whole cold end of the system. Without it the bowl stays as cold as the biga: each degree the biga is colder costs about 2 °F of water, and at 3 balls the requirement goes past 110 °F.
 
 ### Split batches: the thermal system is the mix, not the batch
 
@@ -336,7 +336,7 @@ At 12 balls that's a 5.6 °F spread in the water target between mix 1 and mix 2 
 
 **Re-measure both the bowl and the biga before every mix after the first.** Both drift while the previous mix runs, the bowl toward DDT and the waiting biga toward room temperature, and both pull the water target the same way. **The biga is the bigger term:** −1.59 °F of water per °F of biga, against −0.33 for the bowl at a 6-ball mix. The bowl's figure shrinks as the mix grows (−0.22 at a 9-ball mix) and stays well under the biga's in every split batch. Neither drift is modelled, and without data for it neither should be. Two readings, thirty seconds, then recompute.
 
-⚠️ **−1.59 here and −1.9 in §5's temper section are both right.** They answer different questions, depending on whether the bowl moves with the biga. During the temper it does, since biga and bowl warm together in the same vessel, so the coefficient is `(Cb + C_bowl)/Cw`, which runs from 2.25 at a 3-ball mix down to 1.81 at the largest. Between mixes you measure the bowl separately, so the coefficient is `Cb/Cw` alone: **1.59, the same at every batch size**, because it's a dough-only ratio.
+⚠️ **−1.59 here and the 1.9 for a skipped temper in §5 are both right.** They answer different questions, depending on whether the bowl moves with the biga. With the temper skipped it does, since both stay at fridge temperature, and so does the calculator's guess for mix 1's bowl, which is the biga's reading. Then the coefficient is `(Cb + C_bowl)/Cw`, which runs from 2.25 at a 3-ball mix down to 1.81 at the largest. Whenever you measure the bowl, mix 1 included, the coefficient is `Cb/Cw` alone: **1.59, the same at every batch size**, because it's a dough-only ratio.
 
 ### Friction factor: measured
 
@@ -568,6 +568,19 @@ If Phase A or B runs long, more heat is already in the dough, so the probe reads
 
 7. Turn out into a lightly oiled container. Rest **45–60 min** at room temperature. On a split batch each mix goes into its own container and rests from the end of its own mix (§7).
    **No folds.** The mixer has already built the gluten, on top of the structure the biga brought with it, and folding now only tightens the dough and costs extensibility.
+   **Rest it somewhere steady, out of the sun and close to DDT, and keep the balls there for their rise.** Step 9's rise is timed from your final dough temperature and assumes the dough stays near it. In a cooler spot the dough loses heat on the counter and reaches the fridge behind. An estimate of the cost for one 6-ball dough, against a 75 °F spot, from the end of the mix until the balls are cold:
+
+| Where the dough sits | Fermentation lost (minutes at 75 °F) | Extra rise to make it up |
+|---:|---:|---:|
+| 64 °F | 45–47 | 69–73 min |
+| 67 °F | 33–35 | 46–49 min |
+| 70 °F | 22–23 | 26–28 min |
+| 72 °F | 13–14 | 15–16 min |
+| 73 °F | 9–10 | about 10 min |
+| 78 °F | 14–15 gained | 13–14 min less |
+
+A 67 °F spot costs about as much as a dough finishing 7–8 °F under DDT. **Nothing in the estimate is measured.** It assumes the tub and the balls cool toward the room at the rate step 9's note assumes for a ball in the fridge (3–4 h to reach 40 °F), with the tub slower by its size; that fermentation doubles every 17 °F; and that the window covers the bulk, the divide, the rise and the cooldown in the fridge. It reproduces step 9's 29–39-minute cooldown. The calculator doesn't model it. A probe of a ball right after shaping shows whether your spot keeps the dough near its final temperature.
+
 8. Weigh the dough and divide it into equal pieces, one per ball, about **265 g** each. On a split batch, divide each dough on its own as its bulk ends. Pre-round, rest 10–15 min, then ball tight.
 9. One ball per **24 oz deli container**, **very lightly oiled**: wipe on a thin film with a paper towel. Nothing on top of the ball; lids on. Leave them at room temperature for the time in the table below, which depends on how far your final dough temperature is from DDT, then refrigerate. On a split batch each dough's balls rest by that dough's own final temperature. Oil the containers rather than flouring them (note below). A 16 oz container is too small for a 265 g ball on this schedule: on bake 3 the dough filled it and pushed the lid off in the fridge.
 
@@ -746,10 +759,11 @@ SCHEDULE (retarded): biga 2h RT + 18-20h fridge -> 1h temper -> mix
 
 WATER TEMP (includes the bowl; no fixed multiplier works)
   Ct = Cb+Cf+Cw+Cs (dough)   C_bowl = 963 x 0.12 = 115.56
-  T_bowl: MEASURE IT. Biga always ferments in the bowl, but tearing warms the
-  biga ~5 F and not the bowl. 0.66 F of water per F of bowl at 3 balls.
-  BOWL UNTIL READ: mix 1 = T_biga, later mixes = DDT (an UPPER BOUND -
-  how far it cools in the changeover is unmeasured).
+  T_bowl: MEASURE IT. The temper warms the bowl faster than the biga: it
+  read 9-10.5 F above the biga at mix 1 (bakes 2, 3). 0.66 F of water per
+  F of bowl at 3 balls.
+  BOWL UNTIL READ: mix 1 = T_biga (runs LOW after the temper), later mixes
+  = DDT (an UPPER BOUND - how far it cools in the changeover is unmeasured).
   SPLIT BATCHES: Ct is PER-MIX, not per-batch. 12 balls = a 6-ball system
   twice. Batch-total Ct lands the water 2.8 F low (12bl, biga 58). One water temp
   PER MIX (12bl: 77.3 then 71.8). Re-measure biga AND bowl before each

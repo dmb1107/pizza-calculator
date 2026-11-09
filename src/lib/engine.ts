@@ -180,9 +180,11 @@ export interface TempInputs {
   roomTempF: number;
   /**
    * Bowl temperature, °F. Defaults to the biga temperature: the biga ferments
-   * in the mixer bowl, so 19 h of contact leaves them at equilibrium. Pass
-   * roomTempF for a bowl kept on the counter. The effect is about −0.3 °F,
-   * which is why this is never a required measurement.
+   * in the mixer bowl, so 19 h of contact leaves them at equilibrium when it
+   * comes out of the fridge. The temper breaks that (§4.2, MESSAGE-63): on
+   * bakes 2 and 3 the bowl read 9–10.5 °F above the biga at mix 1, so this
+   * default runs low and the water target warm, by `C_bowl/Cw` times the gap.
+   * The baker reads the bowl in every mix's prep step.
    */
   bowlTempF?: number;
 }
@@ -311,7 +313,9 @@ export function bowlPrefillF(index: number, { bigaTempF, ddtF }: { bigaTempF: nu
  * depends on whether the bowl figure moves with it:
  *
  * - **tracking** — the bowl is mix 1's prefill, i.e. the biga reading itself,
- *   so a wrong biga reading is a wrong bowl too: `(Cb + C_bowl)/Cw`.
+ *   so a wrong biga reading is a wrong bowl too: `(Cb + C_bowl)/Cw`. The
+ *   other tracking case is a skipped temper, which leaves both at fridge
+ *   temperature; the temper itself does not move them together (MESSAGE-63).
  * - **held** — the bowl is read, or prefilled from `DDT` on a later mix, so it
  *   stays put when the biga moves: `Cb/Cw`, scale-invariant.
  *

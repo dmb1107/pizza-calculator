@@ -504,11 +504,27 @@ const CLAIMS: readonly Claim[] = [
   },
 
   // --- sensitivities ---------------------------------------------------------
+  /**
+   * MESSAGE-63. The temper warms the bowl faster than the biga (bakes 2 and 3
+   * read it 9–10.5 °F above), so with the bowl read on its own the biga's
+   * figure is `Cb/Cw`, dough-only and the same at every batch size. This
+   * quoted the tracking figure, 1.9 at 6 balls and 2.3 at 3, until then.
+   */
   {
     at: 'biga-6.detail',
-    restates: '(Cb + C_bowl)/Cw — bowl tracking the biga, which is what the temper does',
-    text: `${fx(bigaSensitivity(6, 'tracking'), 1)} °F at a 6-ball mix and ${fx(bigaSensitivity(3, 'tracking'), 1)} °F at a 3-ball one`,
-    covers: ['1.9 °F', '6-ball', '2.3 °F', '3-ball'],
+    restates: "Cb/Cw — the biga with the bowl read on its own, the same at every batch size",
+    holds: () => [3, 6, 9].every((b) => fx(bigaSensitivity(b, 'held'), 1) === fx(bigaSensitivity(6, 'held'), 1)),
+    text: `moves the required water by about **${fx(bigaSensitivity(6, 'held'), 1)} °F**, at every batch size`,
+    covers: ['1.6 °F'],
+  },
+  {
+    // The skipped temper: the bowl stays as cold as the biga, so it tracks.
+    // Worded as thermal-model's claim below, with the same holds.
+    at: 'biga-6.detail',
+    restates: 'biga sensitivity, bowl tracking, rounds to 2 everywhere (1.81–2.32)',
+    holds: () => fx(bigaSensitivity(3, 'tracking'), 0) === '2' && fx(bigaSensitivity(9, 'tracking'), 0) === '2',
+    text: 'each degree the biga is colder costs about 2 °F of water',
+    covers: ['2 °F'],
   },
   {
     at: 'mix-1.detail',
@@ -1081,6 +1097,7 @@ const CLAIMS: readonly Claim[] = [
     let hiCorner = { bigaTempF: NaN, roomTempF: NaN };
     for (let balls = BOUNDS.balls.min; balls <= BOUNDS.balls.max; balls++) {
       for (let w: number = BOUNDS.ballWeightG.min; w <= BOUNDS.ballWeightG.max; w++) {
+        if (!splitsEvenly(balls, w)) continue; // §6 (MESSAGE-61)
         for (const bigaTempF of [W.bigaF.min, W.bigaF.max]) {
           for (const roomTempF of [W.roomF.min, W.roomF.max]) {
             const r = calculate({

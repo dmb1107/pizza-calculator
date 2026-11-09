@@ -1390,6 +1390,7 @@ describe('§4.2 the two biga sensitivities are different quantities', () => {
     let maxAt = '';
     for (let balls = C.MIN_BALLS; balls <= 24; balls += 1) {
       for (let w = 240; w <= 300; w += 1) {
+        if (!splitsEvenly(balls, w)) continue; // §6 (MESSAGE-61)
         const f = computeFormula({ balls, ballWeightG: w });
         const nMix = computeCapacity(f).nMix;
         const v = sens(balls, w, nMix).bowlTracking;
@@ -1405,9 +1406,10 @@ describe('§4.2 the two biga sensitivities are different quantities', () => {
     // §4.2: the minimum sits at the largest per-mix dough, which is the same
     // configuration that sets the bowl-share floor — not a coincidence, since
     // both fall as per-mix dough rises, and a SPLIT batch gets closest to the
-    // 2500 g cap. 19 x 257 g runs as two 2495 g mixes; 10 x 244 g, the largest
-    // unsplit batch, is 2494 (MESSAGE-54).
-    expect(minAt).toBe('19 x 257 g');
+    // 2500 g cap. Among the counts the app allows that is 10 x 244 g's 2494 g
+    // (20 x 244 g ties it); 19 x 257 g, two 2495 g mixes, held it until
+    // MESSAGE-61 made 19 balls a count the app doesn't allow.
+    expect(minAt).toBe('10 x 244 g');
     expect(maxAt).toBe('3 x 240 g');
   });
 

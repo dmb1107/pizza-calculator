@@ -195,11 +195,11 @@ To make the cue objective, fill a small straight-sided jar with biga from the sa
     title: `Temper the biga`,
     summary: `Out of the fridge **{bigaTemper} h** before you mix. Leave it in the mixer bowl.`,
     timerLabel: `{bigaTemper} h`,
-    detail: `Biga temperature moves the water target more than anything else you measure: each degree of biga moves the required water by about **two degrees**, 1.9 °F at a 6-ball mix and 2.3 °F at a 3-ball one.
+    detail: `Biga temperature moves the water target more than anything else you measure: each degree of biga moves the required water by about **1.6 °F**, at every batch size.
 
-Without it, the calculator will ask for water hotter than a tap can supply, because the biga is too cold to reach your target dough temperature any other way.
+Without the temper the bowl stays as cold as the biga: each degree the biga is colder costs about 2 °F of water, and the calculator will ask for water hotter than a tap can supply.
 
-Leave the biga in the mixer bowl. The {bowlMassG} g stainless bowl is part of the thermal system, and the hour warms bowl and biga together. Tempering the biga on the counter leaves the bowl cold.`,
+Leave the biga in the mixer bowl. The {bowlMassG} g stainless bowl is part of the thermal system, and the hour warms the bowl too, faster than the biga. At the mix it reads warmer than the biga, so read each on its own.`,
     detailWhen: {
       condition: "nMix > 1",
       detail: `**A biga this size doesn't behave like a small one.** It cooled more slowly in the fridge and warms more slowly in this hour, so expect it riper and colder at the mix than a 6-ball biga on the same clock. Judge ripeness by the cue in the previous step, and take its temperature after you crumble it; the water target follows the reading.`,
@@ -376,7 +376,9 @@ If the next target is awkward, rinse the bowl. Thin stainless reaches roughly th
     summary: `Lightly oiled container, 45–60 min at room temperature. **No folds.**`,
     timerLabel: `45–60 min`,
     timerMinutes: [45, 60],
-    detail: `Skip the folds. The mixer has already built the gluten, on top of the structure the biga brought with it, and folding now only tightens the dough and costs extensibility.`,
+    detail: `Skip the folds. The mixer has already built the gluten, on top of the structure the biga brought with it, and folding now only tightens the dough and costs extensibility.
+
+Rest the dough, and the balls after it, in the steadiest spot you have, out of the sun and close to your target dough temperature: the ball rise is timed from your final dough temperature and assumes the dough stays near it.`,
     detailWhen: {
       condition: "nMix > 1",
       detail: `**Each dough bulks in its own container, from the end of its own mix.** Start a dough's timer when you turn it out at the changeover, and the last one's when its mix ends. The earlier doughs run ahead of the last on the clock, and each still gets its own 45–60 minutes.`,

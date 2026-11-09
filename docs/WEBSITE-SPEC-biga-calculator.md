@@ -173,9 +173,9 @@ C_bowl = BOWL_MASS_G × 0.12        // 115.56
 TOT    = Ct + C_bowl
 ```
 
-**`T_bowl` defaults to `T_biga`** — the biga always ferments in the mixer bowl (this is now a fixed procedure, not a per-bake choice), so 19 h of contact leaves them at equilibrium.
+**`T_bowl` defaults to `T_biga`** — the biga always ferments in the mixer bowl (this is now a fixed procedure, not a per-bake choice), so 19 h of contact leaves them at equilibrium when the biga comes out of the fridge. The temper breaks it (below).
 
-⚠️ **Promote the override to a first-class input.** The equilibrium argument holds through fermentation and breaks in the last ten minutes: bake 1 recorded the biga at 53 °F at pull and 58 °F after tearing, a 5 °F gain from handling that the bowl did not share, corroborated by the Phase C friction rate climbing 0.82 → 1.00 °F/min as the bowl caught up.
+⚠️ **Promote the override to a first-class input.** The equilibrium argument holds through fermentation and breaks during the temper. **The bowl comes out of it warmer than the biga:** on bakes 2 and 3 it read 9–10.5 °F above the biga at mix 1 (64.5 against 54 °F in a 67.3 °F room; 59 against 50 in a 68 °F one). Thin stainless takes up room heat faster than the biga's mass. Handling moves the biga too: bake 1 recorded it at 53 °F at pull and 58 °F after tearing, a 5 °F gain from handling, and the Phase C friction rate climbed 0.82 → 1.00 °F/min as the bowl caught up with the dough. ⚠️ Until MESSAGE-63 this read as if the bowl stayed at the biga's pull temperature through the temper; the bowl wasn't measured on bake 1.
 
 The old guidance said not to require a measurement, on the grounds that `C_bowl/TOT` is only 0.10 °F per °F at 6 balls. **That was the wrong coefficient for the question.** Dough sensitivity is what a bowl error *costs*; `C_bowl/Cw` is how much it *moves the number the user acts on*, and it is three times larger:
 
@@ -188,6 +188,8 @@ The old guidance said not to require a measurement, on the grounds that `C_bowl/
 Keyed on balls **per mix**: a 12-ball batch reads the 6 row and an 18-ball batch the 9 row. ⚠️ An earlier version carried 12- and 18-ball rows at 0.052 / 0.164 and 0.035 / 0.109, computed on batch totals — a thermal system this recipe never builds.
 
 Keep `T_biga` as the bowl's prefill so nothing silently moves. The bowl is read in every mix's prep step (§6, *Readings in the steps*), and the field shows no sensitivity figure. **Do not invent a "tearing gain" constant** — 5 °F is a single observation and hardcoding it would be exactly the extrapolation this project has been burned by before. It is a quantity to be measured, not modelled.
+
+**The same goes for the temper's gap.** Two bakes put the bowl 9–10.5 °F above the biga at mix 1, so the prefill runs low by about that much, and the mix-1 water target it gives runs warm by `C_bowl/Cw` times the gap: 3.0–3.4 °F at 6 balls per mix and 5.9–6.9 at 3. **It stays the prefill** (Dave's call, MESSAGE-63): the bowl is read in `mix-1` every bake, a prefilled bowl doesn't count toward the FF (§10), and moving the prefill would move every app-default mix-1 target. `biga-6` and `thermal-model` say the bowl warms faster; nothing on the page says the two match.
 
 #### `DDT` is keyed to balls per mix
 
@@ -414,7 +416,7 @@ Note `coldFerment` sits **after** `ballRoomTemp`, not with the other biga stages
 
 ⚠️ **`bigaTemper` had no step.** It has a duration, a place in the sequence, a clock time in the timeline — and nothing in the guided step list told the baker to do it. A baker following the steps went from `biga-5` (pull at ~20% rise) straight to `mix-1` (prep the bowl).
 
-That is the worst possible stage to lose. Of the temperatures the baker measures, biga temperature moves the water target most — `d(T_water)/d(T_biga)` runs **−1.92 at a 6-ball mix to −2.25 at a 3-ball** — and a skipped temper is named in the >120 °F warning as the usual cause of an unreachable water target. **The app scheduled the temper, computed from it, and warned about skipping it, while never instructing it.** Fixed by `biga-6`.
+That is the worst possible stage to lose. Of the temperatures the baker measures, biga temperature moves the water target most: `Cb/Cw` = −1.59 at every mix size, with the bowl read on its own (§7.2). A skipped temper also leaves the bowl as cold as the biga, so each degree the two are colder costs **1.92 at a 6-ball mix to 2.25 at a 3-ball** (`(Cb + C_bowl)/Cw`), and the >120 °F warning names it as the usual cause of an unreachable water target. **The app scheduled the temper, computed from it, and warned about skipping it, while never instructing it.** Fixed by `biga-6`.
 
 **This is the same shape as `MAX_RUN_MIN` having no reader**, and it deserves the same kind of check: *every timeline stage maps to a step that instructs it, and every step maps to a stage.* Assert the mapping, name the deliberate exceptions, and let an orphan on either side point at whatever went missing.
 
@@ -453,6 +455,8 @@ The 45-minute floor arrives at **+10.95 °F**, for every dough of a split batch 
 **Planning mode:** before mixing there is no measurement, so default `T_actual = DDT`, giving exactly 90 min. When the user enters a real final dough temperature, recompute and shift every downstream stage.
 
 **Split batches: each dough's rise follows its own final reading.** Each dough bulks and rises in its own container (*Split batches*, below), so its `T_actual` is its own mix's final reading and it gets its own `roomMin`. A dough not yet read plans at `DDT`. `{finalDoughTemp}` prints the readings in mix order and `{riseByDough}` each dough's rise (§4.10). At 12 × 265 g (`DDT` 75), mixes finishing at 73.0 and 75.0 °F rise 101 and 90 minutes; the timeline plans the last dough's. ⚠️ Until MESSAGE-61 `T_actual` was the mean of the mixes, since they shared one tub.
+
+**The rise assumes the dough stays near `T_actual`, which takes surroundings near `DDT`.** Nothing models where the dough sits between the mix and the fridge. An estimate (MESSAGE-63) puts a 70 °F spot 22–23 DDT-minutes behind a 75 °F one by the time the balls are cold, which 26–28 more minutes of rise make up; a 67 °F spot costs 33–35, about what the rise adds for a dough finishing 7–8 °F under `DDT`. Its assumptions, none measured: Newton cooling; a 265 g ball's time constant of 0.94–1.25 h, the cooldown estimate's, reused for still air under a lid; the 6-ball tub's scaled by mass^(1/3), 1.83 times; `Q_DOUBLING_F`; the window covers the bulk, a 20-minute divide, the rise and the cooldown, against a 38.5 °F fridge. It reproduces the cooldown's 29.2–38.9 minutes. `bulk-1` asks for a steady spot near the target dough temperature, with no figures; the recipe's step 7 carries the table. **Don't model it:** the time constants are unmeasured, and a probe of a ball right after shaping is the measured route.
 
 Fixed overhead outside the cold ferment spans **25.0–29.9 h** across the full input ranges at `nMix = 1` on the retarded track (the lower bound is 3 balls, an 18 h fridge, the 45-min rise and a 1.5 h temper; the upper is 10 × 240 g, the largest single mix, with a 20 h fridge, the 180-min rise and a 2 h temper). **At the defaults it is 26.8 h**, so total elapsed is `coldFerment + 26.8 h`: ~33 h at 6 h cold, ~51 h at 24 h, ~63 h at 36 h, ~75 h at 48 h. ⚠️ MESSAGE-53 moved these: the temper went from 2.5 to 1.5 h and the divide now scales with balls.
 
@@ -808,9 +812,9 @@ Each target computes from that mix's own biga and bowl readings, so it updates a
 
 `Cb/Cw` is a **dough-only ratio and therefore scale-invariant** — identical at every mix size, by the same rule that makes `Cb/Ct` invariant. `(Cb + C_bowl)/Cw` is not, because `C_bowl` is fixed while everything else scales.
 
-**Between mixes the bowl is held**, because the baker measures it separately and it has drifted the *other* way, toward `DDT`. Two independent readings, two partial derivatives, each holding the other fixed. **In `biga-6` the bowl tracks**, because the biga tempers inside it and the hour warms both together; that is also what the engine computes, since `T_bowl` defaults to `T_biga`.
+**Between mixes the bowl is held**, because the baker measures it separately and it has drifted the *other* way, toward `DDT`. Two independent readings, two partial derivatives, each holding the other fixed. **Mix 1 is held too.** Its bowl is read in its prep step like every later mix's, and the temper doesn't move bowl and biga together: on bakes 2 and 3 the bowl read 9–10.5 °F above the biga at mix 1 (§4.2). So `biga-6` quotes 1.6 for a reading. **The bowl tracks the biga in two cases:** a skipped temper, which leaves both at fridge temperature, and mix 1's prefill, which is `T_biga` until the bowl is read. `biga-6` and `thermal-model` quote the skipped temper as "about 2 °F", as the >120 °F warning does (§4.4). ⚠️ Until MESSAGE-63 `biga-6` quoted the tracking figure for the temper itself, on the reasoning that the hour warms both together.
 
-Quoting −1.59 against a tempering biga understates the effect by 20%; quoting −1.92 against two separate readings overstates it. Across every legal mix size the bowl-tracking figure spans **1.81 to 2.32** — all of which round to "about two degrees".
+Quoting −1.92 against two separate readings overstates the effect, and quoting −1.59 for a skipped temper understates it. Across every legal mix size the bowl-tracking figure spans **1.81 to 2.32** — all of which round to "about two degrees".
 
 ### 7.3 Warnings
 Render above the step list, never hidden in a collapsed panel. Sources: **capacity** (below) and overnight timeline stages. ⚠️ **The two water warnings** (below 38 °F and above 120 °F, §4.4) render under the water target in the prep step they belong to, since that's where the number now appears (MESSAGE-54).
@@ -1029,11 +1033,11 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 **timer:** {bigaTemper} h
 
 **detail:**
-> Biga temperature moves the water target more than anything else you measure: each degree of biga moves the required water by about **two degrees**, 1.9 °F at a 6-ball mix and 2.3 °F at a 3-ball one.
+> Biga temperature moves the water target more than anything else you measure: each degree of biga moves the required water by about **1.6 °F**, at every batch size.
 >
-> Without it, the calculator will ask for water hotter than a tap can supply, because the biga is too cold to reach your target dough temperature any other way.
+> Without the temper the bowl stays as cold as the biga: each degree the biga is colder costs about 2 °F of water, and the calculator will ask for water hotter than a tap can supply.
 >
-> Leave the biga in the mixer bowl. The {bowlMassG} g stainless bowl is part of the thermal system, and the hour warms bowl and biga together. Tempering the biga on the counter leaves the bowl cold.
+> Leave the biga in the mixer bowl. The {bowlMassG} g stainless bowl is part of the thermal system, and the hour warms the bowl too, faster than the biga. At the mix it reads warmer than the biga, so read each on its own.
 
 **detail, shown only when `nMix > 1`:**
 > **A biga this size doesn't behave like a small one.** It cooled more slowly in the fridge and warms more slowly in this hour, so expect it riper and colder at the mix than a 6-ball biga on the same clock. Judge ripeness by the cue in the previous step, and take its temperature after you crumble it; the water target follows the reading.
@@ -1278,6 +1282,8 @@ A bare token on a per-mix step is then a **visible** error rather than one that 
 
 **detail:**
 > Skip the folds. The mixer has already built the gluten, on top of the structure the biga brought with it, and folding now only tightens the dough and costs extensibility.
+>
+> Rest the dough, and the balls after it, in the steadiest spot you have, out of the sun and close to your target dough temperature: the ball rise is timed from your final dough temperature and assumes the dough stays near it.
 
 **detail, shown only when `nMix > 1`:**
 > **Each dough bulks in its own container, from the end of its own mix.** Start a dough's timer when you turn it out at the changeover, and the last one's when its mix ends. The earlier doughs run ahead of the last on the clock, and each still gets its own 45–60 minutes.
@@ -1439,7 +1445,7 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 >
 > **The same fixed mass is why small mixes need hot water.** At 3 balls the bowl is 18% of the system and only the water can make up for it, so with a cold biga in a cold kitchen the requirement reaches about 116 °F, against 100 °F for a 9-ball mix. Below 3 balls it goes beyond what a tap can supply, which is why 3 is the smallest supported batch. This follows the **mix**: a 12-ball batch is two 6-ball mixes, so it needs *hotter* water than a 9-ball batch.
 >
-> **Because the biga always ferments in the bowl, the temper is the only way to warm the bowl before the first mix.** An hour on the counter brings bowl and biga up together. Without it, each degree the biga is colder costs about 2 °F of water, and at 3 balls the requirement goes past 110 °F.
+> **Because the biga always ferments in the bowl, the temper is the only way to warm the bowl before the first mix.** An hour on the counter warms the bowl as well as the biga, the bowl faster. Without it the bowl stays as cold as the biga: each degree the biga is colder costs about 2 °F of water, and at 3 balls the requirement goes past 110 °F.
 >
 > With a fridge-retarded biga you'll usually need **warm** water. The biga's thermal mass dominates, so the schedule controls dough temperature more than the water does.
 
@@ -1631,7 +1637,7 @@ Every mix stays in the log whether it counts or not, and the log shows which don
 
 **What each reading is worth.** A 1 °F error moves the solved FF by `TOT/Ct` for the final reading (1.22, 1.11 and 1.07 °F at 3, 6 and 9 balls per mix), by `Cb/Ct` = 0.53 for the biga, `Cw/Ct` = 0.33 for the water (a blend that misses the target, since the log takes the target), `C_bowl/Ct` for the bowl (0.22, 0.11, 0.07) and `Cf/Ct` = 0.13 for the flour. Room moves it only 0.005 through the salt, but it is the regression's variable.
 
-**A bowl left at its prefill leaves the mix out, and weighting can't fix it,** because the error has a direction. The cold prefill is the biga's post-tearing reading, and bake 1 showed the biga gains about 5 °F in tearing that the bowl doesn't share. The warm prefill is `DDT`, an upper bound. Both overstate the bowl, and an overstated bowl understates FF: 5 °F is 0.55 °F of FF at 6 balls per mix and 1.09 at 3. A bowl value that arrived in a link is a reading, not a prefill.
+**A bowl left at its prefill leaves the mix out, and weighting can't fix it,** because each prefill errs in a known direction. Mix 1's is the biga's reading, and after the temper the bowl reads above it, by 9–10.5 °F on bakes 2 and 3 (§4.2). An understated bowl overstates FF: 1.0–1.1 °F of FF at 6 balls per mix and 2.0–2.3 at 3. The later mixes' prefill is `DDT`, an upper bound, which understates FF. ⚠️ Until MESSAGE-63 both prefills were said to overstate the bowl, on bake 1's tearing gain. A bowl value that arrived in a link is a reading, not a prefill.
 
 **Nothing else is excluded automatically.** With FF inputs only there's no motor-protection or overrun field; Dave's switch covers the odd mix, such as one where the motor protection tripped.
 

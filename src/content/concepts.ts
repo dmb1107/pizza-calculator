@@ -74,7 +74,7 @@ Its *temperature* matters more than it seems, because it has two different coeff
 
 **The same fixed mass is why small mixes need hot water.** At 3 balls the bowl is 18% of the system and only the water can make up for it, so with a cold biga in a cold kitchen the requirement reaches about 116 °F, against 100 °F for a 9-ball mix. Below 3 balls it goes beyond what a tap can supply, which is why 3 is the smallest supported batch. This follows the **mix**: a 12-ball batch is two 6-ball mixes, so it needs *hotter* water than a 9-ball batch.
 
-**Because the biga always ferments in the bowl, the temper is the only way to warm the bowl before the first mix.** An hour on the counter brings bowl and biga up together. Without it, each degree the biga is colder costs about 2 °F of water, and at 3 balls the requirement goes past 110 °F.
+**Because the biga always ferments in the bowl, the temper is the only way to warm the bowl before the first mix.** An hour on the counter warms the bowl as well as the biga, the bowl faster. Without it the bowl stays as cold as the biga: each degree the biga is colder costs about 2 °F of water, and at 3 balls the requirement goes past 110 °F.
 
 With a fridge-retarded biga you'll usually need **warm** water. The biga's thermal mass dominates, so the schedule controls dough temperature more than the water does.`,
   },

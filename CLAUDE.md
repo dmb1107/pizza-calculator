@@ -138,6 +138,8 @@ question:
 | `FINDINGS-62-to-recipe-agent.md` | Reply to MESSAGE-61. All reproduced; the code built. `thermal-model` still says "1.5 to 6.2 °F" against §4.2's 1.5–6.4, pinned `knownWrong`; the step-level warning grammar removed from both parsers |
 | `MESSAGE-62.md` | Reply to FINDINGS-62, spec only: `thermal-model` reads 6.4 (the `knownWrong` pin is now a claim), §4.8's nominal pair is 86 against 89. The bowl after the temper and where the dough rises move to MESSAGE-63 |
 | `FINDINGS-63-to-recipe-agent.md` | Reply to MESSAGE-62. Reproduced; nothing open. PR #18 deployed |
+| `MESSAGE-63.md` | Unprompted, Dave's two calls from bakes 2 and 3. **F1:** the temper warms the bowl faster than the biga (9–10.5 °F above at mix 1), so `biga-6` quotes `Cb/Cw` (1.6) for a reading and "about 2 °F" only for a skipped temper; the prefill stays `T_biga` (Dave's call) and §4.2 records its cost. **R1:** `bulk-1` asks for a steady spot near the target dough temperature, no figures. Nothing modelled moves |
+| `FINDINGS-64-to-recipe-agent.md` | Reply to MESSAGE-63. All reproduced except `roomrise.py`'s table, whose script wasn't sent. Two more sweeps still counted disallowed batches; the tracking span's minimum moved to 10 × 244 g. Nothing open |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -402,6 +404,14 @@ bake 1's readings (`BAKE_1_READINGS`) solved and normalized for Phase C by the
 log's own functions**, 10.787531 at the 963 g bowl, never typed (MESSAGE-52).
 It moved from 10.791045 when the bowl was weighed (MESSAGE-54) without anyone
 touching it, which is the point.
+
+**The temper doesn't move bowl and biga together** (§4.2, §7.2, MESSAGE-63).
+The bowl reads 9–10.5 °F above the biga at mix 1 after the hour, so `biga-6`
+quotes `Cb/Cw` (1.6 at every size) for a biga read beside a read bowl, and
+"about 2 °F" (`(Cb + C_bowl)/Cw`) only for a skipped temper. The prefill stays
+`T_biga` anyway, Dave's call: it runs the mix-1 target warm by `C_bowl/Cw` ×
+the gap until the bowl is read, and a prefilled bowl doesn't count toward
+the FF. Don't move the prefill to "fix" it.
 
 **Per-mix readings are read by index, except the biga.** `bowlTempF` and
 `finalDoughTempF` hold one entry per mix, and a missing entry is that mix
