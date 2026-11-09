@@ -70,7 +70,7 @@ Its *temperature* matters more than it seems, because it has two different coeff
 
 **So the formula depends on scale.** The bowl's mass is fixed while the dough scales, so the weights shift with batch size. That's also why the bowl can't be folded into FF: the same FF of 14 would show up as 11.5 °F in a 3-ball mix and 13.1 °F in a 9-ball one, so FF would appear to change with batch size when nothing about the mixing had.
 
-**What matters is the mix, not the batch.** A 12-ball batch runs as two 6-ball mixes, and the bowl holds one at a time, so it's two 6-ball systems rather than one 12-ball system. Treating it as one 12-ball system halves the bowl's share and sets the water target too low, by 1.5 to 6.2 °F across the supported range, most with the coldest biga, when the water is already at its hottest. Your kitchen temperature doesn't change it.
+**What matters is the mix, not the batch.** A 12-ball batch runs as two 6-ball mixes, and the bowl holds one at a time, so it's two 6-ball systems rather than one 12-ball system. Treating it as one 12-ball system halves the bowl's share and sets the water target too low, by 1.5 to 6.4 °F across the supported range, most with the coldest biga, when the water is already at its hottest. Your kitchen temperature doesn't change it.
 
 **The same fixed mass is why small mixes need hot water.** At 3 balls the bowl is 18% of the system and only the water can make up for it, so with a cold biga in a cold kitchen the requirement reaches about 116 °F, against 100 °F for a 9-ball mix. Below 3 balls it goes beyond what a tap can supply, which is why 3 is the smallest supported batch. This follows the **mix**: a 12-ball batch is two 6-ball mixes, so it needs *hotter* water than a 9-ball batch.
 
