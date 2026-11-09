@@ -862,10 +862,10 @@ const CLAIMS: readonly Claim[] = [
         at: 'concept:thermal-model',
         restates: 'batch-total model against per-mix, every allowed split batch in the §5 envelope (1.495 at 20 x 244 g; 6.385 at 18 x 272 g)',
         text: `by ${fx(at70.lo, 1)} to ${fx(at70.hi, 1)} °F across the supported range`,
-        covers: ['1.5', '6.2 °F'],
-        // MESSAGE-61 moved §4.2's range to 1.5–6.4 (18 x 272 g at DDT 75, and
-        // 9 x 272 g gone), and this concept wasn't swept with it.
-        knownWrong: { reads: 'by 1.5 to 6.2 °F across the supported range', see: 'FINDINGS-62 §4' },
+        // 6.4 since MESSAGE-62: MESSAGE-61 moved §4.2's range to 1.5–6.4 (18 x
+        // 272 g at DDT 75, 9 x 272 g gone) and this concept read 6.2 for a
+        // round, pinned knownWrong (FINDINGS-62 §4).
+        covers: ['1.5', '6.4 °F'],
       },
       {
         at: 'concept:thermal-model',
@@ -1295,12 +1295,11 @@ describe('§8.1 every literal that restates a computed value matches the engine'
     }
   });
 
-  it('pins only the known discrepancies, each a decision', () => {
-    // The first three came off when the spec was corrected: mix-5's 2.0 in
-    // MESSAGE-18, "between 2 and 5" in MESSAGE-19, §9's 80% = 250 RPM in
-    // MESSAGE-28. thermal-model's 6.2 is FINDINGS-62's: §4.2 moved to 6.4 in
-    // MESSAGE-61 and the concept didn't.
-    expect(CLAIMS.filter((c) => c.knownWrong).map((c) => c.at)).toEqual(['concept:thermal-model']);
+  it('pins no known discrepancy at present', () => {
+    // All four pins so far came off when the spec was corrected: mix-5's 2.0
+    // in MESSAGE-18, "between 2 and 5" in MESSAGE-19, §9's 80% = 250 RPM in
+    // MESSAGE-28, thermal-model's 6.2 in MESSAGE-62. Adding one is a decision.
+    expect(CLAIMS.filter((c) => c.knownWrong).map((c) => c.at)).toEqual([]);
   });
 });
 

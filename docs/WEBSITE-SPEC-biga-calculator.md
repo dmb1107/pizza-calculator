@@ -483,7 +483,7 @@ CHANGEOVER   = 5 / 60                                  // 5 min, bowl not cleane
 
 **The timeline plans from the last dough.** Its `bulkRest`, `divideBall` and `ballRoomTemp` are the last dough's, and `coldFerment` runs from the last dough into the fridge. Each earlier dough's times print beside the bulk and rise rows (§7.4). The earlier doughs get 35 minutes more cold per mix ahead, worth about 8 minutes at DDT in a 38.5 °F fridge by `Q_DOUBLING_F`, which isn't corrected.
 
-**At `nMix = 3` the first dough's bulk ends about when the third mix does:** 90 against 100 minutes on the planning basis, 84 against 82 on nominal phase times (§5). The baker divides it once that mix is out, and the bulk's 45–60 minutes cover the overlap. Not modelled.
+**At `nMix = 3` the first dough's bulk ends about when the third mix does:** 90 against 100 minutes on the planning basis, 86 against 89 on nominal phase times (§5). The baker divides it once that mix is out, and the bulk's 45–60 minutes cover the overlap. Not modelled.
 
 ⚠️ **`CHANGEOVER` is an estimate from Dave, not a measurement**, and it assumes every mix is weighed out before the first one starts, which `mix-0` instructs. Time it on a split bake. An error in it moves the schedule by that much per changeover; it moves no rise.
 
@@ -1435,7 +1435,7 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 >
 > **So the formula depends on scale.** The bowl's mass is fixed while the dough scales, so the weights shift with batch size. That's also why the bowl can't be folded into FF: the same FF of 14 would show up as 11.5 °F in a 3-ball mix and 13.1 °F in a 9-ball one, so FF would appear to change with batch size when nothing about the mixing had.
 >
-> **What matters is the mix, not the batch.** A 12-ball batch runs as two 6-ball mixes, and the bowl holds one at a time, so it's two 6-ball systems rather than one 12-ball system. Treating it as one 12-ball system halves the bowl's share and sets the water target too low, by 1.5 to 6.2 °F across the supported range, most with the coldest biga, when the water is already at its hottest. Your kitchen temperature doesn't change it.
+> **What matters is the mix, not the batch.** A 12-ball batch runs as two 6-ball mixes, and the bowl holds one at a time, so it's two 6-ball systems rather than one 12-ball system. Treating it as one 12-ball system halves the bowl's share and sets the water target too low, by 1.5 to 6.4 °F across the supported range, most with the coldest biga, when the water is already at its hottest. Your kitchen temperature doesn't change it.
 >
 > **The same fixed mass is why small mixes need hot water.** At 3 balls the bowl is 18% of the system and only the water can make up for it, so with a cold biga in a cold kitchen the requirement reaches about 116 °F, against 100 °F for a 9-ball mix. Below 3 balls it goes beyond what a tap can supply, which is why 3 is the smallest supported batch. This follows the **mix**: a 12-ball batch is two 6-ball mixes, so it needs *hotter* water than a 9-ball batch.
 >

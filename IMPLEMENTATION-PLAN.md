@@ -32,7 +32,8 @@ the ingredients card). Bake 2 is back on, so the FF in use is 9.447610.
 rise and fridge; the timeline plans the last dough and prints the earlier
 ones' end times; the stagger correction is gone; one timer per dough on
 `bulk-1`–`bulk-3`), ball counts split evenly between the mixes, and DDT
-goes by balls per mix. FINDINGS-62 is the last thing sent.
+goes by balls per mix. MESSAGE-62 (spec only: `thermal-model`'s 6.4) is
+applied too. FINDINGS-63 is the last thing sent.
 
 ---
 

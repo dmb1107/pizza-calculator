@@ -9,16 +9,19 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-61 and FINDINGS-62 (9 November).
+MESSAGE-62 and FINDINGS-63 (9 November).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-61, and FINDINGS-62 is the
-  last thing sent.** One pin is live: `thermal-model` still says "by 1.5 to
-  6.2 °F" against §4.2's 1.5–6.4 (`knownWrong`, FINDINGS-62 §4). MESSAGE-61
+- **The correspondence is applied through MESSAGE-62, and FINDINGS-63 is the
+  last thing sent.** No pin of any kind is live (`knownWrong` is empty) and
+  nothing is open. MESSAGE-62 was spec only: `thermal-model` now reads 6.4,
+  claimed against the gate's sweep, and §4.8's nominal pair is 86 against
+  89. MESSAGE-63 is announced: the bowl after the temper, and where the
+  dough rises. MESSAGE-61
   changed behaviour, not just copy: **each dough runs on its own clock**
   (own bulk, divide, rise and fridge; the timeline plans the last dough and
   prints the earlier doughs' end times; `stagger` and everything built on it
@@ -26,8 +29,7 @@ Don't trust any status here that you can check instead (§7).
   evenly between the mixes** (`src/lib/ballCounts.ts`; the stepper skips,
   everything else rounds up and says so), and **`DDT` goes by balls per
   mix**, so 12 balls is 75 and matches 6 everywhere. Every envelope sweep
-  now skips disallowed counts. MESSAGE-62 is announced: the bowl after the
-  temper, and where the dough rises. MESSAGE-60 settled FINDINGS-60's two questions (Dave
+  now skips disallowed counts. MESSAGE-60 settled FINDINGS-60's two questions (Dave
   placed the three unlinked concepts; `BIGA_ROOM_TEMP_H` stays in
   `timeline.ts`, no §3 entry) and changed the recipe: **one ball per lidded
   24 oz deli container**, tempered 1½–2 h per ball, Dave's waves gone; the

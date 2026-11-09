@@ -136,6 +136,8 @@ question:
 | `FINDINGS-61-to-recipe-agent.md` | Reply to MESSAGE-60. All reproduced; the three links built and a test now requires every concept to be opened from somewhere. PR #16 deployed; bake 2 back on, FF in use 9.447610 |
 | `MESSAGE-61.md` | Reply to FINDINGS-61, and three of Dave's changes. **C2:** each dough runs on its own clock (its own bulk, divide, rise and fridge), the timeline plans the last dough, and `stagger` and its tokens and warnings are gone; `bulk-1`–`bulk-3` carry one timer per dough. **C2d:** ball counts split evenly between the mixes. **C3:** `DDT` by balls per mix, so 12 balls is 75 |
 | `FINDINGS-62-to-recipe-agent.md` | Reply to MESSAGE-61. All reproduced; the code built. `thermal-model` still says "1.5 to 6.2 °F" against §4.2's 1.5–6.4, pinned `knownWrong`; the step-level warning grammar removed from both parsers |
+| `MESSAGE-62.md` | Reply to FINDINGS-62, spec only: `thermal-model` reads 6.4 (the `knownWrong` pin is now a claim), §4.8's nominal pair is 86 against 89. The bowl after the temper and where the dough rises move to MESSAGE-63 |
+| `FINDINGS-63-to-recipe-agent.md` | Reply to MESSAGE-62. Reproduced; nothing open. PR #18 deployed |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
