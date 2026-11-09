@@ -42,14 +42,6 @@ export interface ConditionalDetail {
   detail: string;
 }
 
-/** A step-level warning shown only when its condition holds. §8.2. */
-export interface ConditionalWarning {
-  /** Literally `staggerUncentred > 2`, as written in the spec. */
-  condition: string;
-  /** Markdown. Renders inside the step, distinct from the §7.3 warning strip. */
-  text: string;
-}
-
 /**
  * §8.2 `**shown only when:**`. A literal drawn from a closed set and compared
  * by string equality — deliberately NOT evaluated. §8 prose is content, and an
@@ -111,8 +103,6 @@ export interface Step {
   repeatsPerMix?: boolean;
   /** No changeover after the last mix. `mix-8` only. */
   suppressOnFinal?: boolean;
-  /** Step-level warning, shown only when its condition holds. §8.2. */
-  warningWhen?: ConditionalWarning;
 }
 
 export const STEPS: readonly Step[] = [
@@ -222,7 +212,7 @@ Leave the biga in the mixer bowl. The {bowlMassG} g stainless bowl is part of th
     title: `Split the biga`,
     summary: `Split the biga into {nMix} portions of {bigaMassPerMix} g. Leave mix 1's in the bowl and cover the others. Weigh out each mix's fresh flour and salt now too.`,
     values: [`Biga per mix: {bigaMassPerMix} g`, `Fresh flour per mix: {freshFlourPerMix} g`, `Salt per mix: {saltPerMix} g`],
-    detail: `**Weigh out every mix before you start the first.** You're running {nMix} mixes, with five minutes budgeted for each changeover. That only works if the next mix's biga, flour and salt are already in their own containers. Weighing during the changeover stretches it to fifteen or twenty minutes, and every extra five minutes adds five minutes of fermentation to the first dough that nothing later can correct.
+    detail: `**Weigh out every mix before you start the first.** You're running {nMix} mixes, with five minutes budgeted for each changeover. That only works if the next mix's biga, flour and salt are already in their own containers. Weighing during the changeover stretches it to fifteen or twenty minutes, and every extra five minutes moves the later mixes, and everything after them, five minutes later.
 
 Weigh the biga portions rather than judging them by eye. The biga carries 65% of each mix's flour and all of its yeast, so an uneven split changes each mix's formula, not just its size.
 
@@ -364,10 +354,10 @@ It also breaks up the mixer's run time, keeping each run inside the Halo Core's 
     id: "mix-8",
     phase: "mix",
     title: `Changeover to the next mix`,
-    summary: `Turn mix {mixIndex} out into the bulk container. **Don't clean the bowl.** Then start mix {nextMixIndex}; its prep step asks for the biga and bowl again.`,
+    summary: `Turn mix {mixIndex} out into its own lightly oiled container and start its timer under *Bulk rest*. **Don't clean the bowl.** Then start mix {nextMixIndex}; its prep step asks for the biga and bowl again.`,
     timerLabel: `5 min`,
     timerMinutes: 5,
-    detail: `Leave the residue in the bowl; cleaning costs time and gains nothing. The dough stuck to it is already at your target temperature, so it doesn't change the next water target, which is the same with 0 g or 60 g left behind. Every mix ends up in the same bulk container, so whatever carries into the next mix still ends up in the batch. Only what's left after the last mix is lost, and the 2.2% overage covers it.
+    detail: `Leave the residue in the bowl; cleaning costs time and gains nothing. The dough stuck to it is already at your target temperature, so it doesn't change the next water target, which is the same with 0 g or 60 g left behind. Whatever carries over goes into the next dough, so this one comes out a few grams lighter, and each dough is divided by its own weight (*Divide and ball*). Only what's left after the last mix leaves the batch, and the 2.2% overage covers it.
 
 Mix {nextMixIndex}'s prep step asks for both readings again, because both have changed.
 
@@ -389,40 +379,30 @@ If the next target is awkward, rinse the bowl. Thin stainless reaches roughly th
     detail: `Skip the folds. The mixer has already built the gluten, on top of the structure the biga brought with it, and folding now only tightens the dough and costs extensibility.`,
     detailWhen: {
       condition: "nMix > 1",
-      detail: `**Start the clock when the last mix comes out.** Starting it earlier leaves the last dough with no bulk at all.
-
-So the first dough runs {staggerMinutes} minutes long, the time the later mixes took. The doughs share one container now, and one container can't run on separate clocks.
-
-To compensate, the calculator takes {staggerHalfMinutes} minutes, half the difference, off the room-temperature rise after balling. The batch still isn't uniform, but the error is split: instead of the first dough running {staggerMinutes} minutes over and the last exactly on time, the first and last end up about {staggerHalfMinutes} minutes off in opposite directions. That halves the worst case.
-
-Keep this in mind when you judge the result. A slightly over-fermented batch doesn't mean the correction failed; it was never meant to make the batch uniform.`,
-    },
-    warningWhen: {
-      condition: "staggerUncentred > 2",
-      text: `**{staggerUncentred} minutes of the difference couldn't be absorbed.** Your dough is warm enough that the rise after balling is already at its 45-minute floor, so there was nothing left to shorten. The first dough will run that much long, so this batch won't be uniform.
-
-If you can tell the doughs apart in the tub, divide and ball the first dough before the rest and put its containers in the fridge as they fill, rather than chilling everything at the end. That recovers roughly the time it takes to ball one mix, about ten minutes at this batch size. It isn't in the calculation, but it costs nothing.
-
-Expect the first dough to be a little further along: slacker on the bench, possibly more open, maybe slightly more acidic. That variation comes from the batch running on one clock. Log it; the formula doesn't need to change.`,
+      detail: `**Each dough bulks in its own container, from the end of its own mix.** Start a dough's timer when you turn it out at the changeover, and the last one's when its mix ends. The earlier doughs run ahead of the last on the clock, and each still gets its own 45–60 minutes.`,
     },
   },
   {
     id: "bulk-2",
     phase: "bulk",
     title: `Divide and ball`,
-    summary: `Divide into {ballWeight} g pieces. Pre-round, rest 10–15 min, then ball tight.`,
+    summary: `Weigh the dough and divide it into {ballsPerMix} equal pieces. Pre-round, rest 10–15 min, then ball tight.`,
     values: [`{balls} balls × {ballWeight} g`],
     timerLabel: `10–15 min between rounds`,
     timerMinutes: [10, 15],
     detail: `The rest between pre-rounding and final balling relaxes the gluten, so you can shape a tight ball without tearing it. A torn surface doesn't hold gas.`,
+    detailWhen: {
+      condition: "nMix > 1",
+      detail: `**Divide each dough on its own as its bulk ends.** Whatever a mix left in the bowl went into the next dough, so the first dough's balls can come out a few grams lighter than the last's.`,
+    },
   },
   {
     id: "bulk-3",
     phase: "bulk",
     title: `Into containers`,
-    summary: `One ball per 24 oz deli container, very lightly oiled: wipe on a thin film with a paper towel. Nothing on top of the ball. Put the lids on and leave them at room temperature for **{ballRoomMin} min**, set by how far your final dough temperature is from DDT.`,
-    values: [`Room time: {ballRoomMin} min (final dough {finalDoughTemp} °F against DDT {ddt} °F)`],
-    timerLabel: `{ballRoomMin} min`,
+    summary: `One ball per 24 oz deli container, very lightly oiled: wipe on a thin film with a paper towel. Nothing on top of the ball. Put the lids on and leave them at room temperature for **{riseByDough}**, set by how far the final dough temperature is from DDT.`,
+    values: [`Room time: {riseByDough} (final dough {finalDoughTemp} °F against DDT {ddt} °F)`],
+    timerLabel: `{roomMin} min`,
     detail: `**Oil the containers; don't flour them.**
 
 Flour absorbs water. It pulls moisture out of the dough surface and turns to paste. Over 24–48 hours in the fridge, which dries things even under a lid, you get gluey patches where the flour hydrated and a dry skin everywhere else. The skin resists opening and tears at the cornicione instead of stretching.
@@ -445,9 +425,7 @@ Oil keeps the dough from sticking to the container without drawing water out of 
 **Use a 24 oz container.** A 16 oz one is too small for a 265 g ball on this schedule: the dough fills it and pushes the lid off in the fridge.`,
     detailWhen: {
       condition: "nMix > 1",
-      detail: `**This rise is shorter than a single mix would get.** At {finalDoughTemp} °F a single mix would rest {roomMin} min; this batch rests {ballRoomMin}. The first mix has been fermenting longer than the last, so the calculator shortens the rise by half that difference to split it (see *Bulk rest*), and never below 45 minutes.
-
-The final dough temperature here is the average of every mix's reading, since the doughs share one tub.`,
+      detail: `**Each dough's rise follows its own final temperature**, so a dough that finished warmer rests less. Start each dough's timer when its last ball goes into its container, and put that dough's balls in the fridge when its timer ends.`,
     },
     concepts: ["oil-not-flour"],
   },

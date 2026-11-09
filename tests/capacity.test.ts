@@ -3,7 +3,8 @@ import { C, indicatorForDial, indicatorSegments } from '../src/lib/constants';
 import { calculate, computeCapacity, computeFormula, type CalculatorInputs } from '../src/lib/engine';
 import { tokenValues, type ScheduleTokens } from '../src/lib/bindTokens';
 import { capacityAlerts, splitHint, NEAR_LIMIT_FRACTION } from '../src/lib/capacity';
-import { formatLitSegments, formatSegmentCount, formatSpeedDetail } from '../src/lib/format';
+import { formatGrams, formatLitSegments, formatSegmentCount, formatSpeedDetail } from '../src/lib/format';
+import { splitsEvenly } from '../src/lib/ballCounts';
 import { STEPS } from '../src/content/steps';
 
 /** §7.3 *Capacity* and §7.5 *Speed* — MESSAGE-29. */
@@ -56,23 +57,32 @@ describe('§7.3 capacity: which message, when', () => {
     expect(near).toEqual([9, 18]);
   });
 
-  it('fires near the limit at 8, 9, 10, 16, 17, 18, 19, 20 and 24 balls across 240–300 g', () => {
-    // §7.3's list since MESSAGE-30. Capacity reads balls and ball weight only.
+  it('fires near the limit at 8, 9, 10, 16, 18, 20 and 24 balls across 240–300 g', () => {
+    // §7.3's list over the counts the app allows (MESSAGE-61; 17 and 19 left
+    // with the uneven splits). Capacity reads balls and ball weight only.
     const near = new Set<number>();
     for (let b = C.MIN_BALLS; b <= 24; b++) {
-      for (let w = 240; w <= 300; w++) if (ids(b, w).includes('capacity-near-limit')) near.add(b);
+      for (let w = 240; w <= 300; w++) {
+        if (splitsEvenly(b, w) && ids(b, w).includes('capacity-near-limit')) near.add(b);
+      }
     }
-    expect([...near]).toEqual([8, 9, 10, 16, 17, 18, 19, 20, 24]);
+    expect([...near]).toEqual([8, 9, 10, 16, 18, 20, 24]);
   });
 
   it('never reaches the below-minimum guard anywhere in the input ranges', () => {
-    // §7.3: smallest single mix 735.8 g (3 x 240 g), smallest split 1250.9 g.
-    // Kept, and swept, so a range change cannot make it silently reachable.
+    // §7.3: smallest single mix 735.8 g (3 x 240 g), smallest split 1252.0 g
+    // (10 x 245 g; 9 x 272 g's 1250.9 until MESSAGE-61). Kept, and swept, so a
+    // range change cannot make it silently reachable.
+    let smallestSplit = { g: Infinity, at: '' };
     for (let b = C.MIN_BALLS; b <= 24; b++) {
       for (let w = 240; w <= 300; w++) {
         expect(ids(b, w), `${b} x ${w} g`).not.toContain('capacity-below-minimum');
+        const c = computeCapacity(computeFormula({ balls: b, ballWeightG: w }));
+        if (splitsEvenly(b, w) && c.nMix > 1 && c.doughPerMix < smallestSplit.g) smallestSplit = { g: c.doughPerMix, at: `${b} x ${w} g` };
       }
     }
+    expect(smallestSplit.at).toBe('10 x 245 g');
+    expect(formatGrams(smallestSplit.g)).toBe('1252.0');
   });
 
   it('does fire it below the input range, where the engine still computes', () => {
@@ -132,8 +142,9 @@ describe('§7.3 capacity: the words', () => {
       return splitHint(r, tokenValues(r, SCHEDULE));
     };
     expect(at(9)).toBeNull();
-    expect(at(12)).toBe('→ 2 mixes of 1625.0 g');
-    expect(at(24)).toBe('→ 3 mixes of 2166.6 g'); // 24 x 265 x 1.022 / 3 = 2166.64
+    // §6 Panel 1's wording since MESSAGE-61: the balls each mix makes, then its dough.
+    expect(at(12)).toBe('→ 2 mixes of 6 balls (1625.0 g each)');
+    expect(at(24)).toBe('→ 3 mixes of 8 balls (2166.6 g each)'); // 24 x 265 x 1.022 / 3 = 2166.64
   });
 });
 

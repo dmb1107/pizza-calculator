@@ -134,6 +134,8 @@ question:
 | `FINDINGS-60-to-recipe-agent.md` | Reply to MESSAGE-59. All reproduced. Open: `schedule-architecture`, `why-biga` and `formula-rationale` are linked by no step and no drawer, so the app never shows them; whether §3 should name `bigaRoomTemp`'s 2 h. The gate's walker read only strings inside JSX, so the Calibration panel's `FRICTION_HINT` and the Batch panel's schedule descriptions were invisible |
 | `MESSAGE-60.md` | Reply to FINDINGS-60, with Dave's three concept links (`biga-1` → `why-biga`, the cold-ferment slider → `schedule-architecture`, the ingredients card → `formula-rationale`). **C1:** one ball per lidded 24 oz deli container, tempered 1½–2 h per ball, the waves gone. **C4:** the cooling estimate is for an open tray. **G1:** the mix ends mostly smooth. **P1:** Phase B 7–9 min, so the profile has 1.5 min of headroom |
 | `FINDINGS-61-to-recipe-agent.md` | Reply to MESSAGE-60. All reproduced; the three links built and a test now requires every concept to be opened from somewhere. PR #16 deployed; bake 2 back on, FF in use 9.447610 |
+| `MESSAGE-61.md` | Reply to FINDINGS-61, and three of Dave's changes. **C2:** each dough runs on its own clock (its own bulk, divide, rise and fridge), the timeline plans the last dough, and `stagger` and its tokens and warnings are gone; `bulk-1`–`bulk-3` carry one timer per dough. **C2d:** ball counts split evenly between the mixes. **C3:** `DDT` by balls per mix, so 12 balls is 75 |
+| `FINDINGS-62-to-recipe-agent.md` | Reply to MESSAGE-61. All reproduced; the code built. `thermal-model` still says "1.5 to 6.2 °F" against §4.2's 1.5–6.4, pinned `knownWrong`; the step-level warning grammar removed from both parsers |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -193,8 +195,9 @@ total-flour term in it: 0.392 °F lower at every batch size and ball weight. The
 vectors run at FF 14, and the app at the FF in use: until the log has a counted
 bake, bake 1's normalized 10.787531 at every mix size (MESSAGE-52; 963 g
 bowl, MESSAGE-54), which adds `(14 − FF) × Ct/Cw` = 9.645. So the app sits
-**9.253 °F above** the vectors everywhere, and 12 balls' two mix-1 targets
-print 74.0 and 68.8 against the vectors' 64.7 and 59.5. **Quote the conditions whenever you quote a rendered number**, FF
+**9.253 °F above** the vectors everywhere, and 12 balls' two targets print
+77.3 and 71.8 against the vectors' 68.1 and 62.5 (DDT 75 at 6 balls per mix
+since MESSAGE-61). **Quote the conditions whenever you quote a rendered number**, FF
 included; one without them cost a round of correspondence (FINDINGS-40).
 
 **Anything derivable from the formula constants is derived, never written down.**
@@ -221,10 +224,44 @@ that failure. A new pause in the mix phase is something a person classifies.
 **Three wall-clock bases for a mix, spanning 7¼ minutes at `nMix = 2`** —
 nominal mid-range 26.4 per mix, phase maxima 30.0 (the duty-cycle basis), §4.7
 planning 30.0. Since Phase B went to 7–9 min (MESSAGE-60) the maxima and the
-planning number agree, which is a coincidence, not a reason to rebase. `stagger`
-uses the **planning** basis and must: it and the timeline are the same quantity,
-so rebasing one decouples the correction from the schedule it corrects. If one
-moves, both move.
+planning number agree, which is a coincidence, not a reason to rebase. The
+timeline and each dough's own clock (`mixEndsAtH`) both use the **planning**
+basis, so the earlier doughs' printed times and the schedule describe the
+same session.
+
+**Each dough runs on its own clock** (§4.8, MESSAGE-61, Dave's practice since
+bake 3). Every mix goes into its own container: its bulk starts at the end of
+its own mix, it divides its own balls, it rises from its own final reading
+(`roomMinutesByDough`; a dough not yet read plans at DDT), and its balls go in
+the fridge when that rise ends. **The timeline plans the last dough**, and the
+bulk and rise rows print each earlier dough's end time beside them
+(`earlierDoughEnds`, "Ends 10:35 AM (dough 1 10:00 AM)"). `ScheduleAdjustments`
+takes `earlierRisesH` and refuses a list that doesn't match `nMix`. Nothing is
+shortened for the gap between the mixes: **`stagger`, `staggerUncentred`,
+`plannedBallRiseH`, `{ballRoomMin}` and the three stagger tokens are gone**,
+with `bulk-1`'s warning and the strip's. Re-adding any of them re-imposes one
+shared tub. `bulk-1`, `bulk-2` and `bulk-3` carry one timer per dough at
+`nMix > 1` (`timerSlots`, pinned by id in `PER_DOUGH_TIMER_STEPS`, keyed
+`bulk-3~dough-2`; ticking the step stops them all through `isTimerOf`), and
+inside each, `{roomMin}` binds that dough's rise (`tokenValues`' `doughIndex`;
+left out, the last dough's). `bulk-3`'s chip shows only when every dough's
+label agrees.
+
+**Ball counts split evenly between the mixes** (§6 Panel 1, MESSAGE-61, Dave's
+call), so every dough makes whole balls. The rule is `src/lib/ballCounts.ts`:
+the stepper skips a disallowed count in its direction (`stepToEvenSplit`; 18
+↔ 21 at 265 g), and everything else rounds up (`roundUpToEvenSplit`: a
+ball-weight change in `applyInput`, a link or stored value in
+`decodeInputsWithReport`). 24 is allowed at every weight, so rounding ends. The
+field says "Raised to {balls} balls…" while the raise holds (`raisedNote`,
+from the count the baker chose against the count in use). **Any sweep over
+the envelope skips disallowed counts** (`splitsEvenly`): several §5 extremes
+sat at counts that can't be entered (19 × 257 g, 9 × 272 g).
+
+**`DDT` goes by balls per mix** (§4.2, MESSAGE-61): 75 at 6 or fewer per mix,
+74 at 7 or more. `ddtForBallsPerMix` is named for its key so nothing passes a
+total; `defaultDdtFor` takes a batch. A 12-ball batch matches a 6-ball one in
+every per-mix figure, and a test holds it to that.
 
 **The mix profile is asserted against `MAX_RUN_MIN` at build time, not warned
 about at runtime.** Phases A + B + C run back to back — the probe pause is
@@ -324,9 +361,9 @@ UI, that's what the disclosure is for — collapse it, don't cut it.
 
 **Thermal weights are per-mix, never batch totals.** §4.2 — `C_bowl` is one
 bowl and the bowl faces one mix at a time, so a 12-ball batch is a 6-ball
-thermal system twice over. Feeding batch totals in put the water 2.6 °F low at
-12 × 265 g with the biga at 58 °F, 4.8 °F there with the biga at 45, and
-1.5–6.2 °F across the envelope. §4.2 has the closed form, `C_bowl × (DDT −
+thermal system twice over. Feeding batch totals in put the water 2.8 °F low at
+12 × 265 g with the biga at 58 °F (DDT 75), and 1.5–6.4 °F across the allowed
+envelope (20 × 244 g to 18 × 272 g, MESSAGE-61). §4.2 has the closed form, `C_bowl × (DDT −
 T_bowl) × (nMix − 1) ÷ (Cw per gram × batch dough)`: it grows with the
 DDT-to-bowl gap and shrinks with batch mass, and room and flour cancel out of
 it. `engine.test.ts` checks it against the engine. `computeThermal` takes `nMix`, which is why `calculate` computes
@@ -366,7 +403,7 @@ touching it, which is the point.
 
 **Per-mix readings are read by index, except the biga.** `bowlTempF` and
 `finalDoughTempF` hold one entry per mix, and a missing entry is that mix
-unread: the bowl's warm prefill, and DDT in §4.8's mean. `atMix` carried mix 1's bowl forward and printed mix 2's water
+unread: the bowl's warm prefill, and DDT for that dough's rise. `atMix` carried mix 1's bowl forward and printed mix 2's water
 4.6 °F too warm (FINDINGS-46); `bowlReadingAt` and `finalReadings` exist so
 that can't recur. Only the biga carries forward, because it is the same biga
 until re-read (§6). Display through the same functions: the old panel showed
@@ -381,7 +418,7 @@ mix 1's bowl prefills from its biga reading, later mixes from DDT
 (`bowlPrefillF`), and a reading always wins. Labels and hints are §6's table
 and nothing more: no sensitivity figures beside the fields. The water
 warnings belong to a mix (`MixTarget.warnings`), never the strip; the strip
-keeps capacity, overnight stages and the stagger. The target stays bare: its
+keeps capacity and overnight stages. The target stays bare: its
 `thermal-model` link is `mix-1`'s `concepts` field, under the detail
 (MESSAGE-55). Three concept links sit outside the steps (§8.3, MESSAGE-60):
 the Calibration panel's `friction-factor`, the cold-ferment slider's
@@ -429,6 +466,11 @@ reads carry §7.5's "Logged" tag** (`loggedTimerTag`, keyed on `MIX_PHASES`),
 "Logged · 3:42" once stopped, and no other timer does. It sits on its own line
 in the timer card: beside the label it wrapped "Before the window" at 375 px
 and not "In the window", so the card changed height as the phase turned.
+
+**Step-level warning blocks are gone from the grammar** (MESSAGE-61 removed
+the last, `bulk-1`'s stagger warning, and §8 no longer describes the marker).
+Both parsers now refuse `**warning, shown when …:**` as unknown; a new one
+needs both parsers, a closed condition set and a renderer.
 
 **`MIN_BALLS` is 3, and it is an input constraint rather than a warning.** Two
 balls clears the mixer's 500 g floor on paper but won't let a spiral hook grip,
@@ -525,7 +567,6 @@ Three rules the pass itself taught:
 - **Never change a figure, or a phrase a test pins as a claim.** Reword around
   it. The gate's `COMPONENT_FIXED` keys are exact phrases.
 - **Mirror the spec wherever the UI repeats it.**
-  - The stagger strip's title matches `bulk-1`'s warning.
   - The Temper stage says "measured with a probe", as `bake-1` does.
   - Dave's calls apply everywhere: there is no "weigh it" in a value line,
     whether in the chip or in copy-as-text.
@@ -669,10 +710,11 @@ don't inline a `toFixed` somewhere else.
   since MESSAGE-60, so the plan is the first ball's); a stored or linked
   2–3 clamps. The timeline prints a range from one hour up in hours ("1 h 30
   min (1.5–2 h)", as `bake-1`'s timer reads), and below an hour in minutes.
-- **The divide scales with total balls** (12.5 + 1.25 per ball, minutes,
-  estimates), on the timeline only: the rise after balling isn't shortened
-  for it (Dave's call). So the overhead depends on the ball count as well as
-  `nMix`: 26.83 h at 6 balls, 27.25 at 12, 27.79 at 24.
+- **The divide scales with balls per mix** (12.5 + 1.25 per ball, minutes,
+  estimates; total balls from MESSAGE-53, per mix since MESSAGE-61, since the
+  last dough divides only its own), on the timeline only: the rise after
+  balling isn't shortened for it (Dave's call). The overhead is 26.83 h at 6
+  balls, 27.42 at 12, 27.48 at 18 and 28.04 at 24.
 - **Speeds render as lit LED segments** (§7.5, MESSAGE-29): the Core has no
   number display. `SpeedIndicator` draws the real indicator as Dave describes
   it (25 Sep; §7.5 records it since MESSAGE-30): **twelve 30° positions round
@@ -708,13 +750,13 @@ don't inline a `toFixed` somewhere else.
   (`timerLabelRetarded`/`timerLabelClassic`); resolve through `timerLabelFor`
   and `summaryFor`, never in a component. §7.5's one exception: a classic plan
   below 16 h times the plan.
-- **Two ball-rise figures, and `bulk-3` prints the planned one** (MESSAGE-32).
-  `roomMinutes` / `{roomMin}` is one dough's rise; `ballRoomMinutes` /
-  `{ballRoomMin}` is what the timeline plans, less half the stagger and held
-  at 45 min (`plannedBallRiseH`, the one function both read). They differ only
-  at `nMix` > 1. Anything that tells the baker how long the balls sit —
-  `bulk-3`, copy-as-text, the final-temperature hint — prints the planned one.
-  Printing `{roomMin}` there ran every split batch 17.5–35 min long.
+- **One rise per dough** (MESSAGE-61). `roomMinutesByDough` holds each
+  dough's; `roomMinutes` is the last, which the timeline plans. Anything that
+  tells the baker how long the balls sit prints every dough's: `bulk-3` and
+  copy-as-text through `{riseByDough}` ("101 min for dough 1 and 90 for dough
+  2") beside `{finalDoughTemp}` ("73.0 and 75.0"), and each mix's final-reading
+  hint its own dough's. The old shared-tub figures (`{ballRoomMin}`, half the
+  stagger off) are gone; MESSAGE-32 is history.
 - **Capacity messages are §7.3's words, decided in `src/lib/capacity.ts`**, not
   the engine: generated content bound through the token table, decided on the
   **printed** per-mix dough (a test pins 2374.96 g → "2375.0" → fires). The

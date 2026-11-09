@@ -13,7 +13,7 @@
  *     what makes them a meaningful assertion target (§4.2).
  */
 
-import { C, bowlHeatCapacity, defaultDdtF } from './constants';
+import { C, bowlHeatCapacity, ddtForBallsPerMix } from './constants';
 import { formatTempF } from './format';
 import { FRICTION_AFTER_PROBE_F } from './mixPhases';
 
@@ -393,11 +393,17 @@ export function computeCapacity(f: Formula): Capacity {
 /**
  * §6 Panel 2. The key the friction-factor map is stored under: FF is per-mix
  * by definition (§4.2), so a 12-ball batch — two 6-ball mixes — reads and
- * files under 6. Fractional on an odd split (13 balls → 6.5), and deliberately
- * not rounded: §6 is exact-match only, so 6.5 must not read the 6 or 7 entry.
+ * files under 6. A whole number for every count the app allows (MESSAGE-61);
+ * deliberately not rounded, since a bake logged before then can carry 6.5 and
+ * §6 is exact-match only.
  */
 export function ballsPerMix(b: BatchInputs): number {
   return b.balls / computeCapacity(computeFormula(b)).nMix;
+}
+
+/** §4.2, §4.3: the default DDT for a batch, by its balls per mix (MESSAGE-61). */
+export function defaultDdtFor(b: BatchInputs): number {
+  return ddtForBallsPerMix(ballsPerMix(b));
 }
 
 // ---------------------------------------------------------------------------
@@ -518,54 +524,19 @@ export function computeRoomMinutes({
 }
 
 // ---------------------------------------------------------------------------
-// §4.7 Mix stagger
+// §4.7 The mix
 // ---------------------------------------------------------------------------
 
 /** §4.7. One mix, excluding changeover. Includes the 10-minute rest. */
 export const MIX_H = 0.5;
 
-/** §4.8's [45, 180] minute floor and ceiling, applied in hours. */
-export function clampRise(hours: number): number {
-  const [minRise, maxRise] = C.ROOM_MIN_CLAMP;
-  return Math.min(maxRise / 60, Math.max(minRise / 60, hours));
-}
-
 /**
- * §4.7. How much later the LAST mix finishes than the first, in hours.
- * 35 min at nMix 2 — 30 min of mixing plus a 5-minute changeover.
+ * §4.8 (MESSAGE-61). Hours from the start of the first mix to the end of mix
+ * `index` (1-based): each mix is `MIX_H`, with a changeover before every one
+ * after the first. Each dough's bulk starts here, on its own clock.
  */
-export function mixStaggerH(nMix: number): number {
-  return (MIX_H + C.CHANGEOVER_H) * Math.max(0, nMix - 1);
-}
-
-/**
- * §4.7. Minutes of the stagger the ball rise could NOT absorb, because
- * subtracting half of it hit §4.8's 45-minute floor. Zero in every unclamped
- * case, so it surfaces only when it is true.
- *
- * ⚠️ The clamp eats the correction exactly where the correction matters most.
- * The floor is reached by WARM doughs, and a warm dough ferments fastest — so a
- * given number of uncentred minutes costs more here than anywhere else in the
- * table. The floor is not worth overruling for it; the lever is upstream, which
- * is what the §7.3 warning says.
- */
-export function staggerUncentredMin(roomMinutes: number, nMix: number): number {
-  const target = roomMinutes / 60 - mixStaggerH(Math.max(1, nMix)) / 2;
-  return (plannedBallRiseH(roomMinutes, nMix) - target) * 60;
-}
-
-/**
- * §4.7 / §4.8. The ball rise the timeline plans, in hours: the per-dough rise
- * less half the stagger, held to the floor. Equal to the per-dough rise at
- * `nMix = 1`.
- *
- * The timeline's `ballRoomTemp` stage and `{ballRoomMin}` both read this, so
- * `bulk-3` and the schedule cannot part again. They did: until MESSAGE-32
- * `bulk-3` printed and timed the uncorrected `{roomMin}`, 17.5 min longer than
- * the plan at `nMix = 2`.
- */
-export function plannedBallRiseH(roomMinutes: number, nMix: number): number {
-  return clampRise(roomMinutes / 60 - mixStaggerH(Math.max(1, nMix)) / 2);
+export function mixEndsAtH(index: number): number {
+  return MIX_H * index + C.CHANGEOVER_H * (index - 1);
 }
 
 // ---------------------------------------------------------------------------
@@ -614,37 +585,6 @@ export function waterWarnings(waterTempF: number): Warning[] {
       detail: `${formatTempF(waterTempF)} °F is hotter than a home tap delivers. Don't heat water to reach it; fix the cause. It's almost always a biga that skipped its 1-hour temper: each °F of biga temperature is worth about 2 °F of water, so an hour on the counter closes the gap faster than anything you can do at the sink.`,
     });
   }
-  return w;
-}
-
-/**
- * §7.3. The strip's engine warnings. Derived data, so they belong here rather
- * than in a component — the UI just renders them, above the step list and
- * never inside a collapsed panel.
- *
- * §7.3 *Capacity* — split, the divided biga, near the limit, below the
- * minimum — lives in `capacity.ts` (MESSAGE-29): its wording is the spec's,
- * bound through the token table, and its thresholds are decided on printed
- * values, neither of which belongs in the engine. The water warnings belong
- * to a mix (`waterWarnings`).
- */
-function buildWarnings(staggerUncentred: number): Warning[] {
-  const w: Warning[] = [];
-
-  // §4.7 / §7.3. Only when the ball rise hit its floor with stagger left over.
-  // Quantitative and conditional by design: a blanket caveat about a failure
-  // that only happens on warm split batches trains the reader to skip it.
-  if (staggerUncentred > 2) {
-    w.push({
-      id: 'stagger-uncentred',
-      severity: 'warn',
-      // Worded as bulk-1's own warning (§8.2), which this strip mirrors.
-      title: `${Math.round(staggerUncentred)} minutes of the difference couldn't be absorbed`,
-      detail:
-        'Your dough is warm enough that the rise after balling is already at its 45-minute floor, so there was nothing left to shorten, and the first dough will run that much long. A warm dough ferments fastest, so those minutes cost more here than anywhere else. To win those minutes back, choose a batch size that needs fewer mixes, or aim for a cooler dough.',
-    });
-  }
-
   return w;
 }
 
@@ -733,27 +673,18 @@ export interface CalculatorResult {
   probeTargetF: number;
   /** §4.10. The target's parts, per mix at the user's inputs. `probeTargetF === probe.targetF`. */
   probe: ProbeParts;
-  /** §4.8 room-temperature minutes before the fridge. */
+  /**
+   * §4.8 room-temperature minutes before the fridge, one per dough in mix
+   * order (MESSAGE-61): each from its own final reading, a dough not yet read
+   * planning at DDT. Length `nMix`.
+   */
+  roomMinutesByDough: number[];
+  /** The last dough's rise: the one the timeline plans (§4.8). */
   roomMinutes: number;
-  /**
-   * The ball rise the timeline plans: `roomMinutes` less half the stagger,
-   * floored (`plannedBallRiseH`). Equal to `roomMinutes` at `nMix = 1`. What
-   * `bulk-3`, copy-as-text and the final-temperature hint print (MESSAGE-32).
-   */
-  ballRoomMinutes: number;
-  /** True when roomMinutes came from DDT rather than a measurement. */
+  /** True when no dough has a final reading, so every rise is planned at DDT. */
   roomMinutesIsPlanned: boolean;
-  /**
-   * §4.7. Minutes of the mix stagger the ball rise could not absorb. Zero
-   * except on a warm split batch, where §4.8's floor blocks the correction.
-   */
-  staggerUncentredMin: number;
-  /**
-   * The temperature §4.8 was computed from: the mean of the mixes' final
-   * readings, a mix not yet read counting at DDT. DDT in planning mode.
-   */
-  effectiveFinalTempF: number;
-  warnings: Warning[];
+  /** Each dough's `T_actual`, in mix order: its reading, or DDT until read. */
+  finalTempByDoughF: number[];
 }
 
 /**
@@ -783,17 +714,6 @@ export function finalReadings(value: PerMix<number | null> | undefined, nMix: nu
   });
 }
 
-/**
- * §4.8, split batches (MESSAGE-45). `T_actual` is the mean of the mixes'
- * final readings: the mixes have equal dough mass and share one tub, so their
- * average is the tub's temperature. A mix not yet read counts at DDT,
- * planning mode's value, so the rise updates as each reading comes in.
- */
-export function meanFinalTempF(finals: readonly (number | null)[], ddtF: number): number {
-  if (finals.length === 0) return ddtF;
-  return finals.reduce<number>((sum, t) => sum + (t ?? ddtF), 0) / finals.length;
-}
-
 /** Composes §4.1–§4.8 into everything the UI needs. Nothing here is rounded. */
 export function calculate(inputs: CalculatorInputs): CalculatorResult {
   const formula = computeFormula(inputs);
@@ -806,7 +726,8 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
     C.BOWL_MASS_G, // MESSAGE-29: fixed, not an input
     capacity.nMix,
   );
-  const ddtF = inputs.ddtOverrideF ?? defaultDdtF(inputs.balls);
+  // §4.2: by balls per mix (MESSAGE-61), so every mix of a batch shares it.
+  const ddtF = inputs.ddtOverrideF ?? ddtForBallsPerMix(inputs.balls / capacity.nMix);
 
   const baseTemps = {
     ddtF,
@@ -835,12 +756,12 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
 
   const waterTempF = mixes[0]!.waterTempF;
 
-  // Planning mode until a real final dough temperature is entered.
+  // §4.8 (MESSAGE-61): each dough rises from its own final reading, and a
+  // dough not yet read plans at DDT. The timeline plans the last dough's.
   const finals = finalReadings(inputs.finalDoughTempF, capacity.nMix);
   const roomMinutesIsPlanned = finals.every((t) => t == null);
-  const effectiveFinalTempF = meanFinalTempF(finals, ddtF);
-  const roomMinutes = computeRoomMinutes({ finalDoughTempF: effectiveFinalTempF, ddtF });
-  const uncentred = staggerUncentredMin(roomMinutes, capacity.nMix);
+  const finalTempByDoughF = finals.map((t) => t ?? ddtF);
+  const roomMinutesByDough = finalTempByDoughF.map((t) => computeRoomMinutes({ finalDoughTempF: t, ddtF }));
   const probe = computeProbeParts({
     ddtF,
     roomTempF: inputs.roomTempF,
@@ -857,12 +778,10 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
     capacity,
     probeTargetF: probe.targetF,
     probe,
-    roomMinutes,
-    ballRoomMinutes: plannedBallRiseH(roomMinutes, capacity.nMix) * 60,
+    roomMinutesByDough,
+    roomMinutes: roomMinutesByDough[roomMinutesByDough.length - 1]!,
     roomMinutesIsPlanned,
-    staggerUncentredMin: uncentred,
-    effectiveFinalTempF,
-    warnings: buildWarnings(uncentred),
+    finalTempByDoughF,
   };
 }
 

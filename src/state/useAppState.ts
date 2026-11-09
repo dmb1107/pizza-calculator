@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { calculate, computeCapacity, computeFormula, type CalculatorResult, type Warning } from '../lib/engine';
+import { calculate, computeCapacity, computeFormula, defaultDdtFor, type CalculatorResult, type Warning } from '../lib/engine';
 import {
   ffInUse,
   frictionBadge,
@@ -17,8 +17,9 @@ import {
   type LoggedBake,
   type MixSize,
 } from '../lib/bakeLog';
-import { capacityAlerts, splitHint } from '../lib/capacity';
-import { defaultDdtF } from '../lib/constants';
+import { capacityAlerts, raisedNote, splitHint } from '../lib/capacity';
+import { stepToEvenSplit } from '../lib/ballCounts';
+import { isTimerOf } from '../lib/stepInstances';
 import {
   roundToNextQuarterHour,
   socialWindows,
@@ -50,7 +51,7 @@ import {
 } from './bakeLogStore';
 import { mergeAfterSync, syncLog, type FetchLike } from './githubSync';
 import { newBakeId, saveConflict, sessionBake } from './sessionBake';
-import { decodeInputs, encodeInputs } from './url';
+import { decodeInputsWithReport, encodeInputs } from './url';
 import { tokenValues } from '../lib/bindTokens';
 import type {
   Calibration,
@@ -187,10 +188,12 @@ export interface AppState {
   toggleStep: (id: string) => void;
   /** {token} bindings for step and concept prose. */
   tokens: Record<string, string>;
-  /** §7.3 capacity messages, then the engine's warnings — what the strip shows, in order. */
+  /** §7.3's capacity messages: what the strip shows, in order. */
   alerts: Warning[];
-  /** §6 Panel 1: "→ {nMix} mixes of {doughPerMix} g", or null for a single mix. */
+  /** §6 Panel 1: "→ {nMix} mixes of {ballsPerMix} balls ({doughPerMix} g each)", or null for a single mix. */
   ballsSplitHint: string | null;
+  /** §6 Panel 1 (MESSAGE-61): "Raised to {balls} balls…" while the app's round-up holds, else null. */
+  ballsRaisedNote: string | null;
   /** The schedule inputs behind `tokens`, so per-instance tables can be rebuilt. */
   scheduleTokens: {
     bigaFridgeH: number;
@@ -234,10 +237,21 @@ export function useAppState(): AppState {
   // stored value from before is ignored.
   const initial = useMemo(() => {
     const persisted = loadPersisted(storage);
-    return { persisted, inputs: decodeInputs(currentSearch(), DEFAULT_INPUTS) };
+    const decoded = decodeInputsWithReport(currentSearch(), DEFAULT_INPUTS);
+    return { persisted, inputs: decoded.inputs, ballsAskedFor: decoded.ballsAskedFor };
   }, [storage]);
 
   const [inputs, setInputs] = useState<Inputs>(initial.inputs);
+  /**
+   * §6 (MESSAGE-61). The ball count the baker (or a link) chose, when the app
+   * has since raised it to split evenly; null when the count in use is the one
+   * chosen. Derived by comparison, so no updater needs a side effect: the
+   * stepper clears it, and a ball-weight change records the count it started
+   * from.
+   */
+  const [ballsChosen, setBallsChosen] = useState<number | null>(initial.ballsAskedFor);
+  const inputsRef = useRef(inputs);
+  inputsRef.current = inputs;
   const [calibration, setCalibration] = useState<Calibration>(initial.persisted.calibration);
   const [panels, setPanels] = useState<PanelPrefs>(initial.persisted.panels);
   const [bigaStartAt, setBigaStartAt] = useState<Date>(() => bigaStartFrom(initial.persisted.bigaStartAtIso));
@@ -309,6 +323,11 @@ export function useAppState(): AppState {
   }, [storage, log]);
 
   const setInput = useCallback(<K extends keyof Inputs>(key: K, value: Inputs[K]) => {
+    if (key === 'ballWeightG') {
+      const before = inputsRef.current.balls;
+      setBallsChosen((chosen) => chosen ?? before);
+    }
+    if (key === 'balls') setBallsChosen(typeof value === 'number' ? value : null);
     setInputs((prev) => applyInput(prev, key, value));
   }, []);
 
@@ -326,10 +345,14 @@ export function useAppState(): AppState {
    * silently drop a step.
    */
   const stepNumber = useCallback((key: BoundedField & keyof Inputs, delta: number) => {
+    // §6 (MESSAGE-61): the stepper skips a count that doesn't split evenly,
+    // in the direction of the step, so it never raises one.
+    if (key === 'balls') setBallsChosen(null);
     setInputs((prev) => {
       const current = prev[key];
       if (typeof current !== 'number') return prev;
-      return applyInput(prev, key, clampField(key, current + delta) as Inputs[typeof key]);
+      const next = key === 'balls' ? stepToEvenSplit(current, prev.ballWeightG, delta) : clampField(key, current + delta);
+      return applyInput(prev, key, next as Inputs[typeof key]);
     });
   }, []);
 
@@ -505,10 +528,12 @@ export function useAppState(): AppState {
     () => ({
       bigaFridgeH: inputs.bigaFridgeH,
       bigaRoomOnlyH: inputs.bigaRoomOnlyH,
-      // §4.8: computed from the measured dough temperature, not chosen.
+      // §4.8: computed from each dough's final reading, not chosen. The
+      // timeline plans the last dough's; the earlier ones print beside it.
       ballRoomTempH: result.roomMinutes / 60,
+      earlierRisesH: result.roomMinutesByDough.slice(0, -1).map((m) => m / 60),
       nMix: result.capacity.nMix,
-      balls: inputs.balls,
+      ballsPerMix: inputs.balls / result.capacity.nMix,
       coldFermentH: inputs.coldFermentH,
       temperH: inputs.temperH,
     }),
@@ -516,6 +541,7 @@ export function useAppState(): AppState {
       inputs.bigaFridgeH,
       inputs.bigaRoomOnlyH,
       result.roomMinutes,
+      result.roomMinutesByDough,
       result.capacity.nMix,
       inputs.balls,
       inputs.coldFermentH,
@@ -576,7 +602,8 @@ export function useAppState(): AppState {
       // a mixer phase's time reaches the log without a second tap.
       if (checking) {
         const at = Date.now();
-        setTimers((prev) => prev.map((t) => (t.stepId === id && t.stoppedAt == null ? { ...t, stoppedAt: at } : t)));
+        // Every timer the step carries: one per dough on bulk-1 to bulk-3 (§7.5).
+        setTimers((prev) => prev.map((t) => (isTimerOf(t.stepId, id) && t.stoppedAt == null ? { ...t, stoppedAt: at } : t)));
       }
     },
     [checkedSteps],
@@ -643,10 +670,11 @@ export function useAppState(): AppState {
     [result, scheduleTokens],
   );
 
-  // §7.3: capacity first — the split "always shown, first in the strip" —
-  // then the engine's water and stagger warnings.
-  const alerts = useMemo(() => [...capacityAlerts(result, tokens), ...result.warnings], [result, tokens]);
+  // §7.3: the strip's sources are capacity and the overnight stages; the
+  // water warnings sit under each mix's target (MESSAGE-54).
+  const alerts = useMemo(() => capacityAlerts(result, tokens), [result, tokens]);
   const ballsSplitHint = useMemo(() => splitHint(result, tokens), [result, tokens]);
+  const ballsRaisedNote = useMemo(() => raisedNote(ballsChosen, result, tokens), [ballsChosen, result, tokens]);
 
   const shareUrl = useMemo(() => {
     if (typeof window === 'undefined') return '';
@@ -680,7 +708,7 @@ export function useAppState(): AppState {
     sync,
     syncNow: () => void syncNow(),
     ddtF: result.ddtF,
-    autoDdtF: defaultDdtF(inputs.balls),
+    autoDdtF: defaultDdtFor(inputs),
     panels,
     togglePanel,
     nowMs: now.getTime(),
@@ -694,6 +722,7 @@ export function useAppState(): AppState {
     tokens,
     alerts,
     ballsSplitHint,
+    ballsRaisedNote,
     scheduleTokens,
     bigaStartAt,
     setBigaStartAt,

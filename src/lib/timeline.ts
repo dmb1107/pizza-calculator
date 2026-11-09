@@ -14,7 +14,7 @@
  */
 
 import { C } from './constants';
-import { MIX_H, plannedBallRiseH } from './engine';
+import { MIX_H, mixEndsAtH } from './engine';
 import type { Schedule, TimelineMode } from '../state/types';
 
 export type StageKey =
@@ -38,21 +38,23 @@ export interface ScheduleAdjustments {
   /** Classic only. 12–18 h at 61–65 °F. */
   bigaRoomOnlyH: number;
   /**
-   * Balls at room temperature, hours. **Computed, not chosen** — §4.8 derives
-   * it from the measured final dough temperature. This replaced a fixed 1.5 h
-   * with a 1–2 h range, which the model overshoots at both ends: under an hour
-   * from about 3.3 °F over DDT, over two from about 2.9 °F under, clamped to
-   * 45–180 min. It depends only on the offset from DDT, never on the dough
-   * temperature alone.
+   * The last dough's balls at room temperature, hours: the rise the timeline
+   * plans (§4.8, MESSAGE-61). **Computed, not chosen** — §4.8 derives it from
+   * that dough's final reading, or DDT until read. Clamped to 45–180 min, and
+   * dependent only on the offset from DDT, never on the dough temperature
+   * alone.
    */
   ballRoomTempH: number;
   /**
-   * §4.7. Mixes this batch runs as. `mix` scales with it, and it staggers the
-   * bulk clock — see `stageDurations`.
+   * The earlier doughs' rises, hours, in mix order: one per dough before the
+   * last, so `nMix − 1` of them. Only their end times print (§7.4); the
+   * schedule runs from the last dough.
    */
+  earlierRisesH: readonly number[];
+  /** §4.7. Mixes this batch runs as. `mix` scales with it. */
   nMix: number;
-  /** Total balls: the whole tub is divided at once, so the divide scales with it (MESSAGE-53). */
-  balls: number;
+  /** Balls in each dough: the last dough divides only its own (MESSAGE-61). */
+  ballsPerMix: number;
   /** 6–48 h retarded (MESSAGE-59), 6–8 h classic (§4.7, MESSAGE-53). */
   coldFermentH: number;
   /** 1.5–2 h. */
@@ -60,13 +62,14 @@ export interface ScheduleAdjustments {
 }
 
 /**
- * §4.7 (MESSAGE-53). Divide and ball, hours, for a batch of `balls`: the
- * minutes are summed from the two constants and divided by 60 once. 20 min at
- * 6 balls, 27.5 at 12, 42.5 at 24. Timeline only: the rise after balling isn't
- * shortened for it (Dave's call).
+ * §4.7. Divide and ball, hours, for one dough of `ballsPerMix` balls: the
+ * minutes are summed from the two constants and divided by 60 once. 16.25 min
+ * at 3, 20 at 6, 23.75 at 9; 20 at 12 balls in two mixes, 22.5 at 24 in three.
+ * Each dough divides on its own (MESSAGE-61; total balls from MESSAGE-53).
+ * Timeline only: the rise after balling isn't shortened for it (Dave's call).
  */
-export function divideBallH(balls: number): number {
-  return (C.DIVIDE_BASE_MIN + C.DIVIDE_PER_BALL_MIN * balls) / 60;
+export function divideBallH(ballsPerMix: number): number {
+  return (C.DIVIDE_BASE_MIN + C.DIVIDE_PER_BALL_MIN * ballsPerMix) / 60;
 }
 
 export const STAGE_ORDER: readonly StageKey[] = [
@@ -130,7 +133,7 @@ export const STAGE_INFO: Record<StageKey, { title: string; description: string }
     title: 'Balls at room temperature',
     // By the OFFSET from DDT, not the thermometer reading alone (MESSAGE-21/23):
     // §4.8's rise depends only on `T_actual − DDT`.
-    description: 'One ball per lightly oiled container, lids on. How long depends on how far the dough landed from DDT.',
+    description: 'One ball per lightly oiled container, lids on. How long depends on how far each dough landed from DDT.',
   },
   coldFerment: {
     title: 'Cold ferment',
@@ -145,23 +148,11 @@ export const STAGE_INFO: Record<StageKey, { title: string; description: string }
 /**
  * §4.7. Durations in hours from the biga mix at t = 0.
  *
- * ⚠️ Two things here are `nMix`-dependent, and both were flat before:
- *
- * `mix` scales with the number of mixes plus a changeover between them. A
- * 12-ball batch runs two mixes back to back and the timeline used to count one.
- *
- * `ballRoomTemp` loses half the stagger. Dave bulks every mix in ONE
- * container, so the batch runs on a single clock while each dough is 35
- * minutes further along than the one after it. Clocking `bulkRest` from the
- * last mix (which `buildTimeline` does by including the full `mix` span) is
- * the only anchor that gives the last dough any bulk at all; subtracting half
- * the stagger from the ball rise then centres the remaining error, ±17.5 min
- * at `nMix` 2 and ±35 at 3 with the middle dough on time, instead of leaving
- * the whole stagger on the first dough.
- *
- * ⚠️ This CENTRES the spread, it does not remove it. One clock cannot do
- * better, and a user who reads it as making the batch uniform will draw the
- * wrong conclusion from a bad result — §8 `bulk-1` says so in the prose.
+ * `mix` scales with the number of mixes plus a changeover between them. From
+ * there the stages are **the last dough's** (§4.8, MESSAGE-61): each dough
+ * runs on its own clock from the end of its own mix, so the last dough's bulk
+ * starts when the `mix` span ends and nothing is shortened for the gap. The
+ * earlier doughs' times are `earlierDoughEnds`, printed beside the rows.
  */
 /**
  * §4.7: the retarded biga's room-temperature stage, fixed at 2 h. Named so the
@@ -180,8 +171,8 @@ export function stageDurations(schedule: Schedule, a: ScheduleAdjustments): Stag
     bigaTemper: retarded ? C.BIGA_TEMPER_H : 0,
     mix: MIX_H * nMix + C.CHANGEOVER_H * (nMix - 1),
     bulkRest: 1,
-    divideBall: divideBallH(a.balls),
-    ballRoomTemp: plannedBallRiseH(a.ballRoomTempH * 60, nMix),
+    divideBall: divideBallH(a.ballsPerMix),
+    ballRoomTemp: a.ballRoomTempH,
     coldFerment: a.coldFermentH,
     temper: a.temperH,
   };
@@ -211,6 +202,12 @@ export interface TimelineStage {
   unsocialStart: boolean;
   /** `now` falls inside this stage. */
   current: boolean;
+  /**
+   * §7.4 (MESSAGE-61). At `nMix > 1`, on the bulk and rise rows only: when
+   * each earlier dough's stage ends, in mix order. The row itself is the last
+   * dough's.
+   */
+  earlierDoughEnds?: Date[];
 }
 
 export interface Timeline {
@@ -258,6 +255,25 @@ export function buildTimeline({
 }): Timeline {
   const durations = stageDurations(schedule, adjustments);
   const stages: TimelineStage[] = [];
+  const nMix = Math.max(1, adjustments.nMix);
+  if (adjustments.earlierRisesH.length !== nMix - 1) {
+    throw new Error(`${adjustments.earlierRisesH.length} earlier rises for ${nMix} mixes`);
+  }
+
+  // §4.8 (MESSAGE-61). Each earlier dough's bulk starts at the end of its own
+  // mix; its divide, then its own rise, follow.
+  const earlierEnds = (mixStartMs: number): Partial<Record<StageKey, Date[]>> => {
+    if (nMix === 1) return {};
+    const doughs = adjustments.earlierRisesH.map((riseH, i) => {
+      const bulkEndMs = mixStartMs + stageMs(mixEndsAtH(i + 1) + durations.bulkRest);
+      return { bulk: bulkEndMs, rise: bulkEndMs + stageMs(durations.divideBall + riseH) };
+    });
+    return {
+      bulkRest: doughs.map((d) => new Date(d.bulk)),
+      ballRoomTemp: doughs.map((d) => new Date(d.rise)),
+    };
+  };
+  let earlier: Partial<Record<StageKey, Date[]>> = {};
 
   let cursor = startAt.getTime();
   for (const key of STAGE_ORDER) {
@@ -267,6 +283,7 @@ export function buildTimeline({
     if (durationH <= 0) continue;
 
     const startsAt = new Date(cursor);
+    if (key === 'mix') earlier = earlierEnds(cursor);
     cursor += stageMs(durationH);
     const endsAt = new Date(cursor);
 
@@ -279,6 +296,7 @@ export function buildTimeline({
       endsAt,
       unsocialStart: isUnsocialHour(startsAt),
       current: now ? now >= startsAt && now < endsAt : false,
+      ...(earlier[key] ? { earlierDoughEnds: earlier[key] } : {}),
     });
   }
 
@@ -400,6 +418,19 @@ export function socialWindows({
 /** "9:00 AM" — a time of day with no weekday, for window boundaries. */
 export function formatTimeOfDay(at: Date): string {
   return at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+
+/**
+ * §7.4 (MESSAGE-61): "Ends 11:05 AM (dough 1 10:30 AM)" under a bulk or rise
+ * row at `nMix > 1`. The row is the last dough's; the earlier doughs' end
+ * times follow in mix order, since the baker sets a timer from each.
+ * Undefined on every other row, and at one mix.
+ */
+export function earlierDoughPhrase(stage: Pick<TimelineStage, 'endsAt' | 'earlierDoughEnds'>): string | undefined {
+  const earlier = stage.earlierDoughEnds;
+  if (!earlier || earlier.length === 0) return undefined;
+  const doughs = earlier.map((at, i) => `dough ${i + 1} ${formatTimeOfDay(at)}`).join(', ');
+  return `Ends ${formatTimeOfDay(stage.endsAt)} (${doughs})`;
 }
 
 /**

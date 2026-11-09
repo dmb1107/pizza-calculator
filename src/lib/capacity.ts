@@ -62,7 +62,23 @@ export function capacityAlerts(result: CalculatorResult, tokens: Record<string, 
   return out;
 }
 
-/** §6 Panel 1: "→ {nMix} mixes of {doughPerMix} g" beside the ball count, when the batch splits. */
+/**
+ * §6 Panel 1: "→ {nMix} mixes of {ballsPerMix} balls ({doughPerMix} g each)"
+ * beside the ball count, when the batch splits.
+ */
 export function splitHint(result: CalculatorResult, tokens: Record<string, string>): string | null {
   return result.capacity.nMix > 1 ? bindTokens(CAPACITY.splitHint, tokens) : null;
+}
+
+/**
+ * §6 Panel 1 (MESSAGE-61): "Raised to {balls} balls so each mix makes whole
+ * balls.", while the count in use is above the one chosen because the app
+ * rounded it up. Null otherwise, including after the baker steps.
+ */
+export function raisedNote(
+  ballsChosen: number | null,
+  result: CalculatorResult,
+  tokens: Record<string, string>,
+): string | null {
+  return ballsChosen != null && ballsChosen !== result.inputs.balls ? bindTokens(CAPACITY.raisedToEven, tokens) : null;
 }

@@ -17,7 +17,7 @@ import {
   type NotCountedReason,
   type PhaseKey,
 } from '../lib/bakeLog';
-import { formatBallsPerMix, formatCoefficient, formatTempF } from '../lib/format';
+import { formatBallsPerMix, formatCoefficient, formatTempF, formatWholeMinutes } from '../lib/format';
 import { describeSpec, formatElapsed } from '../lib/timers';
 import { formatTimeOfDay } from '../lib/timeline';
 import { BOUNDS } from '../state/defaults';
@@ -65,16 +65,18 @@ const smallButtonClass =
 // ---------------------------------------------------------------------------
 
 /**
- * The end of each mix: its final dough temperature. §4.8 times the ball rise
- * from the mean of the mixes, a mix not yet read counting at DDT, and the log
- * solves each mix's FF from its own reading.
+ * The end of each mix: its final dough temperature. §4.8 times each dough's
+ * ball rise from its own reading, a dough not yet read planning at DDT
+ * (MESSAGE-61), and the log solves each mix's FF from its own reading.
  */
 export function FinalTempCapture({ state, mixIndex }: { state: AppState; mixIndex: number }) {
   const { inputs, result, commitReading, clearReading } = state;
   const i = mixIndex - 1;
   const measured = inputs.finalDoughTempF[i] ?? null;
   const many = result.capacity.nMix > 1;
-  const rise = Math.round(result.ballRoomMinutes);
+  // This dough's own rise (§4.8, MESSAGE-61).
+  const rise = formatWholeMinutes(result.roomMinutesByDough[i]!);
+  const last = mixIndex === result.capacity.nMix;
 
   let hint: string;
   if (!many) {
@@ -83,10 +85,14 @@ export function FinalTempCapture({ state, mixIndex }: { state: AppState; mixInde
         ? `Not measured yet — planning at DDT ${formatTempF(result.ddtF)} °F, which gives ${rise} min at room temperature.`
         : `The balls now get ${rise} min at room temperature, adjusted for this reading. Every later stage moves with it.`;
   } else {
+    // The timeline runs from the last dough, so only its reading moves the
+    // later stages; an earlier dough's moves its own times beside them.
     hint =
       measured === null
-        ? `Not measured yet. Until it is, this mix counts at DDT ${formatTempF(result.ddtF)} °F in the average the ball rise is timed from.`
-        : `The balls get ${rise} min at room temperature, timed from the average of the mixes, ${formatTempF(result.effectiveFinalTempF)} °F. Every later stage moves with it.`;
+        ? `Not measured yet — dough ${mixIndex} plans at DDT ${formatTempF(result.ddtF)} °F, which gives ${rise} min at room temperature.`
+        : `Dough ${mixIndex}'s balls now get ${rise} min at room temperature, adjusted for this reading. ${
+            last ? 'Every later stage moves with it.' : 'Its times beside the timeline move with it.'
+          }`;
   }
 
   return (

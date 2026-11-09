@@ -62,12 +62,13 @@ describe('§6 a typed reading counts, even when it matches the field (MESSAGE-58
     expect(mixStatus(save(inputs), save(inputs).mixes[0]!).reasons).toEqual(['bowl']);
   });
 
-  it("records mix 2's bowl typed at its DDT prefill, 74 at 12 × 265 g", () => {
-    const inputs: Inputs = { ...DEFAULT_INPUTS, balls: 12, bowlTempF: [57], finalDoughTempF: [74, 74] };
+  it("records mix 2's bowl typed at its DDT prefill, 75 at 12 × 265 g", () => {
+    // DDT by balls per mix since MESSAGE-61: 12 balls is two 6-ball mixes.
+    const inputs: Inputs = { ...DEFAULT_INPUTS, balls: 12, bowlTempF: [57], finalDoughTempF: [75, 75] };
     const shown = result(inputs).mixes[1]!.bowlTempF;
-    expect(shown).toBe(74);
-    const left = leaveField('74', shown, { ...BOWL, ...READING });
-    expect(left.commit).toBe(74);
+    expect(shown).toBe(75);
+    const left = leaveField('75', shown, { ...BOWL, ...READING });
+    expect(left.commit).toBe(75);
 
     const bake = save({ ...inputs, bowlTempF: at(inputs.bowlTempF, 1, left.commit!) });
     expect(bake.mixes.map((m) => m.bowl_prefilled)).toEqual([false, false]);

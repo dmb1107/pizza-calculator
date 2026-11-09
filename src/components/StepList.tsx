@@ -18,6 +18,7 @@ import { bindTokens, tokenValues } from '../lib/bindTokens';
 import {
   detailConditionContext,
   detailConditionHolds,
+  timerSlots,
   expandSteps,
   summaryFor,
   timerLabelFor,
@@ -74,7 +75,6 @@ function StepRow({
   timerLabel,
   bind,
   conditionHolds,
-  showWarning,
   checked,
   onToggleChecked,
   onOpenConcept,
@@ -91,8 +91,6 @@ function StepRow({
   bind: (text: string) => string;
   /** Whether a `detailWhen` condition holds for the current batch. */
   conditionHolds?: (condition: DetailCondition) => boolean;
-  /** Whether the step-level warning applies. §8.2 bulk-1. */
-  showWarning?: boolean;
   checked: boolean;
   onToggleChecked: () => void;
   onOpenConcept: (id: string) => void;
@@ -106,7 +104,6 @@ function StepRow({
     step.detailWhen && conditionHolds?.(step.detailWhen.condition)
       ? step.detailWhen.detail
       : undefined;
-  const warning = step.warningWhen && showWarning ? step.warningWhen.text : undefined;
   const hasDetail = Boolean(
     step.detail || conditionalDetail || step.watchFor || step.troubleshoot || step.concepts,
   );
@@ -156,12 +153,6 @@ function StepRow({
             <div className="mt-1">
               <Markdown>{summary}</Markdown>
             </div>
-
-            {warning && (
-              <div className="mt-2 rounded-lg border border-amber-400 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-200">
-                <Markdown>{bind(warning)}</Markdown>
-              </div>
-            )}
 
             {(values.length > 0 || timerLabel) && (
               <div className="mt-2 flex flex-wrap gap-1.5">
@@ -290,34 +281,52 @@ export function StepList({
   );
 
   /** Token table per instance — `{mixIndex}` and `{nextMixIndex}` differ. */
-  const tokensFor = (mixIndex: number) =>
-    mixIndex === 1 ? tokens : tokenValues(state.result, state.scheduleTokens, mixIndex);
+  // A dough, on a per-dough timer: `{roomMin}` binds that dough's rise (§7.5).
+  const tokensFor = (mixIndex: number, dough?: number) =>
+    mixIndex === 1 && dough === undefined ? tokens : tokenValues(state.result, state.scheduleTokens, mixIndex, dough);
   const phases: Phase[] = ['biga', 'mix', 'bulk', 'bake'];
   const doneCount = instances.filter((i) => checkedSteps.has(i.key)).length;
 
   /**
    * A timer for any step whose label states a duration. The label is bound
-   * first, so `{coldFerment} h` and `{ballRoomMin} min` resolve to real numbers and
-   * no step ids need special-casing. A range ("18–20 h") is a window (§7.5).
+   * first, so `{coldFerment} h` and `{roomMin} min` resolve to real numbers. A
+   * range ("18–20 h") is a window (§7.5).
+   *
+   * At `nMix > 1` the three per-dough steps get one timer per dough, labelled
+   * in mix order, each bound with its own dough's tokens and keyed on its own
+   * (`timerSlots`, MESSAGE-61). They stack, so starting one grows its card
+   * downward and moves nothing above the tap.
    */
-  const renderTimer = (label: string | undefined, key: string, stepId: string) => {
-    if (!label) return undefined;
-    const spec = parseTimerLabel(label);
-    if (!spec) return undefined;
-    const timer = timers.find((t) => t.stepId === key);
-    return (
-      <StepTimer
-        stepId={key}
-        spec={spec}
-        timer={timer}
-        tag={loggedTimerTag(stepId, timer)}
-        note={timers[0]?.stepId === key ? timerNote : undefined}
-        now={nowMs}
-        onStart={() => startTimer(key, spec)}
-        onStop={() => stopTimer(key)}
-        onClear={() => clearTimer(key)}
-      />
-    );
+  const renderTimers = (rawLabel: string | undefined, instanceKey: string, stepId: string, mixIndex: number) => {
+    if (rawLabel === undefined) return undefined;
+    const slots = timerSlots(instanceKey, stepId, nMix);
+    const rendered = slots.map((slot) => {
+      const spec = parseTimerLabel(bindTokens(rawLabel, tokensFor(mixIndex, slot.dough)));
+      if (!spec) return null;
+      const timer = timers.find((t) => t.stepId === slot.key);
+      const control = (
+        <StepTimer
+          stepId={slot.key}
+          spec={spec}
+          timer={timer}
+          tag={loggedTimerTag(stepId, timer)}
+          note={timers[0]?.stepId === slot.key ? timerNote : undefined}
+          now={nowMs}
+          onStart={() => startTimer(slot.key, spec)}
+          onStop={() => stopTimer(slot.key)}
+          onClear={() => clearTimer(slot.key)}
+        />
+      );
+      return slot.label ? (
+        <div key={slot.key} className="mt-3">
+          <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">{slot.label}</p>
+          {control}
+        </div>
+      ) : (
+        <div key={slot.key}>{control}</div>
+      );
+    });
+    return rendered.some(Boolean) ? <>{rendered}</> : undefined;
   };
 
   /**
@@ -359,7 +368,14 @@ export function StepList({
                 const bindHere = (text: string) => bindTokens(text, tokensFor(mixIndex));
                 // biga-4 reads and times differently depending on the schedule.
                 const timerLabel = timerLabelFor(step, inputs.schedule, inputs.bigaRoomOnlyH);
-                const boundTimer = timerLabel === undefined ? undefined : bindHere(timerLabel);
+                // The chip beside the values: one label, or none when the doughs'
+                // differ (bulk-3's rises at a split batch), since each per-dough
+                // timer then states its own (§7.5, MESSAGE-61).
+                const slotLabels =
+                  timerLabel === undefined
+                    ? []
+                    : timerSlots(key, step.id, nMix).map((slot) => bindTokens(timerLabel, tokensFor(mixIndex, slot.dough)));
+                const boundTimer = slotLabels.length > 0 && slotLabels.every((l) => l === slotLabels[0]) ? slotLabels[0] : undefined;
                 const repeated = step.repeatsPerMix && nMix > 1;
                 return (
                   <StepRow
@@ -373,7 +389,6 @@ export function StepList({
                     conditionHolds={(condition) =>
                       detailConditionHolds(condition, detailConditionContext(state.result))
                     }
-                    showWarning={state.result.staggerUncentredMin > 2}
                     checked={checkedSteps.has(key)}
                     onToggleChecked={() => toggleStep(key)}
                     onOpenConcept={onOpenConcept}
@@ -388,7 +403,7 @@ export function StepList({
                         <FinalTempCapture state={state} mixIndex={mixIndex} />
                       ) : undefined
                     }
-                    timer={renderTimer(boundTimer, key, step.id)}
+                    timer={renderTimers(timerLabel, key, step.id, mixIndex)}
                   />
                 );
               })}

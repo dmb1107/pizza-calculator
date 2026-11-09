@@ -2,6 +2,7 @@ import { useId, useState } from 'react';
 import { SegmentedField, SliderField } from './fields';
 import { BOUNDS } from '../state/defaults';
 import {
+  earlierDoughPhrase,
   formatClock,
   formatDuration,
   formatStageDuration,
@@ -169,6 +170,11 @@ export function TimelineCard(s: AppState) {
                 </span>
               )}
             </div>
+            {earlierDoughPhrase(stage) && (
+              <p className="mt-0.5 text-sm font-medium text-stone-800 tabular dark:text-stone-200">
+                {earlierDoughPhrase(stage)}
+              </p>
+            )}
             <p className="mt-0.5 text-sm text-stone-600 dark:text-stone-400">{stage.description}</p>
           </li>
         ))}

@@ -557,38 +557,43 @@ describe('§10 the room slope', () => {
   });
 });
 
-describe('§4.8 split-batch T_actual (§5 Bake log)', () => {
+/**
+ * §5's split-batch vector (MESSAGE-61). Each dough bulks and rises in its own
+ * container, so its `T_actual` is its own final reading; the mean of the
+ * mixes, which this pinned until then, times no rise.
+ */
+describe('§4.8 split-batch T_actual, per dough (§5)', () => {
   const at12 = (finalDoughTempF: (number | null)[]) =>
     calculate({ balls: 12, ballWeightG: 265, roomTempF: 70, flourTempF: 70, bigaTempF: 58, frictionFactorF: 14, finalDoughTempF });
 
-  it('is the mean of the mixes: 73.0 and 75.0 give 74.0, roomMin 90 and a 72.5-minute rise', () => {
+  it('rises 101 (100.6) and 90 minutes from 73.0 and 75.0, at DDT 75, and plans the last', () => {
     const r = at12([73.0, 75.0]);
-    expect(r.effectiveFinalTempF).toBeCloseTo(74.0, 12);
-    expect(r.roomMinutes).toBeCloseTo(90, 9);
-    expect(r.ballRoomMinutes).toBeCloseTo(72.5, 9);
+    expect(r.ddtF).toBe(75);
+    expect(r.finalTempByDoughF).toEqual([73.0, 75.0]);
+    expect(r.roomMinutesByDough[0]!.toFixed(1)).toBe('100.6');
+    expect(r.roomMinutesByDough[1]).toBeCloseTo(90, 9);
+    expect(r.roomMinutes).toBe(r.roomMinutesByDough[1]);
     expect(r.roomMinutesIsPlanned).toBe(false);
   });
 
-  it('counts a mix not yet read at DDT: the first alone gives 73.5 and 75.1', () => {
+  it('plans a dough not yet read at DDT: the first alone leaves dough 2 at 90', () => {
     const r = at12([73.0, null]);
-    expect(r.effectiveFinalTempF).toBeCloseTo(73.5, 12);
-    expect(r.roomMinutes).toBeCloseTo(92.574489, 6);
-    expect(Number(r.ballRoomMinutes.toFixed(1))).toBe(75.1);
+    expect(r.finalTempByDoughF).toEqual([73.0, 75]);
+    expect(r.roomMinutesByDough[0]!.toFixed(1)).toBe('100.6');
+    expect(r.roomMinutes).toBeCloseTo(90, 9);
     // A shorter array reads the same: the later mix is unread, not a copy.
-    expect(at12([73.0]).effectiveFinalTempF).toBeCloseTo(73.5, 12);
+    expect(at12([73.0]).roomMinutesByDough).toEqual(r.roomMinutesByDough);
   });
 
-  it('differs from the last reading alone, which would give 85.0 and 67.5', () => {
-    const lastOnly = at12([75.0, 75.0]);
-    expect(Number(lastOnly.roomMinutes.toFixed(1))).toBe(85.0);
-    expect(Number(lastOnly.ballRoomMinutes.toFixed(1))).toBe(67.5);
+  it("gives an earlier dough's reading no say in the last dough's rise", () => {
+    expect(at12([70.0, 75.0]).roomMinutes).toBe(at12([78.0, 75.0]).roomMinutes);
   });
 
   it('plans at DDT with no reading, and a scalar still applies to every mix', () => {
     expect(at12([null, null])).toMatchObject({ roomMinutesIsPlanned: true, roomMinutes: 90 });
     expect(at12([] as number[]).roomMinutesIsPlanned).toBe(true);
     const scalar = calculate({ balls: 12, ballWeightG: 265, roomTempF: 70, flourTempF: 70, bigaTempF: 58, frictionFactorF: 14, finalDoughTempF: 75 });
-    expect(scalar.effectiveFinalTempF).toBe(75);
+    expect(scalar.finalTempByDoughF).toEqual([75, 75]);
   });
 });
 

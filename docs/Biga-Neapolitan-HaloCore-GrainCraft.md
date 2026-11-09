@@ -77,6 +77,7 @@ Where the constants come from: **1.728** is the dough yield factor (1 + 0.70 wat
 **Then check the Halo Core's limits before you mix:**
 
 - Final dough `F × 1.728` ≤ **2500 g**, and `F` ≤ **1505 g** → otherwise split the final mix
+- A split batch takes a ball count that divides evenly between the mixes (12 or 14 at two mixes, not 13), since each dough makes its own balls. The calculator skips the others.
 
 The biga has no limit of its own. It's mixed by hand, so the mixer's caps don't apply to it, and it's always one biga, fermenting in the mixer bowl.
 
@@ -238,9 +239,9 @@ At 61–65 °F the bacteria produce the **balance of lactic and acetic acid** th
 
 ### Target DDT
 
-**75 °F** for **3–6 balls** · **74 °F** for **7 or more**
+**75 °F** at **6 or fewer balls per mix** · **74 °F** at **7 or more per mix**
 
-A 65% biga brings a large, already-active yeast population into the final mix, so warmth is costly. The room-temperature rise after balling is built around this target: at exactly DDT the balls get 90 minutes, and a warmer or cooler dough gets less or more, so a miss at the mixer is corrected before the fridge, within the rise's 45–180-minute limits. The correction includes the cooldown: a warmer ball ferments faster on the way down to fridge temperature, and a cooler one slower (§8, step 9). What isn't corrected is anything that slows the cooling itself: the cooldown figure is for a ball on an open tray, so it misses a lidded container's slower cooling, and stacked containers or a crowded fridge slow it further. Bigger batches cool more slowly in the shared bulk tub, hence the extra degree down at 7 balls and above.
+A 65% biga brings a large, already-active yeast population into the final mix, so warmth is costly. The room-temperature rise after balling is built around this target: at exactly DDT the balls get 90 minutes, and a warmer or cooler dough gets less or more, so a miss at the mixer is corrected before the fridge, within the rise's 45–180-minute limits. The correction includes the cooldown: a warmer ball ferments faster on the way down to fridge temperature, and a cooler one slower (§8, step 9). What isn't corrected is anything that slows the cooling itself: the cooldown figure is for a ball on an open tray, so it misses a lidded container's slower cooling, and stacked containers or a crowded fridge slow it further. A bigger dough holds its heat longer in the bulk container, hence the extra degree down at 7 balls per mix and above. A split batch counts each mix, since each dough bulks in its own container: 12 balls in two mixes is 75.
 
 **No source defines a Neapolitan DDT band.** DDT follows the fermentation schedule, not the pizza style: bakers who cold-ferment pizza from the start often mix much cooler, and commercial walk-in practice runs warmer. 75 and 74 °F are this recipe's validated values. On target, the dough spends nearly 3 hours at room temperature before the fridge (60 min bulk, 20 to divide, 90 to rise).
 
@@ -308,7 +309,7 @@ A 12-ball batch reads the 6 row and 18 balls the 9 row.
 | 6 | 9.8% | 90% | 12.6 °F |
 | 9 | 6.8% | 93% | 13.1 °F |
 
-The table is keyed on mix size: 12 balls runs as two 6-ball mixes and reads the 6 row, and 18 balls runs as two 9-ball mixes and reads the 9 row. The bowl's share never falls below about **6.6%**, a floor set by the mixer's 2500 g capacity rather than by batch size: Ct is 0.6516 per gram of dough, so at the cap the share is 115.56 / (0.6516 × 2500 + 115.56) = 6.62%. A *split* batch can come closer to the cap than any unsplit one, since 19 × 257 g runs as two 2495 g mixes against 2494 g for 10 × 244 g, the largest batch that fits one mix.
+The table is keyed on mix size: 12 balls runs as two 6-ball mixes and reads the 6 row, and 18 balls runs as two 9-ball mixes and reads the 9 row. The bowl's share never falls below about **6.6%**, a floor set by the mixer's 2500 g capacity rather than by batch size: Ct is 0.6516 per gram of dough, so at the cap the share is 115.56 / (0.6516 × 2500 + 115.56) = 6.62%. The largest mix is 10 × 244 g at 2494 g, the largest batch that fits one mix; 20 × 244 g, two of those, ties it.
 
 **That's why the bowl can't be folded into FF.** The apparent FF would drift from 11.5 to 13.1 across the range, and you'd conclude the mixer behaves differently at different scales when one constant is being read through three different dilutions.
 
@@ -316,7 +317,7 @@ The table is keyed on mix size: 12 balls runs as two 6-ball mixes and reads the 
 
 ### Split batches: the thermal system is the mix, not the batch
 
-⚠️ **A 12-ball batch isn't a 12-ball thermal system. It's a 6-ball system, twice.** The bowl holds one mix at a time, so every heat capacity in the formula is computed from **per-mix** masses. Computing from batch totals halves the bowl's apparent share and sets the water target **2.6 °F low at 12 balls and 1.7 °F low at 18** with the biga at 58 °F, and anywhere from 1.5 to 6.2 °F low across the supported range, most with the coldest biga. It's the same kind of error as leaving the bowl out, only smaller.
+⚠️ **A 12-ball batch isn't a 12-ball thermal system. It's a 6-ball system, twice.** The bowl holds one mix at a time, so every heat capacity in the formula is computed from **per-mix** masses. Computing from batch totals halves the bowl's apparent share and sets the water target **2.8 °F low at 12 balls and 1.7 °F low at 18** with the biga at 58 °F, and anywhere from 1.5 to 6.4 °F low across the supported range, most with the coldest biga. It's the same kind of error as leaving the bowl out, only smaller.
 
 `FF` is per mix for the same reason: it's the rise the mixer puts into the dough actually in the bowl, and 14.03 was measured on a single 6-ball mix.
 
@@ -329,7 +330,7 @@ The table is keyed on mix size: 12 balls runs as two 6-ball mixes and reads the 
 
 **Why "upper bound", and why measure.** The bowl can't come off a mix warmer than the dough it held, so DDT bounds it, provided that mix finished at or below DDT. How far it cools toward the room during the 5-minute changeover has never been measured, and in a cold kitchen the room is further away. Read it before every mix after the first (below), and log it on the first split bake.
 
-At 12 balls that's a 5.2 °F spread in the water target between mix 1 and mix 2 (74.0 °F then 68.8 °F at the app's defaults: biga 58 °F, flour and room 70, FF 10.8), enough to matter.
+At 12 balls that's a 5.6 °F spread in the water target between mix 1 and mix 2 (77.3 °F then 71.8 °F at the app's defaults: biga 58 °F, flour and room 70, FF 10.8), enough to matter.
 
 **Rinsing sets the bowl.** The bowl is thin stainless, and running water brings it to roughly the rinse temperature within a minute. If a later mix's target comes out awkward, set the bowl deliberately rather than chasing it with the water.
 
@@ -368,11 +369,11 @@ The requirement climbs as the **mix** gets smaller, because the fixed-mass bowl 
 | Balls | 3 | 6 | 9 | 12 | 18 | 24 |
 |---|---:|---:|---:|---:|---:|---:|
 | Balls per mix | 3 | 6 | 9 | **6** | **9** | **8** |
-| Hottest water asked for (°F) | **116.2** | 106.4 | 99.9 | **103.1** | 99.9 | 100.7 |
+| Hottest water asked for (°F) | **116.2** | 106.4 | 99.9 | **106.4** | 99.9 | 100.7 |
 
-**Read the second row, not the first.** A 12-ball batch runs as two 6-ball mixes, so it needs *hotter* water than a 9-ball batch. The figure follows the mix, not the batch, and it doesn't fall smoothly as the batch grows.
+**Read the second row, not the first.** A 12-ball batch runs as two 6-ball mixes, so it needs the same water as a 6-ball batch, and *hotter* water than a 9-ball one. The figure follows the mix, not the batch, and it doesn't fall smoothly as the batch grows.
 
-The cold end is the second or third mix of a split batch in a warm kitchen with a warm biga. That mix starts in a bowl already near DDT from the mix before, so the water has the least to make up: about **60 °F**, at any mix size. A first mix never asks for less than about 63 °F.
+The cold end is the second or third mix of a split batch in a warm kitchen with a warm biga. That mix starts in a bowl already near DDT from the mix before, so the water has the least to make up: about **60 °F** at 7 or more balls per mix, and 63 °F at 6 or fewer, where DDT is 75. A first mix never asks for less than about 63 °F.
 
 All of it is under the 120 °F line, which is why 3 balls is the supported floor rather than 1 or 2 (§3). The 118 °F corner needs a hot tap at its hottest; a tempered biga keeps you well clear of it.
 
@@ -436,7 +437,7 @@ Two hours at room temperature start the biga, and the fridge then holds it at a 
 | Biga rest before mixing | 1 h | ambient | §8.2 |
 | Final mix | ~30 min | DDT 74–75 °F | §8.2 |
 | Bulk rest | 45–60 min | ambient | §8.3 step 7 |
-| Divide and ball | 16–43 min by batch size (20 at 6 balls) | ambient | §8.3 step 8 |
+| Divide and ball | 16–25 min by balls per dough (20 at 6) | ambient | §8.3 step 8 |
 | Balls at room temperature | **set by how far the dough landed from DDT**: 90 min on target, 45–180 at the limits | ambient | §8.3 step 9 |
 | Dough, refrigerated | **6–48 h** | 38–40 °F | §8.3 step 10 |
 | Temper | 1½–2 h | ambient | §8.4 step 11 |
@@ -447,28 +448,23 @@ Those are the defaults. Everything except the cold ferment is fixed overhead: **
 
 **Use 24 h cold (~51 h total) for now.** 24 h and 48 h have both been baked, from the same dough on bake 2: at 48 h the balls had more flavor and didn't over-proof, with the fridge at 38–39 °F. A full batch at 48 h decides the default. 6 h, the calculator's minimum, hasn't been baked.
 
-**A two-mix batch (10–18 balls at 265 g) has 27.2–27.4 h of overhead** (27.25 at 12 balls), not 26.8. The second mix and changeover add 0.58 h, the stagger correction below takes 0.29 h back off the ball rise, and dividing more balls takes longer: about 12½ minutes plus 1¼ a ball, an estimate worth timing once. Three mixes (19 balls and up) come to 27.7–27.8 h. The 5-minute changeover assumes the bowl isn't cleaned and every mix is weighed out before the first one starts.
+**A two-mix batch (10–18 balls at 265 g) has 27.4–27.5 h of overhead** (27.42 at 12 balls), not 26.8. The second mix and changeover add 0.58 h, and the schedule ends with the last dough, whose divide takes about 12½ minutes plus 1¼ a ball of that dough, an estimate worth timing once. Three mixes (21 and 24 balls at 265 g) come to 28.0 h. The 5-minute changeover assumes the bowl isn't cleaned and every mix is weighed out before the first one starts.
 
-### Split batches run on one clock, and the earlier doughs are ahead of it
+### Split batches: each dough runs on its own clock
 
-Every mix goes into **one bulk container**, so the batch cools as a single mass, which is why `DDT` stays keyed to total balls (74 at 12, not the 75 a lone 6-ball mix would get). The cost is in the schedule.
+Each mix goes into **its own lightly oiled container** as it comes out, and from there it runs on its own clock. Mixes finish **35 minutes** apart (the 30 minutes the schedule allows for a mix, plus the 5-minute changeover), so at two mixes the first dough is 35 minutes ahead of the last, and 70 at three.
 
-**Each mix finishes 35 minutes after the one before it**: the 30 minutes the schedule allows for a mix, plus the 5-minute changeover. That gap is the stagger. At two mixes the first dough is 35 minutes ahead of the last; at three it's 70. Once the doughs are in the same tub they can't be told apart, so they can't have separate clocks.
+- **Bulk each dough from the end of its own mix.** Start its timer when you turn it out at the changeover.
+- **Divide each dough as its bulk ends**, by its own weight (§8, step 8).
+- **Time each dough's rise from its own final temperature.** A dough that finished warmer rests less; the table in §8, step 9 applies to each dough on its own.
+- **Each dough's balls go in the fridge when its rise ends.** The cold ferment counts from the last dough in. The earlier doughs get about 35 minutes more cold per mix ahead, worth about 8 minutes of fermentation at DDT, too little to correct.
 
-- **Clock the bulk rest from the last mix.** It's the only starting point that gives the last dough any bulk at all. The earlier doughs run long by design.
-- **Then take half the stagger off the ball room-temperature rise**: 17½ minutes at two mixes, 35 at three. For a dough on target, that turns the 90-minute rise into **72½** at two mixes and **55** at three.
-- **Time that rise from the average of the mixes' final temperatures.** The doughs share one tub, so the average is the tub's temperature; the last mix's reading alone ignores the others.
-
-⚠️ **This splits the error rather than removing it.** Before the correction, the first dough is the whole stagger over and the last exactly on time. After it, the first and last sit half the stagger either side: +17½ and −17½ at two mixes, +35 and −35 at three, with the middle dough on time. One clock can't do better, and halving the worst case is worth twenty seconds of arithmetic.
-
-⚠️ **On a warm dough it may not split the error at all.** The ball rise has a 45-minute floor, so when the dough is warm enough that the computed rise is already near it, there's nothing left to subtract. At a 74 °F DDT a 77 °F dough computes a 76-minute rise. A two-mix correction takes it to 58 minutes; a three-mix one would take it to 41, so it stops at 45 and leaves 4 minutes uncorrected. That hurts most where fermentation is fastest, in a warm dough. Don't override the floor for it; the levers are upstream: a batch size that needs fewer mixes, or a cooler dough.
-
-The correction is derived, not measured. It assumes fermentation during bulk and during the ball rise count the same at the same temperature. It's the same dough at the same temperature, and dividing displaces gas without resetting fermentation, so it should hold, but it hasn't been tested.
+At three mixes the first dough's bulk ends about when the third mix does. Divide it once that mix is out; the bulk's 45–60 minutes cover the overlap.
 
 **Don't clean the bowl between mixes.** It costs changeover time and gains nothing:
 
 - **The residue doesn't change the heat balance.** It's already at DDT, so the required water for the next mix is identical at 0 g, 30 g or 60 g of carry-over: exactly, not approximately.
-- **The yield evens out.** Residue carries forward: each mix loses some to the next, and every mix ends up in the same tub. Only what stays in the bowl after the *last* mix is lost, and the 2.2% overage covers that.
+- **The residue moves a few grams forward.** Whatever stays in the bowl goes into the next dough, so the first dough comes out slightly light and the next slightly heavy. Each dough is divided by its own weight, so that shows as a few grams a ball. Only what stays after the *last* mix leaves the batch, and the 2.2% overage covers that.
 
 Rinsing is still available: thin stainless reaches roughly the rinse temperature in under a minute, so you can set the bowl deliberately if a later mix's water target comes out awkward. It just isn't worth doing by default.
 
@@ -530,15 +526,14 @@ What's still to come, **as the probe will read it** (dough and bowl together, 6 
 | How far below DDT to probe | room 62 °F | 66 | **70** | 74 | 78 |
 |---|---:|---:|---:|---:|---:|
 | 3 balls | 1.1 | 1.9 | **2.7** | 3.5 | 4.3 |
-| 6 balls | 1.5 | 2.3 | **3.1** | 3.9 | 4.7 |
+| 6 or 12 balls | 1.5 | 2.3 | **3.1** | 3.9 | 4.7 |
 | 9 or 18 balls | 1.8 | 2.6 | **3.4** | 4.2 | 5.0 |
-| 12 balls | 1.7 | 2.5 | **3.3** | 4.1 | 4.9 |
 
-**Read across before you read down.** Going from a 62 °F to a 78 °F kitchen changes how far below DDT to probe by 3.2 °F; going from 3 balls to 9 changes it by 0.7. (The *target* itself moves 1.7 from 3 balls to 9, because DDT also steps from 75 to 74 at 7 balls, which is why this table gives the gap below DDT rather than the target.) **The rule that holds everywhere: 0.2 °F closer to DDT for every degree your kitchen is below 70, and 0.2 °F further for every degree above.**
+**Read across before you read down.** Going from a 62 °F to a 78 °F kitchen changes how far below DDT to probe by 3.2 °F; going from 3 balls to 9 changes it by 0.7. (The *target* itself moves 1.7 from 3 balls to 9, because DDT also steps from 75 to 74 at 7 balls per mix, which is why this table gives the gap below DDT rather than the target.) **The rule that holds everywhere: 0.2 °F closer to DDT for every degree your kitchen is below 70, and 0.2 °F further for every degree above.**
 
 **The 70 °F column is only right in a 70 °F room.** In a 62 °F kitchen it aims 1.6 °F too low at 6 balls, which uses up Phase C's whole correction range in the wrong direction. Measure the room.
 
-18 balls runs as two 9-ball mixes, so its row matches the 9-ball row, a useful check on any calculation claiming to be per mix. 12 and 6 share a mix size but differ slightly, because DDT is 74 at 12 balls and 75 at 6.
+12 and 18 balls run as two 6- and two 9-ball mixes, so they share the 6- and 9-ball rows, a useful check on any calculation claiming to be per mix.
 
 **The general form:**
 
@@ -563,7 +558,7 @@ If Phase A or B runs long, more heat is already in the dough, so the probe reads
 
 **So the look sets the shortest Phase C, and 5.5 minutes the longest.** The probe picks the time in between. Don't stop while it's still shaggy, however warm it reads, and don't run past 5.5 minutes to warm it.
 
-**How much warmth the schedule absorbs.** A warm dough gets a shorter rise after balling, down to the 45-minute floor. The floor arrives about 11 °F over DDT with one mix, 6 °F with two and 2 °F with three, because a split batch's rise is already shortened for the stagger (§7). Past that, nothing in the schedule compensates for the extra warmth. That's a reason to fix the water next batch, not to stop mixing early: stopping only stops adding about a degree a minute, and it costs development.
+**How much warmth the schedule absorbs.** A warm dough gets a shorter rise after balling, down to the 45-minute floor. The floor arrives about 11 °F over DDT, for each dough of a split batch too. Past that, nothing in the schedule compensates for the extra warmth. That's a reason to fix the water next batch, not to stop mixing early: stopping only stops adding about a degree a minute, and it costs development.
 
 **Friction per minute at each speed**, if you need to correct in a different phase: 15% ≈ 0.75 °F/min · 20% ≈ 0.86 °F/min · 30% ≈ 1.08 °F/min. **These are for the dough alone.** A thermometer shows each of them × `Ct/(Ct + C_bowl)`: 0.82 at 3 balls, 0.90 at 6, 0.93 at 9. At 30% that works out to an observed 0.89 / 0.97 / 1.01 °F per minute, which is where the "about a degree a minute" rule of thumb comes from.
 
@@ -571,10 +566,10 @@ If Phase A or B runs long, more heat is already in the dough, so the probe reads
 
 ### Stage 3: Bulk, ball, cold
 
-7. Turn out into a lightly oiled container. Rest **45–60 min** at room temperature.
+7. Turn out into a lightly oiled container. Rest **45–60 min** at room temperature. On a split batch each mix goes into its own container and rests from the end of its own mix (§7).
    **No folds.** The mixer has already built the gluten, on top of the structure the biga brought with it, and folding now only tightens the dough and costs extensibility.
-8. Divide into **265 g** pieces. Pre-round, rest 10–15 min, then ball tight.
-9. One ball per **24 oz deli container**, **very lightly oiled**: wipe on a thin film with a paper towel. Nothing on top of the ball; lids on. Leave them at room temperature for the time in the table below, which depends on how far your final dough temperature is from DDT, then refrigerate. Oil the containers rather than flouring them (note below). A 16 oz container is too small for a 265 g ball on this schedule: on bake 3 the dough filled it and pushed the lid off in the fridge.
+8. Weigh the dough and divide it into equal pieces, one per ball, about **265 g** each. On a split batch, divide each dough on its own as its bulk ends. Pre-round, rest 10–15 min, then ball tight.
+9. One ball per **24 oz deli container**, **very lightly oiled**: wipe on a thin film with a paper towel. Nothing on top of the ball; lids on. Leave them at room temperature for the time in the table below, which depends on how far your final dough temperature is from DDT, then refrigerate. On a split batch each dough's balls rest by that dough's own final temperature. Oil the containers rather than flouring them (note below). A 16 oz container is too small for a 265 g ball on this schedule: on bake 3 the dough filled it and pushed the lid off in the fridge.
 
 | Final dough vs DDT | Room time | at DDT 75 | at DDT 74 |
 |---:|---:|---:|---:|
@@ -587,7 +582,7 @@ If Phase A or B runs long, more heat is already in the dough, so the probe reads
 | 4 °F below | 112 min | 71 °F | 70 °F |
 | 5 °F below | 118 min | 70 °F | 69 °F |
 
-**Read the first column.** The rise depends only on how far the dough landed from DDT, so the table holds at both DDTs. On a 7+ ball batch (DDT 74), a 74 °F dough is on target and gets 90 minutes.
+**Read the first column.** The rise depends only on how far the dough landed from DDT, so the table holds at both DDTs. At 7 or more balls per mix (DDT 74), a 74 °F dough is on target and gets 90 minutes.
 
 `R' = (90 + 35)/f − 35` where `f = 2^((T_actual − DDT)/17)`. The 35 is the extra fermentation a ball gets while it cools from DDT to fridge temperature, in minutes at DDT: a cooler dough loses ground both on the counter *and* on the way down, and this compensates for both. Clamp to 45–180 min.
 
@@ -738,18 +733,15 @@ SCHEDULE (retarded): biga 2h RT + 18-20h fridge -> 1h temper -> mix
        Fixed overhead outside the cold ferment = 26.8 h at defaults, so
        TOTAL = coldFerment + ~27 h:  ~33 h @6  ~51 h @24  ~75 h @48.
        Baked: 24 h (bakes 1, 2); 48 h (bake 2: more flavor, no over-proof).
-       SPLIT BATCH: 2 mixes (10-18 balls) = 27.2-27.4 h overhead, 3 mixes
-       (19-24) = 27.7-27.8 h. Divide ~12.5 min + 1.25 min/ball (estimate).
-       Each mix ends 35 min after the one before, and one container can't
-       run separate clocks. Bulk clocks from the LAST mix;
-       then cut HALF the stagger off the ball rise: 2 mixes 17.5 min
-       (90 -> 72.5), 3 mixes 35 min (90 -> 55). This SPLITS the error
-       between the doughs. On a warm dough the 45-min rise floor eats the
-       correction - accept it, fix upstream.
+       SPLIT BATCH: 2 mixes = 27.4-27.5 h overhead, 3 mixes = 28.0 h.
+       Divide ~12.5 min + 1.25 min/ball of that dough (estimate).
+       EACH DOUGH ON ITS OWN CLOCK, in its own container: bulk from the
+       end of its own mix, divide by its own weight, rise by its own
+       final temp, fridge when its rise ends. Ball counts split evenly
+       between the mixes (12 or 14 at 2 mixes, never 13).
        DON'T clean the bowl between mixes: residue is at DDT, so it doesn't
-       change the heat balance, and the yield evens out since every mix
-       bulks together. Split the biga by WEIGHT and pre-weigh EVERY mix
-       before starting mix 1.
+       change the heat balance; it moves a few grams into the next dough.
+       Split the biga by WEIGHT and pre-weigh EVERY mix before starting mix 1.
        Classic alt: biga 16-18h @ 61-65F, then 6-8h fridge (~27-31 h).
 
 WATER TEMP (includes the bowl; no fixed multiplier works)
@@ -759,8 +751,8 @@ WATER TEMP (includes the bowl; no fixed multiplier works)
   BOWL UNTIL READ: mix 1 = T_biga, later mixes = DDT (an UPPER BOUND -
   how far it cools in the changeover is unmeasured).
   SPLIT BATCHES: Ct is PER-MIX, not per-batch. 12 balls = a 6-ball system
-  twice. Batch-total Ct lands the water 2.6 F low (12bl, biga 58). One water temp
-  PER MIX (12bl: 74.0 then 68.8). Re-measure biga AND bowl before each
+  twice. Batch-total Ct lands the water 2.8 F low (12bl, biga 58). One water temp
+  PER MIX (12bl: 77.3 then 71.8). Re-measure biga AND bowl before each
   mix after the first.
   Rinse the bowl to set it - faster than chasing it with the water.
   T_water = [ DDT x (Ct+C_bowl) - FF x Ct - Cb.Tbiga - Cf.Tflour
@@ -772,11 +764,11 @@ WATER TEMP (includes the bowl; no fixed multiplier works)
 WATER = blend fridge-cold + tap to within 1 F of the target.
         Retarded biga -> usually WARM water. Span 60-116 F over 3-24 balls;
         hottest at SMALL MIXES, and mix size != batch size:
-        3bl 116.2 / 6bl 106.4 / 9bl 99.9 / 12bl 103.1 (=2x6!) / 18bl 99.9 (=2x9)
+        3bl 116.2 / 6bl 106.4 / 9bl 99.9 / 12bl 106.4 (=2x6!) / 18bl 99.9 (=2x9)
         (worst case: biga 45, room 60). Tempered biga, 70 F room, 6bl: ~77 F.
         >120 F -> not tap-reachable. Cause is a biga that skipped its 1h
         temper; 1 F of biga is worth ~2 F of water. Fix upstream, not with a kettle.
-DDT  =  75 F (3-6 balls) / 74 F (7+)
+DDT  =  75 F (6 or fewer balls PER MIX) / 74 F (7+ per mix)
 PROBE = DDT - (C+D friction, 4.5 F) x Ct/(Ct+C_bowl) + 0.2 x (DDT - Troom)
         3bl 72.3 / 6bl 71.9 / 9bl 70.6   (room 70; no FF in it)
 
@@ -806,6 +798,7 @@ BULK 45-60 min (no folds) -> ball into a 24 oz deli -> RT by offset -> fridge, s
   R' = (90+35)/f - 35. The 35 (cooldown) is an ESTIMATE for an open tray;
   containers cool slower (unmeasured). Re-measure on a new fridge.
   9 balls = DDT 74, so a 74 F dough is ON TARGET = 90 min, not 95.
+  Split batch: each dough rests by ITS OWN final temp.
 TEMPER 1.5-2 h per ball to 60-65 F core; the core decides, not the clock.
 BAKE gauge 750 F, FULL FLAME, 60-90 s, turn every 15-20 s. Do not push to 800+.
 ```
@@ -924,7 +917,7 @@ One rep gets most of the value. Three give you a mean and a sense of the spread,
 
 So log **room temperature on every bake**; that's what tests both. After 8–10 logged batches, regress `FF = a + b × (T_room − 70)` per mix size, on FFs corrected for Phase C. If either effect is real, that's a model no generic calculator has, and the main reason to build your own.
 
-**Also worth one reading:** probe one ball's core about 3 hours after the balls go in the fridge. About 40–42 °F means a container cools like a ball on an open tray, which the 35 in the rise after balling assumes (§8, step 9); about 50 °F means twice as slowly, and the rise should come down. A reading every 30 minutes would give the whole curve and replace the estimate. The cooldown depends on the fridge and the container, so measure again after changing either. Home Assistant could log it continuously from a probe.
+**Also worth one reading:** probe one ball's core about 3 hours after the balls go in the fridge. About 40–42 °F means a container cools like a ball on an open tray, which the 35 in the rise after balling assumes (§8, step 9); about 48–50 °F means roughly twice as slowly, and the rise should come down. A reading every 30 minutes would give the whole curve and replace the estimate. The cooldown depends on the fridge and the container, so measure again after changing either. Home Assistant could log it continuously from a probe.
 
 ### Tier 3: the yeast model (do last, or not at all)
 

@@ -28,7 +28,11 @@ log corrects **Phase C only** (bakes 2 and 3 are the first counted bakes, at
 somewhere, with `why-biga` on `biga-1` and two new page links
 (`schedule-architecture` on the cold-ferment slider, `formula-rationale` on
 the ingredients card). Bake 2 is back on, so the FF in use is 9.447610.
-FINDINGS-61 is the last thing sent.
+**MESSAGE-61 is applied**: each dough runs on its own clock (bulk, divide,
+rise and fridge; the timeline plans the last dough and prints the earlier
+ones' end times; the stagger correction is gone; one timer per dough on
+`bulk-1`–`bulk-3`), ball counts split evenly between the mixes, and DDT
+goes by balls per mix. FINDINGS-62 is the last thing sent.
 
 ---
 

@@ -30,8 +30,9 @@ const DEFAULTS: ScheduleAdjustments = {
   bigaFridgeH: 19,
   bigaRoomOnlyH: 16,
   ballRoomTempH: 1.5,
+  earlierRisesH: [],
   nMix: 1,
-  balls: 6,
+  ballsPerMix: 6,
   coldFermentH: 24,
   temperH: 1.5,
 };
@@ -203,7 +204,14 @@ describe('§7.5 a step\'s timer agrees with the stage it times', () => {
     finalDoughTempF?: number,
   ) => {
     const r = calculate({ balls, ballWeightG: 265, roomTempF: 70, flourTempF: 70, bigaTempF: 58, frictionFactorF: 14, finalDoughTempF });
-    const plan = { ...DEFAULTS, bigaRoomOnlyH, ballRoomTempH: r.roomMinutes / 60, nMix: r.capacity.nMix };
+    const plan = {
+      ...DEFAULTS,
+      bigaRoomOnlyH,
+      ballRoomTempH: r.roomMinutes / 60,
+      earlierRisesH: r.roomMinutesByDough.slice(0, -1).map((m) => m / 60),
+      nMix: r.capacity.nMix,
+      ballsPerMix: balls / r.capacity.nMix,
+    };
     const durations = stageDurations(schedule, plan);
     const tokens = tokenValues(r, plan);
     const rendered = new Set(expandSteps(r.capacity.nMix, schedule).map((i) => i.step.id));
@@ -227,24 +235,32 @@ describe('§7.5 a step\'s timer agrees with the stage it times', () => {
     expect(mismatches('classic', 6, 13)).toEqual([]);
   });
 
-  it('times bulk-3 for the rise the timeline plans at every split batch, and at the floor', () => {
-    // MESSAGE-32: {ballRoomMin}. Until then bulk-3 timed the unshortened
-    // {roomMin}: 90 min against 72.5 at nMix 2 and 55 at nMix 3. Room 70 °F,
-    // biga 58 °F, FF 14, final dough at DDT unless stated.
-    const at = (balls: number) =>
-      calculate({ balls, ballWeightG: 265, roomTempF: 70, flourTempF: 70, bigaTempF: 58, frictionFactorF: 14 }).ballRoomMinutes;
-    expect(at(6)).toBeCloseTo(90, 9);
-    expect(at(12)).toBeCloseTo(72.5, 9);
-    expect(at(24)).toBeCloseTo(55, 9);
-    expect(mismatches('retarded', 12)).toEqual([]);
-    expect(mismatches('classic', 18)).toEqual([]);
-    expect(mismatches('retarded', 24)).toEqual([]);
-    // 24 balls at a measured 77 °F (DDT 74): 75.6 min unshortened, 40.6 after
-    // the correction, held at the 45-minute floor. Asserted to BE at the floor,
-    // so this case can't quietly stop exercising it. (76 °F was the case until
-    // MESSAGE-52's cooldown term put it at 45.2, just above the floor.)
-    const floor = calculate({ balls: 24, ballWeightG: 265, roomTempF: 70, flourTempF: 70, bigaTempF: 58, frictionFactorF: 14, finalDoughTempF: 77 });
-    expect(floor.ballRoomMinutes).toBe(45);
-    expect(mismatches('retarded', 24, DEFAULTS.bigaRoomOnlyH, 77)).toEqual([]);
+  it("times each dough's bulk-3 for its own rise, and the timeline for the last dough's (MESSAGE-61)", () => {
+    // §7.5: at nMix > 1 bulk-3 carries one timer per dough, and inside each
+    // `{roomMin}` binds that dough's rise. Room 70 °F, biga 58 °F, FF 14.
+    const bulk3 = STEPS.find((x) => x.id === 'bulk-3')!;
+    for (const [balls, finals] of [
+      [12, [73, 75]],
+      [18, [72, 77]],
+      [24, [70, 77, 74]],
+      [24, [null, null, null]],
+    ] as const) {
+      const r = calculate({ balls, ballWeightG: 265, roomTempF: 70, flourTempF: 70, bigaTempF: 58, frictionFactorF: 14, finalDoughTempF: [...finals] });
+      const plan = { ...DEFAULTS, ballRoomTempH: r.roomMinutes / 60, earlierRisesH: r.roomMinutesByDough.slice(0, -1).map((m) => m / 60), nMix: r.capacity.nMix, ballsPerMix: balls / r.capacity.nMix };
+      expect(r.capacity.nMix, `${balls} balls`).toBe(finals.length);
+      r.roomMinutesByDough.forEach((rise, i) => {
+        const spec = parseTimerLabel(bindTokens(bulk3.timerLabel!, tokenValues(r, plan, 1, i + 1)))!;
+        expect(spec.minMinutes, `${balls} balls, dough ${i + 1}`).toBe(Math.round(rise));
+      });
+      expect(Math.round(stageDurations('retarded', plan).ballRoomTemp * 60), `${balls} balls, the timeline`).toBe(
+        Math.round(r.roomMinutesByDough[finals.length - 1]!),
+      );
+      expect(mismatches('retarded', balls, DEFAULTS.bigaRoomOnlyH)).toEqual([]);
+    }
+    // A warm earlier dough reaches the floor on its own timer without moving
+    // the last dough's. 24 balls (DDT 74 at 8 per mix): 85 °F is +11.
+    const r = calculate({ balls: 24, ballWeightG: 265, roomTempF: 70, flourTempF: 70, bigaTempF: 58, frictionFactorF: 14, finalDoughTempF: [85, 74, 74] });
+    expect(r.roomMinutesByDough[0]).toBe(45);
+    expect(r.roomMinutes).toBeCloseTo(90, 9);
   });
 });

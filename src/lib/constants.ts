@@ -284,9 +284,16 @@ export function bowlHeatCapacity(bowlMassG: number): number {
   return bowlMassG * C.C_BOWL_SPECIFIC_HEAT;
 }
 
-/** DDT default: 75 °F for <=6 balls, 74 °F for 7+. Spec §4.3. User-overridable. */
-export function defaultDdtF(balls: number): number {
-  return balls <= 6 ? 75 : 74;
+/**
+ * DDT default (§4.2, §4.3): 75 °F at 6 or fewer balls **per mix**, 74 °F at 7
+ * or more. User-overridable. Keyed per mix since MESSAGE-61: the band is about
+ * how fast the dough in its bulk container sheds heat, and each container holds
+ * one mix, so a 12-ball batch (two 6-ball mixes) gets 75. Named for its key so a
+ * caller can't pass a total-ball count without saying so; `defaultDdtFor` in the
+ * engine takes a batch.
+ */
+export function ddtForBallsPerMix(ballsPerMix: number): number {
+  return ballsPerMix <= 6 ? 75 : 74;
 }
 
 /**

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { C, bowlHeatCapacity, defaultDdtF } from '../src/lib/constants';
+import { C, bowlHeatCapacity, ddtForBallsPerMix } from '../src/lib/constants';
 import { formatTempF } from '../src/lib/format';
+import { splitsEvenly } from '../src/lib/ballCounts';
 import {
   bigaReadingCost,
   bowlPrefillF,
@@ -11,8 +12,7 @@ import {
   computeFormula,
   computeProbeParts,
   computeProbeTargetF,
-  mixStaggerH,
-  staggerUncentredMin,
+  defaultDdtFor,
   observedRate,
   computeRoomMinutes,
   computeThermal,
@@ -261,6 +261,7 @@ describe('§4.2 the bowl', () => {
     let at = '';
     for (let b = C.MIN_BALLS; b <= 24; b++) {
       for (let g = 240; g <= 300; g++) {
+        if (!splitsEvenly(b, g)) continue; // §6 (MESSAGE-61)
         const share = calculate(vectorInputs(b, g)).thermal.bowlShare;
         expect(share, `bowl share at ${b} x ${g} g`).toBeGreaterThan(BOWL_SHARE_FLOOR);
         if (share < lowest) {
@@ -287,16 +288,17 @@ describe('§4.2 the bowl', () => {
   it("reads each mix's bowl by index: mix 1's reading never stands in for mix 2's", () => {
     // FINDINGS-46. The panel writes [60] when only mix 1's bowl is measured.
     // Carried forward, that overrode mix 2's warm prefill and printed its
-    // water 4.6 °F too warm (63.6 against 59.0) at app defaults with FF 14.03.
+    // water 4.6 °F too warm (63.6 against 59.0) at app defaults with FF 14.03,
+    // at DDT 74; at DDT 75 (MESSAGE-61) it would be 66.9 against 62.0.
     const inputs = { ...vectorInputs(12, 265), flourTempF: VECTOR_CONDITIONS.tRoomF, frictionFactorF: 14.03 };
     const unmeasured = calculate(inputs).mixes;
     const mix1Only = calculate({ ...inputs, bowlTempF: [60] }).mixes;
     expect(mix1Only[0]!.bowlTempF).toBe(60);
-    expect(mix1Only[1]!.bowlTempF, 'mix 2 keeps the warm prefill').toBe(defaultDdtF(12));
+    expect(mix1Only[1]!.bowlTempF, 'mix 2 keeps the warm prefill').toBe(defaultDdtFor({ balls: 12, ballWeightG: 265 }));
     expect(mix1Only[1]!.waterTempF).toBe(unmeasured[1]!.waterTempF);
-    expect(formatTempF(mix1Only[1]!.waterTempF)).toBe('59.0');
+    expect(formatTempF(mix1Only[1]!.waterTempF)).toBe('62.0');
     // A scalar is mix 1's reading; mix 2's own measurement still wins.
-    expect(calculate({ ...inputs, bowlTempF: 60 }).mixes[1]!.bowlTempF).toBe(defaultDdtF(12));
+    expect(calculate({ ...inputs, bowlTempF: 60 }).mixes[1]!.bowlTempF).toBe(defaultDdtFor({ balls: 12, ballWeightG: 265 }));
     expect(calculate({ ...inputs, bowlTempF: [null, 70] }).mixes[1]!.bowlTempF).toBe(70);
   });
 
@@ -477,7 +479,7 @@ describe('§4.8 shaped rise time', () => {
   it('plans at DDT until a real temperature is entered', () => {
     const planning = calculate(vectorInputs(6, 265));
     expect(planning.roomMinutesIsPlanned).toBe(true);
-    expect(planning.effectiveFinalTempF).toBe(75);
+    expect(planning.finalTempByDoughF).toEqual([75]);
     within(planning.roomMinutes, 90, 1e-9, 'planning-mode room time');
 
     const measured = calculate({ ...vectorInputs(6, 265), finalDoughTempF: 73 });
@@ -497,6 +499,7 @@ describe('§4.4 reaching the water temperature', () => {
     const { balls, ballG, bigaF, roomF } = WATER_REACHABILITY;
     for (let b = balls.min; b <= balls.max; b++) {
       for (const g of ballG) {
+        if (!splitsEvenly(b, g)) continue; // §6: a count the app doesn't allow (MESSAGE-61)
         for (let biga = bigaF.min; biga <= bigaF.max; biga += 1) {
           for (let room = roomF.min; room <= roomF.max; room += 1) {
             const { waterTempF } = calculate({
@@ -539,6 +542,7 @@ describe('§4.4 reaching the water temperature', () => {
     const { balls, ballG, bigaF, roomF } = WATER_REACHABILITY;
     for (let b = balls.min; b <= balls.max; b += 3) {
       for (const g of ballG) {
+        if (!splitsEvenly(b, g)) continue;
         for (let biga = bigaF.min; biga <= bigaF.max; biga += 2) {
           for (let room = roomF.min; room <= roomF.max; room += 3) {
             // Every mix's, since each mix carries its own (MESSAGE-54).
@@ -588,7 +592,7 @@ describe('§4.4 reaching the water temperature', () => {
   it('warns above 120 degF, which a calibration FF can still reach', () => {
     // §2: MIN_BALLS closes the door that is open today; the warning guards the
     // one the calibration panel can reopen. 3 x 240 g at FF 8 is the case.
-    const { mixes, warnings, waterTempF } = calculate({
+    const { mixes, waterTempF } = calculate({
       ...vectorInputs(3, 240),
       frictionFactorF: 8,
       bigaTempF: 45,
@@ -596,8 +600,7 @@ describe('§4.4 reaching the water temperature', () => {
       flourTempF: 60,
     });
     expect(waterTempF).toBeGreaterThan(C.WATER_MAX_F);
-    // Under the mix's own target (§7.3, MESSAGE-54), not in the strip.
-    expect(warnings.map((w) => w.id)).not.toContain('water-above-tap');
+    // Under the mix's own target (§7.3, MESSAGE-54); the engine has no strip warnings.
     const warning = mixes[0]!.warnings.find((w) => w.id === 'water-above-tap');
     expect(warning?.severity).toBe('warn');
     // §2 predicted this exact figure for this exact case.
@@ -704,11 +707,17 @@ describe('§4.2 per-mix thermal weights', () => {
     within(r.thermal.perMix.bigaMass, (1222.5 + 611.2) / 2, 0.5, 'per-mix biga mass');
   });
 
-  it('lands 12 and 18 balls above the batch-total figures they replace', () => {
-    // The bug this fixed: batch totals put the water 2.6 °F low at 12 balls
-    // and 1.8 °F low at 18.
-    within(calculate(vectorInputs(12, 265)).waterTempF - 62.1, 2.6, 0.15, '12-ball correction');
-    within(calculate(vectorInputs(18, 265)).waterTempF - 61.3, 1.8, 0.15, '18-ball correction');
+  it('lands 12 and 18 balls above the batch-total figures, by +2.8 and +1.7 °F (§4.2)', () => {
+    // The bug per-mix weights fixed: batch totals put the water low. Computed
+    // both ways at the §5 vector conditions, each at its batch's own DDT, so
+    // the pins moved with DDT per mix (MESSAGE-61: 12 balls was +2.6 at 74).
+    const lift = (balls: number) => {
+      const r = calculate(vectorInputs(balls, 265));
+      const t = { ddtF: r.ddtF, frictionFactorF: 14, bigaTempF: 58, bowlTempF: 58, flourTempF: VECTOR_CONDITIONS.tFlourF, roomTempF: VECTOR_CONDITIONS.tRoomF };
+      return r.waterTempF - computeWaterTempF(t, computeThermal(r.formula, C.BOWL_MASS_G, 1));
+    };
+    expect(formatTempF(lift(12))).toBe('2.8');
+    expect(formatTempF(lift(18))).toBe('1.7');
   });
 
   it('matches §4.2\'s closed form for the batch-total error, across the envelope', () => {
@@ -722,7 +731,7 @@ describe('§4.2 per-mix thermal weights', () => {
     const gap = (balls: number, ballWeightG: number, bigaTempF: number, roomTempF: number) => {
       const f = computeFormula({ balls, ballWeightG });
       const nMix = computeCapacity(f).nMix;
-      const t = { ddtF: defaultDdtF(balls), frictionFactorF: 14, bigaTempF, flourTempF: roomTempF, roomTempF };
+      const t = { ddtF: defaultDdtFor({ balls, ballWeightG }), frictionFactorF: 14, bigaTempF, flourTempF: roomTempF, roomTempF };
       const engine =
         computeWaterTempF(t, computeThermal(f, C.BOWL_MASS_G, nMix)) -
         computeWaterTempF(t, computeThermal(f, C.BOWL_MASS_G, 1));
@@ -738,13 +747,26 @@ describe('§4.2 per-mix thermal weights', () => {
         }
       }
     }
-    // The three-way tie at the maximum shares (nMix − 1) / batch dough, not a
-    // per-mix dough (1250.93 g against 1667.90 g) — FINDINGS-26 said otherwise.
-    const top = [[9, 272], [18, 272], [17, 288]].map(([b, w]) => gap(b!, w!, 45, 60).engine);
-    for (const v of top) within(v, 6.172423, 1e-6, 'the maximum');
-    within(top[0]! - top[1]!, 0, 1e-9, '9 x 272 = 18 x 272');
-    within(computeFormula({ balls: 9, ballWeightG: 272 }).doughTotal / 2, 1250.93, 0.005, 'per mix, 9 x 272 g');
-    within(computeFormula({ balls: 18, ballWeightG: 272 }).doughTotal / 3, 1667.9, 0.005, 'per mix, 18 x 272 g');
+    // §4.2's range over the counts the app allows (MESSAGE-61): 1.5 °F at
+    // 20 x 244 g (biga 60) to 6.4 at 18 x 272 g (three 6-ball mixes, biga
+    // 45). The old maximum, a three-way tie led by 9 x 272 g, sat at counts
+    // that can't be entered (9 there is two mixes of 4½).
+    let lo = { v: Infinity, at: '' };
+    let hi = { v: -Infinity, at: '' };
+    for (let balls = C.MIN_BALLS; balls <= 24; balls++) {
+      for (let w = 240; w <= 300; w++) {
+        if (!splitsEvenly(balls, w) || computeCapacity(computeFormula({ balls, ballWeightG: w })).nMix === 1) continue;
+        const cold = gap(balls, w, 45, 60).engine;
+        const warm = gap(balls, w, 60, 84).engine;
+        if (cold > hi.v) hi = { v: cold, at: `${balls} x ${w} g` };
+        if (warm < lo.v) lo = { v: warm, at: `${balls} x ${w} g` };
+      }
+    }
+    expect(hi.at).toBe('18 x 272 g');
+    within(hi.v, 6.385265, 1e-6, 'the maximum');
+    expect(lo.at).toBe('20 x 244 g');
+    within(lo.v, 1.49478, 1e-6, 'the minimum');
+    expect([formatTempF(lo.v), formatTempF(hi.v)]).toEqual(['1.5', '6.4']);
   });
 });
 
@@ -763,6 +785,7 @@ describe('§4.6 observed vs dough-only rates', () => {
     let hi = -Infinity;
     for (let b = C.MIN_BALLS; b <= 24; b++) {
       for (let w = 240; w <= 300; w++) {
+        if (!splitsEvenly(b, w)) continue; // §6 (MESSAGE-61)
         const rate = observedRate(30, calculate(vectorInputs(b, w)).thermal);
         expect(rate, `observed 30% rate at ${b} x ${w} g`).toBeGreaterThanOrEqual(0.86);
         expect(rate, `observed 30% rate at ${b} x ${w} g`).toBeLessThanOrEqual(1.01);
@@ -771,7 +794,8 @@ describe('§4.6 observed vs dough-only rates', () => {
       }
     }
     within(lo, 0.870243, 1e-6, 'minimum, 3 x 240 g');
-    within(hi, 1.008327, 1e-6, 'maximum, a mix at the 2500 g cap');
+    // 10 x 244 g's 2494 g mix since MESSAGE-61; 19 x 257 g's 1.008327 before.
+    within(hi, 1.008286, 1e-6, 'maximum, the largest allowed mix');
   });
 
   it('reads per-mix masses on a split batch', () => {
@@ -839,7 +863,7 @@ describe('§4.2 bowl prefill', () => {
   it.each(BOWL_TEMP_VECTORS)(
     '$balls balls: bowl 58 $at58, bowl 70 $at70, bowl at DDT $atDdt',
     (v) => {
-      const ddtF = defaultDdtF(v.balls);
+      const ddtF = defaultDdtFor({ balls: v.balls, ballWeightG: 265 });
       for (const [bowlF, expected] of [
         [58, v.at58],
         [70, v.at70],
@@ -861,7 +885,7 @@ describe('§4.2 bowl prefill', () => {
     // follows its own biga, and mix 2's ignores its biga for DDT.
     const r = calculate({ ...vectorInputs(12, 265), bigaTempF: [55, 61] });
     expect(r.mixes[0]!.bowlTempF).toBe(55);
-    expect(r.mixes[1]!.bowlTempF).toBe(74); // DDT at 12 balls
+    expect(r.mixes[1]!.bowlTempF).toBe(75); // DDT at 6 balls per mix (MESSAGE-61)
   });
 
   it('lets a reading beat the prefill', () => {
@@ -878,8 +902,8 @@ describe('§4.2 bowl prefill', () => {
     expect(r.mixes).toHaveLength(2);
     expect(r.mixes[0]!.bowlTempF).toBe(VECTOR_CONDITIONS.tBigaF);
     expect(r.mixes[1]!.bowlTempF).toBe(r.ddtF);
-    within(r.mixes[0]!.waterTempF, 64.7, TOL.degF, 'mix 1 water');
-    within(r.mixes[1]!.waterTempF, 59.5, TOL.degF, 'mix 2 water');
+    within(r.mixes[0]!.waterTempF, 68.1, TOL.degF, 'mix 1 water');
+    within(r.mixes[1]!.waterTempF, 62.5, TOL.degF, 'mix 2 water');
     within(r.waterTempF, r.mixes[0]!.waterTempF, 1e-9, 'waterTempF is mix 1');
   });
 
@@ -898,99 +922,53 @@ describe('§4.4 / §7.3 the water warnings belong to a mix', () => {
     // FF well above any measured value pushes mix 2 under 38 while mix 1
     // stays above it. Out of band on purpose: inside the input ranges the
     // cold warning never fires (§5).
-    const r = calculate({ ...vectorInputs(12, 265), frictionFactorF: 21.9 });
+    // 22.5 since MESSAGE-61: at DDT 75, 21.9 left mix 2 at 38.8.
+    const r = calculate({ ...vectorInputs(12, 265), frictionFactorF: 22.5 });
     expect(r.mixes[0]!.waterTempF).toBeGreaterThanOrEqual(C.WATER_MIN_F);
     expect(r.mixes[1]!.waterTempF).toBeLessThan(C.WATER_MIN_F);
     expect(r.mixes[0]!.warnings).toEqual([]);
     expect(r.mixes[1]!.warnings.map((w) => w.id)).toEqual(['water-below-fridge']);
-    expect(r.warnings.map((w) => w.id)).not.toContain('water-below-fridge');
   });
 
 });
 
-describe('§4.7 staggerUncentred', () => {
-  const at = (balls: number, finalDoughTempF: number) =>
-    calculate({ ...vectorInputs(balls, 265), finalDoughTempF }).staggerUncentredMin;
+/**
+ * §4.8 (MESSAGE-61). Each dough rises from its own final reading, a dough not
+ * yet read planning at DDT; the timeline plans the last. The stagger
+ * correction, and its warning when the floor ate the cut, went with the
+ * shared tub.
+ */
+describe('§4.8 each dough on its own clock', () => {
+  const rises = (balls: number, finals: (number | null)[]) =>
+    calculate({ ...vectorInputs(balls, 265), finalDoughTempF: finals });
 
-  it('is zero across every nMix = 1 case', () => {
-    // MESSAGE-5 §9.1 asks for this explicitly. A single mix has no stagger, so
-    // there is nothing for the clamp to fail to absorb — at any dough
-    // temperature, including ones that peg the rise at either bound.
-    for (let b = C.MIN_BALLS; b <= 24; b++) {
-      for (let t = 60; t <= 90; t += 0.5) {
-        const r = calculate({ ...vectorInputs(b, 265), finalDoughTempF: t });
-        if (r.capacity.nMix !== 1) continue;
-        expect(r.staggerUncentredMin, `${b} balls at ${t} degF`).toBe(0);
-      }
+  it('gives each dough the rise a single mix would get at its reading', () => {
+    for (const [balls, finals] of [
+      [12, [73, 77]],
+      [18, [72, 75.5]],
+      [24, [70, 74, 78]],
+    ] as const) {
+      const r = rises(balls, [...finals]);
+      finals.forEach((t, i) => {
+        within(r.roomMinutesByDough[i]!, computeRoomMinutes({ finalDoughTempF: t, ddtF: r.ddtF }), 1e-12, `${balls} balls, dough ${i + 1}`);
+      });
+      expect(r.roomMinutes, 'the timeline plans the last dough').toBe(r.roomMinutesByDough[finals.length - 1]);
     }
   });
 
-  it('is zero at nMix = 2 for doughs at or below 75 degF', () => {
-    // Also §9.1. 12 and 18 balls are the nMix = 2 cases in range.
-    for (const b of [12, 18]) {
-      for (let t = 60; t <= 75; t += 0.5) {
-        expect(at(b, t), `${b} balls at ${t} degF`).toBe(0);
-      }
-    }
+  it('reaches the 45-minute floor at +10.95 °F for every dough of a split batch', () => {
+    const r = rises(24, [74 + 10.95, 74 + 10.95, 74 + 10.94]);
+    expect(r.ddtF).toBe(74);
+    expect(r.roomMinutesByDough[0]).toBe(45);
+    expect(r.roomMinutesByDough[1]).toBe(45);
+    expect(r.roomMinutesByDough[2]).toBeGreaterThan(45);
   });
 
-  it('fires only once the rise is pinned to its floor', () => {
-    // `roomMinutes` is the UNSTAGGERED rise — the input to the correction, not
-    // its output. At 24 balls / 76.2 degF (DDT 74, three mixes) it is 79.3
-    // min; subtracting 35 wants 44.28, which the floor lifts to 45, so 0.72
-    // min is left uncorrected (§4.8, MESSAGE-52).
-    const warm = calculate({ ...vectorInputs(24, 265), finalDoughTempF: 76.2 });
-    expect(warm.capacity.nMix).toBe(3);
-    const target = warm.roomMinutes - (mixStaggerH(3) / 2) * 60;
-    expect(target, 'the correction wants to go under the floor').toBeLessThan(45);
-    within(warm.staggerUncentredMin, 45 - target, 1e-9, 'uncentred is exactly the shortfall');
-    // Under 2 minutes it stays out of the warnings, per §7.3.
-    expect(warm.staggerUncentredMin).toBeLessThan(2);
-    expect(warm.warnings.some((w) => w.id === 'stagger-uncentred')).toBe(false);
-  });
-
-  it('warns, with the count, once more than 2 minutes go uncorrected', () => {
-    // 24 balls is the only nMix = 3 case in range: stagger/2 is 35 min.
-    const r = calculate({ ...vectorInputs(24, 265), finalDoughTempF: 77 });
-    expect(r.capacity.nMix).toBe(3);
-    expect(r.staggerUncentredMin).toBeGreaterThan(2);
-    const warning = r.warnings.find((w) => w.id === 'stagger-uncentred');
-    expect(warning?.severity).toBe('warn');
-    // Mirrors bulk-1's warning in §8.2.
-    expect(warning?.title).toMatch(/minutes of the difference couldn't be absorbed/);
-    // Points upstream rather than at the floor. For a given batch nMix is
-    // already the fewest that fit, so the lever is the batch size (MESSAGE-36).
-    expect(warning?.detail).toMatch(/choose a batch size that needs fewer mixes, or aim for a cooler dough/);
-    expect(warning?.detail).not.toMatch(/lower the floor|below 45/i);
-  });
-
-  it('separates the clamp from the warning at the §4.8 table cells', () => {
-    // §4.8, MESSAGE-25: "a clamp and a warning are different things — test
-    // them separately." Rows at DDT 74, where 77 °F computes 75.6 min
-    // (COOLDOWN_EQUIV_MIN 35, MESSAGE-52).
-    const cell = (finalDoughTempF: number, nMix: number) => {
-      const rise = computeRoomMinutes({ finalDoughTempF, ddtF: 74 });
-      const target = rise - (mixStaggerH(nMix) / 2) * 60;
-      return { target, uncentred: staggerUncentredMin(rise, nMix) };
-    };
-    // 76 °F / nMix 3: 45.21 — above the floor, NOT clamped; prints 45 by rounding.
-    within(cell(76, 3).target, 45.211205, 1e-6, '76 / 3 target');
-    expect(cell(76, 3).uncentred).toBe(0);
-    // 76.2 °F / nMix 3: clamped, but by 0.72 min — under the > 2 warning.
-    within(cell(76.2, 3).target, 44.275516, 1e-6, '76.2 / 3 target');
-    within(cell(76.2, 3).uncentred, 0.724484, 1e-6, '76.2 / 3 clamped by');
-    // 77 °F / nMix 3: the one cell that warns.
-    within(cell(77, 3).target, 40.608136, 1e-6, '77 / 3 target');
-    within(cell(77, 3).uncentred, 4.391864, 1e-6, '77 / 3 unabsorbed');
-    // No nMix 2 cell in the table reaches the floor.
-    for (const t of [77, 76, 75, 73, 70]) expect(cell(t, 2).uncentred, `${t} / 2`).toBe(0);
-  });
-
-  it('never reports a negative residual', () => {
-    for (const b of [3, 6, 9, 12, 18, 24]) {
-      for (let t = 60; t <= 90; t += 1) {
-        expect(at(b, t), `${b} balls at ${t} degF`).toBeGreaterThanOrEqual(0);
-      }
+  it('shortens nothing for the gap between the mixes', () => {
+    // On DDT every dough gets 90, at every nMix: no half-stagger comes off.
+    for (const balls of [6, 12, 18, 24]) {
+      const r = rises(balls, []);
+      expect(r.roomMinutesByDough.every((m) => Math.abs(m - 90) < 1e-9), `${balls} balls`).toBe(true);
     }
   });
 });
@@ -1049,12 +1027,13 @@ describe('§5 the app-default flour offset', () => {
   });
 
   it('accounts for the gap between a rendered target and its vector', () => {
-    // The 12-ball case that prompted this: 59.505 at flour 69, 59.113 at 70,
-    // both at FF 14. The app's FF is not 14 (next test).
+    // The 12-ball case that prompted this: 62.507 at flour 69, 62.115 at 70,
+    // both at FF 14 and DDT 75 (59.505 and 59.113 at DDT 74 until MESSAGE-61).
+    // The app's FF is not 14 (next test).
     const at69 = calculate({ ...vectorInputs(12, 265), flourTempF: 69 });
     const at70 = calculate({ ...vectorInputs(12, 265), flourTempF: 70 });
-    within(at69.mixes[1]!.waterTempF, 59.505, 0.002, 'mix 2 at vector conditions');
-    within(at70.mixes[1]!.waterTempF, 59.113, 0.002, 'mix 2 at flour 70, FF 14');
+    within(at69.mixes[1]!.waterTempF, 62.507, 0.002, 'mix 2 at vector conditions');
+    within(at70.mixes[1]!.waterTempF, 62.115, 0.002, 'mix 2 at flour 70, FF 14');
   });
 
   it('adds the FF in use at every mix size', () => {
@@ -1088,31 +1067,29 @@ describe('§5 the app-default flour offset', () => {
     // What the 12-ball cards print (§7.2): the vector pair, and at app defaults.
     const cards = (r: ReturnType<typeof calculate>) => r.mixes.map((m) => formatTempF(m.waterTempF));
     const ff12 = seededFf(12, 265).ff;
-    expect(cards(calculate(vectorInputs(12, 265)))).toEqual(['64.7', '59.5']);
+    expect(cards(calculate(vectorInputs(12, 265)))).toEqual(['68.1', '62.5']);
     const app12 = calculate({ ...vectorInputs(12, 265), flourTempF: VECTOR_CONDITIONS.tRoomF, frictionFactorF: ff12 });
-    expect(cards(app12)).toEqual(['74.0', '68.8']);
-    within(app12.mixes[0]!.waterTempF, 74.000625, 1e-6, '12 balls, mix 1');
-    within(app12.mixes[1]!.waterTempF, 68.757479, 1e-6, '12 balls, mix 2');
+    // §7.2 at DDT 75 (MESSAGE-61; 74.0 and 68.8 at the old 74).
+    expect(cards(app12)).toEqual(['77.3', '71.8']);
+    within(app12.mixes[0]!.waterTempF, 77.330668, 1e-6, '12 balls, mix 1');
+    within(app12.mixes[1]!.waterTempF, 71.759825, 1e-6, '12 balls, mix 2');
   });
 
-  it('prices the per-mix DDT slip at the bowl coefficient, on either basis', () => {
-    // §4.2: the warm-bowl prefill takes the BATCH DDT, 74 at 12 balls. The ≤6
-    // rule applied per mix would make it 75. Only the prefill moves, so mix 2
-    // shifts by C_bowl/Cw: 59.5 → 59.2 at the vector conditions, and 68.8 →
-    // 68.4 at app defaults with the FF in use and the 963 g bowl (MESSAGE-54).
+  it('takes DDT by balls per mix: 12 balls is 75, as 6 is (§4.2, MESSAGE-61)', () => {
+    // At DDT 74, the old total-ball rule, mix 2 printed 59.5 at the vector
+    // conditions and 68.8 at app defaults with the seed FF; 62.5 and 71.8 now.
     const ff12 = seededFf(12, 265).ff;
-    const slipped = defaultDdtF(12 / 2);
-    expect([defaultDdtF(12), slipped]).toEqual([74, 75]);
-    for (const [basis, inputs, before, after] of [
-      ['vector', vectorInputs(12, 265), '59.5', '59.2'],
-      ['app defaults', { ...vectorInputs(12, 265), flourTempF: VECTOR_CONDITIONS.tRoomF, frictionFactorF: ff12 }, '68.8', '68.4'],
+    expect(ddtForBallsPerMix(6)).toBe(75);
+    expect(ddtForBallsPerMix(7)).toBe(74);
+    for (const [basis, inputs, at74, now] of [
+      ['vector', vectorInputs(12, 265), '59.5', '62.5'],
+      ['app defaults', { ...vectorInputs(12, 265), flourTempF: VECTOR_CONDITIONS.tRoomF, frictionFactorF: ff12 }, '68.8', '71.8'],
     ] as const) {
-      const batch = calculate(inputs).mixes[1]!;
-      const perMix = calculate({ ...inputs, bowlTempF: [null, slipped] }).mixes[1]!;
-      expect(batch.bowlTempF, `${basis}: warm prefill`).toBe(defaultDdtF(12));
-      expect([formatTempF(batch.waterTempF), formatTempF(perMix.waterTempF)], basis).toEqual([before, after]);
-      const t = calculate(inputs).thermal;
-      within(batch.waterTempF - perMix.waterTempF, t.cBowl / t.cFreshWater, 1e-9, `${basis}: shift is C_bowl/Cw`);
+      const r = calculate(inputs);
+      expect(r.ddtF, basis).toBe(75);
+      expect(r.mixes[1]!.bowlTempF, `${basis}: warm prefill`).toBe(75);
+      expect(formatTempF(r.mixes[1]!.waterTempF), basis).toBe(now);
+      expect(formatTempF(calculate({ ...inputs, ddtOverrideF: 74 }).mixes[1]!.waterTempF), `${basis} at 74`).toBe(at74);
     }
   });
 });
@@ -1135,8 +1112,11 @@ describe('§4.4 and §5 at the FF in use before any counted bake (MESSAGE-52)', 
       [3, 265, 116.22909],
       [3, 240, 118.277194],
       [9, 265, 99.900414],
-      [10, 265, 104.968788],
-      [9, 272, 105.909792],
+      // MESSAGE-61: two 5-ball mixes at DDT 75, and the hottest split batch,
+      // 10 x 245 g (two 1252 g mixes). 9 x 272 g, two mixes of 4½, can't be
+      // entered; it was 105.909792 and led the split batches.
+      [10, 265, 108.364371],
+      [10, 245, 109.327398],
     ] as const) {
       within(at(balls, g, corner).waterTempF, water, 1e-6, `${balls} x ${g} g`);
     }
@@ -1156,6 +1136,7 @@ describe('§4.4 and §5 at the FF in use before any counted bake (MESSAGE-52)', 
     // Water is linear in both temperatures, so their ends bound it.
     for (let balls = BOUNDS.balls.min; balls <= BOUNDS.balls.max; balls++) {
       for (let g: number = BOUNDS.ballWeightG.min; g <= BOUNDS.ballWeightG.max; g++) {
+        if (!splitsEvenly(balls, g)) continue; // §6 (MESSAGE-61)
         for (const bigaTempF of [WATER_REACHABILITY.bigaF.min, WATER_REACHABILITY.bigaF.max]) {
           for (const roomTempF of [WATER_REACHABILITY.roomF.min, WATER_REACHABILITY.roomF.max]) {
             const r = at(balls, g, { bigaTempF, roomTempF, flourTempF: roomTempF, frictionFactorF: ff });
@@ -1172,9 +1153,10 @@ describe('§4.4 and §5 at the FF in use before any counted bake (MESSAGE-52)', 
     return out;
   }
 
-  it('spans 62.8–118.3 °F on first mixes and 59.9–118.3 on every mix', () => {
+  it('spans 62.9–118.3 °F on first mixes and 59.9–118.3 on every mix', () => {
     const s = sweep(FF);
-    within(s.first[0]!, 62.848349, 1e-6, 'first mixes, coldest');
+    // 10 x 244 g, tied by 20 x 244 g (62.850; 19 x 257 g's 62.848 until MESSAGE-61).
+    within(s.first[0]!, 62.850186, 1e-6, 'first mixes, coldest');
     within(s.first[1]!, 118.277194, 1e-6, 'first mixes, hottest');
     within(s.all[0]!, 59.860625, 1e-6, 'every mix, coldest');
     within(s.all[1]!, 118.277194, 1e-6, 'every mix, hottest');
@@ -1188,20 +1170,25 @@ describe('§4.4 and §5 at the FF in use before any counted bake (MESSAGE-52)', 
 
   it('reaches 50.2 °F on later mixes at FF 14, below the first-mix 53.2', () => {
     const s = sweep(14);
-    within(s.first[0]!, 53.203404, 1e-6, 'first mixes at FF 14');
+    within(s.first[0]!, 53.20524, 1e-6, 'first mixes at FF 14');
     within(s.all[0]!, 50.21568, 1e-6, 'every mix at FF 14');
   });
 
-  it('asks the same of every later mix, whatever the mix size', () => {
+  it('asks the same of every later mix within one DDT, whatever the mix size', () => {
     // With the bowl prefilled at DDT the later mix's terms reduce to
-    // dough-only ratios, so one DDT gives one figure.
-    const later = new Set<string>();
-    for (const [balls, g] of [[10, 265], [12, 265], [13, 258], [18, 265], [19, 257], [20, 245], [24, 300]] as const) {
+    // dough-only ratios, so one DDT gives one figure: 62.9 at 6 or fewer
+    // balls per mix (DDT 75), 59.9 at 7 or more (DDT 74; MESSAGE-61).
+    const later = new Map<number, Set<string>>();
+    for (const [balls, g] of [[10, 265], [12, 265], [14, 258], [18, 265], [18, 272], [20, 240], [24, 300]] as const) {
+      expect(splitsEvenly(balls, g), `${balls} x ${g} g is allowed`).toBe(true);
       const r = at(balls, g, { bigaTempF: 60, roomTempF: 84, flourTempF: 84 });
       expect(r.capacity.nMix, `${balls} x ${g} g`).toBeGreaterThan(1);
-      r.mixes.slice(1).forEach((m) => later.add(m.waterTempF.toFixed(6)));
+      const set = later.get(r.ddtF) ?? new Set<string>();
+      r.mixes.slice(1).forEach((m) => set.add(m.waterTempF.toFixed(6)));
+      later.set(r.ddtF, set);
     }
-    expect([...later]).toEqual(['59.860625']);
+    expect([...later.get(75)!]).toEqual(['62.862972']);
+    expect([...later.get(74)!]).toEqual(['59.860625']);
   });
 });
 
@@ -1238,7 +1225,7 @@ describe('§4.6 probe target', () => {
   it('matches the quoted values in a 70 degF room, at any FF', () => {
     // §4.6 since MESSAGE-52: the friction still to come is Phases C and D at
     // their reference times and rates, so FF drops out of the target.
-    for (const [balls, expected] of [[3, 72.279633], [6, 71.913526], [9, 70.574935], [12, 70.713526], [18, 70.574935]] as const) {
+    for (const [balls, expected] of [[3, 72.279633], [6, 71.913526], [9, 70.574935], [12, 71.913526], [18, 70.574935]] as const) {
       for (const frictionFactorF of [8, BAKE_1_SEED.value, 14, 18]) {
         const r = calculate({ ...vectorInputs(balls, 265), frictionFactorF });
         within(r.probeTargetF, expected, 1e-6, `probe at ${balls} balls, FF ${frictionFactorF}`);
@@ -1523,7 +1510,7 @@ describe('§4.10 the probe target in parts', () => {
   const at = (balls: number, roomTempF: number) => {
     const f = computeFormula({ balls, ballWeightG: 265 });
     const thermal = computeThermal(f, C.BOWL_MASS_G, computeCapacity(f).nMix);
-    return { parts: computeProbeParts({ ddtF: defaultDdtF(balls), roomTempF, thermal }), thermal };
+    return { parts: computeProbeParts({ ddtF: defaultDdtFor({ balls, ballWeightG: 265 }), roomTempF, thermal }), thermal };
   };
 
   it('satisfies the §4.10 identity before rounding', () => {
@@ -1531,7 +1518,7 @@ describe('§4.10 the probe target in parts', () => {
       for (const room of [60, 62, 70, 78, 84]) {
         const { parts } = at(balls, room);
         expect(parts.gapF, `${balls} balls, room ${room}`).toBeCloseTo(parts.frictionRemainingF - parts.restSignedF, 12);
-        expect(parts.targetF).toBeCloseTo(defaultDdtF(balls) - parts.gapF, 12);
+        expect(parts.targetF).toBeCloseTo(defaultDdtFor({ balls, ballWeightG: 265 }) - parts.gapF, 12);
       }
     }
   });
