@@ -33,7 +33,9 @@ rise and fridge; the timeline plans the last dough and prints the earlier
 ones' end times; the stagger correction is gone; one timer per dough on
 `bulk-1`–`bulk-3`), ball counts split evenly between the mixes, and DDT
 goes by balls per mix. MESSAGE-62 (spec only: `thermal-model`'s 6.4) is
-applied too. FINDINGS-63 is the last thing sent.
+applied too, and so is MESSAGE-63 (wording: the bowl warms faster than the
+biga in the temper, and a steady spot for the bulk). FINDINGS-64 is the last
+thing sent.
 
 ---
 

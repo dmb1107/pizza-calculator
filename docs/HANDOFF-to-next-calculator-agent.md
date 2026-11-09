@@ -9,19 +9,20 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-62 and FINDINGS-63 (9 November).
+MESSAGE-63 and FINDINGS-64 (9 November).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-62, and FINDINGS-63 is the
+- **The correspondence is applied through MESSAGE-63, and FINDINGS-64 is the
   last thing sent.** No pin of any kind is live (`knownWrong` is empty) and
-  nothing is open. MESSAGE-62 was spec only: `thermal-model` now reads 6.4,
-  claimed against the gate's sweep, and §4.8's nominal pair is 86 against
-  89. MESSAGE-63 is announced: the bowl after the temper, and where the
-  dough rises. MESSAGE-61
+  nothing is open. MESSAGE-63 changed wording only: the temper warms the
+  bowl faster than the biga, so `biga-6` quotes 1.6 °F per °F of biga for a
+  reading and "about 2" for a skipped temper, and `bulk-1` asks for a steady
+  spot near the target dough temperature. The prefill stays `T_biga`, Dave's
+  call. MESSAGE-62 was spec only: `thermal-model` reads 6.4. MESSAGE-61
   changed behaviour, not just copy: **each dough runs on its own clock**
   (own bulk, divide, rise and fridge; the timeline plans the last dough and
   prints the earlier doughs' end times; `stagger` and everything built on it
