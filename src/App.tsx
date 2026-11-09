@@ -69,13 +69,13 @@ export default function App() {
       <div className="grid grid-cols-[minmax(0,1fr)] gap-3">
         {/* §10: Reset starts a new bake, above the panels it clears. */}
         <NewBakeReset onReset={state.startNewBake} />
-        <BatchPanel {...state} />
+        <BatchPanel {...state} onOpenConcept={setConcept} />
         <CalibrationPanel {...state} onOpenLog={openLog} onOpenConcept={setConcept} />
       </div>
 
       <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-3">
         <WarningsList warnings={state.alerts} />
-        <IngredientsCard result={result} />
+        <IngredientsCard result={result} onOpenConcept={setConcept} />
         <TargetsCard result={result} />
         <TimelineCard {...state} />
       </div>

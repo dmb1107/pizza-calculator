@@ -113,12 +113,15 @@ describe('§4.3 the mix profile, derived from the step content', () => {
     expect(MIX_PHASES.map((p) => p.dial)).toEqual([15, 20, 30, 20]);
   });
 
-  it('references the middle of each printed range: A 3.5, B 5.5, C 3.5, D 52.5 s', () => {
-    expect(MIX_PHASES.map((p) => p.referenceMin)).toEqual([3.5, 5.5, 3.5, 52.5 / 60]);
+  it('references the middle of each printed range: A 3.5, B 8, C 3.5, D 52.5 s', () => {
+    // Phase B printed 5–6 until MESSAGE-60 and prints 7–9 now, so its
+    // reference moved from 5.5 to 8. The log and the probe target read neither
+    // (§4.3 corrects Phase C, §4.6 reads C and D), so no FF moves with it.
+    expect(MIX_PHASES.map((p) => p.referenceMin)).toEqual([3.5, 8, 3.5, 52.5 / 60]);
   });
 
-  it('adds up to 13.375 motor minutes at the references', () => {
-    expect(MIX_PHASES.reduce((s, p) => s + p.referenceMin, 0)).toBeCloseTo(13.375, 12);
+  it('adds up to 15.875 motor minutes at the references', () => {
+    expect(MIX_PHASES.reduce((s, p) => s + p.referenceMin, 0)).toBeCloseTo(15.875, 12);
   });
 });
 
@@ -246,9 +249,21 @@ describe('§5 Bake log: bakes 2 and 3 (MESSAGE-59)', () => {
    * 5.30 is below anything its own probe readings allow, and it would have
    * set the next water target 16.5 °F warmer than the seed.
    */
-  it('the retired four-phase rule gave 5.303420 and 6.537899', () => {
+  it('the retired four-phase rule gave 5.303420 and 6.537899 at the references printed then', () => {
+    /**
+     * The references these two figures were computed against, written here
+     * rather than read from `MIX_PHASES` (MESSAGE-60 §5). They are a record of
+     * what the retired rule produced in October, and Phase B printed 5–6
+     * then. Taking them from `MIX_PHASES` would restate the figures every
+     * time a printed range moved: with Phase B at 8 the same arithmetic gives
+     * bake 2 7.453420, which is not what the rule ever gave.
+     */
+    const REFERENCE_MIN_THEN: Record<PhaseKey, number> = { a: 3.5, b: 5.5, c: 3.5, d: 52.5 / 60 };
     const fourPhase = (ff: number, sec: Record<PhaseKey, number>) =>
-      MIX_PHASES.reduce((acc, p) => acc - frictionRateOf(p.dial) * (sec[p.key] / 60 - p.referenceMin), ff);
+      MIX_PHASES.reduce(
+        (acc, p) => acc - frictionRateOf(p.dial) * (sec[p.key] / 60 - REFERENCE_MIN_THEN[p.key]),
+        ff,
+      );
     const b2 = logged(BAKE_2);
     expect(fourPhase(mixStatus(b2, b2.mixes[0]!).ff!, BAKE_2.phaseSeconds)).toBeCloseTo(BAKE_2.ffFourPhase, 6);
     const b3 = bake3();
@@ -257,6 +272,8 @@ describe('§5 Bake log: bakes 2 and 3 (MESSAGE-59)', () => {
         .map((m, i) => fourPhase(mixStatus(b3, m).ff!, BAKE_3.mixes[i]!.phaseSeconds))
         .reduce((a, c) => a + c, 0) / b3.mixes.length;
     expect(mean).toBeCloseTo(BAKE_3.ffFourPhase, 6);
+    // The pin is historical: it must not follow a printed range that moves.
+    expect(REFERENCE_MIN_THEN.b).not.toBe(MIX_PHASES.find((p) => p.key === 'b')!.referenceMin);
   });
 
   it('with both counted the FF in use is 9.447610 at every size, held flat', () => {

@@ -133,7 +133,7 @@ Grain Craft arrives lumpy from the mill; the flour itself is fine. The lumps are
 A clump that survives into the biga keeps dry flour at its core, and dry flour never ferments. In a stiff 50% biga you can't find it by hand once the water is in, and it turns up later as a hard nodule in the finished dough.
 
 Break it up first and weigh after, so flour left in the sieve doesn't come out of the biga.`,
-    concepts: ["giorilli-standard"],
+    concepts: ["giorilli-standard", "why-biga"],
   },
   {
     id: "biga-3",
@@ -267,10 +267,10 @@ Optional: soak the crumbled biga in the water for a few minutes first. Keep it t
     id: "mix-3",
     phase: "mix",
     title: `Phase B, salt and bassinage`,
-    summary: `Add {saltPerMix} g salt, then **{phaseBWaterPerMix} g** of water (the remaining {phaseBPercent}%) in **3 additions**, letting each absorb fully before the next and the last before you stop. **2 lit segments** (20%, 98 RPM), 5–6 min.`,
+    summary: `Add {saltPerMix} g salt, then **{phaseBWaterPerMix} g** of water (the remaining {phaseBPercent}%) in **3 additions**, letting each absorb fully before the next and the last before you stop. **2 lit segments** (20%, 98 RPM), 7–9 min.`,
     values: [`Salt: {saltPerMix} g`, `Phase B water: {phaseBWaterPerMix} g`],
-    timerLabel: `5–6 min`,
-    timerMinutes: [5, 6],
+    timerLabel: `7–9 min`,
+    timerMinutes: [7, 9],
     speed: { dial: 20, rpm: 98, label: `20% / 98 RPM` },
     detail: `Salt goes in here and never in the biga, where it would slow the yeast you've spent 20 hours building up.
 
@@ -309,7 +309,7 @@ Phase C and Phase D friction is their middle times at their friction rates: 3.5 
         [`Target ±1 °F`, `Run Phase C as written`],
         [`1–2 °F high`, `Cut Phase C to 2–2.5 min`],
         [`1–2 °F low`, `Extend Phase C to 4.5–5.5 min`],
-        [`More than 2 °F off`, `Use Phase C's full range: 2 min if high (longer if it isn't smooth and glossy yet), 5.5 min if low. Accept what's left and fix the water temperature next batch`],
+        [`More than 2 °F off`, `Use Phase C's full range: 2 min if high (longer if it's still shaggy), 5.5 min if low. Accept what's left and fix the water temperature next batch`],
       ],
     },
     concepts: ["friction-factor"],
@@ -319,7 +319,7 @@ Phase C and Phase D friction is their middle times at their friction rates: 3.5 
     id: "mix-5",
     phase: "mix",
     title: `Phase C, development`,
-    summary: `**3 lit segments** (30%, 123 RPM), 3–4 min, until smooth and glossy. Adjust the time from the probe reading: about **{observedRate30} °F per minute** at this speed.`,
+    summary: `**3 lit segments** (30%, 123 RPM), 3–4 min, until the dough is one mass and mostly smooth. Adjust the time from the probe reading: about **{observedRate30} °F per minute** at this speed.`,
     timerLabel: `3–4 min`,
     timerMinutes: [3, 4],
     speed: { dial: 30, rpm: 123, label: `30% / 123 RPM` },
@@ -329,7 +329,7 @@ At 6 balls, cutting it to 2 minutes saves **1.5 °F** and stretching it to 5.5 m
 
 Beyond that you give up gluten development to fix temperature. **A properly developed dough 2 °F warm is better than an under-mixed one at exactly the right temperature.** Fix a temperature miss in the next batch's water calculation instead.
 
-**So the look sets the shortest Phase C, and 5.5 minutes the longest.** The probe picks the time in between. Don't stop before the dough is smooth and glossy, however warm it reads, and don't run past 5.5 minutes to warm it.
+**So the look sets the shortest Phase C, and 5.5 minutes the longest.** The probe picks the time in between. Don't stop while it's still shaggy, however warm it reads, and don't run past 5.5 minutes to warm it.
 
 Friction per minute at each speed: 15% ≈ 0.75 °F/min · 20% ≈ 0.86 °F/min · 30% ≈ 1.08 °F/min. These are for the dough alone. A thermometer reads each of them multiplied by \`Ct/(Ct + C_bowl)\` — 0.82 at 3 balls, 0.90 at 6, 0.93 at 9 — which at 30% gives 0.89, 0.97 and 1.01 °F per minute. So "about a degree a minute" holds at 6 balls and up.`,
     repeatsPerMix: true,
@@ -354,10 +354,10 @@ It also breaks up the mixer's run time, keeping each run inside the Halo Core's 
     timerLabel: `45–60 s`,
     timerMinutes: [0.75, 1],
     speed: { dial: 20, rpm: 98, label: `20% / 98 RPM` },
-    detail: `The temperature counts toward done as much as the look and the windowpane. Write down the final dough temperature every time: it's the input to your friction factor, and through it to every future water calculation.
+    detail: `The temperature counts toward done as much as the look. Write down the final dough temperature every time: it's the input to your friction factor, and through it to every future water calculation.
 
-**Never above 4 lit segments (40%, 148 RPM) with this dough.** The total run is about 15 minutes, inside the mixer's {maxRunMin}-minute continuous limit, and the rest splits it anyway.`,
-    watchFor: `Smooth, glossy "pumpkin-lattice" surface, a clean bowl, a thin windowpane with only slight tearing, and **DDT ±1 °F.**`,
+**Never above 4 lit segments (40%, 148 RPM) with this dough.** The total run is about 18 minutes, inside the mixer's {maxRunMin}-minute continuous limit, and the rest splits it anyway.`,
+    watchFor: `One cohesive mass, mostly smooth, pulling off the bowl wall, and **DDT ±1 °F.** A few rough spots are fine, and the windowpane can tear: the cold ferment finishes the gluten.`,
     repeatsPerMix: true,
   },
   {
@@ -401,7 +401,7 @@ Keep this in mind when you judge the result. A slightly over-fermented batch doe
       condition: "staggerUncentred > 2",
       text: `**{staggerUncentred} minutes of the difference couldn't be absorbed.** Your dough is warm enough that the rise after balling is already at its 45-minute floor, so there was nothing left to shorten. The first dough will run that much long, so this batch won't be uniform.
 
-If you can tell the doughs apart in the tub, divide and ball the first dough before the rest and put its trays in the fridge as they fill, rather than chilling everything at the end. That recovers roughly the time it takes to ball one mix, about ten minutes at this batch size. It isn't in the calculation, but it costs nothing.
+If you can tell the doughs apart in the tub, divide and ball the first dough before the rest and put its containers in the fridge as they fill, rather than chilling everything at the end. That recovers roughly the time it takes to ball one mix, about ten minutes at this batch size. It isn't in the calculation, but it costs nothing.
 
 Expect the first dough to be a little further along: slacker on the bench, possibly more open, maybe slightly more acidic. That variation comes from the batch running on one clock. Log it; the formula doesn't need to change.`,
     },
@@ -419,28 +419,30 @@ Expect the first dough to be a little further along: slacker on the bench, possi
   {
     id: "bulk-3",
     phase: "bulk",
-    title: `Onto trays`,
-    summary: `Half-sheet trays with lids, very lightly oiled: wipe on a thin film with a paper towel. Nothing on top of the balls. Leave them at room temperature for **{ballRoomMin} min**, set by how far your final dough temperature is from DDT.`,
+    title: `Into containers`,
+    summary: `One ball per 24 oz deli container, very lightly oiled: wipe on a thin film with a paper towel. Nothing on top of the ball. Put the lids on and leave them at room temperature for **{ballRoomMin} min**, set by how far your final dough temperature is from DDT.`,
     values: [`Room time: {ballRoomMin} min (final dough {finalDoughTemp} °F against DDT {ddt} °F)`],
     timerLabel: `{ballRoomMin} min`,
-    detail: `**Oil the trays; don't flour them.**
+    detail: `**Oil the containers; don't flour them.**
 
 Flour absorbs water. It pulls moisture out of the dough surface and turns to paste. Over 24–48 hours in the fridge, which dries things even under a lid, you get gluey patches where the flour hydrated and a dry skin everywhere else. The skin resists opening and tears at the cornicione instead of stretching.
 
-Flour dusting comes from **wooden** dough boxes, which breathe and buffer moisture. Aluminum does neither, so flour on aluminum has nowhere to go but into the dough.
+Flour dusting comes from **wooden** dough boxes, which breathe and buffer moisture. Plastic does neither, so flour in a plastic container has nowhere to go but into the dough.
 
-Oil keeps the dough from sticking to the metal without drawing water out of it, and stops a skin forming over a long cold ferment.
+Oil keeps the dough from sticking to the container without drawing water out of it, and stops a skin forming over a long cold ferment.
 
 **Use each for its own job:**
 
 | Job | Use |
 |---|---|
-| Release from the **tray** | thin oil film |
+| Release from the **container** | thin oil film |
 | Release from the **peel** | flour or semolina, at the bench, right before launch |
 
 **Keep the oil to a film.** With too much, the ball slides instead of gripping enough to hold its dome as it relaxes, the base picks up oil that fries and over-browns on the stone, and the excess smokes. A neutral oil has a slightly higher smoke point than olive oil, though with a thin film it barely matters.
 
-**Put nothing on top of the balls.** The lid handles humidity, and oil on top becomes the cornicione surface and browns it unevenly.`,
+**Put nothing on top of the balls.** The lid handles humidity, and oil on top becomes the cornicione surface and browns it unevenly.
+
+**Use a 24 oz container.** A 16 oz one is too small for a 265 g ball on this schedule: the dough fills it and pushes the lid off in the fridge.`,
     detailWhen: {
       condition: "nMix > 1",
       detail: `**This rise is shorter than a single mix would get.** At {finalDoughTemp} °F a single mix would rest {roomMin} min; this batch rests {ballRoomMin}. The first mix has been fermenting longer than the last, so the calculator shortens the rise by half that difference to split it (see *Bulk rest*), and never below 45 minutes.
@@ -453,23 +455,21 @@ The final dough temperature here is the average of every mix's reading, since th
     id: "bulk-4",
     phase: "bulk",
     title: `Refrigerate`,
-    summary: `{coldFerment} hours at 38–40 °F. **For the first 4 hours, spread the trays out; don't stack them.**`,
+    summary: `{coldFerment} hours at 38–40 °F. **For the first 4 hours, space the containers out; don't stack them.**`,
     timerLabel: `{coldFerment} h`,
-    detail: `A 265 g ball takes **3–4 hours to cool to 40 °F** on spread trays. The rise after balling allows for that cooldown, and for a warmer or cooler dough cooling from a different start. It doesn't allow for anything that slows the cooling: stacking can double the time, because the trays in the middle are insulated by the ones above and below, and a crowded fridge slows it too.`,
+    detail: `The rise after balling allows for the ball cooling in the fridge, estimated at **3–4 hours to 40 °F** for a 265 g ball on an open tray, and for a warmer or cooler start. A lidded container cools more slowly, by an amount nobody has measured, so each ball ferments longer on the way down. Stacked containers insulate each other and slow it further, and so does a crowded fridge.`,
   },
   {
     id: "bake-1",
     phase: "bake",
     title: `Temper`,
-    summary: `Out of the fridge **1½–2 hours** before the first launch; the timeline plans {temper} h. Target **60–65 °F at the core**, measured with a probe.`,
+    summary: `Each ball comes out of the fridge **1½–2 hours** before it's baked; the timeline plans {temper} h before the first launch. Target **60–65 °F at the core**, measured with a probe.`,
     timerLabel: `1.5–2 h`,
     detail: `Below **55 °F** the dough tears when you open it and won't get good oven spring. Above **70 °F** it goes slack and sticky and loses its shape on the peel.
 
 The look of the ball and the thermometer should agree. If a ball looks ready but reads 52 °F, trust the thermometer; the surface warms long before the core.
 
-**Why 1½ hours.** A ball that takes 3–4 hours to cool from 75 to 40 °F should reach 60 °F at the core in a little over an hour in a 70 °F kitchen, and 65 °F in about two. Still air on the counter may warm it more slowly than the fridge cooled it, so the core temperature decides, not the clock.
-
-**More than one tray: temper in waves**, so each ball reaches 60–65 °F at the core when its turn at the oven comes. Take the first tray out {temper} h before the first launch, the second at the first launch, and each one after that 45 minutes after the one before. In individual containers, pull them in groups of six.`,
+**Why 1½–2 hours.** On an open tray, a ball that takes 3–4 hours to cool from 75 to 40 °F should reach 60 °F at the core in a little over an hour in a 70 °F kitchen, and 65 °F in about two. In a lidded container it likely warms more slowly, as it cools more slowly, so the core temperature decides, not the clock.`,
     watchFor: `Balls relaxed and spread slightly, domed and airy, with a slow, incomplete rebound when poked.`,
   },
   {

@@ -479,7 +479,7 @@ describe('unsocial hours', () => {
   });
 
   it('catches a start time that buries three actions in the small hours', () => {
-    // Mixing the biga at 23:00 means fridging it at 01:00, trays into the
+    // Mixing the biga at 23:00 means fridging it at 01:00, containers into the
     // fridge at midnight the next day, and out again at 02:00. This is the
     // schedule §4.7 exists to warn about.
     const t = buildTimeline({
@@ -744,7 +744,7 @@ describe('§4.7 windows that keep every step out of the small hours', () => {
   });
 
   it('gives 2:00–9:00 PM for a classic start at its 6 h cold ferment, where 9 a.m. is itself overnight', () => {
-    // The mix at S + 16 h and the trays into the fridge at S + 19:20 need S
+    // The mix at S + 16 h and the containers into the fridge at S + 19:20 need S
     // from 14:00; the bake at S + 26:50 needs it before 21:10.
     expect(spans('forward', 'classic', CLASSIC)).toEqual([[q(14), q(21)]]);
   });

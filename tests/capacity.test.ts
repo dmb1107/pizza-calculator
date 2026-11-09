@@ -179,7 +179,7 @@ describe('§7.5 speed: the chip\'s smaller line', () => {
     });
     expect(lines).toEqual([
       ['mix-2', '15% · 85 RPM', '3–4 min'],
-      ['mix-3', '20% · 98 RPM', '5–6 min'],
+      ['mix-3', '20% · 98 RPM', '7–9 min'],
       ['mix-5', '30% · 123 RPM', '3–4 min'],
       ['mix-7', '20% · 98 RPM', '45–60 s'],
     ]);

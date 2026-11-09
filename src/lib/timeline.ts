@@ -130,11 +130,11 @@ export const STAGE_INFO: Record<StageKey, { title: string; description: string }
     title: 'Balls at room temperature',
     // By the OFFSET from DDT, not the thermometer reading alone (MESSAGE-21/23):
     // §4.8's rise depends only on `T_actual − DDT`.
-    description: 'On lightly oiled trays, lids on. How long depends on how far the dough landed from DDT.',
+    description: 'One ball per lightly oiled container, lids on. How long depends on how far the dough landed from DDT.',
   },
   coldFerment: {
     title: 'Cold ferment',
-    description: '38–40 °F. Spread the trays out for the first 4 hours; don\'t stack them.',
+    description: '38–40 °F. Space the containers out for the first 4 hours; don\'t stack them.',
   },
   temper: {
     title: 'Temper',

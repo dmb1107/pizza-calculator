@@ -440,7 +440,7 @@ const CLAIMS: readonly Claim[] = [
     at: 'mix-4.troubleshoot',
     restates: "Phase C's full range (MESSAGE-45): the cut row's shortest time and PHASE_C_MAX_MIN",
     holds: () => (CONTENT.get('mix-4.troubleshoot') ?? '').includes(`Cut Phase C to ${PHASE_C_CUT_MIN}–`),
-    text: `Use Phase C's full range: ${PHASE_C_CUT_MIN} min if high (longer if it isn't smooth and glossy yet), ${C.PHASE_C_MAX_MIN} min if low`,
+    text: `Use Phase C's full range: ${PHASE_C_CUT_MIN} min if high (longer if it's still shaggy), ${C.PHASE_C_MAX_MIN} min if low`,
     covers: [`${PHASE_C_CUT_MIN} min`, `${C.PHASE_C_MAX_MIN} min`],
   },
 
@@ -496,7 +496,7 @@ const CLAIMS: readonly Claim[] = [
     at: 'mix-7.detail',
     restates: 'A + B + C + D maxima from the timers',
     text: `The total run is about ${['mix-2', 'mix-3', 'mix-5', 'mix-7'].reduce((n, id) => n + timerOf(id)[1], 0)} minutes`,
-    covers: ['15 minutes'],
+    covers: ['18 minutes'],
   },
 
   // --- sensitivities ---------------------------------------------------------
@@ -669,17 +669,21 @@ const CLAIMS: readonly Claim[] = [
     },
     text: (() => {
       const [lo, hi] = PLANNING_RANGE_H.temper as readonly [number, number];
-      return `**${halves(lo)}–${halves(hi)} hours** before the first launch`;
+      return `**${halves(lo)}–${halves(hi)} hours** before it's baked`;
     })(),
     covers: ['1', '2 hours'],
   },
   { at: 'bake-1.timerLabel', restates: 'PLANNING_RANGE_H.temper', text: `${span('temper')} h`, covers: ['1.5–2 h'] },
   {
+    // MESSAGE-60: the heading states the range, as the summary does. It named
+    // the planning point until the waves paragraph went.
     at: 'bake-1.detail',
-    restates: 'the temper planning point, the app default',
-    holds: () => DEFAULT_INPUTS.temperH === (PLANNING_RANGE_H.temper as readonly [number, number])[0],
-    text: `**Why ${halves(DEFAULT_INPUTS.temperH)} hours.**`,
-    covers: ['1'],
+    restates: 'PLANNING_RANGE_H.temper',
+    text: (() => {
+      const [lo, hi] = PLANNING_RANGE_H.temper as readonly [number, number];
+      return `**Why ${halves(lo)}–${halves(hi)} hours.**`;
+    })(),
+    covers: ['1', '2 hours'],
   },
   {
     at: 'bake-1.detail',
@@ -732,16 +736,11 @@ const CLAIMS: readonly Claim[] = [
     text: `**Use ${DEFAULT_INPUTS.coldFermentH} h cold for now.**`,
     covers: ['24 h'],
   },
-  /**
-   * The untested lengths the concept names. Only the lower one is a bound:
-   * MESSAGE-59 raised the maximum to 48 h and baked it, so 36 h is now a
-   * length inside the range rather than its end, and it is classified rather
-   * than built. `covers` says which of the two this text produces.
-   */
+  /** The untested length the concept names, which is the range's lower bound. */
   {
     at: 'concept:schedule-architecture',
-    restates: "COLD_FERMENT_H.retarded.min, the one bound this sentence still states",
-    text: `${COLD_FERMENT_H.retarded.min} h and 36 h are inside the calculator's range`,
+    restates: 'COLD_FERMENT_H.retarded.min',
+    text: `${COLD_FERMENT_H.retarded.min} h, the calculator's minimum`,
     covers: ['6 h'],
   },
   /**
@@ -1180,20 +1179,25 @@ const FIXED: Record<Loc, readonly string[]> = {
   // the one source of each phase's duration. Each summary is claimed against
   // its timer above, and the MAX_RUN_MIN profile reads them.
   'mix-2.timerLabel': ['3–4 min'],
-  'mix-3.timerLabel': ['5–6 min'],
+  // Phase B's 7–9 is bake 3's two mixes (MESSAGE-60).
+  'mix-3.timerLabel': ['7–9 min'],
   'mix-5.timerLabel': ['3–4 min'],
   'mix-7.timerLabel': ['45–60 s'],
   // The DDT ±1 °F pass/fail gate.
   'mix-7.watchFor': ['1 °F'],
   'mix-8.detail': ['0 g', '60 g'], // illustrative residue
 
-  // Procedure: balling, trays, fridge. (bulk-1's 45–60 is PLANNING_RANGE_H, claimed.)
+  // Procedure: balling, containers, fridge. (bulk-1's 45–60 is PLANNING_RANGE_H, claimed.)
   'bulk-2.summary': ['10–15 min'],
   'bulk-2.timerLabel': ['10–15 min'],
   'bulk-4.summary': ['38–40 °F', '4 hours'],
   // A cooling time is a claim about a 265 g ball specifically, so the weight
   // is its index rather than a stale default.
   'bulk-4.detail': ['265 g', '3–4 hours', '40 °F'],
+  // MESSAGE-60. Dave's container size, the size bake 3 showed too small, and
+  // the ball weight that observation was made at.
+  'bulk-3.summary': ['24'],
+  'bulk-3.detail': ['24', '16', '265 g'],
   // MESSAGE-53. biga-6's block compares a split batch's biga with a 6-ball
   // one; mix-0's "mix 1's" is an index.
   'biga-6.detailWhen': ['6-ball'],
@@ -1210,11 +1214,10 @@ const FIXED: Record<Loc, readonly string[]> = {
   'stage:divideBall': ['10–15 min'],
   'stage:coldFerment': ['38–40 °F', '4 hours'],
   'stage:temper': ['60–65 °F'],
-  // MESSAGE-53 adds: bulk-4's 3–4 hours from 75 to 40 °F (the cooling figure
-  // the warming claim above reads); the 60–65 °F core target, as in the
-  // summary; Dave's 45-minute wave interval. Sisofo's 1–2 hours left with his
-  // name in MESSAGE-54; §11 keeps it.
-  'bake-1.detail': ['55 °F', '70 °F', '52 °F', '3–4 hours', '75', '40 °F', '60–65 °F', '45 minutes'],
+  // bulk-4's 3–4 hours from 75 to 40 °F, the cooling figure the warming claim
+  // above reads. The 60–65 °F target and the 45-minute waves left with the
+  // waves paragraph (MESSAGE-60).
+  'bake-1.detail': ['55 °F', '70 °F', '52 °F', '3–4 hours', '75', '40 °F'],
   'bake-2.summary': ['750 °F', '60–90 s', '15–20 s'],
   'bake-2.detail': ['750', '750 °F', '800 °F', '15–20 s', '9–18'],
   'bake-2.troubleshoot': ['1 cm', '15 s', '5–10 s'],
@@ -1225,13 +1228,12 @@ const FIXED: Record<Loc, readonly string[]> = {
   // claimed above.
   'concept:formula-rationale': ['60–90 second', '12.5%', '44–50%', '45%', '00'],
   // "48 h" and "48-hour" are bake 2's result and the full batch that would
-  // decide the default; the range itself is claimed in the title. "36 h" is an
-  // untested length inside the range, no longer its end (MESSAGE-59).
+  // decide the default; the range itself is claimed in the title.
   // "38–39 °F" is Dave's fridge setting on bake 2. PizzaBlab's 12–24 h and biga
   // lunga's 24 h at 39 °F are published; so is Sisofo's 24 h in the fridge,
   // which shares its literal with the claimed default and so is covered by
   // that claim at this location's granularity.
-  'concept:schedule-architecture': ['48 h', '48-hour', '36 h', '38–39 °F', '12–24 h', '39 °F'],
+  'concept:schedule-architecture': ['48 h', '48-hour', '38–39 °F', '12–24 h', '39 °F'],
   // "Multiply DDT by 4" is the standard method being rejected. "Bake 1" is the
   // bake's number. The 100 °F and 110 °F figures are claimed above.
   'concept:thermal-model': ['4', '12-ball', '6-ball', '3 balls', '1'],
@@ -1558,6 +1560,29 @@ describe('§8.1 numbers in component copy are classified too', () => {
 
     const offenders = [...copy, ...content].filter((t) => RETIRED.some((re) => re.test(t)));
     expect(offenders, 'the log corrects Phase C alone (§4.3)').toEqual([]);
+  });
+
+  /**
+   * MESSAGE-60 C1: one ball per lidded deli container. Our copy and the
+   * timeline's stage text say containers, as bulk-3 and bulk-4 do. §8 itself
+   * may say "tray" (bake-1's cooling estimate is for a ball on an open tray),
+   * so the generated steps aren't read here; the stage text is.
+   */
+  it('says trays nowhere in our copy (MESSAGE-60)', () => {
+    const copy = (readdirSync('src', { recursive: true }) as string[])
+      .filter((f) => f.endsWith('.tsx'))
+      .flatMap((f) => copyIn(readFileSync(join('src', f), 'utf8')).map((text) => `${f}: ${text}`));
+    expect(copy.length, 'the walker read no copy').toBeGreaterThan(100);
+    const stages = [...CONTENT.entries()].filter(([loc]) => loc.startsWith('stage:')).map(([loc, text]) => `${loc}: ${text}`);
+    expect(stages.length, 'no stage text read').toBeGreaterThan(5);
+    // recipeText.ts builds copy the walker doesn't read; its string literals
+    // are checked as source, which is enough for one word.
+    const recipeText = readFileSync('src/lib/recipeText.ts', 'utf8')
+      .split('\n')
+      .filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l))
+      .map((l) => `recipeText.ts: ${l}`);
+    const offenders = [...copy, ...stages, ...recipeText].filter((t) => /\btrays?\b/i.test(t));
+    expect(offenders, 'balls go into containers (bulk-3)').toEqual([]);
   });
 
   it('keeps no stale entry', () => {

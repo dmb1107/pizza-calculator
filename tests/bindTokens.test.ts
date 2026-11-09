@@ -223,8 +223,9 @@ describe('step summaries bind to real numbers', () => {
     expect(bindTokens(step('biga-4b')?.summary ?? '', values)).toContain(
       'for **18–20 hours**. The timeline plans 19 h.',
     );
+    // MESSAGE-60: per ball, with the planning point still beside the range.
     expect(bindTokens(step('bake-1')?.summary ?? '', values)).toContain(
-      '**1½–2 hours** before the first launch; the timeline plans 1.5 h.',
+      '**1½–2 hours** before it\'s baked; the timeline plans 1.5 h before the first launch.',
     );
   });
 

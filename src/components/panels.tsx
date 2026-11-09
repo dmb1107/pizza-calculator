@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Panel } from './Panel';
 import { Markdown } from './Markdown';
 import { CAPACITY } from '../content/capacity';
-import { conceptById } from '../content/concepts';
+import { ConceptLink } from './ConceptLink';
+import { PAGE_CONCEPT_LINKS } from '../lib/conceptLinks';
 import { Badge, NumberField, SegmentedField, SliderField, Stepper } from './fields';
 import { BOUNDS, COLD_FERMENT_H } from '../state/defaults';
 import { BIGA_ROOM_TEMP_H, PLANNING_RANGE_H } from '../lib/timeline';
@@ -34,8 +35,8 @@ const SCHEDULE_OPTIONS: { value: Schedule; label: string; description: string }[
   },
 ];
 
-export function BatchPanel(s: AppState) {
-  const { inputs, setInput, commitNumber, stepNumber, panels, togglePanel, ballsSplitHint } = s;
+export function BatchPanel(s: AppState & { onOpenConcept: (id: string) => void }) {
+  const { inputs, setInput, commitNumber, stepNumber, panels, togglePanel, ballsSplitHint, onOpenConcept } = s;
   const scheduleLabel = inputs.schedule === 'retarded' ? 'Retarded' : 'Classic RT';
   // §7.3: stepping below 3 shows why, next to the field. Cleared by the next step up.
   const [belowMin, setBelowMin] = useState(false);
@@ -75,15 +76,19 @@ export function BatchPanel(s: AppState) {
           max={BOUNDS.ballWeightG.max}
           step={BOUNDS.ballWeightG.step}
         />
-        <SliderField
-          label="Cold ferment"
-          unit=" h"
-          value={inputs.coldFermentH}
-          onChange={(v) => setInput('coldFermentH', v)}
-          min={COLD_FERMENT_H[inputs.schedule].min}
-          max={COLD_FERMENT_H[inputs.schedule].max}
-          hint="The biga does nearly all the fermentation, so extra time goes into the biga and the ball proof stays short."
-        />
+        {/* §6 Panel 1: the slider links schedule-architecture, where the length is chosen. */}
+        <div className="flex flex-col gap-2">
+          <SliderField
+            label="Cold ferment"
+            unit=" h"
+            value={inputs.coldFermentH}
+            onChange={(v) => setInput('coldFermentH', v)}
+            min={COLD_FERMENT_H[inputs.schedule].min}
+            max={COLD_FERMENT_H[inputs.schedule].max}
+            hint="The biga does nearly all the fermentation, so extra time goes into the biga and the ball proof stays short."
+          />
+          <ConceptLink id={PAGE_CONCEPT_LINKS.coldFerment} onOpen={onOpenConcept} />
+        </div>
         <SegmentedField
           legend="Schedule"
           value={inputs.schedule}
@@ -106,9 +111,6 @@ const FRICTION_HINT: Record<1 | 2 | 3 | 4, string> = {
   3: 'No bakes at this mix size yet, so this is the nearest logged size, held flat.',
   4: 'Your bake log has no bake yet with every reading and phase time. The first one replaces this at every mix size.',
 };
-
-/** §8.3: the calibration panel links `friction-factor`. */
-const FRICTION_CONCEPT_ID = 'friction-factor';
 
 export function CalibrationPanel(s: AppState & { onOpenLog: () => void; onOpenConcept: (id: string) => void }) {
   const { inputs, panels, togglePanel, friction, calibration, setDdtOverride, autoDdtF, ddtF, mixSize, onOpenLog, onOpenConcept } = s;
@@ -141,14 +143,8 @@ export function CalibrationPanel(s: AppState & { onOpenLog: () => void; onOpenCo
             >
               Open the bake log
             </button>
-            {/* §7.5: a concept link reads "Read more: {title}". */}
-            <button
-              type="button"
-              onClick={() => onOpenConcept(FRICTION_CONCEPT_ID)}
-              className="min-h-touch rounded-lg border border-stone-300 px-3 text-sm font-medium active:bg-stone-100 dark:border-stone-600 dark:active:bg-stone-800"
-            >
-              Read more: {conceptById(FRICTION_CONCEPT_ID)?.title ?? FRICTION_CONCEPT_ID}
-            </button>
+            {/* §8.3: the Calibration panel links friction-factor. */}
+            <ConceptLink id={PAGE_CONCEPT_LINKS.calibration} onOpen={onOpenConcept} />
           </div>
         </div>
 

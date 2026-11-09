@@ -49,7 +49,7 @@ Once this has run cleanly three or four times, moving to 80% or 100% biga is a s
 
 That's the reverse of a lightly prefermented dough that develops its flavor over days in the fridge, and **a full-strength biga in front of a long cold ferment risks two complete fermentations.** Biga doughs that do spend a day or more in the fridge carry less yeast: Julian Sisofo's contemporary dough uses under half this recipe's dose per gram of biga flour, then gives the bulk and the balls each either a room-temperature rise or 24 h in the fridge.
 
-**Use 24 h cold for now.** 24 h and 48 h have both been baked: from one dough, with the fridge at 38–39 °F, the 48-hour balls had more flavor and didn't over-proof. A full batch at 48 h will decide the default. 6 h and 36 h are inside the calculator's range but untested.
+**Use 24 h cold for now.** 24 h and 48 h have both been baked: from one dough, with the fridge at 38–39 °F, the 48-hour balls had more flavor and didn't over-proof. A full batch at 48 h will decide the default. 6 h, the calculator's minimum, hasn't been baked.
 
 On the classic track the biga ripens fully at room temperature first, so the dough gets only 6–8 hours cold.
 
@@ -83,7 +83,7 @@ With a fridge-retarded biga you'll usually need **warm** water. The biga's therm
     title: "Measuring your own friction factor",
     body: `**FF = 14.0 °F, measured** on bake 1, 21 August 2026, with 6 balls. The Phase C friction rate agrees: 1.00 °F/min on the dough and bowl together is 1.11 °F/min for the dough alone, against 1.08 predicted.
 
-**That mix ran long.** Its Phase C took 6.5 minutes, 3 more than the middle of the range, and at about a degree a minute that extra time is inside the 14.0. Taken out, bake 1 comes to **10.8**, and that's the figure the calculator uses at every batch size until you log a fully measured bake of your own. Bake 1's other phases also ran over, by an amount it didn't record, so 10.8 may still be a little high. A figure that's too high leaves the dough cool, which the probe step and the longer rise after balling both correct.
+**That mix ran long.** Its Phase C took 6.5 minutes, 3 more than the middle of the range, and at about a degree a minute that extra time is inside the 14.0. Taken out, bake 1 comes to **10.8**, and that's the figure the calculator uses at every batch size until you log a fully measured bake of your own.
 
 **FF is the temperature rise the mixer produces in the dough alone.** That's why the work term is \`FF × Ct\` and not \`FF × (Ct + C_bowl)\`.
 
@@ -143,8 +143,8 @@ So an unstable kitchen affects flavor as well as timing, which is why the fridge
   },
   {
     id: "oil-not-flour",
-    title: "Why the trays get oil",
-    body: `The full explanation is in the *Onto trays* step. In short: flour draws water out of the dough surface, so over a long cold ferment you get gluey patches and a dry skin at once. Flour dusting assumes wooden boxes that breathe; aluminum doesn't.`,
+    title: "Why the containers get oil",
+    body: `The full explanation is in the *Into containers* step. In short: flour draws water out of the dough surface, so over a long cold ferment you get gluey patches and a dry skin at once. Flour dusting assumes wooden boxes that breathe; plastic doesn't.`,
   },
   {
     id: "burn-ring",
