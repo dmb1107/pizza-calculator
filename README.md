@@ -18,7 +18,8 @@ returns:
   biga and bowl readings it is computed from, so a batch that is more than the
   Halo Core holds, and splits, gets one target per mix;
 - a timeline with real clock times, planned forward from the biga start or
-  backward from the bake time;
+  backward from the bake time; a batch that splits is planned from its last
+  dough, with each earlier dough's bulk and rise end times beside it;
 - a guided step list with timers and mixer speeds drawn as the Core's lit
   segments, where every step expands into the reasoning behind it, and longer
   background pieces open from the steps, the cold-ferment slider, the
@@ -49,7 +50,8 @@ their hands.
 Tasks 0–11 are done and the site is live. The bake log (Task 11) was built
 across MESSAGE-45 to MESSAGE-50; MESSAGE-51 to 53 were Dave's recipe review,
 MESSAGE-54 moved the day's readings into the steps, and bakes 2 and 3
-(MESSAGE-59 and 60) are the first the log counts. See
+(MESSAGE-59 and 60) are the first the log counts. Since MESSAGE-61 each
+mix of a split batch runs on its own clock, with its own rise and timers. See
 [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
 ## Home screen icon

@@ -82,14 +82,6 @@ function table(chunk: string, marker: string): { headers: string[]; rows: string
   return { headers: raw[0] as string[], rows: raw.slice(2) };
 }
 
-/** §8.2's step-level warning blocks, e.g. "warning, shown when `staggerUncentred > 2`". */
-function conditionalWarning(chunk: string): { condition: string; text: string } | undefined {
-  const m = /^\*\*warning, shown when `([^`]+)`:\*\*$/m.exec(chunk);
-  if (!m) return undefined;
-  const text = blockquote(chunk, m[0]);
-  return text ? { condition: m[1] as string, text } : undefined;
-}
-
 /**
  * §8.2's conditional detail blocks, e.g. "detail, shown only when `nMix > 1`".
  *
@@ -122,7 +114,6 @@ const KNOWN_MARKERS = [
   /^repeatsPerMix$/,
   /^shown only when$/,
   /^detail, shown only when `[^`]+`$/,
-  /^warning, shown when `[^`]+`$/,
 ];
 
 const markersIn = (chunk: string) => [...chunk.matchAll(/^\*\*([^*\n]+?):\*\*/gm)].map((m) => m[1] as string);
@@ -177,7 +168,6 @@ const specSteps = SPEC.slice(SPEC.indexOf('### 8.2 Steps'), SPEC.indexOf('### 8.
       detailWhen: conditionalDetails(chunk)[0],
       conditionalBlocks: conditionalDetails(chunk).length,
       markers: markersIn(chunk),
-      warningWhen: conditionalWarning(chunk),
       troubleshoot: table(chunk, '**troubleshoot:**'),
       // §8.2a names the repeating span in prose (above). Only `mix-8` carries
       // the explicit marker, for `suppressOnFinal`.
@@ -266,7 +256,6 @@ describe('§8.2 steps are reproduced verbatim', () => {
     expect(step.concepts, `${id} concepts`).toEqual(spec.concepts?.split(/\s*,\s*|\s+/));
     expect(step.troubleshoot, `${id} troubleshoot`).toEqual(spec.troubleshoot);
     expect(step.detailWhen, `${id} conditional detail`).toEqual(spec.detailWhen);
-    expect(step.warningWhen, `${id} conditional warning`).toEqual(spec.warningWhen);
     expect(step.repeatsPerMix ?? false, `${id} repeatsPerMix`).toBe(spec.repeatsPerMix);
     expect(step.suppressOnFinal ?? false, `${id} suppressOnFinal`).toBe(spec.suppressOnFinal);
   });
@@ -424,7 +413,9 @@ describe('§11 sources are reproduced verbatim', () => {
  * grammar is read the same way twice.
  */
 describe('§7.3 capacity messages are reproduced verbatim', () => {
-  const section = SPEC.slice(SPEC.indexOf('#### Capacity'), SPEC.indexOf('#### The stagger warning'));
+  // From the heading to the next heading of any level, by regex: the
+  // generator finds the same end by walking lines.
+  const section = /^#### Capacity[^\n]*\n[\s\S]*?(?=^#)/m.exec(SPEC)?.[0] ?? '';
   const panel1 = SPEC.slice(SPEC.indexOf('### Panel 1'), SPEC.indexOf('### Panel 2'));
   const blockquoteAfter = (label: string) => {
     const m = new RegExp(`^${label.replace(/[*.?()]/g, '\\$&')}[^\\n]*\\n> (.+)$`, 'm').exec(section);
@@ -442,6 +433,7 @@ describe('§7.3 capacity messages are reproduced verbatim', () => {
     ['belowMinimum', blockquoteAfter('- **As a guard')],
     ['minimumAtInput', quotedAfter(section, 'shows, next to the field:')],
     ['splitHint', quotedAfter(panel1, 'show beside the field:')],
+    ['raisedToEven', quotedAfter(panel1, 'the field shows:')],
   ] as const)('%s matches the spec', (key, spec) => {
     expect(spec, `${key} not found in the spec`).toBeDefined();
     expect(CAPACITY[key]).toBe(spec);
@@ -451,7 +443,10 @@ describe('§7.3 capacity messages are reproduced verbatim', () => {
     // Three conditions carry a blockquote; a fourth would be a message nothing
     // renders. MESSAGE-53 removed the biga split's.
     expect((section.match(/^> /gm) ?? []).length).toBe(3);
-    expect(Object.keys(CAPACITY)).toHaveLength(6);
+    expect(Object.keys(CAPACITY)).toHaveLength(7);
+    // The section ends at the next heading, whatever it's called.
+    expect(section).toContain('**Below the minimum.**');
+    expect(section).not.toContain('Placing guidance');
   });
 });
 

@@ -4,16 +4,17 @@ import { CONCEPTS } from '../src/content/concepts';
 import { ABOUT_INTRO, REFERENCE, SOURCES } from '../src/content/reference';
 import { CAPACITY } from '../src/content/capacity';
 import { NEAR_LIMIT_FRACTION } from '../src/lib/capacity';
-import { C, bowlHeatCapacity, defaultDdtF, rpmForDial } from '../src/lib/constants';
+import { C, bowlHeatCapacity, rpmForDial } from '../src/lib/constants';
+import { splitsEvenly } from '../src/lib/ballCounts';
 import {
   calculate,
   computeCapacity,
   computeFormula,
   computeProbeTargetF,
-  computeRoomMinutes,
   computeThermal,
   computeWaterTempF,
   ballsPerMix,
+  defaultDdtFor,
   observedRate,
 } from '../src/lib/engine';
 import { PLANNING_RANGE_H, STAGE_INFO, stageDurations, type StageKey } from '../src/lib/timeline';
@@ -146,9 +147,12 @@ const ctOverTot = (balls: number) => {
   return t.cTotal / t.cSystem;
 };
 
+/** The default DDT at `balls` x 265 g: by balls per mix since MESSAGE-61. */
+const ddtAt = (balls: number, ballWeightG: number = C.DEFAULT_BALL_G) => defaultDdtFor({ balls, ballWeightG });
+
 /** Probe target at the batch's default DDT. No FF term since MESSAGE-52. */
 const probeAt = (balls: number, roomTempF: number) =>
-  computeProbeTargetF({ ddtF: defaultDdtF(balls), roomTempF, thermal: thermalAt(balls) });
+  computeProbeTargetF({ ddtF: ddtAt(balls), roomTempF, thermal: thermalAt(balls) });
 
 /** The FF in use at a batch before the log has a counted bake (§6, Panel 2). */
 const ffBeforeLog = (balls: number, ballWeightG: number = C.DEFAULT_BALL_G) =>
@@ -243,7 +247,7 @@ interface Claim {
 
 /** §4.7's bigaRoomTemp, the retarded biga's hours at room temperature. */
 const BIGA_ROOM_H = stageDurations('retarded', {
-  bigaFridgeH: 19, bigaRoomOnlyH: 16, ballRoomTempH: 1.5, nMix: 1, balls: 6, coldFermentH: 24, temperH: 1.5,
+  bigaFridgeH: 19, bigaRoomOnlyH: 16, ballRoomTempH: 1.5, earlierRisesH: [], nMix: 1, ballsPerMix: 6, coldFermentH: 24, temperH: 1.5,
 }).bigaRoomTemp;
 
 /**
@@ -523,12 +527,6 @@ const CLAIMS: readonly Claim[] = [
   { at: 'mix-8.timerLabel', restates: 'CHANGEOVER_H', text: `${fx(C.CHANGEOVER_H * 60, 0)} min`, covers: ['5 min'] },
 
   // --- warnings and capacities -----------------------------------------------
-  {
-    at: 'bulk-1.warningWhen',
-    restates: "§4.8's floor, read off computeRoomMinutes for a warm dough",
-    text: `its ${fx(computeRoomMinutes({ finalDoughTempF: 90, ddtF: 75 }), 0)}-minute floor`,
-    covers: ['45-minute'],
-  },
   { at: 'biga-1.detail', restates: 'BIGA_HYDRATION', text: `In a stiff ${fx(C.BIGA_HYDRATION * 100, 0)}% biga`, covers: ['50%'] },
   {
     // MESSAGE-54: the step names no source; AVPN's per-liter figures stay in
@@ -654,10 +652,11 @@ const CLAIMS: readonly Claim[] = [
   { at: 'bulk-1.summary', restates: 'PLANNING_RANGE_H.bulkRest', text: `${span('bulkRest', 60)} min at room temperature`, covers: ['45–60 min'] },
   { at: 'bulk-1.timerLabel', restates: 'PLANNING_RANGE_H.bulkRest', text: `${span('bulkRest', 60)} min`, covers: ['45–60 min'] },
   {
-    at: 'bulk-3.detailWhen',
-    restates: '§4.8 ROOM_MIN_CLAMP, the rise floor plannedBallRiseH holds',
-    text: `never below ${C.ROOM_MIN_CLAMP[0]} minutes`,
-    covers: [`${C.ROOM_MIN_CLAMP[0]} minutes`],
+    // MESSAGE-61: each dough bulks on its own clock, for the step's own range.
+    at: 'bulk-1.detailWhen',
+    restates: 'PLANNING_RANGE_H.bulkRest',
+    text: `each still gets its own ${span('bulkRest', 60)} minutes`,
+    covers: ['45–60 minutes'],
   },
   {
     // "1½–2 hours" extracts as "1" and "2 hours": the pattern stops at ½.
@@ -842,10 +841,11 @@ const CLAIMS: readonly Claim[] = [
         for (let w = BOUNDS.ballWeightG.min; w <= BOUNDS.ballWeightG.max; w++) {
           const f = computeFormula({ balls, ballWeightG: w });
           const nMix = computeCapacity(f).nMix;
-          if (nMix === 1) continue;
+          // Split batches the app allows (§6, MESSAGE-61).
+          if (nMix === 1 || !splitsEvenly(balls, w)) continue;
           // Linear in the biga, so its ends bound the envelope.
           for (const bigaTempF of [45, 60]) {
-            const t = { ddtF: defaultDdtF(balls), frictionFactorF: 14, bigaTempF, flourTempF: roomTempF, roomTempF };
+            const t = { ddtF: ddtAt(balls, w), frictionFactorF: 14, bigaTempF, flourTempF: roomTempF, roomTempF };
             const low =
               computeWaterTempF(t, computeThermal(f, C.BOWL_MASS_G, nMix)) -
               computeWaterTempF(t, computeThermal(f, C.BOWL_MASS_G, 1));
@@ -860,9 +860,12 @@ const CLAIMS: readonly Claim[] = [
     return [
       {
         at: 'concept:thermal-model',
-        restates: 'batch-total model against per-mix, every split batch in the §5 envelope (1.497 at 19 x 257 g; 6.185 at 9 x 272 g, tied with 17 x 288 and 18 x 272)',
+        restates: 'batch-total model against per-mix, every allowed split batch in the §5 envelope (1.495 at 20 x 244 g; 6.385 at 18 x 272 g)',
         text: `by ${fx(at70.lo, 1)} to ${fx(at70.hi, 1)} °F across the supported range`,
         covers: ['1.5', '6.2 °F'],
+        // MESSAGE-61 moved §4.2's range to 1.5–6.4 (18 x 272 g at DDT 75, and
+        // 9 x 272 g gone), and this concept wasn't swept with it.
+        knownWrong: { reads: 'by 1.5 to 6.2 °F across the supported range', see: 'FINDINGS-62 §4' },
       },
       {
         at: 'concept:thermal-model',
@@ -883,7 +886,7 @@ const CLAIMS: readonly Claim[] = [
     restates: 'maximum required water at 3 and 9 balls — the hot corner, biga 45, room 60, at the FF in use',
     text: (() => {
       const hot = (b: number) =>
-        computeWaterTempF({ ddtF: defaultDdtF(b), frictionFactorF: ffBeforeLog(b), bigaTempF: 45, flourTempF: 60, roomTempF: 60 }, thermalAt(b));
+        computeWaterTempF({ ddtF: ddtAt(b), frictionFactorF: ffBeforeLog(b), bigaTempF: 45, flourTempF: 60, roomTempF: 60 }, thermalAt(b));
       return `the requirement reaches about ${fx(hot(3), 0)} °F, against ${fx(hot(9), 0)} °F for a 9-ball mix`;
     })(),
     covers: ['116 °F', '9-ball', '100 °F'],
@@ -892,7 +895,7 @@ const CLAIMS: readonly Claim[] = [
     at: 'concept:thermal-model',
     restates: 'a skipped temper (biga 45) in a 70 °F kitchen, 3 × 265 g, at the FF in use: 112.15',
     holds: () =>
-      computeWaterTempF({ ddtF: defaultDdtF(3), frictionFactorF: ffBeforeLog(3), bigaTempF: 45, flourTempF: 70, roomTempF: 70 }, thermalAt(3)) > 110,
+      computeWaterTempF({ ddtF: ddtAt(3), frictionFactorF: ffBeforeLog(3), bigaTempF: 45, flourTempF: 70, roomTempF: 70 }, thermalAt(3)) > 110,
     text: 'at 3 balls the requirement goes past 110 °F',
     covers: ['110 °F'],
   },
@@ -1292,11 +1295,12 @@ describe('§8.1 every literal that restates a computed value matches the engine'
     }
   });
 
-  it('pins no known discrepancy at present', () => {
-    // All three pins so far came off when the spec was corrected: mix-5's 2.0
-    // in MESSAGE-18, "between 2 and 5" in MESSAGE-19, §9's 80% = 250 RPM in
-    // MESSAGE-28. Adding one is a decision.
-    expect(CLAIMS.filter((c) => c.knownWrong).map((c) => c.at)).toEqual([]);
+  it('pins only the known discrepancies, each a decision', () => {
+    // The first three came off when the spec was corrected: mix-5's 2.0 in
+    // MESSAGE-18, "between 2 and 5" in MESSAGE-19, §9's 80% = 250 RPM in
+    // MESSAGE-28. thermal-model's 6.2 is FINDINGS-62's: §4.2 moved to 6.4 in
+    // MESSAGE-61 and the concept didn't.
+    expect(CLAIMS.filter((c) => c.knownWrong).map((c) => c.at)).toEqual(['concept:thermal-model']);
   });
 });
 

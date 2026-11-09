@@ -229,18 +229,30 @@ describe('step summaries bind to real numbers', () => {
     );
   });
 
-  it('states both of bulk-3\'s rises at a split batch, rather than a subtraction', () => {
-    // MESSAGE-33: two displayed values, each rounded once from the engine.
-    // Before it, "90 min … up to 18 off" sat beside a summary of 73.
-    const block = STEPS.find((s) => s.id === 'bulk-3')!.detailWhen!.detail;
-    const at = (balls: number, finalDoughTempF?: number) =>
-      bindTokens(block, tokenValues(calculate({ ...INPUTS, balls, finalDoughTempF }), SCHEDULE));
-    // 12 balls, dough on its DDT of 74 °F: 90 per dough, 72.5 planned.
-    expect(at(12)).toContain('At 74.0 °F a single mix would rest 90 min; this batch rests 73.');
-    // 24 balls at a measured 76 °F: 80.2 per dough, 45.2 planned, above the floor.
-    expect(at(24, 76)).toContain('At 76.0 °F a single mix would rest 80 min; this batch rests 45.');
-    // At 77 °F: 75.6 per dough, and the correction is held at the 45-minute floor.
-    expect(at(24, 77)).toContain('At 77.0 °F a single mix would rest 76 min; this batch rests 45.');
+  it("states every dough's rise and reading in bulk-3, at one, two and three mixes (§4.10, MESSAGE-61)", () => {
+    const bulk3 = STEPS.find((s) => s.id === 'bulk-3')!;
+    const at = (balls: number, finalDoughTempF?: (number | null)[] | number) => {
+      const t = tokenValues(calculate({ ...INPUTS, balls, finalDoughTempF }), SCHEDULE);
+      return { summary: bindTokens(bulk3.summary, t), values: bindTokens(bulk3.values!.join(' · '), t), t };
+    };
+    // One mix: one rise, one reading.
+    expect(at(6, 73).summary).toContain('at room temperature for **101 min**,');
+    expect(at(6, 73).values).toBe('Room time: 101 min (final dough 73.0 °F against DDT 75.0 °F)');
+    // Two: §5's split-batch vector, 73.0 and 75.0 at DDT 75 rise 101 and 90.
+    expect(at(12, [73, 75]).summary).toContain('**101 min for dough 1 and 90 for dough 2**');
+    expect(at(12, [73, 75]).values).toBe(
+      'Room time: 101 min for dough 1 and 90 for dough 2 (final dough 73.0 and 75.0 °F against DDT 75.0 °F)',
+    );
+    // A dough not yet read plans at DDT, and prints DDT as its reading.
+    expect(at(12, [73, null]).t.finalDoughTemp).toBe('73.0 and 75.0');
+    // Three, at DDT 74 (8 balls per mix).
+    expect(at(24, [74, 74.5, 75]).t.riseByDough).toBe('90 min for dough 1, 87 for dough 2 and 85 for dough 3');
+    expect(at(24, [74, 74.5, 75]).t.finalDoughTemp).toBe('74.0, 74.5 and 75.0');
+    // `{roomMin}` is one dough's: the last, unless a per-dough timer names one.
+    const r = calculate({ ...INPUTS, balls: 12, finalDoughTempF: [73, 75] });
+    expect(tokenValues(r, SCHEDULE).roomMin).toBe('90');
+    expect(tokenValues(r, SCHEDULE, 1, 1).roomMin).toBe('101');
+    expect(tokenValues(r, SCHEDULE, 1, 2).roomMin).toBe('90');
   });
 
   it('fills mix-4 with the probe target', () => {

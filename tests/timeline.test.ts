@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { C } from '../src/lib/constants';
-import { computeRoomMinutes, mixStaggerH } from '../src/lib/engine';
+import { computeRoomMinutes, mixEndsAtH } from '../src/lib/engine';
 import {
   buildTimeline,
+  earlierDoughPhrase,
   formatDuration,
   formatStageDuration,
   fromDatetimeLocal,
@@ -25,10 +26,20 @@ const DEFAULTS: ScheduleAdjustments = {
   bigaFridgeH: 19,
   bigaRoomOnlyH: 16,
   ballRoomTempH: 1.5,
+  earlierRisesH: [],
   nMix: 1,
-  balls: 6,
+  ballsPerMix: 6,
   coldFermentH: 24,
   temperH: 1.5,
+};
+
+/**
+ * A split batch on DDT (MESSAGE-61): `nMix` doughs of `ballsPerMix`, every
+ * earlier dough rising as long as the last unless told otherwise.
+ */
+const split = (nMix: number, ballsPerMix: number, o: Partial<ScheduleAdjustments> = {}): ScheduleAdjustments => {
+  const ballRoomTempH = o.ballRoomTempH ?? DEFAULTS.ballRoomTempH;
+  return { ...DEFAULTS, nMix, ballsPerMix, ballRoomTempH, earlierRisesH: Array(nMix - 1).fill(ballRoomTempH), ...o };
 };
 
 /** Classic's defaults: its cold ferment is 6–8 h, default 6 (MESSAGE-53). */
@@ -140,10 +151,10 @@ describe('§4.7 stage durations', () => {
       // 10 × 240 g, the largest single mix, with a 20 h fridge and a 2 h
       // temper. Both ends are tight.
       const lowest: ScheduleAdjustments = {
-        bigaFridgeH: 18, bigaRoomOnlyH: 16, ballRoomTempH: 45 / 60, nMix: 1, balls: 3, coldFermentH: 24, temperH: 1.5,
+        bigaFridgeH: 18, bigaRoomOnlyH: 16, ballRoomTempH: 45 / 60, earlierRisesH: [], nMix: 1, ballsPerMix: 3, coldFermentH: 24, temperH: 1.5,
       };
       const highest: ScheduleAdjustments = {
-        bigaFridgeH: 20, bigaRoomOnlyH: 16, ballRoomTempH: 180 / 60, nMix: 1, balls: 10, coldFermentH: 24, temperH: 2,
+        bigaFridgeH: 20, bigaRoomOnlyH: 16, ballRoomTempH: 180 / 60, earlierRisesH: [], nMix: 1, ballsPerMix: 10, coldFermentH: 24, temperH: 2,
       };
       expect(overheadOf(lowest)).toBeCloseTo(25.0208, 4);
       expect(overheadOf(highest)).toBeCloseTo(29.9167, 4);
@@ -156,16 +167,19 @@ describe('§4.7 stage durations', () => {
       }
     });
 
-    it('scales divide-and-ball with the total ball count (MESSAGE-53)', () => {
-      // 12.5 min plus 1.25 per ball, written out: 16.25 at 3, 20 at 6,
-      // 23.75 at 9, 27.5 at 12, 35 at 18, 42.5 at 24.
-      for (const [balls, minutes] of [[3, 16.25], [6, 20], [9, 23.75], [12, 27.5], [18, 35], [24, 42.5]] as const) {
+    it('scales divide-and-ball with balls per mix (MESSAGE-61)', () => {
+      // 12.5 min plus 1.25 per ball of the last dough, written out: 16.25 at
+      // 3, 20 at 6, 23.75 at 9; 20 at 12 balls in two mixes, 22.5 at 24 in
+      // three. Total balls set it from MESSAGE-53 until each dough divided on
+      // its own.
+      for (const [ballsPerMix, minutes] of [[3, 16.25], [6, 20], [9, 23.75], [8, 22.5]] as const) {
         for (const schedule of ['retarded', 'classic'] as const) {
-          expect(stageDurations(schedule, { ...DEFAULTS, balls }).divideBall * 60, `${balls} balls`).toBeCloseTo(minutes, 9);
+          expect(stageDurations(schedule, { ...DEFAULTS, ballsPerMix }).divideBall * 60, `${ballsPerMix} per mix`).toBeCloseTo(minutes, 9);
         }
       }
+      expect(stageDurations('retarded', split(2, 6)).divideBall).toBe(stageDurations('retarded', DEFAULTS).divideBall);
       // Timeline only: the rise after balling is not shortened for it.
-      expect(stageDurations('retarded', { ...DEFAULTS, balls: 12 }).ballRoomTemp).toBe(
+      expect(stageDurations('retarded', { ...DEFAULTS, ballsPerMix: 9 }).ballRoomTemp).toBe(
         stageDurations('retarded', DEFAULTS).ballRoomTemp,
       );
     });
@@ -197,133 +211,52 @@ describe('§4.7 stage durations', () => {
       expect(total({ ballRoomTempH: 2 })).toBeCloseTo(51.3333, 4);
     });
 
-    it('keeps stagger on the planning basis, tied to the timeline', () => {
-      // ⚠️ §5 names THREE wall-clock bases for a mix, spanning 12 minutes:
-      //   nominal mid-range 23.9 · phase maxima 27.0 · planning 30.0
-      //
-      // `stagger` uses the planning basis, and must: it and the timeline are
-      // the same quantity — how long a mix takes — so rebasing one decouples
-      // the correction from the schedule it corrects. On the maxima basis the
-      // stagger would be 32 min and the rise cut 16.0 rather than 17.5, and
-      // the schedule and the correction would describe different sessions.
-      //
-      // Pinned because the tempting "improvement" is to notice the duty-cycle
-      // figure uses maxima and conclude this should too. If one moves, both
-      // move.
+    it('times the mix stage on the planning basis', () => {
+      // ⚠️ §5 names THREE wall-clock bases for a mix: nominal mid-range 26.4,
+      // phase maxima 30.0, planning 30.0 (equal since MESSAGE-60's Phase B,
+      // a coincidence, not a reason to rebase). The timeline uses the
+      // planning number, and so does each dough's own clock: dough k's mix
+      // ends at k mixes and k − 1 changeovers.
       const planningMixH = stageDurations('retarded', DEFAULTS).mix;
       expect(planningMixH, 'one mix on the planning basis').toBeCloseTo(0.5, 6);
-      expect(mixStaggerH(2) * 60, 'stagger at nMix 2').toBeCloseTo(35, 6);
-      expect(mixStaggerH(2) / 2, 'half the stagger, hours').toBeCloseTo(
-        (planningMixH + C.CHANGEOVER_H) / 2,
-        6,
-      );
-
-      // What the maxima basis would give, so the difference is visible.
-      const maximaMixH = 27 / 60;
-      expect((maximaMixH + C.CHANGEOVER_H) * 60, 'maxima-based stagger').toBeCloseTo(32, 6);
+      for (const k of [1, 2, 3]) {
+        expect(mixEndsAtH(k), `mix ${k} ends`).toBeCloseTo(0.5 * k + C.CHANGEOVER_H * (k - 1), 12);
+        expect(stageDurations('retarded', split(k, 6)).mix, `the mix stage at nMix ${k}`).toBeCloseTo(mixEndsAtH(k), 12);
+      }
     });
 
     it('adds a second mix and a changeover at nMix 2', () => {
       // §4.7: `mix` was a flat 0.5 h and counted one mix for a 12-ball batch
       // that runs two back to back. 0.5 × 2 + 0.0833 = 1.083 h.
       const one = stageDurations('retarded', DEFAULTS);
-      const two = stageDurations('retarded', { ...DEFAULTS, nMix: 2 });
+      const two = stageDurations('retarded', split(2, 6));
       expect(one.mix).toBeCloseTo(0.5, 4);
       expect(two.mix).toBeCloseTo(0.5 * 2 + C.CHANGEOVER_H, 4);
-      expect(mixStaggerH(1)).toBe(0);
-      expect(mixStaggerH(2) * 60).toBeCloseTo(35, 1);
     });
 
-    it('subtracts half the stagger from the ball rise, centring the error', () => {
-      // ⚠️ This CENTRES the spread rather than removing it: at nMix 2 the first
-      // dough goes from +35 to +17.5 min and the second from 0 to −17.5. One
-      // clock cannot do better, and halving the worst case is the whole gain.
-      const one = stageDurations('retarded', { ...DEFAULTS, ballRoomTempH: 1.5 });
-      const two = stageDurations('retarded', { ...DEFAULTS, ballRoomTempH: 1.5, nMix: 2 });
-      expect(one.ballRoomTemp * 60).toBeCloseTo(90, 1);
-      // §4.7 says "90 min becomes 72"; the exact arithmetic is 72.5.
-      expect(two.ballRoomTemp * 60).toBeCloseTo(72.5, 1);
-      expect((one.ballRoomTemp - two.ballRoomTemp) * 60).toBeCloseTo(
-        (mixStaggerH(2) / 2) * 60,
-        1,
-      );
-    });
-
-    // Each dough's error against a uniform batch: its lead on the last mix,
-    // less the cut. Both read off `stageDurations`, so neither is transcribed.
-    const cutMin = (nMix: number) =>
-      (stageDurations('retarded', DEFAULTS).ballRoomTemp -
-        stageDurations('retarded', { ...DEFAULTS, nMix }).ballRoomTemp) *
-      60;
-    // One mix plus one changeover on the planning basis: 35 min.
-    const planStepMin =
-      (stageDurations('retarded', { ...DEFAULTS, nMix: 2 }).mix -
-        stageDurations('retarded', DEFAULTS).mix) *
-      60;
-    const doughErrorsMin = (nMix: number, changeoverMin = C.CHANGEOVER_H * 60) =>
-      Array.from(
-        { length: nMix },
-        (_, i) => (nMix - 1 - i) * (planStepMin - C.CHANGEOVER_H * 60 + changeoverMin) - cutMin(nMix),
-      );
-
-    it('centres the error at nMix 3, with the middle dough on time', () => {
-      // MESSAGE-38. The cut is half the stagger at any nMix: 35 min at 3,
-      // taking the 90-minute rise to 55. bulk-1's "the first and last end up
-      // about {staggerHalfMinutes} minutes off in opposite directions" rests
-      // on the middle dough's 0.
-      expect(stageDurations('retarded', { ...DEFAULTS, nMix: 3 }).ballRoomTemp * 60).toBeCloseTo(55, 6);
-      const [first, middle, last] = doughErrorsMin(3);
-      expect(first).toBeCloseTo(35, 6);
-      expect(middle).toBeCloseTo(0, 6);
-      expect(last).toBeCloseTo(-35, 6);
-      const [first2, last2] = doughErrorsMin(2);
-      expect(first2).toBeCloseTo(17.5, 6);
-      expect(last2).toBeCloseTo(-17.5, 6);
-    });
-
-    it('lands a changeover overrun whole on the first dough', () => {
-      // MESSAGE-38, mix-1: "every extra five minutes adds five minutes of
-      // fermentation to the first dough". The bulk clocks from the last mix,
-      // and the cut comes from the PLANNED stagger — nothing in the schedule
-      // reads the changeover the baker actually ran — so an overrun is never
-      // halved. The "2½" this replaced halved it.
-      const [first, last] = doughErrorsMin(2, 10);
-      expect(first, 'two mixes, a 10-minute changeover').toBeCloseTo(22.5, 6);
-      expect(last).toBeCloseTo(-17.5, 6);
-
-      // Three mixes, against plan: each changeover's overrun adds to every
-      // dough ahead of it.
-      const againstPlan = (changeoverMin: number) => {
-        const plan = doughErrorsMin(3);
-        return doughErrorsMin(3, changeoverMin).map((e, i) => e - plan[i]!);
-      };
-      againstPlan(10).forEach((e, i) => expect(e, `10-min changeovers, dough ${i + 1}`).toBeCloseTo([10, 5, 0][i]!, 6));
-      againstPlan(15).forEach((e, i) => expect(e, `15-min changeovers, dough ${i + 1}`).toBeCloseTo([20, 10, 0][i]!, 6));
-    });
-
-    it('still clamps the ball rise after the stagger correction', () => {
-      // The correction must not push a short rise under the 45-minute floor.
-      const short = stageDurations('retarded', {
-        ...DEFAULTS,
-        ballRoomTempH: 45 / 60,
-        nMix: 2,
-      });
-      expect(short.ballRoomTemp * 60).toBeCloseTo(45, 1);
+    it('takes nothing off the rise for the gap between the mixes (MESSAGE-61)', () => {
+      // Each dough runs on its own clock, so the last dough's rise is its own
+      // §4.8 figure. Half the stagger came off it while the doughs shared a tub.
+      for (const nMix of [1, 2, 3]) {
+        expect(stageDurations('retarded', split(nMix, 6)).ballRoomTemp * 60, `nMix ${nMix}`).toBeCloseTo(90, 9);
+      }
+      expect(stageDurations('retarded', split(2, 6, { ballRoomTempH: 45 / 60 })).ballRoomTemp * 60).toBeCloseTo(45, 9);
     });
 
     it.each([
       [3, 1, 0.5, 0.2708, 1.5, 26.7708],
       [6, 1, 0.5, 0.3333, 1.5, 26.8333],
       [9, 1, 0.5, 0.3958, 1.5, 26.8958],
-      [12, 2, 1.0833, 0.4583, 1.2083, 27.25],
-      [18, 2, 1.0833, 0.5833, 1.2083, 27.375],
-      [24, 3, 1.6667, 0.7083, 0.9167, 27.7917],
+      [12, 2, 1.0833, 0.3333, 1.5, 27.4167],
+      [18, 2, 1.0833, 0.3958, 1.5, 27.4792],
+      [24, 3, 1.6667, 0.375, 1.5, 28.0417],
     ])('%i balls, nMix %i: mix %f h, divide %f h, rise %f h, overhead %f h', (balls, nMix, mix, divide, rise, overheadH) => {
-      // §4.8's table since MESSAGE-53, all six asserted, at 265 g on target.
-      // With the divide scaling, the overhead depends on the ball count as
-      // well as nMix. (MESSAGE-6: an earlier 28.41 came from `divideBall` as
-      // the literal 0.33, a displayed figure baked into the source.)
-      const a = { ...DEFAULTS, nMix, balls };
+      // §4.8's table, all six asserted, at 265 g on target. The divide scales
+      // with balls per mix and the rise is the last dough's, unshortened
+      // (MESSAGE-61; 27.25, 27.38 and 27.79 at 12, 18 and 24 before). (MESSAGE-6:
+      // an earlier 28.41 came from `divideBall` as the literal 0.33, a
+      // displayed figure baked into the source.)
+      const a = split(nMix, balls / nMix);
       const d = stageDurations('retarded', a);
       expect(d.mix).toBeCloseTo(mix, 4);
       expect(d.divideBall).toBeCloseTo(divide, 4);
@@ -332,26 +265,23 @@ describe('§4.7 stage durations', () => {
       expect(total).toBeCloseTo(overheadH, 4);
     });
 
-    it('adds the second mix, takes half the stagger back off the rise, and adds the longer divide', () => {
+    it('adds the second mix and its changeover, and nothing else, at 12 balls', () => {
       const overhead = (a: ScheduleAdjustments) =>
         buildTimeline({ startAt: start, schedule: 'retarded', adjustments: a }).totalH -
         a.coldFermentH;
       // The 25.0–29.9 band in §4.8 is nMix = 1 only.
       expect(overhead(DEFAULTS)).toBeCloseTo(26.8333, 4);
-      // 12 balls: + 0.5833 (a mix and a changeover) − 0.2917 (half the
-      // stagger) + 0.125 (7.5 more minutes of divide) = 27.25.
-      const twelve = overhead({ ...DEFAULTS, nMix: 2, balls: 12 });
-      expect(twelve).toBeCloseTo(27.25, 4);
-      expect(twelve - overhead(DEFAULTS)).toBeCloseTo(
-        0.5 + C.CHANGEOVER_H - mixStaggerH(2) / 2 + (C.DIVIDE_PER_BALL_MIN * 6) / 60,
-        9,
-      );
+      // 12 balls: + 0.5833 (a mix and a changeover) = 27.4167. The divide is
+      // the last dough's 6 balls, as at 6.
+      const twelve = overhead(split(2, 6));
+      expect(twelve).toBeCloseTo(27.4167, 4);
+      expect(twelve - overhead(DEFAULTS)).toBeCloseTo(0.5 + C.CHANGEOVER_H, 9);
     });
 
     it('leaves every other stage untouched by nMix', () => {
       const one = stageDurations('retarded', DEFAULTS);
-      const two = stageDurations('retarded', { ...DEFAULTS, nMix: 2 });
-      for (const key of ['bigaRoomTemp', 'bigaFridge', 'bigaTemper', 'bulkRest', 'divideBall', 'coldFerment', 'temper'] as const) {
+      const two = stageDurations('retarded', split(2, 6));
+      for (const key of ['bigaRoomTemp', 'bigaFridge', 'bigaTemper', 'bulkRest', 'divideBall', 'ballRoomTemp', 'coldFerment', 'temper'] as const) {
         expect(two[key], `${key} must not depend on nMix`).toBe(one[key]);
       }
     });
@@ -428,10 +358,10 @@ describe('§4.7 stage sequence', () => {
     expect(keysFor('classic', CLASSIC)).toEqual(CLASSIC_SEQUENCE);
   });
 
-  it('holds the sequence at nMix 2, where `mix` and `ballRoomTemp` both move', () => {
-    // Splitting the batch changes two durations. It must not change the order.
-    expect(keysFor('retarded', { ...DEFAULTS, nMix: 2 })).toEqual(RETARDED_SEQUENCE);
-    expect(keysFor('classic', { ...DEFAULTS, nMix: 2 })).toEqual(CLASSIC_SEQUENCE);
+  it('holds the sequence at nMix 2, where `mix` moves', () => {
+    // Splitting the batch lengthens the mix stage. It must not change the order.
+    expect(keysFor('retarded', split(2, 6))).toEqual(RETARDED_SEQUENCE);
+    expect(keysFor('classic', split(2, 6))).toEqual(CLASSIC_SEQUENCE);
   });
 
   it('holds the sequence when the backward solve sets the start', () => {
@@ -652,20 +582,55 @@ describe('backward mode', () => {
     ]);
   });
 
-  it('carries a split batch’s longer mix, shorter rise and longer divide to the second', () => {
-    // 12 balls, nMix 2: mix 65 min, divide 27.5 min, rise 90 − 17.5 = 72.5
-    // min. 51 h 15 min back.
-    expect(golden('retarded', { ...DEFAULTS, nMix: 2, balls: 12 })).toEqual([
-      ['bigaRoomTemp', local(1, 14, 45)],
-      ['bigaFridge', local(1, 16, 45)], //    + 2 h
-      ['bigaTemper', local(2, 11, 45)], //    + 19 h
-      ['mix', local(2, 12, 45)], //           + 1 h
-      ['bulkRest', local(2, 13, 50)], //      + 65 min
-      ['divideBall', local(2, 14, 50)], //    + 1 h
-      ['ballRoomTemp', local(2, 15, 17, 30)], // + 27.5 min
-      ['coldFerment', local(2, 16, 30)], //   + 72.5 min
+  it('carries a split batch’s longer mix to the second, and plans the last dough', () => {
+    // 12 balls, nMix 2 (MESSAGE-61): mix 65 min, then the last dough's bulk
+    // 60, divide 20 (its own 6 balls) and rise 90. 51 h 25 min back.
+    expect(golden('retarded', split(2, 6))).toEqual([
+      ['bigaRoomTemp', local(1, 14, 35)],
+      ['bigaFridge', local(1, 16, 35)], //    + 2 h
+      ['bigaTemper', local(2, 11, 35)], //    + 19 h
+      ['mix', local(2, 12, 35)], //           + 1 h
+      ['bulkRest', local(2, 13, 40)], //      + 65 min
+      ['divideBall', local(2, 14, 40)], //    + 1 h
+      ['ballRoomTemp', local(2, 15, 0)], //   + 20 min
+      ['coldFerment', local(2, 16, 30)], //   + 90 min
       ['temper', local(3, 16, 30)], //        + 24 h
     ]);
+  });
+
+  it("prints each earlier dough's bulk and rise ends beside the last dough's (§7.4)", () => {
+    // Dough 1's mix ends at 13:05, 30 min in; its bulk at 14:05; its own
+    // 20-minute divide and a 100.6-minute rise put it in the fridge at 16:05.
+    // The rows are dough 2's: 14:40 and 16:30.
+    const rise1H = computeRoomMinutes({ finalDoughTempF: 73, ddtF: 75 }) / 60;
+    const t = timelineFor({ mode: 'backward', bigaStartAt: new Date(0), bakeAt: BAKE, schedule: 'retarded', adjustments: split(2, 6, { earlierRisesH: [rise1H] }) });
+    const row = (key: string) => t.stages.find((st) => st.key === key)!;
+    expect(row('bulkRest').endsAt.getTime()).toBe(local(2, 14, 40));
+    expect(row('bulkRest').earlierDoughEnds!.map((d) => d.getTime())).toEqual([local(2, 14, 5)]);
+    expect(row('ballRoomTemp').endsAt.getTime()).toBe(local(2, 16, 30));
+    expect(row('ballRoomTemp').earlierDoughEnds![0]!.getTime()).toBe(local(2, 14, 25) + Math.round(rise1H * HOUR_MS));
+    expect(earlierDoughPhrase(row('bulkRest'))).toBe('Ends 2:40 PM (dough 1 2:05 PM)');
+    expect(earlierDoughPhrase(row('ballRoomTemp'))).toBe('Ends 4:30 PM (dough 1 4:05 PM)');
+    // Only the bulk and rise rows carry them.
+    expect(t.stages.filter((st) => st.earlierDoughEnds).map((st) => st.key)).toEqual(['bulkRest', 'ballRoomTemp']);
+  });
+
+  it('lists every earlier dough in mix order at three mixes, and none at one', () => {
+    const t = timelineFor({ mode: 'backward', bigaStartAt: new Date(0), bakeAt: BAKE, schedule: 'retarded', adjustments: split(3, 8) });
+    const bulk = t.stages.find((st) => st.key === 'bulkRest')!;
+    const ends = bulk.earlierDoughEnds!.map((d) => d.getTime());
+    // 35 minutes apart, the last dough 35 after the second.
+    expect(ends).toHaveLength(2);
+    expect(ends[1]! - ends[0]!).toBe(35 * 60_000);
+    expect(bulk.endsAt.getTime() - ends[1]!).toBe(35 * 60_000);
+    expect(earlierDoughPhrase(bulk)).toMatch(/^Ends .+ \(dough 1 .+, dough 2 .+\)$/);
+    const single = timelineFor({ mode: 'backward', bigaStartAt: new Date(0), bakeAt: BAKE, schedule: 'retarded', adjustments: DEFAULTS });
+    expect(single.stages.some((st) => st.earlierDoughEnds)).toBe(false);
+    expect(single.stages.map(earlierDoughPhrase).filter(Boolean)).toEqual([]);
+  });
+
+  it('refuses rises that do not match the mixes', () => {
+    expect(() => buildTimeline({ startAt: BAKE, schedule: 'retarded', adjustments: { ...DEFAULTS, nMix: 2 } })).toThrow();
   });
 
   it('lands exactly on the bake when a duration is not a whole minute', () => {
@@ -676,7 +641,7 @@ describe('backward mode', () => {
       for (const nMix of [1, 2, 3]) {
         for (const schedule of ['retarded', 'classic'] as const) {
           for (let min = 0; min < 60; min += 7) {
-            const adjustments = { ...DEFAULTS, nMix, ballRoomTempH: computeRoomMinutes({ finalDoughTempF: T, ddtF: 74 }) / 60 };
+            const adjustments = split(nMix, 6, { ballRoomTempH: computeRoomMinutes({ finalDoughTempF: T, ddtF: 74 }) / 60 });
             const bakeAt = new Date(2026, 9, 3, 18, min);
             const t = timelineFor({ mode: 'backward', bigaStartAt: new Date(0), bakeAt, schedule, adjustments });
             expect(t.bakeAt.getTime(), `${T} °F, nMix ${nMix}, ${schedule}, :${min}`).toBe(bakeAt.getTime());
@@ -722,7 +687,7 @@ describe('backward mode', () => {
   it('shows the same schedule either way when one end is fed to the other', () => {
     // What switching modes does: nothing may move at the moment of the switch.
     const start = new Date(2026, 9, 1, 14, 17, 23);
-    const a = { ...DEFAULTS, nMix: 2, ballRoomTempH: 80.41 / 60 };
+    const a = split(2, 6, { ballRoomTempH: 80.41 / 60, earlierRisesH: [100.6 / 60] });
     const fwd = timelineFor({ mode: 'forward', bigaStartAt: start, bakeAt: null, schedule: 'retarded', adjustments: a });
     const back = timelineFor({ mode: 'backward', bigaStartAt: new Date(0), bakeAt: fwd.bakeAt, schedule: 'retarded', adjustments: a });
     expect(back.stages.map((st) => st.startsAt.getTime())).toEqual(fwd.stages.map((st) => st.startsAt.getTime()));

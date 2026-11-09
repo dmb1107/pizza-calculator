@@ -56,9 +56,9 @@ describe('spec §5 test vectors are internally consistent', () => {
     }
   });
 
-  it('uses the default DDT rule: 75 degF for <=6 balls, 74 degF for 7+', () => {
+  it('uses the default DDT rule: 75 degF for <=6 balls per mix, 74 degF for 7+ (MESSAGE-61)', () => {
     for (const v of BATCH_VECTORS) {
-      expect(v.ddtF, `${v.balls} balls`).toBe(v.balls <= 6 ? 75 : 74);
+      expect(v.ddtF, `${v.balls} balls`).toBe(v.balls / v.nMix <= 6 ? 75 : 74);
     }
   });
 

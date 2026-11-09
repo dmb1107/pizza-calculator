@@ -77,13 +77,12 @@ describe('recipe text', () => {
     expect(nine).toContain('90 min (final dough 74.0 °F against DDT 74.0 °F)');
   });
 
-  it('prints the rise the timeline plans at a split batch, as bulk-3 does', () => {
-    // MESSAGE-32: the planned rise, not the per-dough one. At 12 balls (nMix 2)
-    // and a 74 °F dough on its DDT of 74, one dough would get 90 min; half the
-    // 35-minute stagger comes off, so the plan is 72.5, printed 73.
-    const twelve = text({ balls: 12, finalDoughTempF: 74 });
-    expect(twelve).toContain('73 min (final dough 74.0 °F against DDT 74.0 °F)');
-    expect(twelve).not.toContain('90 min');
+  it("prints each dough's rise at a split batch, as bulk-3 does (MESSAGE-61)", () => {
+    // §5's split-batch vector: 73.0 and 75.0 at DDT 75 rise 101 and 90.
+    const twelve = text({ balls: 12, finalDoughTempF: [73, 75] });
+    expect(twelve).toContain('101 min for dough 1 and 90 for dough 2 (final dough 73.0 and 75.0 °F against DDT 75.0 °F)');
+    // Planned, every dough at DDT.
+    expect(text({ balls: 12 })).toContain('90 min for dough 1 and 90 for dough 2 (planned at DDT 75.0 °F');
   });
 
   it('records the conditions, so the numbers can be reproduced', () => {

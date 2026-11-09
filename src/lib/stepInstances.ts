@@ -168,3 +168,42 @@ export function timerLabelFor(step: Step, schedule: Schedule, bigaRoomOnlyH: num
   }
   return (schedule === 'retarded' ? step.timerLabelRetarded : step.timerLabelClassic) ?? step.timerLabel;
 }
+
+/**
+ * §7.5 (MESSAGE-61). The steps that carry one timer per dough at `nMix > 1`,
+ * pinned by id like `mix-6`: each dough bulks, divides and rises on its own
+ * clock, and Dave times each on his phone. There is no §8 marker for it.
+ */
+export const PER_DOUGH_TIMER_STEPS: readonly string[] = ['bulk-1', 'bulk-2', 'bulk-3'];
+
+export interface TimerSlot {
+  /** The timer's state key: the instance key, or one per dough. */
+  key: string;
+  /** 1-based, on a per-dough timer only. */
+  dough?: number;
+  /** "Dough 1", on a per-dough timer only. */
+  label?: string;
+}
+
+/** Joins an instance key and a dough: `bulk-3~dough-2`. Never `#`, which §8.2a uses. */
+const DOUGH_SEP = '~dough-';
+
+/**
+ * A step instance's timers. One, keyed by the instance, except on the three
+ * per-dough steps at `nMix > 1`: one per dough in mix order, each with its
+ * own key so each keeps its own state. At one mix the key is the bare
+ * instance key, so no persisted timer is orphaned.
+ */
+export function timerSlots(instanceKey: string, stepId: string, nMix: number): TimerSlot[] {
+  if (nMix <= 1 || !PER_DOUGH_TIMER_STEPS.includes(stepId)) return [{ key: instanceKey }];
+  return Array.from({ length: nMix }, (_, i) => ({
+    key: `${instanceKey}${DOUGH_SEP}${i + 1}`,
+    dough: i + 1,
+    label: `Dough ${i + 1}`,
+  }));
+}
+
+/** Whether a timer key is one of this instance's timers: ticking a step stops them all. */
+export function isTimerOf(timerKey: string, instanceKey: string): boolean {
+  return timerKey === instanceKey || timerKey.startsWith(`${instanceKey}${DOUGH_SEP}`);
+}

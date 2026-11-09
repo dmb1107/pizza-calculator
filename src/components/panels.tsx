@@ -36,7 +36,7 @@ const SCHEDULE_OPTIONS: { value: Schedule; label: string; description: string }[
 ];
 
 export function BatchPanel(s: AppState & { onOpenConcept: (id: string) => void }) {
-  const { inputs, setInput, commitNumber, stepNumber, panels, togglePanel, ballsSplitHint, onOpenConcept } = s;
+  const { inputs, setInput, commitNumber, stepNumber, panels, togglePanel, ballsSplitHint, ballsRaisedNote, onOpenConcept } = s;
   const scheduleLabel = inputs.schedule === 'retarded' ? 'Retarded' : 'Classic RT';
   // §7.3: stepping below 3 shows why, next to the field. Cleared by the next step up.
   const [belowMin, setBelowMin] = useState(false);
@@ -60,6 +60,12 @@ export function BatchPanel(s: AppState & { onOpenConcept: (id: string) => void }
           hint={
             belowMin ? (
               <Markdown className="text-amber-900 dark:text-amber-200">{CAPACITY.minimumAtInput}</Markdown>
+            ) : ballsRaisedNote ? (
+              // §6 (MESSAGE-61): why the count isn't the one chosen, then the split.
+              <>
+                <span className="block text-amber-900 dark:text-amber-200">{ballsRaisedNote}</span>
+                {ballsSplitHint}
+              </>
             ) : (
               ballsSplitHint
             )
@@ -113,7 +119,7 @@ const FRICTION_HINT: Record<1 | 2 | 3 | 4, string> = {
 };
 
 export function CalibrationPanel(s: AppState & { onOpenLog: () => void; onOpenConcept: (id: string) => void }) {
-  const { inputs, panels, togglePanel, friction, calibration, setDdtOverride, autoDdtF, ddtF, mixSize, onOpenLog, onOpenConcept } = s;
+  const { panels, togglePanel, friction, calibration, setDdtOverride, autoDdtF, ddtF, mixSize, onOpenLog, onOpenConcept } = s;
 
   const ddtIsAuto = calibration.ddtOverrideF === null;
   const estimated = friction.badge.tone === 'estimate';
@@ -158,7 +164,7 @@ export function CalibrationPanel(s: AppState & { onOpenLog: () => void; onOpenCo
             max={BOUNDS.ddtOverrideF.max}
             step={BOUNDS.ddtOverrideF.step}
             badge={ddtIsAuto ? <Badge tone="measured">auto</Badge> : undefined}
-            hint={`Automatic is ${formatTempF(autoDdtF)} °F for a ${inputs.balls}-ball batch.`}
+            hint={`Automatic is ${formatTempF(autoDdtF)} °F for a ${formatBallsPerMix(mixSize)}-ball mix.`}
           />
           {!ddtIsAuto && (
             <button

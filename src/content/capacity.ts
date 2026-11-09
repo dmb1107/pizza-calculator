@@ -15,7 +15,8 @@ export const CAPACITY = {
   nearLimit: `**Close to the Core's limit.** {doughPerMix} g per mix is within 5% of the {maxDoughG} g maximum. It will mix, but there's little margin — weigh carefully.`,
   belowMinimum: `**Too little dough for the mixer.** {doughPerMix} g is under the Halo Core's {minDoughG} g minimum — the hook won't grip it. Make more balls.`,
   minimumAtInput: `**3 balls minimum.** Below that the Halo Core's hook can't grip the dough, and the water would need to be hotter than a tap delivers. For one or two pizzas, mix by hand.`,
-  splitHint: `→ {nMix} mixes of {doughPerMix} g`,
+  splitHint: `→ {nMix} mixes of {ballsPerMix} balls ({doughPerMix} g each)`,
+  raisedToEven: `Raised to {balls} balls so each mix makes whole balls.`,
 } as const;
 
 // --- end generated ---

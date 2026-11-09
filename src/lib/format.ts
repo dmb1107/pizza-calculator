@@ -126,3 +126,35 @@ export function formatSpeedDetail(dial: number, rpm: number): string {
 export function formatPercent(fraction: number, decimals = 0): string {
   return `${roundTo(fraction * 100, decimals).toFixed(decimals)}%`;
 }
+
+/** Rise minutes, whole: §4.8's figures are planned to the minute. */
+export function formatWholeMinutes(minutes: number): string {
+  return String(roundTo(minutes, 0));
+}
+
+/** "a", "a and b", "a, b and c" — a short list in prose order. */
+function proseList(items: readonly string[]): string {
+  if (items.length <= 1) return items[0] ?? '';
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
+/**
+ * §4.10 `{riseByDough}` (MESSAGE-61): each dough's rise in mix order. "90 min"
+ * at one mix; "101 min for dough 1 and 90 for dough 2" at two; "101 min for
+ * dough 1, 88 for dough 2 and 85 for dough 3" at three. The unit is written
+ * once, after the first figure.
+ */
+export function formatRiseByDough(minutes: readonly number[]): string {
+  if (minutes.length === 1) return `${formatWholeMinutes(minutes[0]!)} min`;
+  return proseList(
+    minutes.map((m, i) => `${formatWholeMinutes(m)}${i === 0 ? ' min' : ''} for dough ${i + 1}`),
+  );
+}
+
+/**
+ * §4.10 `{finalDoughTemp}` (MESSAGE-61): one reading, or each dough's in mix
+ * order, "73.0 and 75.0". The prose writes the unit.
+ */
+export function formatTempList(degF: readonly number[]): string {
+  return proseList(degF.map(formatTempF));
+}

@@ -71,7 +71,10 @@ def table(c,marker):
 # The field markers §8.2 uses. Mirrored in tests/steps.test.ts.
 KNOWN_MARKERS=[r'phase', r'summary', r'summary \(retarded\)', r'summary \(classic\)', r'values',
     r'timer', r'timer \(retarded\)', r'timer \(classic\)', r'speed', r'watchFor', r'concepts', r'detail', r'troubleshoot', r'repeatsPerMix',
-    r'shown only when', r'detail, shown only when `[^`]+`', r'warning, shown when `[^`]+`']
+    r'shown only when', r'detail, shown only when `[^`]+`']
+# MESSAGE-61 removed the last step-level warning block (bulk-1's stagger
+# warning) and §8 no longer describes the marker, so it is unknown here:
+# a new one fails the build until both parsers and a condition set exist.
 steps=[]
 for c in body.split('\n#### ')[1:]:
     # A step ends at the next section heading as well as the next step. Without
@@ -110,10 +113,6 @@ for c in body.split('\n#### ')[1:]:
     for cond in conds:
         b=bq(c,'**detail, shown only when `%s`:**'%cond)
         if b: s['detailWhen']={'condition':cond,'detail':b}
-    m=re.search(r'^\*\*warning, shown when `([^`]+)`:\*\*$', c, re.M)
-    if m:
-        t=bq(c,m.group(0))
-        if t: s['warningWhen']={'condition':m.group(1),'text':t}
     steps.append(s)
 for rid in sorted(REPEATING):
     st=next((x for x in steps if x['id']==rid), None)
@@ -182,13 +181,10 @@ for s in steps:
         out.append('    concepts: [%s],\n'%', '.join(json.dumps(x) for x in ids))
     if s['repeatsPerMix']: out.append('    repeatsPerMix: true,\n')
     if s['suppressOnFinal']: out.append('    suppressOnFinal: true,\n')
-    if s.get('warningWhen'):
-        w=s['warningWhen']
-        out.append('    warningWhen: {\n      condition: %s,\n      text: `%s`,\n    },\n'%(json.dumps(w['condition']),tpl(w['text'])))
     out.append('  },\n')
 out.append('];\n')
 open('src/content/steps.ts','w').write(''.join(out)+tail)
-print("steps: %d, warningWhen: %s"%(len(steps),[s['id'] for s in steps if 'warningWhen' in s]))
+print("steps: %d"%len(steps))
 
 # --- §8.3 concepts ----------------------------------------------------------
 
@@ -288,7 +284,12 @@ print("reference: %s; sources: %d" % ([r['id'] for r in sections], len(sources))
 # Each message is found by the bold label or phrase that introduces it, and a
 # missing anchor is an error rather than an empty string.
 
-cap = spec[spec.index('#### Capacity'):spec.index('#### The stagger warning')]
+# The section runs from its heading to the next heading of any level, so a
+# renamed or removed neighbour can't move the end (MESSAGE-61 removed the
+# stagger warning's section, which this used to end at by name).
+_cap_lines = spec[spec.index('#### Capacity'):].split('\n')
+_cap_end = next(i for i, l in enumerate(_cap_lines) if i > 0 and l.startswith('#'))
+cap = '\n'.join(_cap_lines[:_cap_end])
 clines = cap.split('\n')
 
 def quote_after(label):
@@ -317,6 +318,7 @@ capacity = [
     ('belowMinimum', quote_after('- **As a guard')),
     ('minimumAtInput', italic_quote(cap, 'shows, next to the field:')),
     ('splitHint', italic_quote(panel1, 'show beside the field:')),
+    ('raisedToEven', italic_quote(panel1, 'the field shows:')),
 ]
 
 kold = open('src/content/capacity.ts').read()

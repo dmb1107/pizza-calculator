@@ -1,6 +1,7 @@
 /** Defaults and input bounds — WEBSITE-SPEC-biga-calculator.md §6. */
 
 import { C } from '../lib/constants';
+import { BALLS_MAX, BALLS_MIN, roundUpToEvenSplit } from '../lib/ballCounts';
 import type { Calibration, Inputs, PanelPrefs, Persisted, Schedule } from './types';
 
 /**
@@ -24,11 +25,17 @@ export function clampColdFerment(schedule: Schedule, hours: number): number {
 
 /**
  * `setInput`'s rules, pure so the tests reach them: the flour tracks the room
- * while the toggle is on, in both directions, and the cold ferment stays inside
- * its track's range, so a schedule change clamps it (§4.7, MESSAGE-53).
+ * while the toggle is on, in both directions; the cold ferment stays inside
+ * its track's range, so a schedule change clamps it (§4.7, MESSAGE-53); and a
+ * ball count that doesn't split evenly between the mixes rounds up to one that
+ * does, whether the count or the ball weight moved (§6, MESSAGE-61). The
+ * stepper skips instead, before it gets here (`stepToEvenSplit`).
  */
 export function applyInput<K extends keyof Inputs>(prev: Inputs, key: K, value: Inputs[K]): Inputs {
   const next = { ...prev, [key]: value };
+  if (key === 'balls' || key === 'ballWeightG') {
+    next.balls = roundUpToEvenSplit(next.balls, next.ballWeightG);
+  }
   if (key === 'roomTempF' && next.flourSameAsRoom) next.flourTempF = next.roomTempF;
   if (key === 'flourSameAsRoom' && value === true) next.flourTempF = next.roomTempF;
   if (key === 'schedule' || key === 'coldFermentH') {
@@ -132,8 +139,9 @@ export function persistedForNewBake(prev: Persisted): Persisted {
 export const BOUNDS = {
   // §4.4. 3 is a hard floor, not a warning: 2 balls won't let a spiral hook
   // grip AND asks for 126 °F water at the hot corner. Two independent
-  // reasons, same answer.
-  balls: { min: C.MIN_BALLS, max: 24, step: 1 },
+  // reasons, same answer. Inside the range only counts that split evenly
+  // are allowed (`ballCounts.ts`, MESSAGE-61).
+  balls: { min: BALLS_MIN, max: BALLS_MAX, step: 1 },
   ballWeightG: { min: 240, max: 300, step: 1 },
   // The widest track's range, for a generic clamp. Each track's own range is
   // `COLD_FERMENT_H`, applied by `clampColdFerment` after this.

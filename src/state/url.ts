@@ -11,6 +11,7 @@
 
 import { computeCapacity, computeFormula } from '../lib/engine';
 import { BOUNDS, COLD_FERMENT_H, DEFAULT_INPUTS, clampColdFerment, clampField } from './defaults';
+import { roundUpToEvenSplit } from '../lib/ballCounts';
 import type { Inputs, Schedule } from './types';
 
 const KEYS = {
@@ -230,6 +231,18 @@ function readOptionalNumber(
  * not be able to push NaN or an out-of-range number into the calculation.
  */
 export function decodeInputs(search: string, base: Inputs = DEFAULT_INPUTS): Inputs {
+  return decodeInputsWithReport(search, base).inputs;
+}
+
+/**
+ * `decodeInputs`, and the ball count the link asked for when §6's even-split
+ * rule raised it (MESSAGE-61), so the field can say so. Null when nothing was
+ * raised.
+ */
+export function decodeInputsWithReport(
+  search: string,
+  base: Inputs = DEFAULT_INPUTS,
+): { inputs: Inputs; ballsAskedFor: number | null } {
   const p = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
 
   const scheduleRaw = p.get(KEYS.schedule);
@@ -240,11 +253,13 @@ export function decodeInputs(search: string, base: Inputs = DEFAULT_INPUTS): Inp
   const flourSameAsRoom = sameRaw === null ? base.flourSameAsRoom : sameRaw !== '0';
 
   const roomTempF = readNumber(p, KEYS.roomTempF, 'roomTempF', base.roomTempF);
-  const balls = Math.round(readNumber(p, KEYS.balls, 'balls', base.balls));
+  const asked = Math.round(readNumber(p, KEYS.balls, 'balls', base.balls));
   const ballWeightG = readNumber(p, KEYS.ballWeightG, 'ballWeightG', base.ballWeightG);
+  // §6 (MESSAGE-61): a count that doesn't split evenly rounds up.
+  const balls = roundUpToEvenSplit(asked, ballWeightG);
   const nMix = nMixOf({ balls, ballWeightG });
 
-  return {
+  const inputs: Inputs = {
     balls,
     ballWeightG,
     // §4.7: clamped into the track's range. Absent, the track's default,
@@ -272,6 +287,7 @@ export function decodeInputs(search: string, base: Inputs = DEFAULT_INPUTS): Inp
     bowlTempF: readOptionalNumberList(p, KEYS.bowlTempF, 'bowlTempF', base.bowlTempF),
     finalDoughTempF: readIndexedList(p, KEYS.finalDoughTempF, 'finalDoughTempF', nMix, base.finalDoughTempF),
   };
+  return { inputs, ballsAskedFor: balls === asked ? null : asked };
 }
 
 /** Whether a query string carries any input at all. */

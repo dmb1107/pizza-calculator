@@ -48,7 +48,7 @@ export const BATCH_VECTORS: readonly BatchVector[] = [
   { balls: 3,  ballG: 265, F: 470.2,  bigaFlour: 305.6,  bigaWater: 152.8, bigaADY: 1.15, freshFlour: 164.6, freshWater: 176.3,  phaseA: 105.8, phaseB: 70.5,  salt: 13.2, Ct: 529.4,  ddtF: 75, waterTempF: 73.6, probeTargetF: 72.3, nMix: 1 },
   { balls: 6,  ballG: 265, F: 940.4,  bigaFlour: 611.2,  bigaWater: 305.6, bigaADY: 2.29, freshFlour: 329.1, freshWater: 352.6,  phaseA: 211.6, phaseB: 141.1, salt: 26.3, Ct: 1058.8, ddtF: 75, waterTempF: 68.1, probeTargetF: 71.9, nMix: 1 },
   { balls: 9,  ballG: 265, F: 1410.6, bigaFlour: 916.9,  bigaWater: 458.4, bigaADY: 3.44, freshFlour: 493.7, freshWater: 529.0,  phaseA: 317.4, phaseB: 211.6, salt: 39.5, Ct: 1588.1, ddtF: 74, waterTempF: 63.0, probeTargetF: 70.6, nMix: 1 },
-  { balls: 12, ballG: 265, F: 1880.8, bigaFlour: 1222.5, bigaWater: 611.2, bigaADY: 4.58, freshFlour: 658.3, freshWater: 705.3,  phaseA: 423.2, phaseB: 282.1, salt: 52.7, Ct: 1058.8, ddtF: 74, waterTempF: 64.7, probeTargetF: 70.7, nMix: 2 },
+  { balls: 12, ballG: 265, F: 1880.8, bigaFlour: 1222.5, bigaWater: 611.2, bigaADY: 4.58, freshFlour: 658.3, freshWater: 705.3,  phaseA: 423.2, phaseB: 282.1, salt: 52.7, Ct: 1058.8, ddtF: 75, waterTempF: 68.1, probeTargetF: 71.9, nMix: 2 },
   { balls: 18, ballG: 265, F: 2821.1, bigaFlour: 1833.7, bigaWater: 916.9, bigaADY: 6.88, freshFlour: 987.4, freshWater: 1057.9, phaseA: 634.8, phaseB: 423.2, salt: 79.0, Ct: 1588.1, ddtF: 74, waterTempF: 63.0, probeTargetF: 70.6, nMix: 2 },
   { balls: 5,  ballG: 270, F: 798.4,  bigaFlour: 519.0,  bigaWater: 259.5, bigaADY: 1.95, freshFlour: 279.5, freshWater: 299.4,  phaseA: 179.6, phaseB: 119.8, salt: 22.4, Ct: 898.9,  ddtF: 75, waterTempF: 69.1, probeTargetF: 72.0, nMix: 1 },
   { balls: 7,  ballG: 260, F: 1076.4, bigaFlour: 699.7,  bigaWater: 349.8, bigaADY: 2.62, freshFlour: 376.7, freshWater: 403.7,  phaseA: 242.2, phaseB: 161.5, salt: 30.1, Ct: 1211.9, ddtF: 74, waterTempF: 64.1, probeTargetF: 70.7, nMix: 1 },
@@ -204,7 +204,7 @@ export const BOWL_DILUTION: readonly {
 export const BOWL_SHARE_FLOOR = 0.066245;
 
 /** §5. The configuration that comes closest to the cap, and so to the infimum. */
-export const BOWL_SHARE_MINIMUM_CASE = { balls: 19, ballG: 257, share: 0.066364 } as const;
+export const BOWL_SHARE_MINIMUM_CASE = { balls: 10, ballG: 244, share: 0.0664 } as const;
 
 /**
  * §5. A split batch reads off its own mix size: 12 balls off the 6 row, 18 off
@@ -245,7 +245,7 @@ export const BOWL_TEMP_VECTORS: readonly {
   { balls: 3, at58: 73.6, at70: 65.8, atDdt: 62.5 },
   { balls: 6, at58: 68.1, at70: 64.1, atDdt: 62.5 },
   { balls: 9, at58: 63.0, at70: 60.4, atDdt: 59.5 },
-  { balls: 12, at58: 64.7, at70: 60.8, atDdt: 59.5 },
+  { balls: 12, at58: 68.1, at70: 64.1, atDdt: 62.5 },
   { balls: 18, at58: 63.0, at70: 60.4, atDdt: 59.5 },
 ];
 
@@ -254,15 +254,15 @@ export const BOWL_TEMP_VECTORS: readonly {
  * Room 70 °F. Independent of FF since MESSAGE-52: the friction still to come
  * is Phases C and D at their reference times and rates.
  *
- * 12 and 6 differ despite sharing a mix size because mix size sets the
- * friction term while TOTAL balls sets DDT (74 vs 75), and the gap also
- * carries `0.2 × (DDT − T_room)`.
+ * 12 and 6 share a mix size, so they share every gap: mix size sets both the
+ * friction term and, since MESSAGE-61, DDT (§4.2). Until then 12 balls took
+ * DDT 74 from its total and probed 3.286 below it.
  */
 export const PROBE_GAP_VECTORS: readonly { balls: number; belowDdt: number }[] = [
   { balls: 3, belowDdt: 2.720 },
   { balls: 6, belowDdt: 3.086 },
   { balls: 9, belowDdt: 3.425 },
-  { balls: 12, belowDdt: 3.286 },
+  { balls: 12, belowDdt: 3.086 },
   { balls: 18, belowDdt: 3.425 },
 ];
 
@@ -312,18 +312,17 @@ export const THERMAL_WEIGHTS = { biga: 0.5311, flour: 0.1306, water: 0.3331, sal
  * thermal system, and per-mix weights cap that at mixer capacity. A 24-ball
  * batch is three 8-ball mixes, not one 6500 g monster.
  *
- * ⚠️ The largest single mix is a SPLIT one: 19 × 257 g runs as two 2495 g
- * mixes, against 10 × 244 g's 2494 g, the largest unsplit batch (MESSAGE-54;
- * 9 × 270 g was named before). The true minimum therefore sits at
- * 19 × 257 g (53.203 °F) rather than 10 × 244 g (53.205 °F) — immaterial at
- * the published precision, but this comment and §5 both named the wrong
- * corner, and the sweep could not see the right one because 257 g was never
- * sampled. It is now.
+ * The largest per-mix dough among the allowed counts is 10 × 244 g's 2494 g,
+ * the largest unsplit batch; 20 × 244 g, two such mixes, ties it (MESSAGE-61).
+ * Until then 19 × 257 g, two 2495 g mixes, came first at 53.203 °F; ball
+ * counts now split evenly and 19 can't be entered. The sweep samples 244 g
+ * for the cold end and 245 g for the hottest split batch (10 × 245 g, two
+ * 1252 g mixes), and skips the counts the app doesn't allow.
  */
 export const WATER_REACHABILITY = {
   balls: { min: 3, max: 24 },
-  // 257 because 19 x 257 g is the largest per-mix dough in the envelope — see above.
-  ballG: [240, 257, 265, 270, 300],
+  // 244: the largest per-mix dough (10 x 244 g); 245: the smallest split mix — see above.
+  ballG: [240, 244, 245, 265, 270, 300],
   bigaF: { min: 45, max: 60 },
   roomF: { min: 60, max: 84 },
   /** Across the whole permitted envelope. */
@@ -338,7 +337,7 @@ export const WATER_REACHABILITY = {
 /**
  * §5 per-batch maxima at 265 g.
  *
- * ⚠️ NOT monotonic in total balls — 12 (93.4) sits above 9 (90.3), because 12
+ * ⚠️ NOT monotonic in total balls — 12 (96.8, as 6) sits above 9 (90.3), because 12
  * runs as two 6-ball mixes and a 6-ball mix wants hotter water than a 9-ball
  * one. The requirement tracks the MIX, and mix size does not fall smoothly with
  * batch size. Do not assert monotonicity on batch size.
@@ -349,7 +348,7 @@ export const PER_BATCH_MAX_WATER: readonly { balls: number; maxWaterF: number }[
   { balls: 6, maxWaterF: 96.8 },
   { balls: 7, maxWaterF: 92.1 },
   { balls: 9, maxWaterF: 90.3 },
-  { balls: 12, maxWaterF: 93.4 },
+  { balls: 12, maxWaterF: 96.8 },
   { balls: 18, maxWaterF: 90.3 },
   { balls: 24, maxWaterF: 91.0 },
 ];

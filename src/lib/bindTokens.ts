@@ -12,12 +12,16 @@
 import { C } from './constants';
 import {
   formatAdy,
+  formatBallsPerMix,
   formatGrams,
   formatPercentNumber,
   formatProbeGapPhrase,
+  formatRiseByDough,
   formatTempF,
+  formatTempList,
+  formatWholeMinutes,
 } from './format';
-import { mixStaggerH, observedRate, type CalculatorResult } from './engine';
+import { observedRate, type CalculatorResult } from './engine';
 
 /** Trim trailing zeros: 1.5 stays 1.5, 2.0 becomes 2, 265 stays 265. */
 function trim(value: number): string {
@@ -42,10 +46,16 @@ export function tokenValues(
   schedule: ScheduleTokens,
   /** §8.2a. Which mix instance this text belongs to, 1-based. */
   mixIndex = 1,
+  /**
+   * §7.5 (MESSAGE-61). Which dough a per-dough timer belongs to, 1-based. Left
+   * out, the last dough: the one the timeline plans.
+   */
+  doughIndex?: number,
 ): Record<string, string> {
   const { formula, inputs, capacity } = result;
   // §8.2a. Instances are 1-based; a non-repeating step is instance 1.
   const mix = Math.min(mixIndex, capacity.nMix);
+  const dough = Math.min(Math.max(1, doughIndex ?? capacity.nMix), capacity.nMix);
   return {
     // Computed — §4.1 display rounding.
     //
@@ -96,13 +106,12 @@ export function tokenValues(
     // — hard-coding which ones differ is a trap the next change springs.
     mixIndex: String(mix),
     nextMixIndex: String(mix + 1),
-    // §4.8 — computed from the measured final dough temperature, or from DDT
-    // while the calculator is still in planning mode.
-    roomMin: String(Math.round(result.roomMinutes)),
-    // The rise the timeline plans: roomMin less half the stagger, floored
-    // (§4.10, MESSAGE-32). What bulk-3 prints and times.
-    ballRoomMin: String(Math.round(result.ballRoomMinutes)),
-    finalDoughTemp: formatTempF(result.effectiveFinalTempF),
+    // §4.8 — one dough's rise, from its own final reading or from DDT until
+    // read. Inside a per-dough timer, that dough's (§7.5, MESSAGE-61).
+    roomMin: formatWholeMinutes(result.roomMinutesByDough[dough - 1]!),
+    // §4.10 (MESSAGE-61): every dough's rise, and every dough's reading, in mix order.
+    riseByDough: formatRiseByDough(result.roomMinutesByDough),
+    finalDoughTemp: formatTempList(result.finalTempByDoughF),
 
     // §8.2 biga values: batch totals, bare, since there is one biga at every
     // size (MESSAGE-53 retired the `PerBiga` scope with `nBiga`).
@@ -114,11 +123,8 @@ export function tokenValues(
     freshFlourPerMix: formatGrams(formula.freshFlour / capacity.nMix),
     bigaMassPerMix: formatGrams(formula.bigaMass / capacity.nMix),
     nMix: String(capacity.nMix),
-
-    // §4.7 stagger figures, in whole minutes for prose.
-    staggerMinutes: String(Math.round(mixStaggerH(capacity.nMix) * 60)),
-    staggerHalfMinutes: String(Math.round((mixStaggerH(capacity.nMix) / 2) * 60)),
-    staggerUncentred: String(Math.round(result.staggerUncentredMin)),
+    // §4.10 (MESSAGE-61): a whole number for every count the app allows.
+    ballsPerMix: formatBallsPerMix(inputs.balls / capacity.nMix),
 
     /**
      * §3. The mixer's continuous run limit. Bound rather than written into the
