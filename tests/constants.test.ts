@@ -224,19 +224,24 @@ describe('§5 the mix profile fits the mixer', () => {
       return total + reachable;
     }, 0);
 
-    expect(continuousMin, 'A + B + C at their maxima').toBeCloseTo(15.5, 6);
+    // MESSAGE-60 moved Phase B from 5–6 to 7–9 minutes, so the sum went from
+    // 15.5 to 18.5 and the headroom from 4.5 to 1.5 — moved by the step
+    // content, not by this file, which is what deriving it is for.
+    expect(continuousMin, 'A + B + C at their maxima').toBeCloseTo(18.5, 6);
     expect(continuousMin).toBeLessThanOrEqual(C.MAX_RUN_MIN);
-    expect(C.MAX_RUN_MIN - continuousMin, 'headroom, minutes').toBeCloseTo(4.5, 6);
+    expect(C.MAX_RUN_MIN - continuousMin, 'headroom, minutes').toBeCloseTo(1.5, 6);
   });
 
   it('shows how sharp the margin is', () => {
-    // §5: stretching Phase C to 10 minutes lands on exactly 20.0 and still
+    // §5: stretching Phase C to 7 minutes lands on exactly 20.0 and still
     // passes. Anything beyond that is the failure this assertion exists for.
+    // It was 10 minutes until MESSAGE-60 widened Phase B.
     const aPlusB = MIX_STEPS.slice(0, restIndex)
       .filter((s) => s.speed && s.speed.dial !== 30)
       .reduce((total, s) => total + phaseMaxMin(s), 0);
-    expect(aPlusB + 10).toBeCloseTo(C.MAX_RUN_MIN, 6);
-    expect(aPlusB + 10.5).toBeGreaterThan(C.MAX_RUN_MIN);
+    expect(aPlusB, 'A + B at their maxima').toBeCloseTo(13, 6);
+    expect(aPlusB + 7).toBeCloseTo(C.MAX_RUN_MIN, 6);
+    expect(aPlusB + 7.5).toBeGreaterThan(C.MAX_RUN_MIN);
   });
 
   it('leaves Phase D out, because the rest breaks the run', () => {

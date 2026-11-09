@@ -240,7 +240,7 @@ At 61–65 °F the bacteria produce the **balance of lactic and acetic acid** th
 
 **75 °F** for **3–6 balls** · **74 °F** for **7 or more**
 
-A 65% biga brings a large, already-active yeast population into the final mix, so warmth is costly. The room-temperature rise after balling is built around this target: at exactly DDT the balls get 90 minutes, and a warmer or cooler dough gets less or more, so a miss at the mixer is corrected before the fridge, within the rise's 45–180-minute limits. The correction includes the cooldown: a warmer ball ferments faster on the way down to fridge temperature, and a cooler one slower (§8, step 9). What isn't corrected is anything that slows the cooling itself, such as stacked trays or a crowded fridge. Bigger batches cool more slowly in the shared bulk tub, hence the extra degree down at 7 balls and above.
+A 65% biga brings a large, already-active yeast population into the final mix, so warmth is costly. The room-temperature rise after balling is built around this target: at exactly DDT the balls get 90 minutes, and a warmer or cooler dough gets less or more, so a miss at the mixer is corrected before the fridge, within the rise's 45–180-minute limits. The correction includes the cooldown: a warmer ball ferments faster on the way down to fridge temperature, and a cooler one slower (§8, step 9). What isn't corrected is anything that slows the cooling itself: the cooldown figure is for a ball on an open tray, so it misses a lidded container's slower cooling, and stacked containers or a crowded fridge slow it further. Bigger batches cool more slowly in the shared bulk tub, hence the extra degree down at 7 balls and above.
 
 **No source defines a Neapolitan DDT band.** DDT follows the fermentation schedule, not the pizza style: bakers who cold-ferment pizza from the start often mix much cooler, and commercial walk-in practice runs warmer. 75 and 74 °F are this recipe's validated values. On target, the dough spends nearly 3 hours at room temperature before the fridge (60 min bulk, 20 to divide, 90 to rise).
 
@@ -345,7 +345,7 @@ At 12 balls that's a 5.2 °F spread in the water target between mix 1 and mix 2 
 
 Bake 1 gave 14.03 °F. The Phase C friction rate agrees: 1.00 °F/min on the dough and bowl together is 1.11 °F/min for the dough alone, against 1.08 predicted.
 
-⚠️ **Bake 1 ran long, so 14.03 is the FF of its mix, not of the one in §8.** Its Phase C took 6.5 minutes against 3.5 at the middle of the range, and the whole mix 18.5 motor minutes against 13.4. At 1.08 °F a minute, Phase C's extra 3 minutes are 3.2 °F of the 14.03: with a 3.5-minute Phase C, bake 1 solves to **10.8**. Phases A, B and D ran another 2⅛ minutes over between them, split unrecorded, so even 10.8 is high by an amount bake 1 can't give. **The calculator uses 10.8 at every batch size** until the first counted bake, and from then on works from the log, which corrects each bake's Phase C to the middle of its range (§12, *Log schema*). A mix counts only if it has a final dough temperature, a bowl reading rather than the prefill, all four phase times, and a water target inside 38–120 °F. If 10.8 is still high, the dough errs cool, which the probe step and the longer rise after balling both correct. Bakes 2 and 3 are the first counted bakes, at 9.44 and 9.46, and the log uses their mean (§12).
+⚠️ **Bake 1 ran long, so 14.03 is the FF of its mix, not of the one in §8.** Its Phase C took 6.5 minutes against 3.5 at the middle of the range, and the whole mix 18.5 motor minutes against 15.9 at the middle of every phase's range. At 1.08 °F a minute, Phase C's extra 3 minutes are 3.2 °F of the 14.03: with a 3.5-minute Phase C, bake 1 solves to **10.8**. Its Phases A, B and D took about 12 minutes between them, close to the middle of their ranges. **The calculator uses 10.8 at every batch size** until the first counted bake, and from then on works from the log, which corrects each bake's Phase C to the middle of its range (§12, *Log schema*). A mix counts only if it has a final dough temperature, a bowl reading rather than the prefill, all four phase times, and a water target inside 38–120 °F. If 10.8 is still high, the dough errs cool, which the probe step and the longer rise after balling both correct. Bakes 2 and 3 are the first counted bakes, at 9.44 and 9.46, and the log uses their mean (§12).
 
 **The bowl model is still untested.** Bakes at 3 and 9 balls test it: if it's right, the solved FF comes out the same at both, while the *raw temperature rise* differs (at FF 14, 11.5 vs 13.1). Compare them only once both are corrected for Phase C; a Phase C stretched or cut at the probe would otherwise look like a size effect. A difference in solved FF means different things depending on its direction:
 
@@ -445,7 +445,7 @@ Two hours at room temperature start the biga, and the fridge then holds it at a 
 
 Those are the defaults. Everything except the cold ferment is fixed overhead: **26.8 h at the defaults, 25.0–29.9 h across the full input ranges**, so the total is roughly `cold ferment + 27 h`.
 
-**Use 24 h cold (~51 h total) for now.** 24 h and 48 h have both been baked, from the same dough on bake 2: at 48 h the balls had more flavor and didn't over-proof, with the fridge at 38–39 °F. A full batch at 48 h decides the default. 6 h and 36 h are inside the calculator's range but untested.
+**Use 24 h cold (~51 h total) for now.** 24 h and 48 h have both been baked, from the same dough on bake 2: at 48 h the balls had more flavor and didn't over-proof, with the fridge at 38–39 °F. A full batch at 48 h decides the default. 6 h, the calculator's minimum, hasn't been baked.
 
 **A two-mix batch (10–18 balls at 265 g) has 27.2–27.4 h of overhead** (27.25 at 12 balls), not 26.8. The second mix and changeover add 0.58 h, the stagger correction below takes 0.29 h back off the ball rise, and dividing more balls takes longer: about 12½ minutes plus 1¼ a ball, an estimate worth timing once. Three mixes (19 balls and up) come to 27.7–27.8 h. The 5-minute changeover assumes the bowl isn't cleaned and every mix is weighed out before the first one starts.
 
@@ -501,7 +501,7 @@ Do neither until 48 h has worked on a full batch.
 5. Cover it so it can't dry out. Ferment according to your schedule in §7.
 6. **Pull at ~20% volume increase**: puffed chunks, a mild sour and alcoholic smell. Not doubled.
 
-### Stage 2: Final mix (~15 min run time)
+### Stage 2: Final mix (~18 min run time)
 
 Have everything weighed before you start, and the water already blended to temperature. **On a split batch, first split the biga by weight into one portion per mix**, leave mix 1's in the bowl, cover the rest, and weigh out every mix's fresh flour and salt (§7).
 
@@ -509,15 +509,15 @@ Have everything weighed before you start, and the water already blended to tempe
 |---|---:|---:|---|
 | **Prep** | — | — | Crumble the biga as small as you can; it's the stiffest thing the mixer handles. Add the fresh flour and toss to coat. The fresh flour isn't sieved: its lumps break up in Phase A. |
 | **A: breakdown** | **1½** · 15% / 85 RPM | 3–4 min | Add **60% of the final water** by weight (3 balls 105.8 g · 6 balls 211.6 g · 9 balls 317.4 g) **with the mixer off**, then bring the dial up. Run until the biga pieces disappear into a rough, shaggy mass. This is the highest-torque phase. *Optional (PizzaBlab): soak the crumbled biga in that water for a few minutes first, but only a few. Working biga in plain water strips starch off the chunks and leaves hard, sticky gluten lumps.* |
-| **B: bassinage** | **2** · 20% / 98 RPM | 5–6 min | Add the salt, then the remaining 40% of the water (3 balls 70.5 g · 6 balls 141.1 g · 9 balls 211.6 g) in **3 additions**, letting each absorb fully before the next. Pour **slowly down the splash-guard spout**; at 98 RPM the hook slings water that's dumped in. **Done when** the last addition has absorbed: no free water, no dry flour, one cohesive mass. |
+| **B: bassinage** | **2** · 20% / 98 RPM | 7–9 min | Add the salt, then the remaining 40% of the water (3 balls 70.5 g · 6 balls 141.1 g · 9 balls 211.6 g) in **3 additions**, letting each absorb fully before the next. Pour **slowly down the splash-guard spout**; at 98 RPM the hook slings water that's dumped in. **Done when** the last addition has absorbed: no free water, no dry flour, one cohesive mass. |
 | **Probe** | 0% | — | **Target: 3 balls 72.3 °F · 6 balls 71.9 °F · 9 balls 70.6 °F** (in a 70 °F room). It's below DDT on purpose: Phases C and D are still to come. General form below. |
-| **C: development** | **3** · 30% / 123 RPM | 3–4 min | Run until smooth and glossy. That look sets the shortest Phase C and 5.5 min the longest; within those, adjust the time from the probe reading: **~1 °F per minute** at 6 balls or larger, **~0.9 at 3 balls**. |
+| **C: development** | **3** · 30% / 123 RPM | 3–4 min | Run until the dough is one mass and mostly smooth. That sets the shortest Phase C and 5.5 min the longest; within those, adjust the time from the probe reading: **~1 °F per minute** at 6 balls or larger, **~0.9 at 3 balls**. |
 | **Rest** | 0% | 10 min | Bowl covered, mixer off. The gluten relaxes, and the dough smooths out on its own. |
 | **D: finish** | **2** · 20% / 98 RPM | 45–60 s | Final smoothing. The dough should pull cleanly off the bowl wall. |
 
-**Never above 40% (148 RPM) with this dough.** The total run is about 15 min, inside the 20-minute continuous limit, and the rest splits it anyway.
+**Never above 40% (148 RPM) with this dough.** The total run is about 18 min, inside the 20-minute continuous limit, and the rest splits it anyway.
 
-**The times are what each phase is expected to take, not when to stop.** Run A, B and D to their cues. Bake 1 needed about 11 minutes for A and B together against 8–10 here, with Phase A's water guessed and the dough running cold. Bake 2 needed 13.8, with Phase B's water added as 25%, 25% and 50%. The next bakes decide whether those two ranges move. Phase C is different, because its time is also the temperature lever (*Reading the probe*).
+**The times are what each phase is expected to take, not when to stop.** Run A, B and D to their cues. Phase B prints 7–9 minutes because that's what it took on bake 3 with the water in equal thirds: 7:26 and 9:00, most of it waiting for each addition to absorb. Bake 2's ran 9:38 with the water added as 25%, 25% and 50%. Phase A ran 3:56–4:20 on bakes 2 and 3. Phase C is different, because its time is also the temperature lever (*Reading the probe*).
 
 #### Reading the probe
 
@@ -557,24 +557,24 @@ If Phase A or B runs long, more heat is already in the dough, so the probe reads
 | **Target ±1 °F** | Run Phase C as written |
 | **1–2 °F high** | Cut Phase C to 2–2.5 min |
 | **1–2 °F low** | Extend Phase C to 4.5–5.5 min |
-| **More than 2 °F off** | Use Phase C's full range: 2 min if high (longer if it isn't smooth and glossy yet), 5.5 min if low. Accept what's left and fix the water temperature next batch |
+| **More than 2 °F off** | Use Phase C's full range: 2 min if high (longer if it's still shaggy), 5.5 min if low. Accept what's left and fix the water temperature next batch |
 
 **Phase C can only move the temperature a little.** At 6 balls, cutting it to 2 min saves **1.5 °F** and stretching it to 5.5 min adds **1.9 °F**; the range is narrower at 3 balls (−1.3 / +1.8) and slightly wider at 9 (−1.5 / +2.0). Beyond that you give up gluten development to fix temperature, and a properly developed dough 2 °F warm is better than an under-mixed one at exactly the right temperature. Fix a temperature miss in the next batch's water calculation instead.
 
-**So the look sets the shortest Phase C, and 5.5 minutes the longest.** The probe picks the time in between. Don't stop before the dough is smooth and glossy, however warm it reads, and don't run past 5.5 minutes to warm it.
+**So the look sets the shortest Phase C, and 5.5 minutes the longest.** The probe picks the time in between. Don't stop while it's still shaggy, however warm it reads, and don't run past 5.5 minutes to warm it.
 
 **How much warmth the schedule absorbs.** A warm dough gets a shorter rise after balling, down to the 45-minute floor. The floor arrives about 11 °F over DDT with one mix, 6 °F with two and 2 °F with three, because a split batch's rise is already shortened for the stagger (§7). Past that, nothing in the schedule compensates for the extra warmth. That's a reason to fix the water next batch, not to stop mixing early: stopping only stops adding about a degree a minute, and it costs development.
 
 **Friction per minute at each speed**, if you need to correct in a different phase: 15% ≈ 0.75 °F/min · 20% ≈ 0.86 °F/min · 30% ≈ 1.08 °F/min. **These are for the dough alone.** A thermometer shows each of them × `Ct/(Ct + C_bowl)`: 0.82 at 3 balls, 0.90 at 6, 0.93 at 9. At 30% that works out to an observed 0.89 / 0.97 / 1.01 °F per minute, which is where the "about a degree a minute" rule of thumb comes from.
 
-**Done when:** smooth, glossy "pumpkin-lattice" surface, a clean bowl, a thin windowpane with only slight tearing, **and DDT ±1 °F.** The temperature counts toward done as much as the look and the windowpane; write down the actual number every time.
+**Done when:** one cohesive mass, mostly smooth, pulling off the bowl wall, **and DDT ±1 °F.** A few rough spots are fine, and the windowpane can tear: the cold ferment finishes the gluten. [PizzaBlab](https://www.pizzablab.com/the-encyclopizza/windowpane-test/) says passing the windowpane test at the end of kneading isn't relevant to a dough that spends 18 h or more in the fridge. Bakes 1–3 all finished with rough spots and a windowpane that tore, and every ball opened without tearing, cold ones included. The temperature counts toward done as much as the look; write down the actual number every time.
 
 ### Stage 3: Bulk, ball, cold
 
 7. Turn out into a lightly oiled container. Rest **45–60 min** at room temperature.
    **No folds.** The mixer has already built the gluten, on top of the structure the biga brought with it, and folding now only tightens the dough and costs extensibility.
 8. Divide into **265 g** pieces. Pre-round, rest 10–15 min, then ball tight.
-9. Onto half-sheet trays with lids, **very lightly oiled**: wipe on a thin film with a paper towel. Nothing on top of the balls. Leave them at room temperature for the time in the table below, which depends on how far your final dough temperature is from DDT, then refrigerate. Oil the trays rather than flouring them (note below).
+9. One ball per **24 oz deli container**, **very lightly oiled**: wipe on a thin film with a paper towel. Nothing on top of the ball; lids on. Leave them at room temperature for the time in the table below, which depends on how far your final dough temperature is from DDT, then refrigerate. Oil the containers rather than flouring them (note below). A 16 oz container is too small for a 265 g ball on this schedule: on bake 3 the dough filled it and pushed the lid off in the fridge.
 
 | Final dough vs DDT | Room time | at DDT 75 | at DDT 74 |
 |---:|---:|---:|---:|
@@ -591,34 +591,33 @@ If Phase A or B runs long, more heat is already in the dough, so the probe reads
 
 `R' = (90 + 35)/f − 35` where `f = 2^((T_actual − DDT)/17)`. The 35 is the extra fermentation a ball gets while it cools from DDT to fridge temperature, in minutes at DDT: a cooler dough loses ground both on the counter *and* on the way down, and this compensates for both. Clamp to 45–180 min.
 
-**The 35 is an estimate.** This recipe's doubling rate, applied to a ball that takes 3–4 h to reach 40 °F, gives 29–39 minutes. It depends on how fast your fridge cools the balls, so it's worth measuring once (§12, Tier 2), and again after a new fridge or a move.
+**The 35 is an estimate, made for a ball on an open tray.** This recipe's doubling rate, applied to a ball that takes 3–4 h to reach 40 °F, gives 29–39 minutes. A ball in a lidded container cools more slowly, by an amount nobody has measured, so every ball ferments longer on the way down than the rise allows for. One core reading about 3 hours into the cold would show how much (§12, Tier 2). Until then the rise stays as it is; if the balls run ahead, it should come down. Measure again after a new fridge or a move.
 
-10. **Spread the trays out in the fridge for the first 4 h; don't stack them.** A 265 g ball takes 3–4 h to cool to 40 °F on spread trays. The rise in step 9 allows for that cooldown, and for a warmer or cooler start; it doesn't allow for anything that slows the cooling. Stacking can double the time, and a crowded fridge slows it too.
+10. **Space the containers out in the fridge for the first 4 h; don't stack them.** The rise in step 9 allows for a 265 g ball cooling to 40 °F in 3–4 h, an estimate for an open tray, and for a warmer or cooler start. A lidded container cools more slowly; stacked containers insulate each other and slow it further, and so does a crowded fridge.
 
-#### Why oil the trays, not flour
+#### Why oil the containers, not flour
 
 **Flour absorbs water.** It pulls moisture out of the dough surface and turns to paste. Over 24–48 hours in the fridge, which dries things even under a lid, you get gluey patches where the flour hydrated and a dry skin everywhere else. The skin resists opening and tears at the cornicione instead of stretching.
 
-Flour dusting comes from **wooden** dough boxes, which breathe and buffer moisture. Aluminum trays do neither, so flour on aluminum has nowhere to go but into the dough.
+Flour dusting comes from **wooden** dough boxes, which breathe and buffer moisture. Plastic containers do neither, so flour in one has nowhere to go but into the dough.
 
-**Oil keeps the dough from sticking** to the metal without drawing water out of it, and stops a skin forming over a long cold ferment.
+**Oil keeps the dough from sticking** to the container without drawing water out of it, and stops a skin forming over a long cold ferment.
 
 **Use each for its own job:**
 
 | Job | Use |
 |---|---|
-| Release from the **tray** | thin oil film |
+| Release from the **container** | thin oil film |
 | Release from the **peel** | flour or semolina, at the bench, right before launch |
 
-**Keep the oil to a film.** Wipe the tray with an oiled towel until it has a sheen, with no oil pooling. With too much, the ball slides instead of gripping enough to hold its dome as it relaxes, the base picks up oil that fries and over-browns on the stone, and the excess smokes. A neutral oil has a slightly higher smoke point than olive oil, though at these amounts it barely matters.
+**Keep the oil to a film.** Wipe the inside of the container with an oiled towel until it has a sheen, with no oil pooling. With too much, the ball slides instead of gripping enough to hold its dome as it relaxes, the base picks up oil that fries and over-browns on the stone, and the excess smokes. A neutral oil has a slightly higher smoke point than olive oil, though at these amounts it barely matters.
 
 **Put nothing on top of the balls.** The lid handles humidity, and oil on top becomes the cornicione surface and browns it unevenly.
 
 ### Stage 4: Temper and bake
 
-11. Out of the fridge **1½–2 h** before the first launch. Target **60–65 °F at the core**, measured with a probe. Under 55 °F the dough tears when you open it and won't get good oven spring; over 70 °F it goes slack and sticky.
-    **More than one tray: temper in waves.** First tray 1½ h before the first launch, the second at the first launch, and each one after that 45 minutes after the one before. In individual containers, pull them in groups of six.
-    Julian Sisofo gives his balls 1–2 h after the fridge, and this recipe's cooling figure agrees: a ball that takes 3–4 h to cool from 75 to 40 °F should reach 60 °F at the core in a little over an hour and 65 °F in about two. Still counter air may be slower, so the core temperature decides, not the clock.
+11. Each ball comes out of the fridge **1½–2 h** before it's baked. Target **60–65 °F at the core**, measured with a probe. Under 55 °F the dough tears when you open it and won't get good oven spring; over 70 °F it goes slack and sticky.
+    Julian Sisofo gives his balls 1–2 h after the fridge, and this recipe's cooling figure for an open tray agrees: a ball that takes 3–4 h to cool from 75 to 40 °F should reach 60 °F at the core in a little over an hour and 65 °F in about two. A ball in a lidded container likely warms more slowly, so the core temperature decides, not the clock.
 12. Ready when the balls have relaxed and spread slightly, domed, and feel airy, with a slow, incomplete rebound when poked.
 
 ---
@@ -705,7 +704,7 @@ Bake 1 ran **6 balls on the retarded schedule with 24 h of dough cold ferment (~
 | Dough over DDT | FF underestimated | Raise your FF; use colder water next time |
 | Dough under DDT | FF overestimated, or water off target | Lower FF; extend Phase C ~1 min per °F, to 5.5 min at most |
 | Dough tight, springs back on opening | Over-mixed in Phase C, or under-tempered | Cut Phase C by 1 min; check the ball core is 60–65 °F |
-| Dough slack and sticky at opening | Over-fermented, likely a warm fridge or stacked trays | Check the actual fridge temperature; spread the trays; drop DDT 1–2 °F |
+| Dough slack and sticky at opening | Over-fermented, likely a warm fridge, or containers stacked or crowded | Check the actual fridge temperature; space the containers out; drop DDT 1–2 °F |
 | No oven spring, dense cornicione | Under-fermented, or launched cold | Longer temper; check the fridge isn't below 36 °F |
 | Burn ring at the base of the cornicione | Unsauced, and the thinnest part of the base | Sauce closer to the rim; gentler opening; brush off loose flour (§9) |
 | Pale crust on long ferments | The yeast has used up the residual sugars | Shorten the cold ferment. Don't bake longer; it dries the crumb. |
@@ -787,12 +786,12 @@ INDICATOR: FULL segment = 10%, HALF-lit (next one DIM) = 5%. Count LIT SEGMENTS.
   60 RPM is the FLOOR - add water with mixer OFF, then dial up.
 
 FINAL  A  1.5 seg  15%/85   3-4 min   breakdown, 60% of water (PhA above)
-       B  2 seg    20%/98   5-6 min   salt + remaining 40% in 3 adds (PhB above)
+       B  2 seg    20%/98   7-9 min   salt + remaining 40% in 3 adds (PhB above)
        PROBE  at a 70 F ROOM: 3bl DDT-2.7 / 6bl DDT-3.1 / 9bl DDT-3.4
               ROOM MATTERS MORE THAN BATCH: +0.2 toward DDT per F below 70.
               62 F kitchen, 6bl = DDT-1.5 (not 3.1). MEASURE THE ROOM.
   general: DDT - 4.5 x Ct/(Ct+C_bowl) + 0.2 x (DDT - Troom)
-       C  3 seg    30%/123  3-4 min   develop
+       C  3 seg    30%/123  3-4 min   develop to one mass, mostly smooth
               OBSERVED rate 0.89 F/min (3bl) 0.97 (6bl) 1.01 (9bl)
               only -1.5 to +1.9 F available @6bl. Bigger miss -> fix water.
        rest     off     10 min
@@ -801,14 +800,13 @@ NEVER above 4 SEGMENTS (40%).  20 min continuous max.
 FRICTION RATES 0.75/0.86/1.08 F-min @15/20/30% ARE DOUGH-ONLY.
   To compare against a thermometer, x Ct/(Ct+C_bowl): 0.82/0.90/0.93 at 3/6/9.
 
-BULK 45-60 min (no folds) -> ball -> RT per offset from DDT -> fridge (unstacked)
+BULK 45-60 min (no folds) -> ball into a 24 oz deli -> RT by offset -> fridge, spaced
   BY OFFSET FROM DDT (holds at 75 AND 74):
   on target=90min  -1F=95  -2F=101  -3F=106  -4F=112  -5F=118   (+1F=85, +2F=80)
-  R' = (90+35)/f - 35. The 35 (cooldown) is an ESTIMATE; re-measure on a new fridge.
+  R' = (90+35)/f - 35. The 35 (cooldown) is an ESTIMATE for an open tray;
+  containers cool slower (unmeasured). Re-measure on a new fridge.
   9 balls = DDT 74, so a 74 F dough is ON TARGET = 90 min, not 95.
-TEMPER 1.5-2 h to 60-65 F core; the core decides, not the clock.
-  More than one tray: WAVES. 1st tray 1.5 h before first launch, 2nd at first
-  launch, then +45 min each. Containers: pull in groups of 6.
+TEMPER 1.5-2 h per ball to 60-65 F core; the core decides, not the clock.
 BAKE gauge 750 F, FULL FLAME, 60-90 s, turn every 15-20 s. Do not push to 800+.
 ```
 
@@ -816,7 +814,7 @@ BAKE gauge 750 F, FULL FLAME, 60-90 s, turn every 15-20 s. Do not push to 800+.
 
 ## 12. Building the calculator: what needs measuring
 
-**Friction factor is the only thing blocking the calculator, and the only input that has to come from your own machine.** Everything else in this document is arithmetic (§3 scaling, §6 water temperature) or published data you can cite (§5 yeast).
+**Friction factor is the one input that has to come from your own machine.** Everything else in this document is arithmetic (§3 scaling, §6 water temperature) or published data you can cite (§5 yeast).
 
 ### ✅ Bake 1 — 21 Aug 2026, 6 balls
 
@@ -837,7 +835,7 @@ BAKE gauge 750 F, FULL FLAME, 60-90 s, turn every 15-20 s. Do not push to 800+.
 - The Phase C rate climbed 0.82 → 1.00 °F/min as the bowl equilibrated. **That's evidence the bowl started colder than the dough**, consistent with the biga gaining 5 °F from tearing while the bowl stayed at pull temperature.
 - Rest + Phase D gained +0.5 °F, not the −0.14 predicted → heat lost during the rest scales with the gap between dough and room.
 - **Phase A water was guessed, so the "too dry" observation is confounded.** It's now specified in grams. Needs a clean repeat.
-- Total motor time was 18.5 min, against 13.4 at the middle of every phase's range (15 at the top of each). Phase C alone ran 3 minutes over, 3.2 °F of the 14.03 at 1.08 °F a minute: with a 3.5-minute Phase C, bake 1 solves to 10.8 (§6, *Friction factor: measured*).
+- Total motor time was 18.5 min, against 15.9 at the middle of every phase's range (18 at the top of each). Phase B printed 5–6 minutes then, which put the middle at 13.4. Phase C alone ran 3 minutes over, 3.2 °F of the 14.03 at 1.08 °F a minute: with a 3.5-minute Phase C, bake 1 solves to 10.8 (§6, *Friction factor: measured*).
 - Phases A and B added less heat than the friction rates predict. By the probe at 11 minutes the dough had risen 7.4 °F (dough alone, heat of hydration included), where 0.75 and 0.86 °F a minute give 8.25 to 9.46 over those 11 minutes before any heat of hydration, however the time was split between A and B. One bake, with Phase A's water guessed.
 
 ⚠️ **FF = 14.03 was fitted with `T_bowl` assumed equal to 58 °F.** If the bowl was actually nearer the 53 °F pull temperature, the same measurement solves to **FF = 14.57**. Both fits reproduce bake 1 exactly, because the error was absorbed into FF at the batch size it was fitted at, which is why the two separate at other batch sizes:
@@ -902,9 +900,10 @@ Each dough bulked in its own container. The balls went into 16 oz deli container
 - **Both finals came within about half a degree of DDT**, on water targets from bake 1's 10.8.
 - **The bowl read well above the biga again on mix 1:** 59 against 50 °F, after bake 2's 64.5 against 54.
 - **A 16 oz container is too small for a 265 g ball on this schedule.** 24 oz from the next bake.
+- **Phase B takes 7–9 minutes with the water in equal thirds:** 7:26 and 9:00, most of it waiting for each addition to absorb. §8 prints 7–9 from MESSAGE-60.
 - **The flavor was great, possibly better than bake 2's 24-hour balls, with about 6 fewer hours cold.** It's one comparison. These balls likely fermented more before they got cold, since closed containers chill slowly, which the lids also suggest.
 
-### Tier 1: blocking
+### Tier 1: calibration bakes
 
 | Measure | How | Reps |
 |---|---|---|
@@ -925,7 +924,7 @@ One rep gets most of the value. Three give you a mean and a sense of the spread,
 
 So log **room temperature on every bake**; that's what tests both. After 8–10 logged batches, regress `FF = a + b × (T_room − 70)` per mix size, on FFs corrected for Phase C. If either effect is real, that's a model no generic calculator has, and the main reason to build your own.
 
-**Also worth one afternoon:** probe a ball core every 30 min after it goes in the fridge, once spread out and once stacked. That gives the real cooldown instead of an estimate, and it replaces the 35 in the rise after balling (§8, step 9), which is estimated. The cooldown depends on the fridge, so measure again after a new fridge or a move. Home Assistant could log this continuously and turn it into a curve.
+**Also worth one reading:** probe one ball's core about 3 hours after the balls go in the fridge. About 40–42 °F means a container cools like a ball on an open tray, which the 35 in the rise after balling assumes (§8, step 9); about 50 °F means twice as slowly, and the rise should come down. A reading every 30 minutes would give the whole curve and replace the estimate. The cooldown depends on the fridge and the container, so measure again after changing either. Home Assistant could log it continuously from a probe.
 
 ### Tier 3: the yeast model (do last, or not at all)
 
@@ -960,7 +959,7 @@ notes_crumb, notes_cornicione, notes_base
 
 `FF = [ final_dough_temp_f × (Ct + C_bowl) − Cb·T_biga − Cf·T_flour − Cw·T_water − Cs·T_room − C_bowl·T_bowl ] ÷ Ct` (§6)
 
-**Then correct it for Phase C's time:** subtract `1.08 × (actual − 3.5)`, with the time in minutes: the 30% rate times Phase C's distance from the middle of its range. A Phase C stretched to 5.5 minutes at the probe loses 2.2 °F; one cut to 2 minutes gains 1.6. Phases A, B and D aren't corrected. You run them to their cues, and bakes 1 and 2 both say their rates (0.75 and 0.86 °F a minute) run high, so correcting them can take off far more heat than went in: bake 2 would have come to 5.30 instead of 9.44, and bake 3 to 6.54 instead of 9.46.
+**Then correct it for Phase C's time:** subtract `1.08 × (actual − 3.5)`, with the time in minutes: the 30% rate times Phase C's distance from the middle of its range. A Phase C stretched to 5.5 minutes at the probe loses 2.2 °F; one cut to 2 minutes gains 1.6. Phases A, B and D aren't corrected. You run them to their cues, and bakes 1 and 2 both say their rates (0.75 and 0.86 °F a minute) run high, so correcting them can take off far more heat than went in: bake 2 would have come to 5.30 instead of 9.44, and bake 3 to 6.54 instead of 9.46, at the ranges printed then.
 
 The calculator logs only the FF inputs: per bake the batch, formula, room and flour; per mix the biga, bowl, water target (logged as the water used), final dough temperature and phase times. The rest of this list is for your own notes.
 

@@ -62,7 +62,7 @@ function bake(id: string, overrides: Partial<LoggedBake> = {}): LoggedBake {
         bowl_prefilled: false,
         water_temp_used_f: 63,
         final_dough_temp_f: 73.5,
-        phase_seconds: { a: 210, b: 330, c: 210, d: 52.5 },
+        phase_seconds: { a: 210, b: 480, c: 210, d: 52.5 },
         excluded: false,
       },
     ],
@@ -381,7 +381,7 @@ describe('the session as a bake (§10)', () => {
     expect(b.mixes[0]!.water_temp_used_f).toBe(roundTo(targets(measured)[0]!, 1));
     // §10: dropped with the selector in MESSAGE-54.
     expect(b.mixes[0]).not.toHaveProperty('bowl_state');
-    expect(b.mixes[0]!.phase_seconds).toEqual({ a: 210, b: 330, c: 210, d: 52.5 });
+    expect(b.mixes[0]!.phase_seconds).toEqual({ a: 210, b: 480, c: 210, d: 52.5 });
     expect(mixStatus(b, b.mixes[0]!)).toMatchObject({ counted: true, reasons: [] });
   });
 

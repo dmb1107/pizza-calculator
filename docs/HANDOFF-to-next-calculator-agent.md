@@ -9,20 +9,25 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-59 and FINDINGS-60 (9 November).
+MESSAGE-60 and FINDINGS-61 (9 November).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-59, and FINDINGS-60 is the
-  last thing sent.** No pin of any kind is live (`knownWrong` is empty).
-  **Two things are open in FINDINGS-60**, both for the recipe agent:
-  `schedule-architecture`, `why-biga` and `formula-rationale` are linked by
-  no step and no drawer, so the app never shows them (MESSAGE-59 called one
-  of them rendered copy), and whether §3 should name §4.7's fixed 2 h
-  `bigaRoomTemp`, which we put in `timeline.ts` as `BIGA_ROOM_TEMP_H`.
+- **The correspondence is applied through MESSAGE-60, and FINDINGS-61 is the
+  last thing sent.** No pin of any kind is live (`knownWrong` is empty), and
+  nothing is open. MESSAGE-60 settled FINDINGS-60's two questions (Dave
+  placed the three unlinked concepts; `BIGA_ROOM_TEMP_H` stays in
+  `timeline.ts`, no §3 entry) and changed the recipe: **one ball per lidded
+  24 oz deli container**, tempered 1½–2 h per ball, Dave's waves gone; the
+  cooling estimate behind `COOLDOWN_EQUIV_MIN` is for an open tray (no
+  figure moves); the mix ends mostly smooth; **Phase B is 7–9 min**, so the
+  profile has 1.5 min of headroom and Phase B's log reference is 8 (nothing
+  reads it: the log corrects Phase C only). Concepts outside the steps are
+  `PAGE_CONCEPT_LINKS`, rendered by `ConceptLink`, and `steps.test.ts`
+  requires every concept to be opened from somewhere. Bake 2 is back on.
   MESSAGE-59 carried bakes 2 and 3, the first counted bakes, and two
   changes. **D2: the log corrects Phase C only** — the phase `mix-4` sets
   from the probe, and the only rate a bake has checked; the 15% and 20%
@@ -30,9 +35,9 @@ Don't trust any status here that you can check instead (§7).
   pins it by key, and `normalizeFrictionFactorF` now takes just Phase C's
   minutes. All four timers are still logged and still required for a mix to
   count. **E1: the retarded cold ferment runs to 6–48 h**, default still 24;
-  at 48 h the total is 74 h 50 min. The log holds bake 2 (excluded, until
-  Dave switches it back on) and bake 3, so the FF in use is bake 3's
-  **9.456327** at every mix size, 9.447610 with both. Before this round the
+  at 48 h the total is 74 h 50 min. The log holds bakes 2 and 3, both
+  counted since Dave switched bake 2 back on after PR #16 deployed, so the FF
+  in use at 6 balls per mix is their mean, **9.447610**. Before this round the
   live site served bake 3 under the four-phase rule and asked for 90.1 °F
   water at its default page; it is 81.3 now.
   MESSAGE-58 reported a live bug on the day of bake 2: a reading typed at
@@ -307,6 +312,7 @@ true and what they need to change.
 | `timeline.test.ts` | §4.7 durations, the stage sequence on both schedules, daylight saving. §4.8's overhead table at six ball counts (the divide scales with balls), the 25.0–29.9 band at its two corners, classic at its 6 h cold ferment. §7.4's "19 h (18–20)" on every stage, written out. The centring at `nMix` 3 (middle dough on time) and a changeover overrun landing whole on the first dough (MESSAGE-38). **Backward mode pinned to hand-written clock times** on both schedules and at `nMix` 2; exact landing on the bake across fractional durations; the overnight windows against a brute-force scan | A wrong order sums to the right total. Summing hours × 3.6e6 landed 1 ms early and printed the minute before |
 | `capacity.test.ts` | §7.3: which capacity message fires and when, its bound wording, the binding-limit guards (flour cap never first for a mix), the one-biga line exactly when the batch splits, the below-minimum guard silent across the range, decisions on the **printed** per-mix dough, the near-limit ball list across 240–300 g. §7.5 segment states (lit / dim / off), and the chip's smaller line for every speed step | The spec says conditions are decided on displayed values; 2374.96 g prints 2375.0 and must fire. **The ball list can't see the 5%**: it holds for any threshold from 94.03% to 98.11%, so the edge test is what pins the threshold |
 | the gate's component walker | Widened in MESSAGE-59's round to strings in **object and array literals**, not just inside JSX. Markup is skipped by shape (a CSS color, or a list of lowercase hyphenated tokens), never by key, since a Tailwind map's keys are tones. A phrase guard bans any copy saying the log corrects more than Phase C | Reading only inside JSX hid `FRICTION_HINT`, whose step-1 badge still said each bake is corrected "to the middle of every phase time", and the Batch panel's two schedule descriptions — four rendered figures nothing had ever checked. The guard was blind when first written, and was found so by reinstating the stale hint |
+| concept reachability (`steps.test.ts`) | Every concept is opened by a step's `concepts` or a `PAGE_CONCEPT_LINKS` entry, and each entry is rendered as a `ConceptLink` in the component §8.3 names (read from the syntax tree, by function). Also pins `biga-1`'s two links in order and that `watchFor` goes through `<Markdown>`. A phrase guard in `contentLiterals.test.ts` bans "tray" from our copy, the stage text and `recipeText.ts` | Three concepts were reproduced verbatim and opened by nothing (FINDINGS-60): the verbatim test compares text, not reachability. Each check was confirmed by mutation |
 | `fieldCommit.test.ts` | §6's rule for leaving a number field (MESSAGE-58): an edited reading commits even at the value shown, through to `bowl_prefilled: false` and a counted mix; no edit commits nothing; other fields keep the old rule | A bowl read at its prefill and a final on DDT were dropped as unchanged. The edit tracking itself is in `NumberField` and only a browser check reaches it |
 | `recipeText.test.ts` | Copy-as-text, and the dough total rounded once (2501.9 at 9 × 272 g, never the 2501.7 its rounded parts sum to) | The gate doesn't read `recipeText.ts` |
 | `timers.test.ts` | Timer state derived from an absolute start and `now`, windows as earliest → latest. Every step's timer, resolved per schedule and bound with the real token table, parses as a duration. The generator's `timerMinutes` and the runtime parser agree on every fixed label (seconds included) | `biga-4` said "per schedule" and had no timer for the longest stage in the recipe. Seconds are where two parsers of one label could part |

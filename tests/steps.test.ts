@@ -5,6 +5,7 @@ import { CONCEPTS } from '../src/content/concepts';
 import { ABOUT_INTRO, REFERENCE, SOURCES } from '../src/content/reference';
 import { CAPACITY } from '../src/content/capacity';
 import { STEPS } from '../src/content/steps';
+import { PAGE_CONCEPT_LINKS } from '../src/lib/conceptLinks';
 
 /**
  * Verbatim-fidelity check — WEBSITE-SPEC-biga-calculator.md §8.
@@ -511,5 +512,79 @@ describe('cross-references resolve', () => {
     for (const id of ['thermal-model', 'friction-factor']) {
       expect(ids.has(id), `${id} is required by the calculator cards`).toBe(true);
     }
+  });
+
+  /**
+   * MESSAGE-60. Three concepts were reproduced verbatim and opened by nothing
+   * (FINDINGS-60 §4), and the verbatim test can't see that: it compares text,
+   * not reachability. A concept is opened from a step's `concepts` or from
+   * one of the page links, and from nowhere else.
+   */
+  it('opens every concept from somewhere', () => {
+    const opened = new Set([...STEPS.flatMap((s) => s.concepts ?? []), ...Object.values(PAGE_CONCEPT_LINKS)]);
+    const unopened = CONCEPTS.map((c) => c.id).filter((id) => !opened.has(id));
+    expect(unopened, 'concepts no step and no page link opens').toEqual([]);
+    for (const id of Object.values(PAGE_CONCEPT_LINKS)) {
+      expect(CONCEPTS.some((c) => c.id === id), `page link to unknown concept "${id}"`).toBe(true);
+    }
+  });
+
+  it('links giorilli-standard, then why-biga, from biga-1 (MESSAGE-60)', () => {
+    expect(STEPS.find((s) => s.id === 'biga-1')?.concepts).toEqual(['giorilli-standard', 'why-biga']);
+  });
+
+  /**
+   * §8.3's three page links, each read where §6 and §7.1 put it: the
+   * component and the function that renders it. A key in the table that no
+   * component renders would make the reachability test above pass on paper.
+   */
+  it('renders each page link where §8.3 puts it', () => {
+    expect(PAGE_CONCEPT_LINKS).toEqual({
+      calibration: 'friction-factor',
+      coldFerment: 'schedule-architecture',
+      ingredients: 'formula-rationale',
+    });
+    const found: string[] = [];
+    for (const file of ['src/components/panels.tsx', 'src/components/cards.tsx']) {
+      const visit = (node: unknown, fn: string): void => {
+        if (Array.isArray(node)) return node.forEach((n) => visit(n, fn));
+        if (typeof node !== 'object' || node === null) return;
+        const n = node as Record<string, any>;
+        if (n.type === 'FunctionDeclaration' && n.id?.name) fn = n.id.name;
+        if (n.type === 'JSXElement' && n.openingElement?.name?.name === 'ConceptLink') {
+          for (const a of n.openingElement.attributes ?? []) {
+            const e = a.value?.expression;
+            if (a.name?.name === 'id' && e?.type === 'MemberExpression' && e.object?.name === 'PAGE_CONCEPT_LINKS') {
+              found.push(`${fn}.${e.property.name}`);
+            }
+          }
+        }
+        Object.values(n).forEach((v) => visit(v, fn));
+      };
+      visit(parseAst(readFileSync(file, 'utf8'), { lang: 'tsx' }), '');
+    }
+    expect(found.sort()).toEqual(['BatchPanel.coldFerment', 'CalibrationPanel.calibration', 'IngredientsCard.ingredients']);
+  });
+
+  /**
+   * mix-7's cue carries the DDT gate in bold. The content test above pins the
+   * asterisks; this pins that StepList hands `watchFor` to the markdown
+   * renderer, so they never print literally.
+   */
+  it('renders watchFor as markdown', () => {
+    let rendered = false;
+    const visit = (node: unknown): void => {
+      if (Array.isArray(node)) return node.forEach(visit);
+      if (typeof node !== 'object' || node === null) return;
+      const n = node as Record<string, any>;
+      if (n.type === 'JSXElement' && n.openingElement?.name?.name === 'Markdown') {
+        rendered ||= (n.children ?? []).some(
+          (c: any) => c.type === 'JSXExpressionContainer' && c.expression?.property?.name === 'watchFor',
+        );
+      }
+      Object.values(n).forEach(visit);
+    };
+    visit(parseAst(readFileSync('src/components/StepList.tsx', 'utf8'), { lang: 'tsx' }));
+    expect(rendered, 'StepList renders watchFor outside <Markdown>').toBe(true);
   });
 });

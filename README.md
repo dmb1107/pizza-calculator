@@ -20,7 +20,9 @@ returns:
 - a timeline with real clock times, planned forward from the biga start or
   backward from the bake time;
 - a guided step list with timers and mixer speeds drawn as the Core's lit
-  segments, where every step expands into the reasoning behind it;
+  segments, where every step expands into the reasoning behind it, and longer
+  background pieces open from the steps, the cold-ferment slider, the
+  ingredients card and the Calibration panel;
 - a bake log that solves the mixer's friction factor from each bake's measured
   temperatures, water targets and phase times, and sets the friction factor
   the next water target uses. The four mixer-phase timers it reads are tagged **Logged**, and
@@ -46,7 +48,8 @@ their hands.
 
 Tasks 0–11 are done and the site is live. The bake log (Task 11) was built
 across MESSAGE-45 to MESSAGE-50; MESSAGE-51 to 53 were Dave's recipe review,
-and MESSAGE-54 moved the day's readings into the steps. See
+MESSAGE-54 moved the day's readings into the steps, and bakes 2 and 3
+(MESSAGE-59 and 60) are the first the log counts. See
 [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
 ## Home screen icon

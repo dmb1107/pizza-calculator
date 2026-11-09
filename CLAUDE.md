@@ -132,6 +132,8 @@ question:
 | `FINDINGS-59-to-recipe-agent.md` | Reply to MESSAGE-58. Fixed (`leaveField`, `recordsReading`) and checked by typing in the browser; nothing open. The fix also covers a later mix's biga read at the carried-forward value |
 | `MESSAGE-59.md` | Bakes 2 and 3 (the first counted bakes). **D2:** the log corrects Phase C only — the 15% and 20% rates are unmeasured and both bakes say they run high. **E1:** the retarded cold ferment runs to 48 h, default still 24 |
 | `FINDINGS-60-to-recipe-agent.md` | Reply to MESSAGE-59. All reproduced. Open: `schedule-architecture`, `why-biga` and `formula-rationale` are linked by no step and no drawer, so the app never shows them; whether §3 should name `bigaRoomTemp`'s 2 h. The gate's walker read only strings inside JSX, so the Calibration panel's `FRICTION_HINT` and the Batch panel's schedule descriptions were invisible |
+| `MESSAGE-60.md` | Reply to FINDINGS-60, with Dave's three concept links (`biga-1` → `why-biga`, the cold-ferment slider → `schedule-architecture`, the ingredients card → `formula-rationale`). **C1:** one ball per lidded 24 oz deli container, tempered 1½–2 h per ball, the waves gone. **C4:** the cooling estimate is for an open tray. **G1:** the mix ends mostly smooth. **P1:** Phase B 7–9 min, so the profile has 1.5 min of headroom |
+| `FINDINGS-61-to-recipe-agent.md` | Reply to MESSAGE-60. All reproduced; the three links built and a test now requires every concept to be opened from somewhere. PR #16 deployed; bake 2 back on, FF in use 9.447610 |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -216,8 +218,10 @@ survive §8.2a expansion**: after expansion `mix-8#1` is followed by the whole o
 mix 2, so the rule classifies the changeover as interrupting a run. A test pins
 that failure. A new pause in the mix phase is something a person classifies.
 
-**Three wall-clock bases for a mix, spanning 12 minutes** — nominal mid-range
-23.9, phase maxima 27.0 (the duty-cycle basis), §4.7 planning 30.0. `stagger`
+**Three wall-clock bases for a mix, spanning 7¼ minutes at `nMix = 2`** —
+nominal mid-range 26.4 per mix, phase maxima 30.0 (the duty-cycle basis), §4.7
+planning 30.0. Since Phase B went to 7–9 min (MESSAGE-60) the maxima and the
+planning number agree, which is a coincidence, not a reason to rebase. `stagger`
 uses the **planning** basis and must: it and the timeline are the same quantity,
 so rebasing one decouples the correction from the schedule it corrects. If one
 moves, both move.
@@ -228,11 +232,13 @@ treated as *not* resetting motor thermal load, the conservative reading — and
 `mix-6`'s rest breaks the run, so Phase D starts fresh. The sum is derived from
 the step content rather than transcribed, so extending a phase in §8.2 moves it
 automatically; that is the whole purpose, since a runtime warning could never
-fire on a fixed profile with 4.5 minutes of headroom. Phase C contributes its
+fire on a fixed profile with 1.5 minutes of headroom (18.5 of 20 since
+MESSAGE-60's Phase B; Phase C at 7 minutes lands on exactly 20). Phase C contributes its
 §4.6 authority ceiling (5.5 min), not the 3–4 printed on the card.
 
-**Split-batch duty cycle is deliberately unmodelled.** The motor runs ~33 min
-inside ~59 min of wall clock at `nMix = 2`, which is not a continuous run. Ooni
+**Split-batch duty cycle is deliberately unmodelled.** The motor runs 39.0 min
+at the phase maxima inside 57.8–65.0 min of wall clock at `nMix = 2`, which is
+not a continuous run. Ooni
 publishes a continuous figure and no duty-cycle guidance, so there is nothing to
 compute against — and a bound invented for the occasion is how the yeast table
 went wrong. Don't model it, don't warn on it.
@@ -377,8 +383,12 @@ and nothing more: no sensitivity figures beside the fields. The water
 warnings belong to a mix (`MixTarget.warnings`), never the strip; the strip
 keeps capacity, overnight stages and the stagger. The target stays bare: its
 `thermal-model` link is `mix-1`'s `concepts` field, under the detail
-(MESSAGE-55). The only concept link outside a step is the Calibration
-panel's `friction-factor` (§8.3). `bigaReadingCost`,
+(MESSAGE-55). Three concept links sit outside the steps (§8.3, MESSAGE-60):
+the Calibration panel's `friction-factor`, the cold-ferment slider's
+`schedule-architecture` and the ingredients card's `formula-rationale`, named
+in `PAGE_CONCEPT_LINKS` and rendered by `ConceptLink`. **Every concept must be
+opened from somewhere**: three were reproduced verbatim and opened by nothing
+until FINDINGS-60, and `steps.test.ts` now fails on that. `bigaReadingCost`,
 `bowlReadingCost` and `bowlTracksBiga` stay in the engine because §7.2's two
 bases are tested, though nothing renders them. A link's `bowlst` is ignored;
 don't reuse the key.
@@ -584,9 +594,10 @@ don't inline a `toFixed` somewhere else.
   deterministic.
 - **Markdown must render tables.** Step `detail` and concept `body` contain GFM
   tables and multi-paragraph prose — `react-markdown` + `remark-gfm`, not a
-  text renderer. **`watchFor` is markdown too** — `mix-7`'s cue ends
+  text renderer. **`watchFor` is markdown too** — `mix-7`'s cue carries
   `and **DDT ±1 °F.**`, and rendering it as plain text put literal asterisks
-  around the one number that decides whether the mix is done.
+  around the one number that decides whether the mix is done. A test pins
+  that `StepList` hands it to `<Markdown>`.
 - **Timers are end times, not counters.** Everything derives from an absolute
   `startedAt` against a `now` passed in, so a locked phone or a reload returns
   the right answer. Never introduce a decrementing counter. **A timer stops**
@@ -654,7 +665,8 @@ don't inline a `toFixed` somewhere else.
   change clamps it, and so does reading a link; a link that omits it takes
   its track's default. `setInput`'s rules live in `applyInput` in
   `defaults.ts`, pure, so `state.test.ts` reaches them.
-- **The temper is 1.5–2 h, planned at 1.5** (MESSAGE-53); a stored or linked
+- **The temper is 1.5–2 h per ball, planned at 1.5** (MESSAGE-53; per ball
+  since MESSAGE-60, so the plan is the first ball's); a stored or linked
   2–3 clamps. The timeline prints a range from one hour up in hours ("1 h 30
   min (1.5–2 h)", as `bake-1`'s timer reads), and below an hour in minutes.
 - **The divide scales with total balls** (12.5 + 1.25 per ball, minutes,
@@ -681,7 +693,9 @@ don't inline a `toFixed` somewhere else.
   like `mix-6`. FF decides where the dough is when probed, which is what the
   probe measures.
 - **`COOLDOWN_EQUIV_MIN` is 35, an estimate** (MESSAGE-52), from
-  `Q_DOUBLING_F` on a ball cooling 75 → 40 °F in 3–4 h. The rise at DDT is
+  `Q_DOUBLING_F` on a ball cooling 75 → 40 °F in 3–4 h **on an open tray**
+  (MESSAGE-60): the lidded containers likely cool slower, and no figure
+  moves for it. The rise at DDT is
   still 90 min; every off-target rise moved (+2 °F is 80, −5 °F is 118), and
   the 45-minute floor is reached at +10.95 / +6.09 / +2.05 °F with 1 / 2 / 3
   mixes.

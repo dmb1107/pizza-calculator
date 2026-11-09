@@ -3,7 +3,7 @@ import { Markdown } from './Markdown';
 import { StepTimer } from './StepTimer';
 import { BakeLogCard, FinalTempCapture } from './BakeLog';
 import { MixReadings } from './MixReadings';
-import { conceptById } from '../content/concepts';
+import { ConceptLink } from './ConceptLink';
 import { parseTimerLabel } from '../lib/timers';
 import { loggedTimerTag } from '../lib/bakeLog';
 import { SpeedIndicator } from './SpeedIndicator';
@@ -235,15 +235,7 @@ function StepRow({
                   {step.concepts && step.concepts.length > 0 && (
                     <div className="mt-4 flex flex-wrap gap-2">
                       {step.concepts.map((id) => (
-                        <button
-                          key={id}
-                          type="button"
-                          onClick={() => onOpenConcept(id)}
-                          className="min-h-touch rounded-lg border border-stone-300 px-3 text-sm font-medium active:bg-stone-100 dark:border-stone-600 dark:active:bg-stone-800"
-                        >
-                          {/* §7.5: the concept's title, never its id. */}
-                          Read more: {conceptById(id)?.title ?? id}
-                        </button>
+                        <ConceptLink key={id} id={id} onOpen={onOpenConcept} />
                       ))}
                     </div>
                   )}

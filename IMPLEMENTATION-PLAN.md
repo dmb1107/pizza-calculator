@@ -22,7 +22,13 @@ at the value its field shows is recorded. **MESSAGE-59 is applied**: the bake
 log corrects **Phase C only** (bakes 2 and 3 are the first counted bakes, at
 9.438894 and 9.456327, and the FF in use at 6 balls per mix is their mean
 9.447610), and the retarded cold ferment runs to **6–48 h**, default still 24.
-FINDINGS-60 is the last thing sent.
+**MESSAGE-60 is applied**: one ball per lidded 24 oz deli container, tempered
+1½–2 h per ball; the mix ends mostly smooth; Phase B is 7–9 min, leaving the
+`MAX_RUN_MIN` profile 1.5 min of headroom; and every concept now opens from
+somewhere, with `why-biga` on `biga-1` and two new page links
+(`schedule-architecture` on the cold-ferment slider, `formula-rationale` on
+the ingredients card). Bake 2 is back on, so the FF in use is 9.447610.
+FINDINGS-61 is the last thing sent.
 
 ---
 

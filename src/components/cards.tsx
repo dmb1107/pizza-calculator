@@ -1,4 +1,6 @@
+import { ConceptLink } from './ConceptLink';
 import { CopyButton } from './CopyButton';
+import { PAGE_CONCEPT_LINKS } from '../lib/conceptLinks';
 import { Markdown } from './Markdown';
 import { C } from '../lib/constants';
 import { formatAdy, formatGrams, formatPercent, formatTempF } from '../lib/format';
@@ -43,7 +45,7 @@ function Weight({ label, value, note }: { label: string; value: string; note?: s
 }
 
 /** §7.1. Two columns, Biga and Final mix, at arm's-length size. */
-export function IngredientsCard({ result }: { result: CalculatorResult }) {
+export function IngredientsCard({ result, onOpenConcept }: { result: CalculatorResult; onOpenConcept: (id: string) => void }) {
   const { formula, capacity } = result;
 
   return (
@@ -77,6 +79,10 @@ export function IngredientsCard({ result }: { result: CalculatorResult }) {
         Total dough {formatGrams(formula.doughTotal)} g · {result.inputs.balls} ×{' '}
         {formatGrams(result.inputs.ballWeightG)} g plus {formatPercent(C.OVERAGE - 1, 1)} for scrap
       </p>
+      {/* §7.1: the card links formula-rationale. */}
+      <div className="mt-3 flex">
+        <ConceptLink id={PAGE_CONCEPT_LINKS.ingredients} onOpen={onOpenConcept} />
+      </div>
     </Card>
   );
 }
