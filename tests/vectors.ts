@@ -90,6 +90,80 @@ export const BAKE_1 = {
   phaseCMin: 6.5,
 } as const;
 
+
+/**
+ * Bake 2, 23 Oct 2026 — the first counted bake (§5 *Bake log*, MESSAGE-59).
+ *
+ * 6 × 265 g, every reading taken. Its Phase B ran 9.6 minutes, 4.1 past its
+ * reference, because the water went in as 25%, 25% and 50%. Correcting all
+ * four phases took its solved 10.80 down to 5.30, which is what retired the
+ * four-phase rule: the log corrects Phase C alone (§4.3).
+ */
+export const BAKE_2 = {
+  date: '2026-10-23',
+  balls: 6,
+  ballG: 265,
+  tRoomF: 67.3,
+  tFlourF: 66.9,
+  tBigaF: 54,
+  tBowlF: 64.5,
+  waterUsedF: 82.8,
+  finalTempF: 75.0,
+  /** From the step timers, seconds. */
+  phaseSeconds: { a: 248.063, b: 577.829, c: 285.606, d: 59.998 },
+  /** Solved by §4.3 on these readings. */
+  ff: 10.799802,
+  /** Corrected for Phase C alone. */
+  ffNominal: 9.438894,
+  /** What the retired four-phase rule gave. */
+  ffFourPhase: 5.303420,
+} as const;
+
+/**
+ * Bake 3, 7 Nov 2026 — 12 × 265 g in two mixes of 6 (§5 *Bake log*,
+ * MESSAGE-59). Room and flour 68 °F. Both water targets are what the app
+ * gave, and both finals came within about half a degree of DDT. The bake's FF
+ * is the mean of its two mixes, so a split batch counts once.
+ */
+export const BAKE_3 = {
+  date: '2026-11-07',
+  balls: 12,
+  ballG: 265,
+  nMix: 2,
+  tRoomF: 68,
+  tFlourF: 68,
+  mixes: [
+    {
+      tBigaF: 50,
+      tBowlF: 59,
+      waterUsedF: 87.2,
+      finalTempF: 73.4,
+      phaseSeconds: { a: 260.483, b: 446.206, c: 300.773, d: 60.034 },
+      ff: 10.137238,
+      ffNominal: 8.503324,
+    },
+    {
+      tBigaF: 56,
+      tBowlF: 69,
+      waterUsedF: 74.4,
+      finalTempF: 74.5,
+      phaseSeconds: { a: 235.514, b: 540.248, c: 261.833, d: 59.458 },
+      ff: 11.342323,
+      ffNominal: 10.409329,
+    },
+  ],
+  /** The mean of the two mixes' corrected values. */
+  ffNominal: 9.456327,
+  /** What the retired four-phase rule gave. */
+  ffFourPhase: 6.537899,
+} as const;
+
+/**
+ * §5 *Bake log*, MESSAGE-59: with bakes 2 and 3 counted, the FF in use at
+ * 6 balls per mix is their mean, and every other size takes it, held flat.
+ */
+export const FF_IN_USE_BAKES_2_AND_3 = 9.447610;
+
 /**
  * Same FF, different apparent rise by batch size. The bowl is fixed mass while
  * the dough scales, which is why the bowl cannot be folded into FF: the

@@ -97,13 +97,14 @@ describe('§4.7 stage durations', () => {
       [6, 33],
       [24, 51],
       [36, 63],
+      [48, 75],
     ])('%i h cold ferment gives ~%i h total', (cold, expected) => {
       // "Those are midpoints; each carries a ±2 h spread."
       expect(Math.abs(totalAt(cold) - expected)).toBeLessThanOrEqual(2);
     });
 
     it('keeps fixed overhead inside the stated 25.0–29.9 h band', () => {
-      for (const cold of [6, 12, 24, 30, 36]) {
+      for (const cold of [6, 12, 24, 30, 36, 48]) {
         const overhead = totalAt(cold) - cold;
         expect(overhead, `overhead at ${cold} h cold`).toBeGreaterThanOrEqual(25.0);
         expect(overhead, `overhead at ${cold} h cold`).toBeLessThanOrEqual(29.9);
@@ -114,7 +115,7 @@ describe('§4.7 stage durations', () => {
       // Everything outside the cold ferment is fixed, so the relationship is
       // linear with slope exactly 1 — a stage accidentally scaling with the
       // cold ferment would show up here.
-      const overheads = [6, 12, 24, 30, 36].map((c) => totalAt(c) - c);
+      const overheads = [6, 12, 24, 30, 36, 48].map((c) => totalAt(c) - c);
       for (const o of overheads) expect(o).toBeCloseTo(overheads[0] as number, 10);
       expect(overheads[0]).toBeCloseTo(26.8333, 4);
     });

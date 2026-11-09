@@ -53,7 +53,7 @@ export interface ScheduleAdjustments {
   nMix: number;
   /** Total balls: the whole tub is divided at once, so the divide scales with it (MESSAGE-53). */
   balls: number;
-  /** 6–36 h retarded, 6–8 h classic (§4.7, MESSAGE-53). */
+  /** 6–48 h retarded (MESSAGE-59), 6–8 h classic (§4.7, MESSAGE-53). */
   coldFermentH: number;
   /** 1.5–2 h. */
   temperH: number;
@@ -163,12 +163,18 @@ export const STAGE_INFO: Record<StageKey, { title: string; description: string }
  * better, and a user who reads it as making the batch uniform will draw the
  * wrong conclusion from a bad result — §8 `bulk-1` says so in the prose.
  */
+/**
+ * §4.7: the retarded biga's room-temperature stage, fixed at 2 h. Named so the
+ * Batch panel's schedule description reads it rather than typing it again.
+ */
+export const BIGA_ROOM_TEMP_H = 2;
+
 export function stageDurations(schedule: Schedule, a: ScheduleAdjustments): StageDurations {
   const retarded = schedule === 'retarded';
   const nMix = Math.max(1, a.nMix);
 
   return {
-    bigaRoomTemp: retarded ? 2 : 0,
+    bigaRoomTemp: retarded ? BIGA_ROOM_TEMP_H : 0,
     bigaFridge: retarded ? a.bigaFridgeH : 0,
     bigaRoomOnly: retarded ? 0 : a.bigaRoomOnlyH,
     bigaTemper: retarded ? C.BIGA_TEMPER_H : 0,

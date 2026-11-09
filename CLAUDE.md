@@ -130,6 +130,8 @@ question:
 | `FINDINGS-58-to-recipe-agent.md` | Reply to MESSAGE-57. All reproduced; nothing open. PR #13's deploy succeeded, and the site is current through MESSAGE-56 |
 | `MESSAGE-58.md` | A bug: a reading typed at the value the field already shows (a bowl at its prefill, a final on DDT) wasn't recorded, so the mix didn't count. §6: an edited reading field records on leaving even when unchanged; focus and leave without an edit records nothing. Found the day of bake 2 |
 | `FINDINGS-59-to-recipe-agent.md` | Reply to MESSAGE-58. Fixed (`leaveField`, `recordsReading`) and checked by typing in the browser; nothing open. The fix also covers a later mix's biga read at the carried-forward value |
+| `MESSAGE-59.md` | Bakes 2 and 3 (the first counted bakes). **D2:** the log corrects Phase C only — the 15% and 20% rates are unmeasured and both bakes say they run high. **E1:** the retarded cold ferment runs to 48 h, default still 24 |
+| `FINDINGS-60-to-recipe-agent.md` | Reply to MESSAGE-59. All reproduced. Open: `schedule-architecture`, `why-biga` and `formula-rationale` are linked by no step and no drawer, so the app never shows them; whether §3 should name `bigaRoomTemp`'s 2 h. The gate's walker read only strings inside JSX, so the Calibration panel's `FRICTION_HINT` and the Batch panel's schedule descriptions were invisible |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -290,7 +292,13 @@ component is invisible to it: the ball-weight hint said "265 g opens to about
 11.5–12 inches" for three rounds after §4.9 retracted it. **All component copy
 is read from the syntax tree** (`parseAst`, which Vite exports; TypeScript 7
 has no JS API): JSX text, copy attributes, template text and strings in `{…}`
-children, in every `.tsx` under `src` (`App.tsx` included). Every numeric
+children, **and strings in object and array literals**, in every `.tsx` under
+`src` (`App.tsx` included). Markup is skipped by shape (a CSS color, or a list
+of lowercase hyphenated tokens), not by key, since a Tailwind map's keys are
+tones. Reading only inside JSX hid the Calibration panel's `FRICTION_HINT`
+— which told the baker each bake is corrected "to the middle of every phase
+time" for a round after MESSAGE-59 — and the Batch panel's two schedule
+descriptions, four rendered figures nothing had ever checked. Every numeric
 string there is classified in the same suite, and a
 computed figure comes from the engine through an interpolation. Each widening
 found live wrong copy — the probe card's "3.7 °F" and the timeline's "9 a.m.
@@ -328,11 +336,18 @@ drift apart — conflating them is what produced the old `DDT − 4` rule, wrong
 1.2 °F at 3 balls, in two documents across several review rounds.
 
 **The bake log stores readings, never an FF** (§10, MESSAGE-45). Every FF is
-solved on read (§4.3) and normalized to the middle of each phase's range at
-its speed's `FRICTION_RATE`, with no `Ct/TOT` factor (both sides are
-dough-only). The references come from the step timers (`MIX_PHASES` in
+solved on read (§4.3) and corrected for **Phase C's time only** (MESSAGE-59),
+at the 30% `FRICTION_RATE`, with no `Ct/TOT` factor (both sides are
+dough-only). Phase C is the one phase the baker sets from a temperature, at
+`mix-4`'s probe, and the only rate a bake has checked; A, B and D are run to
+their cues, so their times are the dough's own behaviour. `CORRECTED_PHASE`
+pins it by key. The reference comes from the step timer (`MIX_PHASES` in
 `mixPhases.ts`, which the engine reads too), so a moved range re-normalizes
-every bake and moves the probe target. A bake mixed under
+every bake and moves the probe target. **All four timers are still logged and
+still required for a mix to count** (§10), so `phaseMinutes` stays.
+Reinstating the four-phase rule now breaks bake 1's seed at module load: bake
+1 logged no A, B or D time, and nothing synthesizes them at their references
+any more. A bake mixed under
 another formula (its snapshot) isn't solved or counted. The FF in use is §6's
 four-step rule, keyed on the `(balls, nMix)` pair compared by
 cross-multiplication, never a rounded float. **There is no typed FF and no
@@ -634,7 +649,8 @@ don't inline a `toFixed` somewhere else.
   `mix-0`, and §4.5's information line says so. `shownWhen` takes
   `nMix > 1` as well as the two schedules.
 - **The cold ferment's range is per track** (§4.7, §6 Panel 1, MESSAGE-53):
-  retarded 6–36 h (24), classic 6–8 h (6), in `COLD_FERMENT_H`. A schedule
+  retarded 6–48 h (24; 48 since MESSAGE-59), classic 6–8 h (6), in
+  `COLD_FERMENT_H`. A schedule
   change clamps it, and so does reading a link; a link that omits it takes
   its track's default. `setInput`'s rules live in `applyInput` in
   `defaults.ts`, pure, so `state.test.ts` reaches them.

@@ -44,12 +44,12 @@ Once this has run cleanly three or four times, moving to 80% or 100% biga is a s
   },
   {
     id: "schedule-architecture",
-    title: "Why the cold ferment is 6\u201336 h and not 72",
+    title: "Why the cold ferment is 6\u201348 h",
     body: `A classic biga front-loads the fermentation. At 0.375% ADY on 65% biga flour you carry about 0.244% ADY on total flour, a heavy dose by pizza standards and a deliberate one: the biga is meant to do nearly all the work.
 
-That's the reverse of a lightly prefermented dough that develops its flavor over days in the fridge. **Put a full-strength biga in front of a 50-hour cold ferment and you've scheduled two complete fermentations.** The dough will over-ferment. Biga doughs that do spend a day or more in the fridge carry less yeast: Julian Sisofo's contemporary dough uses under half this recipe's dose per gram of biga flour, then gives the bulk and the balls each either a room-temperature rise or 24 h in the fridge.
+That's the reverse of a lightly prefermented dough that develops its flavor over days in the fridge, and **a full-strength biga in front of a long cold ferment risks two complete fermentations.** Biga doughs that do spend a day or more in the fridge carry less yeast: Julian Sisofo's contemporary dough uses under half this recipe's dose per gram of biga flour, then gives the bulk and the balls each either a room-temperature rise or 24 h in the fridge.
 
-**Use 24 h cold.** It's the only cold-ferment length that has been baked; 6 h and 36 h are inside the calculator's range but untested.
+**Use 24 h cold for now.** 24 h and 48 h have both been baked: from one dough, with the fridge at 38–39 °F, the 48-hour balls had more flavor and didn't over-proof. A full batch at 48 h will decide the default. 6 h and 36 h are inside the calculator's range but untested.
 
 On the classic track the biga ripens fully at room temperature first, so the dough gets only 6–8 hours cold.
 
@@ -93,17 +93,17 @@ This is the easiest thing to mix up. A thermometer reads the dough after it has 
 
 For comparison, commercial spirals reach 20–26 °F on a full bread mix. This is a shorter profile on a smaller machine with a 10-minute rest in the middle, so a lower figure is expected.
 
-**One data point so far.** Bakes at 3 and 9 balls test the bowl model: if it's right, the solved FF comes out the same at both, even though the raw temperature rise differs (at FF 14, 11.5 vs 13.1). A difference in solved FF means different things depending on its direction:
+**The bowl model is still untested.** Bakes at 3 and 9 balls test it: if it's right, the solved FF comes out the same at both, even though the raw temperature rise differs (at FF 14, 11.5 vs 13.1). A difference in solved FF means different things depending on its direction:
 
 - **Higher at 3 balls than at 9**: the bowl term is too big. Nothing else predicts FF falling as the mix grows, so this result is clear.
 - **Higher at 9 balls than at 3**: either the bowl term is too small, or FF really does rise with mix size (the untested idea below). These two bakes can't tell those apart.
 - **About the same**: consistent with the bowl model, and with FF not varying by mix size.
 
-To measure it, log the bake: the calculator takes each phase's time from its timer and asks for the temperatures it needs. Probe the dough **immediately** at the end (three spots in the center of the mass, averaged). The calculator solves with the formula above, then corrects for any phase that ran off the middle of its range. Don't subtract a predicted temperature from the measured one: that difference is the rise *after* the bowl has diluted it, and it reads low by \`FF × C_bowl/(Ct + C_bowl)\`.
+To measure it, log the bake: the calculator takes each phase's time from its timer and asks for the temperatures it needs. Probe the dough **immediately** at the end (three spots in the center of the mass, averaged). The calculator solves with the formula above, then corrects for Phase C's time, the phase you stretch or cut at the probe. Don't subtract a predicted temperature from the measured one: that difference is the rise *after* the bowl has diluted it, and it reads low by \`FF × C_bowl/(Ct + C_bowl)\`.
 
 **Three things to watch:**
 
-- **FF belongs to the mix profile, not the machine.** Change speeds or times and it changes, by roughly +1 °F per extra minute at 30%. The calculator corrects each logged bake for time, so a Phase C you stretched or cut at the probe doesn't end up in your FF. A change of speeds needs new bakes.
+- **FF belongs to the mix profile, not the machine.** Change speeds or times and it changes, by roughly +1 °F per extra minute at 30%. The calculator corrects each logged bake for Phase C's time, so a Phase C you stretched or cut at the probe doesn't end up in your FF. A change of speeds needs new bakes.
 - **FF may differ by mix size (untested).** A bigger mix might run a higher FF: more total work, and less surface area per unit mass to lose heat. Nothing has measured this yet. The calculator keeps each mix size's bakes apart, so nothing is lost if FF turns out not to vary, and a size you haven't baked borrows from the sizes you have.
 - **Heat of hydration is already included.** Flour releases roughly 1.5–3 °F as it absorbs water. That happens during the mix, so it's inside the temperature you measure and therefore inside your FF: FF is one number covering both mixer friction and the heat of hydration. If a calculator asks for friction and a *separate* hydration correction, it uses a different convention; don't give it this number.`,
   },

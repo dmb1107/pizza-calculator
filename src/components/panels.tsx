@@ -5,6 +5,7 @@ import { CAPACITY } from '../content/capacity';
 import { conceptById } from '../content/concepts';
 import { Badge, NumberField, SegmentedField, SliderField, Stepper } from './fields';
 import { BOUNDS, COLD_FERMENT_H } from '../state/defaults';
+import { BIGA_ROOM_TEMP_H, PLANNING_RANGE_H } from '../lib/timeline';
 import { formatBallsPerMix, formatTempF } from '../lib/format';
 import type { AppState } from '../state/useAppState';
 import type { Schedule } from '../state/types';
@@ -14,9 +15,23 @@ import type { Schedule } from '../state/types';
  * aren't a panel: each sits in the step where it's taken (`MixReadings`).
  */
 
+/**
+ * §6 Panel 1. Each track's shape, read from the stage table and the input's
+ * own bounds: the retarded biga's room stage and §4.7's fridge window, and the
+ * classic biga's adjustable room-only range. The 61–65 °F band is published.
+ */
+const BIGA_FRIDGE_H = PLANNING_RANGE_H.bigaFridge!;
 const SCHEDULE_OPTIONS: { value: Schedule; label: string; description: string }[] = [
-  { value: 'retarded', label: 'Retarded biga', description: '2 h room, then 18–20 h fridge' },
-  { value: 'classic', label: 'Classic RT', description: '12–18 h at 61–65 °F' },
+  {
+    value: 'retarded',
+    label: 'Retarded biga',
+    description: `${BIGA_ROOM_TEMP_H} h room, then ${BIGA_FRIDGE_H[0]}–${BIGA_FRIDGE_H[1]} h fridge`,
+  },
+  {
+    value: 'classic',
+    label: 'Classic RT',
+    description: `${BOUNDS.bigaRoomOnlyH.min}–${BOUNDS.bigaRoomOnlyH.max} h at 61–65 °F`,
+  },
 ];
 
 export function BatchPanel(s: AppState) {
@@ -86,7 +101,7 @@ export function BatchPanel(s: AppState) {
  * manual override (MESSAGE-45): a typed value would outrank the measurements.
  */
 const FRICTION_HINT: Record<1 | 2 | 3 | 4, string> = {
-  1: 'From your logged bakes at this mix size. Each bake is corrected to the middle of every phase time first.',
+  1: 'From your logged bakes at this mix size. Each bake is corrected for its Phase C time first.',
   2: 'No bakes at this mix size yet, so this sits on the line between the logged sizes either side.',
   3: 'No bakes at this mix size yet, so this is the nearest logged size, held flat.',
   4: 'Your bake log has no bake yet with every reading and phase time. The first one replaces this at every mix size.',

@@ -6,6 +6,7 @@ import {
   BADGE_TEMPLATES,
   BAKE_1_READINGS,
   BAKE_1_SEED,
+  CORRECTED_PHASE,
   MIX_PHASES,
   PHASE_KEYS,
   bakeFrictionFactorF,
@@ -33,8 +34,9 @@ import {
 import { formatBallsPerMix } from '../src/lib/format';
 import { formatElapsed } from '../src/lib/timers';
 import { STEPS } from '../src/content/steps';
+import { frictionRateOf } from '../src/lib/mixPhases';
 import { phaseSeconds } from '../src/state/sessionBake';
-import { BAKE_1 } from './vectors';
+import { BAKE_1, BAKE_2, BAKE_3, FF_IN_USE_BAKES_2_AND_3 } from './vectors';
 
 /**
  * §5 *Bake log* (MESSAGE-45): arithmetic pins for the log's rules. None of
@@ -121,9 +123,6 @@ describe('§4.3 the mix profile, derived from the step content', () => {
 });
 
 describe('§5 Bake log: normalization', () => {
-  const minutes = (m: Partial<Record<PhaseKey, number>>) =>
-    Object.fromEntries(MIX_PHASES.map((p) => [p.key, m[p.key] ?? p.referenceMin])) as Record<PhaseKey, number>;
-
   it("solves bake 1's readings to 14.027531", () => {
     const status = mixStatus(bake(), mix());
     expect(status.ff).toBeCloseTo(14.027531, 6);
@@ -134,12 +133,42 @@ describe('§5 Bake log: normalization', () => {
     expect(status.ffNominal).toBeCloseTo(10.787531, 6);
   });
 
-  it('leaves an FF unchanged with every phase at its reference', () => {
-    expect(normalizeFrictionFactorF(14, minutes({}))).toBe(14);
+  it('leaves an FF unchanged with Phase C at its reference', () => {
+    expect(normalizeFrictionFactorF(14, CORRECTED_PHASE.referenceMin)).toBe(14);
   });
 
-  it('adds 0.7075 for A 4 min, B 6 min, C 2 min, D 60 s', () => {
-    expect(normalizeFrictionFactorF(14, minutes({ a: 4, b: 6, c: 2, d: 1 })) - 14).toBeCloseTo(0.7075, 12);
+  it('adds 1.62 for A 4 min, B 6 min, C 2 min, D 60 s: only Phase C counts', () => {
+    const status = mixStatus(bake(), mix({ phase_seconds: { a: 4 * 60, b: 6 * 60, c: 2 * 60, d: 60 } }));
+    const base = mixStatus(bake(), mix()).ffNominal!;
+    expect(status.ffNominal! - base).toBeCloseTo(1.62, 12);
+    expect(normalizeFrictionFactorF(14, 2) - 14).toBeCloseTo(1.62, 12);
+  });
+
+  /**
+   * MESSAGE-59's pin, and the one the four-phase rule fails: with Phase C at
+   * its reference, A, B and D anywhere leave the FF alone. Through
+   * `mixStatus`, since `normalizeFrictionFactorF` can no longer be handed
+   * their times at all.
+   */
+  it('corrects Phase C only: A, B and D off their references change nothing', () => {
+    const base = mixStatus(bake(), mix()).ffNominal!;
+    for (const off of [
+      { a: 8 * 60 },
+      { b: 12 * 60 },
+      { d: 120 },
+      { a: 1 * 60, b: 2 * 60, d: 20 },
+      { a: 8 * 60, b: 12 * 60, d: 120 },
+    ]) {
+      const status = mixStatus(bake(), mix({ phase_seconds: { ...REFERENCE_SECONDS, ...off } }));
+      expect(status.ffNominal!).toBe(base);
+    }
+  });
+
+  it("reads the rate and the reference off Phase C's own step, never typed", () => {
+    expect(CORRECTED_PHASE.key).toBe('c');
+    expect(CORRECTED_PHASE.stepId).toBe('mix-5');
+    expect(CORRECTED_PHASE.dial).toBe(30);
+    expect(CORRECTED_PHASE.referenceMin).toBe(3.5);
   });
 
   it('applies no Ct/TOT factor: one minute of Phase C is FRICTION_RATE[30] at every mix size', () => {
@@ -149,6 +178,96 @@ describe('§5 Bake log: normalization', () => {
       const long = mixStatus(b, mix({ phase_seconds: { ...REFERENCE_SECONDS, c: (3.5 + 1) * 60 } })).ffNominal!;
       expect(base - long).toBeCloseTo(C.FRICTION_RATE[30], 12);
     }
+  });
+});
+
+describe('§5 Bake log: bakes 2 and 3 (MESSAGE-59)', () => {
+  function logged(v: typeof BAKE_2): LoggedBake {
+    return bake({
+      date: v.date,
+      balls: v.balls,
+      ball_g: v.ballG,
+      room_temp_f: v.tRoomF,
+      flour_temp_f: v.tFlourF,
+      mixes: [
+        mix({
+          biga_temp_at_mix_f: v.tBigaF,
+          bowl_temp_f: v.tBowlF,
+          water_temp_used_f: v.waterUsedF,
+          final_dough_temp_f: v.finalTempF,
+          phase_seconds: { ...v.phaseSeconds },
+        }),
+      ],
+    });
+  }
+
+  const bake3 = (): LoggedBake =>
+    bake({
+      date: BAKE_3.date,
+      balls: BAKE_3.balls,
+      ball_g: BAKE_3.ballG,
+      room_temp_f: BAKE_3.tRoomF,
+      flour_temp_f: BAKE_3.tFlourF,
+      mixes: BAKE_3.mixes.map((m, i) =>
+        mix({
+          mix_index: i + 1,
+          biga_temp_at_mix_f: m.tBigaF,
+          bowl_temp_f: m.tBowlF,
+          water_temp_used_f: m.waterUsedF,
+          final_dough_temp_f: m.finalTempF,
+          phase_seconds: { ...m.phaseSeconds },
+        }),
+      ),
+    });
+
+  it('bake 2 solves to 10.799802 and corrects to 9.438894', () => {
+    const b = logged(BAKE_2);
+    const status = mixStatus(b, b.mixes[0]!);
+    expect(b.n_mix).toBe(1);
+    expect(status).toMatchObject({ counted: true, reasons: [] });
+    expect(status.ff!).toBeCloseTo(BAKE_2.ff, 6);
+    expect(status.ffNominal!).toBeCloseTo(BAKE_2.ffNominal, 6);
+  });
+
+  it('bake 3 solves to 10.137238 and 11.342323, and means 9.456327', () => {
+    const b = bake3();
+    expect(b.n_mix).toBe(BAKE_3.nMix);
+    const got = b.mixes.map((m) => mixStatus(b, m));
+    expect(got.map((s) => s.counted)).toEqual([true, true]);
+    for (const [i, s] of got.entries()) {
+      expect(s.ff!).toBeCloseTo(BAKE_3.mixes[i]!.ff, 6);
+      expect(s.ffNominal!).toBeCloseTo(BAKE_3.mixes[i]!.ffNominal, 6);
+    }
+    expect(bakeFrictionFactorF(b)!).toBeCloseTo(BAKE_3.ffNominal, 6);
+  });
+
+  /**
+   * The figures the four-phase rule gave, which is why it went: bake 2's
+   * 5.30 is below anything its own probe readings allow, and it would have
+   * set the next water target 16.5 °F warmer than the seed.
+   */
+  it('the retired four-phase rule gave 5.303420 and 6.537899', () => {
+    const fourPhase = (ff: number, sec: Record<PhaseKey, number>) =>
+      MIX_PHASES.reduce((acc, p) => acc - frictionRateOf(p.dial) * (sec[p.key] / 60 - p.referenceMin), ff);
+    const b2 = logged(BAKE_2);
+    expect(fourPhase(mixStatus(b2, b2.mixes[0]!).ff!, BAKE_2.phaseSeconds)).toBeCloseTo(BAKE_2.ffFourPhase, 6);
+    const b3 = bake3();
+    const mean =
+      b3.mixes
+        .map((m, i) => fourPhase(mixStatus(b3, m).ff!, BAKE_3.mixes[i]!.phaseSeconds))
+        .reduce((a, c) => a + c, 0) / b3.mixes.length;
+    expect(mean).toBeCloseTo(BAKE_3.ffFourPhase, 6);
+  });
+
+  it('with both counted the FF in use is 9.447610 at every size, held flat', () => {
+    const log = [logged(BAKE_2), bake3()];
+    const six = ffInUse(log, { balls: 6, nMix: 1 });
+    expect(six.ff!).toBeCloseTo(FF_IN_USE_BAKES_2_AND_3, 6);
+    for (const balls of [3, 9, 12, 24]) {
+      expect(ffInUse(log, { balls, nMix: 1 }).ff!).toBeCloseTo(FF_IN_USE_BAKES_2_AND_3, 6);
+    }
+    // bake 2 excluded, as Dave left it until this round is live
+    expect(ffInUse([bake3()], { balls: 6, nMix: 1 }).ff!).toBeCloseTo(BAKE_3.ffNominal, 6);
   });
 });
 
