@@ -7,9 +7,9 @@
 
 A contemporary Neapolitan dough built on a **stiff Italian biga carrying 65% of the flour**, finished at 70% hydration and baked at 750 °F on full flame.
 
-**Why a biga.** Low water activity slows the proteases that break down gluten, so the gluten survives a long ferment. It also pushes the bacteria toward heterofermentative pathways, which make more acetic acid: a sharper, more complex aroma, and the big irregular holes of the contemporary Neapolitan cornicione. A biga is also more forgiving than a liquid preferment, since it makes acid more slowly and has a wider window.
+**Why a biga.** A stiff preferment ferments slowly, and the slow ferment is where the flavor comes from: the yeast has time to make the alcohols, esters and acids that flavor the crumb. The gluten holds up through it, because a yeast-leavened biga never gets acidic enough for the flour's proteases to do much. The little acid the yeast does make firms the gluten, which helps a dough this wet hold its shape and the gas behind the big irregular holes of the contemporary Neapolitan cornicione. A biga is also more forgiving than a liquid preferment: it ferments more slowly, so its window is wider.
 
-**Why 65% and not 100%.** Flavor gains flatten sharply above ~60% biga, while the risks keep rising. Three reasons to stop at 65%:
+**Why 65% and not 100%.** Three reasons to stop at 65%:
 
 - **Flour strength.** Grain Craft Neapolitan is 12.2–12.8% protein, and Grain Craft doesn't publish a W value, so how well it holds up through a long biga is known only from baking it. Keeping 35% of the flour out of the biga leaves unfermented gluten in the final dough as a structural margin.
 - **Adjustable consistency.** The reserved water goes in by feel during the mix, so you can correct for a wetter or drier biga instead of committing all the water up front.
@@ -33,10 +33,10 @@ Baker's percentages on **total flour**:
 **Dough yield factor: 1.728** · Ball weight **265 g** · No malt, no oil, no sugar. AVPN's regulation rules out fat and sugar in the dough, and this recipe counts malt as sugar.
 
 **Why these numbers:**
-- **70% hydration** gives an open, airy crumb and a puffy cornicione in a 60–90 second bake without exceeding what a 12.5%-protein flour can hold through a long ferment. A biga dough handles drier than the number suggests, because the biga's gluten is built before the water goes in.
+- **70% hydration** gives an open, airy crumb and a puffy cornicione in a 60–90 second bake without exceeding what a 12.5%-protein flour can hold through a long ferment. A biga dough handles drier than the number suggests: most of the flour arrives already hydrated, with its gluten formed and firmed by the ferment.
 - **2.8% salt** sits inside AVPN's range. AVPN specifies 40–60 g of salt per liter of water, with 1.6–1.8 kg of flour: 2.2–3.75% of the flour. This dough carries 70% water, so by AVPN's own measure 2.8% of the flour is 40 g per liter, the bottom of their range. Salt goes in the **final mix only**, never in the biga, where it would slow the yeast you're building up.
 - **50% biga hydration.** The documented band is **44–50%**. Giorilli codified 45% and allows up to 50% for less-refined flours. Grain Craft sells this flour as a 00 type and publishes no milled ash figure (its sheet's nutrition panel takes ash from the USDA database for enriched flour), so a 50% biga on it sits slightly outside his formula. 50% mixes more evenly by hand, and a wetter biga ferments faster, which is one more reason to pull it by the cue. Mixer load doesn't bear on it, since the biga is mixed by hand.
-- **No diastatic malt.** In a 60–90 second bake on full flame, added sugars and extra amylase only burn. Grain Craft is unmalted, which suits this recipe.
+- **No diastatic malt.** Malt adds amylase, which turns starch into sugar, and in a 60–90 second bake on full flame the extra sugar scorches. Grain Craft is unmalted, which suits this recipe.
 
 Sources: [Grain Craft — Neapolitan product sheet](https://www.graincraft.com/wp-content/uploads/2020/04/NeapolitanProductSheet.pdf) · [AVPN — International Regulations, 2024](https://www.pizzanapoletana.org/public/pdf/Disciplinare-2024-ENG.pdf)
 
@@ -52,7 +52,7 @@ Flour scales at **470.2 g per 3 balls**, including ~2.2% overage for bowl residu
 | 6 | 940.4 | 611.2 | 305.6 | 2.29 | 329.1 | 352.6 | 26.3 | 1625.0 g | 1590 g |
 | 9 | 1410.6 | 916.9 | 458.4 | 3.44 | 493.7 | 529.0 | 39.5 | 2437.5 g | 2385 g |
 
-\* ADY at **0.375% of biga flour**: the Giorilli standard carried through its conversion chain, 1% fresh = 0.30% IDY = 0.375% ADY. See §5.
+\* ADY at **0.375% of biga flour**: the Giorilli standard converted at the low end of the usual range, 1% fresh = 0.30% IDY = 0.375% ADY. See §5.
 
 ### Scaling to any batch
 
@@ -175,31 +175,33 @@ The calculator's classic track lets you set 12–18 h, with the 12–16 h end cr
 | 12 | 1222.5 g | **4.58 g** | 3.67 g |
 | 18 | 1833.7 g | **6.88 g** | 5.50 g |
 
-**Where 0.375% comes from.** The published figure is **1% fresh yeast**, the number Giorilli states and the only one that is sourced. The rest is unit conversion: fresh → IDY at 0.30, IDY → ADY at ×1.25, which gives exactly 0.375%.
+**Where 0.375% comes from.** The published figure is **1% fresh yeast**, the number Giorilli states and the only one that is sourced. The rest is unit conversion: fresh → IDY at 0.30, IDY → ADY at ×1.25, which gives 0.375%.
+
+**Those factors are at the low end.** Baking references convert fresh yeast to active dry at 0.40–0.50 (King Arthur's professional reference uses 0.4, the American Society of Baking 0.5) and to instant at about a third, so by the usual tables 1% fresh is 0.40–0.50% ADY: 2.44–3.06 g at 6 balls against this recipe's 2.29. The recipe keeps 0.375% as an assumption. If the biga runs under-ripe, the conversion is the second place to look, after the extra hour at room temperature.
 
 **The dose is set for that window.** This recipe doesn't give doses for other times or temperatures.
 
-**The retarded schedule rests on an assumption.** Giorilli's dose is set for 16–18 h at 61–65 °F. The retarded schedule (§7) gives the biga 2 h at room temperature, 18–20 h at 38–40 °F and an hour's temper. By this recipe's fermentation model, with the rate doubling every 17 °F as in the rise after balling (§8), that comes to about 11 hours' worth at 63 °F. The recipe assumes the biga is still ripe enough when it's pulled, and that the final dough's schedule makes up any shortfall. Bake 1 ran this schedule; nothing has measured the biga's rise on it. If the balls are consistently behind on bake day, add an hour to the biga's time at room temperature before changing the dose.
+**The retarded schedule rests on an assumption.** Giorilli's dose is set for 16–18 h at 61–65 °F. The retarded schedule (§7) gives the biga 2 h at room temperature, 18–20 h at 38–40 °F and an hour's temper. By this recipe's fermentation model, with the rate doubling every 17 °F as in the rise after balling (§8), that comes to at most about 11 hours' worth at 63 °F. Most of that is fridge time, and the doubling rule is generous to the fridge: baker's yeast all but stops growing at 38–40 °F, so the real figure is likely lower. The recipe assumes the biga is still ripe enough when it's pulled, and that the final dough's schedule makes up the shortfall (§7). Bake 1 ran this schedule; nothing has measured the biga's rise on it. If the balls are consistently behind on bake day, add an hour to the biga's time at room temperature before changing the dose.
 
-**Rehydrate the yeast in warm water, then add it to the rest.** Take about ten times the yeast's weight out of the biga water, warm that portion to 100–110 °F, stir in the ADY and leave it 10 minutes. The rest of the biga water stays at room temperature. Active dry yeast rehydrates best near 104 °F; below about 68 °F its cells can lose up to half their soluble contents, and the glutathione that leaks out slackens the dough (PizzaBlab). King Arthur gives the same advice for active dry yeast going into cool water. PizzaBlab's biga guide uses room-temperature water because it assumes fresh or instant yeast. The warm water is only for rehydration: no sugar, no proofing test. Dissolving the yeast first also carries it evenly through a stiff biga that is only mixed to chunks. The yeast water comes out of the biga water, not on top of it, and warms the biga water only 2–3 °F, which nothing downstream reads. At 1.15–4.58 g you're well above scale resolution, so there's no need to weigh the yeast as a slurry.
+**Rehydrate the yeast in warm water, then add it to the rest.** Take about ten times the yeast's weight out of the biga water, warm that portion to 100–110 °F, stir in the ADY and leave it 10 minutes. The rest of the biga water stays at room temperature. Active dry yeast rehydrates best near 104 °F. In Ponte, Glass and Geddes's tests (1960), yeast rehydrated at 104 °F lost about 5% of its dry weight to the water and yeast rehydrated at 41 °F lost 29%, with more than four times the glutathione, and the doughs came out sticky and slack. King Arthur gives the same advice for active dry yeast going into cool water. PizzaBlab's biga guide uses room-temperature water because it assumes fresh or instant yeast. The warm water is only for rehydration: no sugar, no proofing test. Dissolving the yeast first also carries it evenly through a stiff biga that is only mixed to chunks. The yeast water comes out of the biga water, not on top of it, and warms the biga water only 2–3 °F, which nothing downstream reads. At 1.15–4.58 g you're well above scale resolution, so there's no need to weigh the yeast as a slurry.
 
 ### Ripeness: a biga does NOT double
 
-**A ripe biga rises only about 20%.**
+**A ripe biga rises only about 20%.** Loose chunks let most of the gas escape, so the rise shows how well the biga holds gas as much as how far it has fermented. Read it together with the smell.
 
 The chunks look slightly swollen and may knit into a loose block. The smell is moderately sharp and a little sour and alcoholic, but *mild*, not overpowering.
 
-- **Doubled in size** → it was **over-mixed** (it developed gluten and rose like a dough)
+- **Doubled in size** → **over-mixed** (it was worked into a dough and held its gas), or over-fermented if it also smells sharp
 - **Strong, sharp acidic or alcoholic smell** → over-fermented
 - **No puffing at all** → not ready
 
-The window is wide. A biga ferments slowly, makes acid slowly and breaks down little gluten, so an hour either way rarely matters. Go by the cue rather than the clock.
+The window is wide. A biga ferments slowly and breaks down little gluten, so an hour either way rarely matters. Go by the cue rather than the clock.
 
 ### Mixing: by hand, and mix, don't knead
 
 **Mix the biga by hand.** PizzaBlab mixes it by hand, fingers in a claw, and warns against forming a cohesive mass.
 
-Aim for **small-to-medium chunks, like gnocchi**, not a dough. A spiral mixer builds gluten, which a biga shouldn't have yet. That's what causes an over-mixed biga, which then doubles and looks riper than it is.
+Aim for **small-to-medium chunks, like gnocchi**, not a dough. A spiral mixer works the gluten into a network that holds gas, which a biga shouldn't have yet. A biga mixed that far rises like a dough, so it can double and look riper than it is.
 
 **Mix and ferment the biga in the mixer bowl**, the same 963 g stainless bowl the final mix runs in. That's fixed for every bake, and it has two consequences: the bowl arrives at the final mix cold rather than at room temperature, and it's tied up for the whole ~21-hour biga schedule. §6 accounts for both.
 
@@ -221,9 +223,11 @@ On the classic room-temperature track there is no temper. The biga is already at
 
 ### Why 61–65 °F specifically
 
-At 61–65 °F the bacteria produce the **balance of lactic and acetic acid** that gives biga its sharp, vinegary flavor. Much warmer and the biga ferments faster and tastes different.
+61–65 °F is the window Giorilli's dose is set for: at 1% fresh yeast the biga takes 16–18 hours to ripen there. Warmer, the same dose ripens it sooner and can overshoot.
 
-**So an unstable kitchen affects flavor as well as timing**, which is why §7 recommends the fridge-retarded schedule.
+Temperature also changes which aroma compounds the yeast makes. In one study of bread fermented at 5, 15 and 35 °C (Birch and others, 2013), the coldest doughs carried the most esters and the warmer ones more of the compounds that come from flour fats oxidizing. This recipe has found no study showing that 61–65 °F tastes best.
+
+**An unstable kitchen changes the timing first**, which is why §7 recommends the fridge-retarded schedule.
 
 ### Sources
 
@@ -234,6 +238,18 @@ At 61–65 °F the bacteria produce the **balance of lactic and acetic acid** th
 - [Baking With Theory — Biga & Biga Calculator](https://www.bakingwiththeory.com/theory/biga/) — Giorilli formula (44–45% hydration, 1% fresh yeast, short biga 16–20 h at 16–20 °C) and a time/temp calculator
 - [Italian Pizza Secrets — Essential guide to biga](https://www.italianpizzasecrets.com/essential-guide-to-biga-for-pizza/) — Giorilli's short biga (16–18 h at 16–18 °C) and long biga
 - [Giochi di Gusto — How to make Biga at home](https://www.giochidigusto.it/en/how-to-make-biga-at-home-the-complete-and-definitive-method/) — Giorilli's hydration: 45%, up to 50% only for semolina or less-refined flours
+
+Baking science, for the claims this recipe makes about fermentation, gluten and heat:
+
+- [Jayaram and others — Mapping of Saccharomyces cerevisiae metabolites in fermenting wheat straight-dough reveals succinic acid as pH-determining factor, Food Chemistry, 2013](https://doi.org/10.1016/j.foodchem.2012.08.039) — in yeast-leavened dough the pH falls mainly because of succinic acid the yeast makes, more than bacterial acids or dissolved CO₂
+- [Jayaram and others — Succinic acid in levels produced by yeast (Saccharomyces cerevisiae) during fermentation strongly impacts wheat bread dough properties, Food Chemistry, 2014](https://doi.org/10.1016/j.foodchem.2013.11.025) — at the levels yeast produces, succinic acid makes dough stronger and less extensible
+- [Thiele, Gänzle and Vogel — Fluorescence labeling of wheat proteins for determination of gluten hydrolysis and depolymerization during dough processing and sourdough fermentation, Journal of Agricultural and Food Chemistry, 2003](https://doi.org/10.1021/jf020897e) — flour's own proteases break gluten down faster at low pH
+- [Birch, Petersen and Hansen — The aroma profile of wheat bread crumb influenced by yeast concentration and fermentation temperature, LWT, 2013](https://doi.org/10.1016/j.lwt.2012.08.019) — fermenting at 5 °C raised three esters; 15 and 35 °C raised compounds from lipid oxidation
+- [Ponte, Glass and Geddes — Cereal Chemistry, 1960](https://cerealsgrains.org/publications/cc/backissues/1960/Documents/CC1960a31.html) — active dry yeast rehydrated at 40 °C leaked 5% of its dry weight and at 5 °C 29%; the leaked glutathione made doughs sticky and extensible
+- [Salvadó and others — Temperature adaptation markedly determines evolution within the genus Saccharomyces, Applied and Environmental Microbiology, 2011](https://doi.org/10.1128/AEM.01861-10) — Saccharomyces yeasts stop growing somewhere between 1.3 and 4.3 °C; S. cerevisiae grows fastest at 32.3 °C
+- [American Society of Baking — Quality considerations for yeast](https://asbe.org/article/yeast-spec-sheet/) — compressed yeast converts to active dry at 0.5 and to instant at 0.35
+- [King Arthur — Yeast (professional reference)](https://www.kingarthurbaking.com/pro/reference/yeast) — fresh yeast converts to active dry at 0.4
+- [Baking Business — Targeting dough temperatures](https://www.bakingbusiness.com/articles/35816-targeting-dough-temperatures) — wetting flour releases 6.5 Btu of heat per pound of flour
 
 ## 6. DDT, friction factor, and water temperature
 
@@ -344,15 +360,17 @@ At 12 balls that's a 5.6 °F spread in the water target between mix 1 and mix 2 
 
 `FF = [ T_final × (Ct + C_bowl) − Cb·T_biga − Cf·T_flour − Cw·T_water − Cs·T_room − C_bowl·T_bowl ] ÷ Ct`
 
-Bake 1 gave 14.03 °F. The Phase C friction rate agrees: 1.00 °F/min on the dough and bowl together is 1.11 °F/min for the dough alone, against 1.08 predicted.
+Bake 1 gave 14.03 °F. Its Phase C rate climbed from 0.82 to 1.00 °F/min on the dough and bowl together, which is 0.91 to 1.11 °F/min for the dough alone, against the 1.08 the calculator uses. Bake 2's Phase C averaged less: 71.2 to 74.4 °F in 4:46 is about 0.75 °F/min for the dough alone. So 1.08 sits at the high end of what two bakes show.
 
 ⚠️ **Bake 1 ran long, so 14.03 is the FF of its mix, not of the one in §8.** Its Phase C took 6.5 minutes against 3.5 at the middle of the range, and the whole mix 18.5 motor minutes against 15.9 at the middle of every phase's range. At 1.08 °F a minute, Phase C's extra 3 minutes are 3.2 °F of the 14.03: with a 3.5-minute Phase C, bake 1 solves to **10.8**. Its Phases A, B and D took about 12 minutes between them, close to the middle of their ranges. **The calculator uses 10.8 at every batch size** until the first counted bake, and from then on works from the log, which corrects each bake's Phase C to the middle of its range (§12, *Log schema*). A mix counts only if it has a final dough temperature, a bowl reading rather than the prefill, all four phase times, and a water target inside 38–120 °F. If 10.8 is still high, the dough errs cool, which the probe step and the longer rise after balling both correct. Bakes 2 and 3 are the first counted bakes, at 9.44 and 9.46, and the log uses their mean (§12).
 
 **The bowl model is still untested.** Bakes at 3 and 9 balls test it: if it's right, the solved FF comes out the same at both, while the *raw temperature rise* differs (at FF 14, 11.5 vs 13.1). Compare them only once both are corrected for Phase C; a Phase C stretched or cut at the probe would otherwise look like a size effect. A difference in solved FF means different things depending on its direction:
 
 - **Higher at 3 balls than at 9**: the bowl term is too big. Nothing else predicts FF *falling* as the mix grows, so this result is clear.
-- **Higher at 9 balls than at 3**: either the bowl term is too small, or FF really does rise with mix size (the untested idea under *Measuring your friction factor*). These two bakes can't tell those apart.
+- **Higher at 9 balls than at 3**: the hook and breaker bar predict about 0.5 °F of this in a 68 °F kitchen (below). Beyond that, either the bowl term is too small, or FF really does rise with mix size (the untested idea under *Measuring your friction factor*). These two bakes can't tell those apart.
 - **About the same**: consistent with the bowl model, and with FF not varying by mix size.
+
+**The hook and breaker bar are a second fixed mass, and the formula leaves them out.** Together they weigh 441 g of stainless: 52.9 in the units above, 46% of the bowl's 115.56. They start the first mix at room temperature, and the dough has to warm them. Left out, that heat reads as a lower FF, by `52.9 × (T_final − T_room) ÷ Ct`: 0.70 °F at 3 balls, 0.35 at 6 and 0.20 at 9 in a 68 °F kitchen, and 0.05 °F at 6 balls for each degree of room. So the hook alone should make the solved FF about 0.5 °F higher at 9 balls than at 3, and lower in a cooler kitchen. The calculator doesn't model it yet. The log stores readings, so every bake can be re-solved once it does.
 
 ### Hitting the water temperature
 
@@ -408,7 +426,7 @@ To measure it:
 
 **Four things to watch:**
 
-- **FF belongs to the mix profile, not the machine.** Change speeds or times and it changes. Rough scaling: **+1 °F per extra minute at 30%** (0.75 °F/min at 15%, 0.86 at 20%). The calculator corrects each logged bake for Phase C's time at the 30% rate, so a Phase C stretched or cut at the probe doesn't end up in your FF. It leaves A, B and D alone: you run them to their cues, only the 30% rate has been checked against a bake, and bakes 1 and 2 both say the other two run high (§12). A change of speeds needs new bakes.
+- **FF belongs to the mix profile, not the machine.** Change speeds or times and it changes. Rough scaling: **+1 °F per extra minute at 30%**. The 15% and 20% rates (0.75 and 0.86 °F/min) run about twice too high: with the fresh flour's 2.0 °F of wetting heat taken out, Phases A and B averaged 0.49 °F/min on bake 1 and 0.33 on bake 2. Don't correct a phase by them. The calculator corrects each logged bake for Phase C's time at the 30% rate, so a Phase C stretched or cut at the probe doesn't end up in your FF. It leaves A, B and D alone: you run them to their cues, the 30% rate is the only one a bake comes close to supporting, and bakes 1 and 2 both say the other two run high (§12). A change of speeds needs new bakes.
 - ⚠️ **Those per-minute rates are for the dough alone, like FF itself.** A thermometer reads the dough after it has come to equilibrium with the bowl, so what you *observe* is the rate times `Ct/(Ct + C_bowl)`: 0.82 at 3 balls, 0.90 at 6, 0.93 at 9. Multiply before you compare a rate with a measurement.
 - **FF may differ by mix size (untested).** On top of the bowl dilution, a bigger mix might run a higher FF: more total work, and less surface area per unit mass to lose heat. Nothing has measured this yet. **Keep a separate FF per mix size** (3, 6 and 9 balls per mix) so the data can show it.
 - **Heat of hydration is already included; don't add it again.** Flour releases roughly 1.5–3 °F as it absorbs water. That happens during the mix, so it's inside the final temperature you measure and therefore inside your FF: FF is one number covering both mixer friction and the heat of hydration. If a calculator asks for a friction factor and a separate hydration correction, it uses a different convention; don't give it this number.
@@ -418,11 +436,21 @@ To measure it:
 
 ## 7. Schedules
 
-### Why the final proof stays short
+### Where the fermentation happens
 
-A classic biga **front-loads the fermentation**. At 0.375% ADY on 65% biga flour you carry **0.244% ADY on total flour**, a heavy dose by pizza standards and a deliberate one: the biga is meant to do nearly all the work.
+A classic biga **front-loads the fermentation**. At 0.375% ADY on 65% biga flour you carry **0.244% ADY on total flour**, a heavy dose by pizza standards. On the classic track the biga ripens fully at 61–65 °F and does most of the work, so the balls get only 6–8 hours cold.
 
-That's the reverse of a lightly prefermented dough that develops its flavor over days in the fridge, and **a full-strength biga in front of a long cold ferment risks two complete fermentations.** Biga doughs that do spend a day or more in the fridge carry less yeast: Julian Sisofo's contemporary dough uses under half this recipe's dose per gram of biga flour, then gives the bulk and the balls each either a room-temperature rise or 24 h in the fridge. **This dose has held 48 hours once:** on bake 2, with the fridge at 38–39 °F, balls from the same dough had more flavor at 48 hours than at 24 and didn't over-proof (§12).
+**The retarded track moves part of that work into the dough.** The fridge slows the biga, so it arrives less ripe, and the balls' longer cold ferment makes up the difference. By this recipe's fermentation model (the rate doubling every 17 °F), in hours at 75 °F:
+
+| Track | Biga | Dough, from the mix to the end of the cold ferment | Total |
+|---|---:|---:|---:|
+| Retarded, 24 h cold | 6.7 | 8.8 | 15.6 |
+| Retarded, 48 h cold | 6.7 | 14.3 | 21.0 |
+| Classic, 6–8 h cold | 10.4 | 4.8–5.2 | 15.2–15.6 |
+
+The biga figures are §5's 11 hours' worth at 63 °F, and 17 h at 63 °F for the classic biga. The dough's are the 205 minutes it gets before the fridge (bulk, divide, rise and cooldown) plus its cold hours at 38.5 °F. So 24 h cold on the retarded track comes to about what the classic track gives, and 48 h to about a third more. The model is generous to the fridge (§5), which makes the retarded rows upper bounds.
+
+A heavy dose in front of a long cold ferment can still over-proof. Biga doughs that do spend a day or more in the fridge carry less yeast: Julian Sisofo's contemporary dough uses under half this recipe's dose per gram of biga flour, then gives the bulk and the balls each either a room-temperature rise or 24 h in the fridge. **This dose has held 48 hours once:** on bake 2, with the fridge at 38–39 °F, balls from the same dough had more flavor at 48 hours than at 24 and didn't over-proof (§12).
 
 **In Italian practice, extra time goes into the biga rather than the ball proof.** PizzaBlab's range is 12–24 h, and "biga lunga" runs 24 h at 39 °F, then 24 h at room temperature.
 
@@ -448,7 +476,7 @@ Those are the defaults. Everything except the cold ferment is fixed overhead: **
 
 **Use 24 h cold (~51 h total) for now.** 24 h and 48 h have both been baked, from the same dough on bake 2: at 48 h the balls had more flavor and didn't over-proof, with the fridge at 38–39 °F. A full batch at 48 h decides the default. 6 h, the calculator's minimum, hasn't been baked.
 
-**A two-mix batch (10–18 balls at 265 g) has 27.4–27.5 h of overhead** (27.42 at 12 balls), not 26.8. The second mix and changeover add 0.58 h, and the schedule ends with the last dough, whose divide takes about 12½ minutes plus 1¼ a ball of that dough, an estimate worth timing once. Three mixes (21 and 24 balls at 265 g) come to 28.0 h. The 5-minute changeover assumes the bowl isn't cleaned and every mix is weighed out before the first one starts.
+**A two-mix batch (10–18 balls at 265 g) has 27.4–27.5 h of overhead** (27.42 at 12 balls), not 26.8. The second mix and changeover add 0.58 h, and the schedule ends with the last dough, whose divide takes about 12½ minutes plus 1¼ a ball of that dough, Dave's estimate: 45 s a ball to weigh and preshape and 30 s to shape, after the 10–15 minute rest. Three mixes (21 and 24 balls at 265 g) come to 28.0 h. The 5-minute changeover assumes the bowl isn't cleaned and every mix is weighed out before the first one starts.
 
 ### Split batches: each dough runs on its own clock
 
@@ -470,7 +498,7 @@ Rinsing is still available: thin stainless reaches roughly the rinse temperature
 
 ### Alternative: classic room-temperature biga
 
-If you can hold **61–65 °F** reliably (a wine fridge, a cool basement, winter), run the codified version: **16–18 h at 61–65 °F**, then a short final proof: the balls get **6–8 h** in the fridge instead of 24, since the biga arrives fully ripe. Total ~27–31 h. This gives the truest biga acid profile, because at that temperature the fermentation develops flavor the fridge can't.
+If you can hold **61–65 °F** reliably (a wine fridge, a cool basement, winter), run the codified version: **16–18 h at 61–65 °F**, then a short final proof: the balls get **6–8 h** in the fridge instead of 24, since the biga arrives fully ripe. Total ~27–31 h. It is the schedule the yeast dose was set for.
 
 Your Home Assistant sensors would show quickly whether anywhere in the house holds that range.
 
@@ -493,7 +521,7 @@ Do neither until 48 h has worked on a full batch.
 3. The room-temperature water and the yeast water go **into the mixer bowl**, where the biga ferments (§5). Add the flour.
 4. **Mix by hand, 3–6 min in all.** Work the flour in with your fingers until none is dry, then tear the stiffening mass into gnocchi-sized chunks. **Mix; don't knead.**
    **Target: small-to-medium, gnocchi-sized chunks, and no dry flour anywhere.** It should look like crumbs, not dough.
-   *Don't use the mixer.* A spiral hook builds gluten, which a biga shouldn't have.
+   *Don't use the mixer.* A spiral hook works the gluten into a network that holds gas, which a biga shouldn't have.
 5. Cover it so it can't dry out. Ferment according to your schedule in §7.
 6. **Pull at ~20% volume increase**: puffed chunks, a mild sour and alcoholic smell. Not doubled.
 
@@ -539,7 +567,7 @@ What's still to come, **as the probe will read it** (dough and bowl together, 6 
 
 > **Probe target = DDT − (Phase C + Phase D friction) × Ct/(Ct + C_bowl) + 0.2 × (DDT − T_room)**
 
-Phase C and Phase D friction is their middle times at the friction rates below: 3.5 min at 1.08 °F/min plus 52½ s at 0.86, **4.5 °F** in the dough alone. It doesn't use your FF. FF decides where the dough is when you probe, which is what the probe measures; what C and D still add is the same either way. Bake 1 checked Phase C's rate directly (1.11 observed against 1.08); Phase D's hasn't been checked, but it's the smaller part. The formula reflects two more findings from bake 1: the bowl dilutes the friction still to come, and the rest exchanges heat in proportion to the gap between dough and room.
+Phase C and Phase D friction is their middle times at the friction rates below: 3.5 min at 1.08 °F/min plus 52½ s at 0.86, **4.5 °F** in the dough alone. It doesn't use your FF. FF decides where the dough is when you probe, which is what the probe measures; what C and D still add is the same either way. Bake 1's Phase C ran 0.91–1.11 °F/min and bake 2's averaged about 0.75 (§6), so 1.08 is at the high end; Phase D's rate hasn't been checked, but it's the smaller part. The formula reflects two more findings from bake 1: the bowl dilutes the friction still to come, and the rest exchanges heat in proportion to the gap between dough and room.
 
 In a 70 °F room: **3 balls → 72.3 °F · 6 balls → 71.9 °F · 9 balls → 70.6 °F**
 
@@ -560,7 +588,7 @@ If Phase A or B runs long, more heat is already in the dough, so the probe reads
 
 **How much warmth the schedule absorbs.** A warm dough gets a shorter rise after balling, down to the 45-minute floor. The floor arrives about 11 °F over DDT, for each dough of a split batch too. Past that, nothing in the schedule compensates for the extra warmth. That's a reason to fix the water next batch, not to stop mixing early: stopping only stops adding about a degree a minute, and it costs development.
 
-**Friction per minute at each speed**, if you need to correct in a different phase: 15% ≈ 0.75 °F/min · 20% ≈ 0.86 °F/min · 30% ≈ 1.08 °F/min. **These are for the dough alone.** A thermometer shows each of them × `Ct/(Ct + C_bowl)`: 0.82 at 3 balls, 0.90 at 6, 0.93 at 9. At 30% that works out to an observed 0.89 / 0.97 / 1.01 °F per minute, which is where the "about a degree a minute" rule of thumb comes from.
+**Friction per minute at each speed:** 15% ≈ 0.75 °F/min · 20% ≈ 0.86 °F/min · 30% ≈ 1.08 °F/min. Only the 30% figure is for correcting with; the other two ran about twice too high on bakes 1 and 2 (§6). **These are for the dough alone.** A thermometer shows each of them × `Ct/(Ct + C_bowl)`: 0.82 at 3 balls, 0.90 at 6, 0.93 at 9. At 30% that works out to an observed 0.89 / 0.97 / 1.01 °F per minute, which is where the "about a degree a minute" rule of thumb comes from.
 
 **Done when:** one cohesive mass, mostly smooth, pulling off the bowl wall, **and DDT ±1 °F.** A few rough spots are fine, and the windowpane can tear: the cold ferment finishes the gluten. [PizzaBlab](https://www.pizzablab.com/the-encyclopizza/windowpane-test/) says passing the windowpane test at the end of kneading isn't relevant to a dough that spends 18 h or more in the fridge. Bakes 1–3 all finished with rough spots and a windowpane that tore, and every ball opened without tearing, cold ones included. The temperature counts toward done as much as the look; write down the actual number every time.
 
@@ -624,8 +652,8 @@ Flour dusting comes from **wooden** dough boxes, which breathe and buffer moistu
 
 ### Stage 4: Temper and bake
 
-11. Each ball comes out of the fridge **1½–2 h** before it's baked. Target **60–65 °F at the core**, measured with a probe. Under 55 °F the dough tears when you open it and won't get good oven spring; over 70 °F it goes slack and sticky.
-    Julian Sisofo gives his balls 1–2 h after the fridge, and this recipe's cooling figure for an open tray agrees: a ball that takes 3–4 h to cool from 75 to 40 °F should reach 60 °F at the core in a little over an hour and 65 °F in about two. A ball in a lidded container likely warms more slowly, so the core temperature decides, not the clock.
+11. Each ball comes out of the fridge **1½–2 h** before it's baked. Target **60–65 °F at the core**, measured with a probe. Colder than that, the dough is stiff and springs back as you open it: bake 3's balls, baked straight from the fridge, were hard to stretch, though none tore. Warmer than 65 °F it gets softer and stickier to handle; how far that goes on this dough hasn't been tried.
+    Julian Sisofo gives his balls 1–2 h after the fridge, and this recipe's cooling figure for an open tray agrees: a ball that takes 3–4 h to cool from 75 to 40 °F should reach 60 °F at the core in a little over an hour and 65 °F in about two. A ball in a lidded container likely warms more slowly, so the core temperature decides, not the clock. Those times are for a 70 °F kitchen. At 68 °F the same figures put the core at about 59–64 °F after 1½–2 h.
 12. Ready when the balls have relaxed and spread slightly, domed, and feel airy, with a slow, incomplete rebound when poked.
 
 ---
@@ -633,7 +661,7 @@ Flour dusting comes from **wooden** dough boxes, which breathe and buffer moistu
 
 ## 9. Baking on the Tread
 
-**Keep the oven settings that already work: preheat until the gauge reads 750 °F, launch on full flame, 60–90 s.** Don't change the oven and the dough in the same bake; change one variable at a time.
+**Keep the oven settings that already work: preheat until the gauge reads 750 °F, launch on full flame, 60–90 s.** Bake on the Tread's own stone, not the baking steel: steel passes heat into the base several times faster than the stone and would scorch it at this temperature. Don't change the oven and the dough in the same bake; change one variable at a time.
 
 - **Turn every 15–20 s.** The flame comes from one side of a small chamber, so whichever side faces it scorches fast.
 - **Let the stone recover between pizzas.** The Tread heats and cools quickly because it has little thermal mass, so across 9–18 pizzas the stone limits you more than the dough does. Let the gauge come back to 750 rather than launching on a cooling stone.
@@ -698,20 +726,25 @@ Bake 1 ran **6 balls on the retarded schedule with 24 h of dough cold ferment (~
 
 **Then, one variable at a time:** 80% biga → 100% biga → 72% hydration, in that order. Each is a single-variable test once the thermal model is settled.
 
+Two things change with the biga share before the dough does:
+
+- **The friction factor doesn't carry over.** It includes the heat the fresh flour gives off as it wets: 6.5 Btu per pound of flour by the baking industry's figure, which is 2.0 °F here, where 35% of the flour is fresh. At 80% biga that falls to 1.15 °F and at 100% to nothing, so expect the solved FF about 0.9 and 2.0 °F lower before anything else changes.
+- **Water becomes a weaker lever**, because less of it is left for the final mix. Each °F of FF moves the water target 3.0 °F at 65% biga, 3.75 at 80% and 5.6 at 100%; each °F of biga moves it 1.59, 2.45 and 4.6. With bake 2's readings (biga 54 °F, bowl 64, room 68) and the FF lowered as above, a 6-ball mix asks for 86.6 °F water at 65% biga, 100.9 at 80% and 136.8 at 100%. **A 100% biga has to be at 59 °F or warmer** to keep the water under 110 °F, so it needs a longer temper or the classic track.
+
 ---
 
 ## 11. Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Biga **doubled** in volume | **Over-mixed**: it built gluten and rose like a dough | Mix by hand only, for less time, to loose chunks. It isn't a yeast problem. |
+| Biga **doubled** in volume | **Over-mixed**: it was worked into a dough and held its gas. If it also smells sharp, over-fermented | Mix by hand only, for less time, to loose chunks. If it smells sharp too, shorten the ferment. |
 | Biga smells sharply acidic or alcoholic | Over-fermented | Shorten it, or run the retarded schedule |
 | Biga didn't puff at all | Not ready, colder than you measured (room or fridge), or dead ADY | Give it longer. Probe the actual temperature where it's fermenting. Check the yeast. |
 | Dry flour left in the biga | Under-mixed | Mix the full 3–6 min; dry flour never ferments |
 | Motor slowed itself in Phase A | Biga pieces too large | Tear them smaller; add a little more of the water up front |
 | Dough over DDT | FF underestimated | Raise your FF; use colder water next time |
 | Dough under DDT | FF overestimated, or water off target | Lower FF; extend Phase C ~1 min per °F, to 5.5 min at most |
-| Dough tight, springs back on opening | Over-mixed in Phase C, or under-tempered | Cut Phase C by 1 min; check the ball core is 60–65 °F |
+| Dough tight, springs back on opening | Too cold, or under-fermented | Check the ball core is 60–65 °F and give it longer at room temperature. If it's still tight at that temperature, lengthen the cold ferment |
 | Dough slack and sticky at opening | Over-fermented, likely a warm fridge, or containers stacked or crowded | Check the actual fridge temperature; space the containers out; drop DDT 1–2 °F |
 | No oven spring, dense cornicione | Under-fermented, or launched cold | Longer temper; check the fridge isn't below 36 °F |
 | Burn ring at the base of the cornicione | Unsauced, and the thinnest part of the base | Sauce closer to the rim; gentler opening; brush off loose flour (§9) |
@@ -730,7 +763,8 @@ BIGA 65% @ 50% hyd  ·  TOTAL HYD 70%  ·  SALT 2.8%  ·  265 g BALLS  ·  DY 1.
  9 balls  1410.6   916.9   458.4   3.44   493.7   529.0   39.5   317.4   211.6
  12 = one 1222.5 g-flour biga, split, 2 x 6-ball mixes
  18 = one 1833.7 g-flour biga, split, 2 x 9-ball mixes. ONE BIGA AT EVERY SIZE.
- *ADY 0.375% of biga flour = 1% fresh = 0.30% IDY, Giorilli.
+ *ADY 0.375% of biga flour = 1% fresh = 0.30% IDY, Giorilli. A LOW-END
+  conversion: the usual tables give 0.40-0.50%.
   Giorilli is a 44-45% biga; ours is 50% (wetter = faster). Pull on the cue.
   Retarded biga with this dose = an ASSUMPTION (5). Balls late -> +1 h biga RT.
  MINIMUM MACHINE BATCH = 3 BALLS. 2 balls clears the 500 g floor on paper,
@@ -739,7 +773,7 @@ BIGA 65% @ 50% hyd  ·  TOTAL HYD 70%  ·  SALT 2.8%  ·  265 g BALLS  ·  DY 1.
 BIGA = HAND-MIXED, 3-6 min, gnocchi chunks, NO dry flour, NO kneading.
        ADY into ~10x its weight of the biga water at 100-110 F, 10 min;
        rest of the water room temp. Pull at ~20% volume gain. IT DOES NOT DOUBLE.
-       Doubled = over-mixed.  Sharp acid smell = over-fermented.
+       Doubled = over-mixed, or over-fermented if it also smells sharp.
 
 SCHEDULE (retarded): biga 2h RT + 18-20h fridge -> 1h temper -> mix
        -> bulk 1h -> ball -> RT per dough temp -> 6-48h fridge -> 1.5-2h temper.
@@ -804,6 +838,7 @@ FINAL  A  1.5 seg  15%/85   3-4 min   breakdown, 60% of water (PhA above)
        D  2 seg    20%/98   45-60 s   finish
 NEVER above 4 SEGMENTS (40%).  20 min continuous max.
 FRICTION RATES 0.75/0.86/1.08 F-min @15/20/30% ARE DOUGH-ONLY.
+  0.75 and 0.86 ran ~2x HIGH on bakes 1 and 2: correct PHASE C only.
   To compare against a thermometer, x Ct/(Ct+C_bowl): 0.82/0.90/0.93 at 3/6/9.
 
 BULK 45-60 min (no folds) -> ball into a 24 oz deli -> RT by offset -> fridge, spaced
@@ -886,7 +921,7 @@ Two rows are checks rather than results. **6 balls is exactly zero** because tha
 - **Phase A ran dry with the water weighed.** One clean result on the 60/40 split; bake 1's was confounded.
 - **The bowl came out of the temper 10.5 °F warmer than the biga.** Left at its prefill, the biga's 54 °F, the bowl would have put the target at 86.3 °F and the dough about 1 °F warm.
 - **The dough lost 3.4 °F between the end of the mix and shaping**, while the sensor by the windows climbed, so wherever it sat was cooler than the sensor's spot. The rise after balling was timed from 75.0 °F; the same rule gives a 71.6 °F dough 109 minutes, against 90.
-- **48 hours cold beat 24.** From the same dough: at 24 h the texture was great and the flavor thinner than expected; at 48 h the flavor was there and the balls didn't over-proof. The fridge, set to 38–39 °F since bake 1, ferments about 13% slower than bake 1's 42 °F by the 17 °F doubling rule, so 24 h now does about what 21 h did then.
+- **48 hours cold beat 24.** From the same dough: at 24 h the texture was great and the flavor thinner than expected; at 48 h the flavor was there and the balls didn't over-proof. The fridge, set to 38–39 °F since bake 1, ferments slower than bake 1's 42 °F did: 13% by the 17 °F doubling rule, and likely more, since the rule is generous at fridge temperatures. So 24 h now does at most what 21 h did then.
 
 ### ✅ Bake 3 — 7 Nov 2026, 12 balls in two mixes
 
@@ -910,12 +945,15 @@ Each dough bulked in its own container. The balls went into 16 oz deli container
 - **Phase B takes 7–9 minutes with the water in equal thirds:** 7:26 and 9:00, most of it waiting for each addition to absorb. §8 prints 7–9 from MESSAGE-60.
 - **The flavor was great, possibly better than bake 2's 24-hour balls, with about 6 fewer hours cold.** It's one comparison. These balls likely fermented more before they got cold, since closed containers chill slowly, which the lids also suggest.
 
+**Across the four mixes so far, the solved FF tracks biga temperature.** With the biga at 50, 54, 56 and 58 °F the mixes solved to 8.50, 9.44, 10.41 and 10.79, each corrected for Phase C. With the hook in the heat balance (§6) they come to 8.77, 9.82, 10.46 and 10.96, so the hook doesn't explain it. Three candidates, none tested: chunk cores colder than the probe reads right after crumbling; a bowl colder at the bottom, where the biga sat, than at the wall where it's read; warmer water losing more heat in the jug. Four mixes are too few to act on. A bowl reading low down and a second biga reading three minutes after crumbling would test the first two.
+
 ### Tier 1: calibration bakes
 
 | Measure | How | Reps |
 |---|---|---|
 | **FF at 3, 6, 9 balls** | Log all inputs, run §8 exactly, probe immediately, solve with the §6 formula (below) | 2–3 each |
 | **Bowl mass** | Kitchen scale, once | ✅ 963 g → C = 115.56 (Oct 2026) |
+| **Hook and breaker bar** | Kitchen scale, once | ✅ 441 g together, stainless → C = 52.92 (Nov 2026). Not in the model yet (§6) |
 | **FF at 6 balls** | Bakes 1–3 | ✅ Bake 1: 14.03 °F solved, 10.8 corrected for its 6.5-min Phase C. Bake 2: 9.44 corrected. Bake 3, two mixes of 6: 9.46 |
 | **FF at 3 and 9 balls** | The falsifiable test of the bowl model | ⬜ next |
 | **Actual fridge temp** | Probe on the shelf you use, not the dial | ✅ 42 °F (Sept 2026); set to 38–39 °F, then spot-check |
@@ -929,7 +967,7 @@ One rep gets most of the value. Three give you a mean and a sense of the spread,
 - **It may scale with mix size (untested).** More mass might mean more total work and less surface area per unit mass to lose heat. There's no data yet, and no basis for estimating the size of the effect.
 - **It may drift with room temperature (untested).** Heat lost to the room during a 15-minute mix scales with the gap between the dough and the air, so the same profile might read a higher effective FF in a 78 °F kitchen than in a 64 °F one. Not yet observed.
 
-So log **room temperature on every bake**; that's what tests both. After 8–10 logged batches, regress `FF = a + b × (T_room − 70)` per mix size, on FFs corrected for Phase C. If either effect is real, that's a model no generic calculator has, and the main reason to build your own.
+So log **room temperature on every bake**; that's what tests both. After 8–10 logged batches, regress `FF = a + b × (T_room − 70)` per mix size, on FFs corrected for Phase C, and against biga temperature as well (above). If either effect is real, that's a model no generic calculator has, and the main reason to build your own.
 
 **Also worth one reading:** probe one ball's core about 3 hours after the balls go in the fridge. About 40–42 °F means a container cools like a ball on an open tray, which the 35 in the rise after balling assumes (§8, step 9); about 48–50 °F means roughly twice as slowly, and the rise should come down. A reading every 30 minutes would give the whole curve and replace the estimate. The cooldown depends on the fridge and the container, so measure again after changing either. Home Assistant could log it continuously from a probe.
 
@@ -937,9 +975,9 @@ So log **room temperature on every bake**; that's what tests both. After 8–10 
 
 Fitting your own fermentation curve is far harder than FF, because you get **one data point per batch** and ripeness is a judgment call.
 
-Make it objective first: fill a small straight-sided jar with biga from the same batch, mark the starting level, and read the percent rise off the glass. Then "~20% puffed" is a number.
+Ripeness resists a number. The rise depends on how loosely the chunks sit, and biga packed into a jar holds more of its gas than loose chunks in a bowl, so a jar won't read like the bowl.
 
-Then log yeast %, the actual temperature profile, and hours to +20%. Realistically, **adopt PizzaBlab's curve and fit a single multiplier to it.** One correction factor from ten batches beats a curve fitted from scratch on thirty.
+Log yeast %, the actual temperature profile, the hours, and how the biga looked and smelled at pull. Realistically, **adopt PizzaBlab's curve and fit a single multiplier to it.** One correction factor from ten batches beats a curve fitted from scratch on thirty.
 
 ### Log schema
 

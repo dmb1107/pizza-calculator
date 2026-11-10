@@ -617,7 +617,7 @@ const CLAIMS: readonly Claim[] = [
   {
     at: 'concept:giorilli-standard',
     restates: 'FRESH_TO_IDY, IDY_TO_ADY, ADY_OF_BIGA_FLOUR',
-    text: `fresh to instant at ${fx(C.FRESH_TO_IDY, 2)}, instant to active dry at ×${C.IDY_TO_ADY}, which gives exactly ${fx(C.ADY_OF_BIGA_FLOUR * 100, 3)}%`,
+    text: `fresh to instant at ${fx(C.FRESH_TO_IDY, 2)}, instant to active dry at ×${C.IDY_TO_ADY}, which gives ${fx(C.ADY_OF_BIGA_FLOUR * 100, 3)}%`,
     covers: ['0.30', '1.25', '0.375%'],
   },
   {
@@ -661,7 +661,7 @@ const CLAIMS: readonly Claim[] = [
   {
     at: 'biga-4b.detail',
     restates: 'Q_DOUBLING_F, and the biga\'s equivalent hours at 63 °F (bigaEquivalentH, above)',
-    text: `with the rate doubling every ${C.Q_DOUBLING_F} °F, about ${fx(bigaEquivalentH(4, BIGA_FRIDGE_MID_H), 0)} hours' worth at ${BIGA_REFERENCE_F} °F`,
+    text: `with the rate doubling every ${C.Q_DOUBLING_F} °F, at most about ${fx(bigaEquivalentH(4, BIGA_FRIDGE_MID_H), 0)} hours' worth at ${BIGA_REFERENCE_F} °F`,
     covers: ['17 °F', '11 hours', '63 °F'],
   },
   { at: 'biga-4b.detail', restates: '§4.7 bigaRoomTemp', text: `The ${BIGA_ROOM_H} hours at room temperature`, covers: ['2 hours'] },
@@ -934,7 +934,7 @@ const CLAIMS: readonly Claim[] = [
   {
     at: 'concept:friction-factor',
     restates: 'bake 1 observed 1.00 °F/min ÷ Ct/TOT at 6 balls, against FRICTION_RATE[30]',
-    text: `1.00 °F/min on the dough and bowl together is ${fx(1.0 / ctOverTot(6), 2)} °F/min for the dough alone, against ${fx(C.FRICTION_RATE[30], 2)} predicted`,
+    text: `gaining 1.00 °F/min, which is ${fx(1.0 / ctOverTot(6), 2)} °F/min for the dough alone, against the ${fx(C.FRICTION_RATE[30], 2)} the calculator uses`,
     covers: ['1.00 °F', '1.11 °F', '1.08'],
   },
   {
@@ -1155,12 +1155,13 @@ const CLAIMS: readonly Claim[] = [
 const FIXED: Record<Loc, readonly string[]> = {
   // Procedure: biga — the yeast water, the hand-mix, the published 61–65 °F
   // band, the ripeness cue. biga-1 rehydrates the yeast at 100–110 °F for 10
-  // minutes (MESSAGE-51): the 104 °F optimum and the 68 °F floor, from
-  // PizzaBlab and King Arthur in §11 (steps name no source since MESSAGE-54).
+  // minutes (MESSAGE-51): the 104 °F optimum, from PizzaBlab and King Arthur
+  // in §11 (steps name no source since MESSAGE-54). The cold-water leakage is
+  // worded, with Ponte, Glass and Geddes's figures in §11 (MESSAGE-64).
   // Its dose sentence gives the window the dose is set for, in °F and °C;
   // MESSAGE-54 removed the other sources' windows with their names.
   'biga-1.summary': ['100–110 °F', '10 minutes'],
-  'biga-1.detail': ['104 °F', '68 °F', '16–18 h', '61–65 °F', '16–18 °C'],
+  'biga-1.detail': ['104 °F', '16–18 h', '61–65 °F', '16–18 °C'],
   // Dave's hand mix, 3–6 minutes in all (MESSAGE-54), in the summary and timer.
   'biga-3.summary': ['3–6 minutes'],
   'biga-3.timerLabel': ['3–6 min'],
@@ -1235,15 +1236,16 @@ const FIXED: Record<Loc, readonly string[]> = {
   'stage:coldFerment': ['38–40 °F', '4 hours'],
   'stage:temper': ['60–65 °F'],
   // bulk-4's 3–4 hours from 75 to 40 °F, the cooling figure the warming claim
-  // above reads. The 60–65 °F target and the 45-minute waves left with the
-  // waves paragraph (MESSAGE-60).
-  'bake-1.detail': ['55 °F', '70 °F', '52 °F', '3–4 hours', '75', '40 °F'],
+  // above reads. "Colder than 60 °F" and "Warmer than 65 °F" (MESSAGE-64) are
+  // bake-1.summary's 60–65 °F target, a procedure figure; they pass here only
+  // because the warming claim covers the same strings at this location.
+  'bake-1.detail': ['70 °F', '52 °F', '3–4 hours', '75', '40 °F'],
   'bake-2.summary': ['750 °F', '60–90 s', '15–20 s'],
   'bake-2.detail': ['750', '750 °F', '800 °F', '15–20 s', '9–18'],
   'bake-2.troubleshoot': ['1 cm', '15 s', '5–10 s'],
 
   // Concepts — published sources, the flour's spec, history, and index words.
-  'concept:why-biga': ['100%', '60%', '12.2–12.8%', '80%'],
+  'concept:why-biga': ['100%', '12.2–12.8%', '80%'],
   // "00" is the flour grade, as in giorilli-standard; AVPN's figures are
   // claimed above.
   'concept:formula-rationale': ['60–90 second', '12.5%', '44–50%', '45%', '00'],
@@ -1265,11 +1267,15 @@ const FIXED: Record<Loc, readonly string[]> = {
   // All published (§11): Italian Pizza Secrets 16–18 h at 16–18 °C,
   // Baking With Theory 16–20 h at 16–20 °C (ideally 18), PizzaBlab 12–24 h;
   // Giorilli's 44–45% and his 50% allowance; "00" is the flour grade; 20% is
-  // the biga-5 pull cue.
-  'concept:giorilli-standard': ['61–65 °F', '16–18 °C', '16–18 h', '16–20 h', '16–20 °C', '18', '12–24 h', '44–45%', '50%', '00', '20%'],
+  // the biga-5 pull cue; 0.40–0.50 is the fresh-to-active-dry conversion
+  // baking references publish, against the 0.375 the factors give (MESSAGE-64).
+  'concept:giorilli-standard': ['61–65 °F', '16–18 °C', '16–18 h', '16–20 h', '16–20 °C', '18', '12–24 h', '44–45%', '50%', '00', '20%', '0.40–0.50'],
   'concept:no-creep-speed': ['15 RPM'], // Ooni's published chart, which is wrong
-  // The published biga band, as in biga-4 (its body names it since MESSAGE-35).
-  'concept:why-61-65': ['61–65 °F'],
+  // The published biga band, as in biga-4 (its body names it since MESSAGE-35),
+  // and the dose window at that band, filed as giorilli-standard and biga-4b
+  // file "16–18 h": it is the source's window, not the planning range. Birch,
+  // Petersen and Hansen's three temperatures and year (§11, MESSAGE-64).
+  'concept:why-61-65': ['61–65 °F', '16–18 hours', '5', '15', '35 °C', '2013'],
   // Ooni's wrong chart, quoted to reject it; Ooni's published guidance for
   // doughs at 66%+ hydration (the same threshold as FLOUR_CAP_66).
   'reference:mixer-speed': ['15 RPM', '66%'],
@@ -1285,7 +1291,12 @@ const FIXED: Record<Loc, readonly string[]> = {
   // claimed above.
   // "§2.1.2" is the section of AVPN's regulation, which extracts as "2.1" and "2".
   // Sisofo's 1–2 h for the balls after the fridge (MESSAGE-53).
-  about: ['1%', '12–24 h', '16–18 °C', '100%', '16–18 h', '44–45%', '16–20 h', '16–20 °C', '18', '45%', '50%', '104 °F', '110 °F', '12.2–12.8%', '2024', '00', '2.1', '2', '1–2 h'],
+  // MESSAGE-64's six papers: their years, and the figures each states (Birch's
+  // 5, 15 and 35 °C; Ponte's 40 °C, 5 °C and 29%; Salvadó's 1.3–4.3 °C and
+  // 32.3 °C). Cited, not computed. Ponte's "5%" of dry weight isn't listed:
+  // literals are a set per location, so the RPM_AT_5_PCT claim's "5%" excuses it.
+  about: ['1%', '12–24 h', '16–18 °C', '100%', '16–18 h', '44–45%', '16–20 h', '16–20 °C', '18', '45%', '50%', '104 °F', '110 °F', '12.2–12.8%', '2024', '00', '2.1', '2', '1–2 h',
+    '2013', '2014', '2003', '1960', '2011', '5 °C', '15', '35 °C', '40 °C', '29%', '1.3', '4.3 °C', '32.3 °C'],
   'concept:burn-ring': ['1', '100 °C', '1–1.5 cm', '2'],
 };
 
@@ -1588,21 +1599,46 @@ describe('§8.1 numbers in component copy are classified too', () => {
    * may say "tray" (bake-1's cooling estimate is for a ball on an open tray),
    * so the generated steps aren't read here; the stage text is.
    */
-  it('says trays nowhere in our copy (MESSAGE-60)', () => {
+  /**
+   * Our copy, the timeline's stage text and copy-as-text: everything this side
+   * words. recipeText.ts builds copy the walker doesn't read; its string
+   * literals are checked as source, which is enough for a phrase.
+   */
+  function ourCopy(): string[] {
     const copy = (readdirSync('src', { recursive: true }) as string[])
       .filter((f) => f.endsWith('.tsx'))
       .flatMap((f) => copyIn(readFileSync(join('src', f), 'utf8')).map((text) => `${f}: ${text}`));
     expect(copy.length, 'the walker read no copy').toBeGreaterThan(100);
     const stages = [...CONTENT.entries()].filter(([loc]) => loc.startsWith('stage:')).map(([loc, text]) => `${loc}: ${text}`);
     expect(stages.length, 'no stage text read').toBeGreaterThan(5);
-    // recipeText.ts builds copy the walker doesn't read; its string literals
-    // are checked as source, which is enough for one word.
     const recipeText = readFileSync('src/lib/recipeText.ts', 'utf8')
       .split('\n')
       .filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l))
       .map((l) => `recipeText.ts: ${l}`);
-    const offenders = [...copy, ...stages, ...recipeText].filter((t) => /\btrays?\b/i.test(t));
+    return [...copy, ...stages, ...recipeText];
+  }
+
+  it('says trays nowhere in our copy (MESSAGE-60)', () => {
+    const offenders = ourCopy().filter((t) => /\btrays?\b/i.test(t));
     expect(offenders, 'balls go into containers (bulk-3)').toEqual([]);
+  });
+
+  /**
+   * MESSAGE-64 retired these ideas from the recipe and the spec. None has a
+   * digit, so the literal check can't see them: the Cold ferment slider's hint
+   * said the biga "does nearly all the fermentation" and "the ball proof stays
+   * short" for a round after W6 said otherwise.
+   */
+  it("repeats none of MESSAGE-64's retired claims in our copy", () => {
+    const RETIRED: readonly [RegExp, string][] = [
+      [/nearly all the (work|fermentation)|ball proof stays short|two complete fermentations/i, 'W6: the retarded track moves part of the work into the dough'],
+      [/\b(acetic|lactic|vinegar\w*|heterofermentative)\b|water activity/i, 'W1, W5: a yeast biga, not a sourdough'],
+      [/\btru(e|er|est)\b[^.]*\bflavou?r|flavou?r gains/i, 'W2, W5: no source shows a best flavor'],
+      [/isn't a yeast problem|\bjar\b/i, 'W4: a doubled biga can be over-fermented; the jar is gone'],
+    ];
+    const copy = ourCopy();
+    const offenders = RETIRED.flatMap(([re, why]) => copy.filter((t) => re.test(t)).map((t) => `${why}  ←  ${t}`));
+    expect(offenders.join('\n')).toBe('');
   });
 
   it('keeps no stale entry', () => {
