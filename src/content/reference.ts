@@ -44,6 +44,8 @@ export const REFERENCE: readonly ReferenceSection[] = [
     title: "Friction rate",
     body: `**Dough-only** (matching FF): 0.75 °F/min at 15% · 0.86 at 20% · 1.08 at 30%
 
+The calculator uses only the 30% rate, to correct Phase C. The 15% and 20% rates are estimates that have run high; don't correct a phase by them.
+
 **As observed on a thermometer** — multiply by \`Ct/(Ct + C_bowl)\`:
 
 | Balls per mix | 3 | 6 | 9 |
@@ -117,6 +119,36 @@ export const SOURCES: readonly Source[] = [
     title: "AVPN — International Regulations, 2024",
     url: "https://www.pizzanapoletana.org/public/pdf/Disciplinare-2024-ENG.pdf",
     note: "per liter of water: 40–60 g salt, 1.6–1.8 kg flour; no fat or sugar in the dough (§2.1.2)",
+  },
+  {
+    title: "Jayaram and others — Mapping of Saccharomyces cerevisiae metabolites in fermenting wheat straight-dough reveals succinic acid as pH-determining factor, Food Chemistry, 2013",
+    url: "https://doi.org/10.1016/j.foodchem.2012.08.039",
+    note: "in yeast-leavened dough the pH falls mainly because of succinic acid the yeast makes, more than bacterial acids or dissolved CO₂",
+  },
+  {
+    title: "Jayaram and others — Succinic acid in levels produced by yeast (Saccharomyces cerevisiae) during fermentation strongly impacts wheat bread dough properties, Food Chemistry, 2014",
+    url: "https://doi.org/10.1016/j.foodchem.2013.11.025",
+    note: "at the levels yeast produces, succinic acid makes dough stronger and less extensible",
+  },
+  {
+    title: "Thiele, Gänzle and Vogel — Fluorescence labeling of wheat proteins for determination of gluten hydrolysis and depolymerization during dough processing and sourdough fermentation, Journal of Agricultural and Food Chemistry, 2003",
+    url: "https://doi.org/10.1021/jf020897e",
+    note: "flour's own proteases break gluten down faster at low pH",
+  },
+  {
+    title: "Birch, Petersen and Hansen — The aroma profile of wheat bread crumb influenced by yeast concentration and fermentation temperature, LWT, 2013",
+    url: "https://doi.org/10.1016/j.lwt.2012.08.019",
+    note: "fermenting at 5 °C raised three esters; 15 and 35 °C raised compounds from lipid oxidation",
+  },
+  {
+    title: "Ponte, Glass and Geddes — Cereal Chemistry, 1960",
+    url: "https://cerealsgrains.org/publications/cc/backissues/1960/Documents/CC1960a31.html",
+    note: "active dry yeast rehydrated at 40 °C leaked 5% of its dry weight and at 5 °C 29%; the leaked glutathione made doughs sticky and extensible",
+  },
+  {
+    title: "Salvadó and others — Temperature adaptation markedly determines evolution within the genus Saccharomyces, Applied and Environmental Microbiology, 2011",
+    url: "https://doi.org/10.1128/AEM.01861-10",
+    note: "Saccharomyces yeasts stop growing somewhere between 1.3 and 4.3 °C; S. cerevisiae grows fastest at 32.3 °C",
   },
 ];
 

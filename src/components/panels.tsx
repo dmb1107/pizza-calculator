@@ -35,6 +35,17 @@ const SCHEDULE_OPTIONS: { value: Schedule; label: string; description: string }[
   },
 ];
 
+/**
+ * §6 Panel 1, the cold-ferment slider. Each track's reason for its length,
+ * from `schedule-architecture` (MESSAGE-64, W6): the retarded biga arrives
+ * less ripe and the balls make it up; the classic biga ripens fully, so the
+ * dough's range is short. The classic range is the slider's own.
+ */
+const COLD_FERMENT_HINT: Record<Schedule, string> = {
+  retarded: "The fridge slows the biga, so it arrives less ripe, and the balls' longer cold ferment makes up the difference.",
+  classic: `The biga ripens fully at room temperature, so the dough gets only ${COLD_FERMENT_H.classic.min}–${COLD_FERMENT_H.classic.max} hours cold.`,
+};
+
 export function BatchPanel(s: AppState & { onOpenConcept: (id: string) => void }) {
   const { inputs, setInput, commitNumber, stepNumber, panels, togglePanel, ballsSplitHint, ballsRaisedNote, onOpenConcept } = s;
   const scheduleLabel = inputs.schedule === 'retarded' ? 'Retarded' : 'Classic RT';
@@ -91,7 +102,7 @@ export function BatchPanel(s: AppState & { onOpenConcept: (id: string) => void }
             onChange={(v) => setInput('coldFermentH', v)}
             min={COLD_FERMENT_H[inputs.schedule].min}
             max={COLD_FERMENT_H[inputs.schedule].max}
-            hint="The biga does nearly all the fermentation, so extra time goes into the biga and the ball proof stays short."
+            hint={COLD_FERMENT_HINT[inputs.schedule]}
           />
           <ConceptLink id={PAGE_CONCEPT_LINKS.coldFerment} onOpen={onOpenConcept} />
         </div>

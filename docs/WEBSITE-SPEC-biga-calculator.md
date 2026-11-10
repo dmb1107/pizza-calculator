@@ -94,7 +94,7 @@ export const C = {
   // Shaped rise time
   BASE_ROOM_MIN: 90,          // at DDT
 
-  // Divide and ball (§4.7). ESTIMATES: Dave hasn't timed a divide. Base = the middle of bulk-2's 10–15 min rest;
+  // Divide and ball (§4.7). ESTIMATES, Dave's own (9 Nov 2026): 45 s a ball to weigh and preshape and 30 s to shape. Not timed. Base = the middle of bulk-2's 10–15 min rest;
   // per ball chosen so 6 balls keeps the previous flat 20 min. Minutes, divided by 60 where hours are needed
   DIVIDE_BASE_MIN: 12.5,
   DIVIDE_PER_BALL_MIN: 1.25,
@@ -943,7 +943,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 **values:** Biga water: {bigaWater} g · ADY: {bigaADY} g · Biga flour: {bigaFlour} g
 
 **detail:**
-> **The yeast gets warm water; the rest of the biga water stays at room temperature.** Active dry yeast rehydrates best near 104 °F. Below about 68 °F its cells can lose up to half their soluble contents, and the glutathione that leaks out slackens the dough. The warm water is only for rehydration: no sugar, no proofing test.
+> **The yeast gets warm water; the rest of the biga water stays at room temperature.** Active dry yeast rehydrates best near 104 °F. In colder water its cells leak several times as much of their contents, and the glutathione that leaks out slackens the dough. The warm water is only for rehydration: no sugar, no proofing test.
 >
 > The yeast water comes out of the biga water, not on top of it. It warms the biga water only 2–3 °F, which nothing downstream reads.
 >
@@ -965,7 +965,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 **watchFor:** Crumbly chunks, not a dough. No dry flour anywhere.
 
 **detail:**
-> The mass stiffens fast. Once it does, stop working it as one piece and tear it into gnocchi-sized chunks. Kneading builds gluten a biga shouldn't have yet; an over-mixed biga rises like a dough, can double, and then looks riper than it is.
+> The mass stiffens fast. Once it does, stop working it as one piece and tear it into gnocchi-sized chunks. Kneading works the gluten into a network that holds gas, which a biga shouldn't have yet; a kneaded biga rises like a dough, can double, and then looks riper than it is.
 >
 > Make sure no dry flour is left before you stop. Dry flour never ferments.
 >
@@ -986,7 +986,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 **detail:**
 > **The retarded schedule**, 2 h at room temperature and then 18–20 h in the fridge, suits a kitchen that won't hold 61–65 °F: the 2 hours start fermentation, and the fridge then holds the biga at a steady temperature instead of wherever the room drifts. You give up a little acid character for control.
 >
-> **The classic room-temperature schedule** gives the truest biga flavor, if you have a wine fridge, a cool basement or a winter kitchen that holds the range.
+> **The classic room-temperature schedule** is the one the yeast dose was set for, if you have a wine fridge, a cool basement or a winter kitchen that holds the range.
 **concepts:** why-61-65
 
 ---
@@ -1000,7 +1000,7 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 **detail:**
 > The 2 hours at room temperature started fermentation; the fridge holds it steady while the biga ripens. Anywhere in the 18–20 h window works. Judge ripeness by the cue in the next step.
 >
-> **This schedule rests on an assumption.** The yeast dose is set for 16–18 h at 61–65 °F. Two hours warm, 18–20 h at 38–40 °F and the hour's temper give the biga less: by the recipe's fermentation model, with the rate doubling every 17 °F, about 11 hours' worth at 63 °F. The recipe assumes the biga is still ripe enough at pull, and that the final dough's schedule makes up any shortfall. Bake 1 ran this schedule; nothing has measured the biga's rise on it. If the balls are consistently behind on bake day, add an hour to the biga's time at room temperature before changing the dose.
+> **This schedule rests on an assumption.** The yeast dose is set for 16–18 h at 61–65 °F. Two hours warm, 18–20 h at 38–40 °F and the hour's temper give the biga less: by the recipe's fermentation model, with the rate doubling every 17 °F, at most about 11 hours' worth at 63 °F. Most of that is fridge time, and the model is generous to the fridge, where yeast all but stops growing, so the real figure is likely lower. The recipe assumes the biga is still ripe enough at pull, and that the final dough's schedule makes up the shortfall. Bake 1 ran this schedule; nothing has measured the biga's rise on it. If the balls are consistently behind on bake day, add an hour to the biga's time at room temperature before changing the dose.
 
 ---
 
@@ -1010,16 +1010,14 @@ Store step content in a separate `steps.ts` (or `steps.md` parsed at build time)
 **watchFor:** Chunks slightly swollen, possibly knitted into a loose block. The smell is moderately sharp, a little sour and alcoholic, but not overpowering.
 
 **detail:**
-> A ripe biga rises about 20%. It doesn't double; one that does was over-mixed and rose like a dough.
+> A ripe biga rises about 20%. Loose chunks let most of the gas escape, so it doesn't double. One that does was either worked into a dough, which holds its gas, or fermented too far; the smell tells the two apart.
 >
-> The window is wide. A biga ferments slowly, makes acid slowly and breaks down little gluten, so an hour either way rarely matters. Go by the cue rather than the clock.
->
-> To make the cue objective, fill a small straight-sided jar with biga from the same batch and mark the starting level. Then 20% is a line on the glass.
+> The window is wide. A biga ferments slowly and breaks down little gluten, so an hour either way rarely matters. Go by the cue rather than the clock.
 
 **troubleshoot:**
 | Symptom | Cause | Fix |
 |---|---|---|
-| Doubled in volume | **Over-mixed**: it developed gluten and rose like a dough | Mix by hand only, for less time, to loose chunks. It isn't a yeast problem. |
+| Doubled in volume | **Over-mixed**: it was worked into a dough and held its gas. If it also smells sharp, over-fermented | Mix by hand only, for less time, to loose chunks. If it smells sharp too, shorten the ferment. |
 | Strong, sharp acidic or alcoholic smell | Over-fermented | Shorten it, or switch to the retarded schedule |
 | No puffing at all | Not ready, colder than you thought (room or fridge), or dead yeast | Give it longer. Probe the actual temperature where it's fermenting rather than trusting a wall thermometer. Check the yeast. |
 | Dry flour visible in the chunks | Under-mixed | Mix the full 3–6 min next time; dry flour never ferments |
@@ -1355,7 +1353,7 @@ A bare token on a per-mix step is then a **visible** error rather than one that 
 **watchFor:** Balls relaxed and spread slightly, domed and airy, with a slow, incomplete rebound when poked.
 
 **detail:**
-> Below **55 °F** the dough tears when you open it and won't get good oven spring. Above **70 °F** it goes slack and sticky and loses its shape on the peel.
+> Colder than **60 °F**, the dough is stiff and springs back as you open it. Warmer than **65 °F**, it gets softer and stickier to handle.
 >
 > The look of the ball and the thermometer should agree. If a ball looks ready but reads 52 °F, trust the thermometer; the surface warms long before the core.
 >
@@ -1370,7 +1368,7 @@ A bare token on a per-mix step is then a **visible** error rather than one that 
 **detail:**
 > **Why 750 °F and full flame.** A Neapolitan bake depends on the balance between heat from above and heat from below more than on absolute temperature. The stone cooks the base by conduction; the flame cooks the top by radiation. If the base finishes before the top, you need more heat from above relative to below: a cooler stone, more flame, or both.
 >
-> A 750 °F stone with full flame gives that balance. Pushing the stone to 800 °F or more shifts it the wrong way and burns the base before the cornicione sets.
+> A 750 °F stone with full flame gives that balance. Bake on the Tread's own stone, not a baking steel, which passes heat into the base several times faster. Pushing the stone to 800 °F or more shifts it the wrong way and burns the base before the cornicione sets.
 >
 > **Turn every 15–20 s.** The flame comes from one side of a small chamber, so whichever side faces it scorches fast.
 >
@@ -1398,9 +1396,9 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 ```
 
 **`why-biga`** — *Why this recipe uses a 65% biga*
-> Low water activity slows the proteases that break down gluten, so the gluten survives a long ferment. It also pushes the bacteria toward heterofermentative pathways, which make more acetic acid: a sharper, more complex aroma, and the big irregular holes of the contemporary Neapolitan cornicione. A biga is also more forgiving than a liquid preferment, since it makes acid more slowly and has a wider window.
+> A stiff preferment ferments slowly, and the slow ferment is where the flavor comes from: the yeast has time to make the alcohols, esters and acids that flavor the crumb. The gluten holds up through it, because a yeast-leavened biga never gets acidic enough for the flour's proteases to do much. The little acid the yeast does make firms the gluten, which helps a dough this wet hold its shape and the gas behind the big irregular holes of the contemporary Neapolitan cornicione. A biga is also more forgiving than a liquid preferment: it ferments more slowly, so its window is wider.
 >
-> **Why 65% and not 100%.** Flavor gains flatten sharply above about 60% biga, while the risks keep rising. Three reasons to stop at 65%:
+> **Why 65% and not 100%.** Three reasons to stop at 65%:
 >
 > - **Flour strength.** Grain Craft Neapolitan is 12.2–12.8% protein, and Grain Craft doesn't publish a W value, so how well it holds up through a long biga is known only from baking it. Keeping 35% of the flour out of the biga leaves unfermented gluten in the final dough as a structural margin.
 > - **Adjustable consistency.** The reserved water goes in by feel during the mix, so you can correct for a wetter or drier biga.
@@ -1409,22 +1407,22 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 > Once this has run cleanly three or four times, moving to 80% or 100% biga is a single-variable experiment.
 
 **`formula-rationale`** — *Why 70% hydration, 2.8% salt, no malt*
-> **70% hydration** gives an open crumb and a puffy cornicione in a 60–90 second bake without exceeding what a 12.5%-protein flour can hold through a long ferment. A biga dough handles drier than the number suggests, because the biga's gluten is built before the water goes in.
+> **70% hydration** gives an open crumb and a puffy cornicione in a 60–90 second bake without exceeding what a 12.5%-protein flour can hold through a long ferment. A biga dough handles drier than the number suggests: most of the flour arrives already hydrated, with its gluten formed and firmed by the ferment.
 >
 > **50% biga hydration.** The documented band is 44–50%. Giorilli codified 45% and allows up to 50% for less-refined flours. Grain Craft sells this flour as a 00 type and publishes no milled ash figure, so a 50% biga on it sits slightly outside his formula. 50% mixes more evenly by hand, and a wetter biga ferments faster, which is one more reason to pull it by the cue.
 >
 > **2.8% salt** sits inside AVPN's range. AVPN specifies 40–60 g of salt per liter of water, with 1.6–1.8 kg of flour: 2.2–3.75% of the flour. This dough carries 70% water, so by AVPN's own measure 2.8% of the flour is 40 g per liter, the bottom of their range.
 >
-> **No diastatic malt.** At these oven temperatures, added sugars and extra amylase burn. Grain Craft is unmalted, which suits this recipe. AVPN's regulation rules out fat and sugar in the dough, and this recipe counts malt as sugar.
+> **No diastatic malt.** Malt adds amylase, which turns starch into sugar, and at these oven temperatures the extra sugar scorches. Grain Craft is unmalted, which suits this recipe. AVPN's regulation rules out fat and sugar in the dough, and this recipe counts malt as sugar.
 
 **`schedule-architecture`** — *Why the cold ferment is 6–48 h*
-> A classic biga front-loads the fermentation. At 0.375% ADY on 65% biga flour you carry about 0.244% ADY on total flour, a heavy dose by pizza standards and a deliberate one: the biga is meant to do nearly all the work.
+> A classic biga front-loads the fermentation. At 0.375% ADY on 65% biga flour you carry about 0.244% ADY on total flour, a heavy dose by pizza standards. On the classic track the biga ripens fully at room temperature and does most of the work, so the dough gets only 6–8 hours cold.
 >
-> That's the reverse of a lightly prefermented dough that develops its flavor over days in the fridge, and **a full-strength biga in front of a long cold ferment risks two complete fermentations.** Biga doughs that do spend a day or more in the fridge carry less yeast: Julian Sisofo's contemporary dough uses under half this recipe's dose per gram of biga flour, then gives the bulk and the balls each either a room-temperature rise or 24 h in the fridge.
+> **The retarded track moves part of that work into the dough.** The fridge slows the biga, so it arrives less ripe, and the balls' longer cold ferment makes up the difference. By the recipe's fermentation model, the retarded biga with 24 h cold comes to about the same total as the classic biga with 6–8 hours.
+>
+> A heavy dose in front of a long cold ferment can still over-proof. Biga doughs that do spend a day or more in the fridge carry less yeast: Julian Sisofo's contemporary dough uses under half this recipe's dose per gram of biga flour, then gives the bulk and the balls each either a room-temperature rise or 24 h in the fridge.
 >
 > **Use 24 h cold for now.** 24 h and 48 h have both been baked: from one dough, with the fridge at 38–39 °F, the 48-hour balls had more flavor and didn't over-proof. A full batch at 48 h will decide the default. 6 h, the calculator's minimum, hasn't been baked.
->
-> On the classic track the biga ripens fully at room temperature first, so the dough gets only 6–8 hours cold.
 >
 > In Italian practice, extra time goes into the biga rather than the ball proof. PizzaBlab's range is 12–24 h, and "biga lunga" runs 24 h at 39 °F, then 24 h at room temperature.
 
@@ -1450,7 +1448,7 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 > With a fridge-retarded biga you'll usually need **warm** water. The biga's thermal mass dominates, so the schedule controls dough temperature more than the water does.
 
 **`friction-factor`** — *Measuring your own friction factor*
-> **FF = 14.0 °F, measured** on bake 1, 21 August 2026, with 6 balls. The Phase C friction rate agrees: 1.00 °F/min on the dough and bowl together is 1.11 °F/min for the dough alone, against 1.08 predicted.
+> **FF = 14.0 °F, measured** on bake 1, 21 August 2026, with 6 balls. Late in Phase C the dough and bowl together were gaining 1.00 °F/min, which is 1.11 °F/min for the dough alone, against the 1.08 the calculator uses.
 >
 > **That mix ran long.** Its Phase C took 6.5 minutes, 3 more than the middle of the range, and at about a degree a minute that extra time is inside the 14.0. Taken out, bake 1 comes to **10.8**, and that's the figure the calculator uses at every batch size until you log a fully measured bake of your own.
 >
@@ -1483,19 +1481,21 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 >
 > **Giorilli's biga is 44–45% hydration; this one is 50%.** Giorilli allows up to 50% water only for semolina or less-refined flours, so a 50% biga on 00 is slightly outside his formula, and a wetter biga ferments faster. The dose is still the published starting point. It's another reason to pull the biga by the cue, about 20% rise, rather than by the clock.
 >
-> **The fresh-yeast dose is the sourced number.** The rest is unit conversion: fresh to instant at 0.30, instant to active dry at ×1.25, which gives exactly 0.375%.
+> **The fresh-yeast dose is the sourced number.** The rest is unit conversion: fresh to instant at 0.30, instant to active dry at ×1.25, which gives 0.375%. Those factors sit at the low end: baking references convert fresh yeast to active dry at 0.40–0.50, so this dose is a little under Giorilli's and is kept as an assumption.
 >
 > The dose is set for that window. The retarded schedule gives the biga less fermentation than the window does, and rests on an assumption (see *Refrigerate the biga*).
 
 **`mix-dont-knead`** — *Mix, don't knead*
-> A biga should be **small-to-medium chunks, like gnocchi**, not a dough. A spiral mixer builds gluten, which a preferment shouldn't have.
+> A biga should be **small-to-medium chunks, like gnocchi**, not a dough. A spiral mixer works the gluten into a network that holds gas, which a biga shouldn't have.
 >
-> An over-mixed biga rises like a dough. It then doubles in volume, which looks ripe and isn't. This one mistake explains most failed bigas.
+> The gluten itself forms anyway, from water and time. Hand mixing only leaves out the network: loose chunks let the gas escape, so a ripe biga swells only a little. A kneaded biga traps its gas and can double, which looks ripe and isn't.
 
 **`why-61-65`** — *Why 61–65 °F specifically*
-> At 61–65 °F the bacteria produce the **balance of lactic and acetic acid** that gives biga its sharp, vinegary flavor. Much warmer and the biga ferments faster and tastes different.
+> 61–65 °F is the window the yeast dose is set for: at that temperature it ripens the biga in 16–18 hours. Warmer, the same dose gets there sooner and can overshoot.
 >
-> So an unstable kitchen affects flavor as well as timing, which is why the fridge-retarded schedule exists: it gives up a little acidity for a temperature that holds.
+> Temperature also changes which aroma compounds the yeast makes. In one study of bread fermented at 5, 15 and 35 °C, the coldest doughs carried the most esters (Birch and others, 2013). This recipe has found no study showing that 61–65 °F tastes best.
+>
+> An unstable kitchen changes the timing first, which is why the fridge-retarded schedule exists: the fridge holds a temperature the kitchen can't.
 
 **`no-creep-speed`** — *The mixer has no slow speed*
 > Measured: **5% on the dial = 60 RPM**. With Ooni's published 300 RPM at 100%, that gives `RPM = 47.4 + 2.526 × dial%`. Ooni's help-center chart, which puts 5% at 15 RPM, is wrong: the dial covers a usable band that starts at 60 RPM rather than at zero.
@@ -1535,6 +1535,8 @@ The Core has no number display. Its LED indicator shows the speed in segments: a
 
 ### Friction rate
 **Dough-only** (matching FF): 0.75 °F/min at 15% · 0.86 at 20% · 1.08 at 30%
+
+The calculator uses only the 30% rate, to correct Phase C. The 15% and 20% rates are estimates that have run high; don't correct a phase by them.
 
 **As observed on a thermometer** — multiply by `Ct/(Ct + C_bowl)`:
 
@@ -1586,6 +1588,8 @@ Auto-populate each bake from the session's inputs so only the measured values ne
 
 - **Bake 1:** by its probe at 11 minutes the dough had risen 7.4 °F (dough-only, heat of hydration included), where 0.75 and 0.86 °F a minute alone give 8.25 to 9.46 over those 11 minutes, however the time was split between A and B. Phase A's water was guessed.
 - **Bake 2:** its readings mix to 65.3 °F before any friction, and the probe after Phase B read 71.2 °F after 13.8 minutes of A and B. That is 6.6 °F dough-only, heat of hydration included, where the rates give 11.4 before it.
+
+Net of the fresh flour's heat of hydration, about 2.0 °F at 65% biga (6.5 Btu per lb of flour, the baking industry's figure, on the 35% of flour that is fresh), Phases A and B averaged 0.49 °F a minute on bake 1 and 0.33 on bake 2 (MESSAGE-64).
 
 The two rates stay in §3 for reference. The log doesn't read them.
 
@@ -1668,6 +1672,12 @@ Link these from an About page. The recipe draws on these published sources.
 - [Giochi di Gusto — How to make Biga at home](https://www.giochidigusto.it/en/how-to-make-biga-at-home-the-complete-and-definitive-method/) — Giorilli's hydration: 45%, up to 50% only for semolina or less-refined flours
 - [Grain Craft — Neapolitan product sheet](https://www.graincraft.com/wp-content/uploads/2020/04/NeapolitanProductSheet.pdf) — 12.2–12.8% protein, unbleached, sold as a 00 type. Its nutrition panel's ash figure is a USDA database value for enriched flour, not a milled specification
 - [AVPN — International Regulations, 2024](https://www.pizzanapoletana.org/public/pdf/Disciplinare-2024-ENG.pdf) — per liter of water: 40–60 g salt, 1.6–1.8 kg flour; no fat or sugar in the dough (§2.1.2)
+- [Jayaram and others — Mapping of Saccharomyces cerevisiae metabolites in fermenting wheat straight-dough reveals succinic acid as pH-determining factor, Food Chemistry, 2013](https://doi.org/10.1016/j.foodchem.2012.08.039) — in yeast-leavened dough the pH falls mainly because of succinic acid the yeast makes, more than bacterial acids or dissolved CO₂
+- [Jayaram and others — Succinic acid in levels produced by yeast (Saccharomyces cerevisiae) during fermentation strongly impacts wheat bread dough properties, Food Chemistry, 2014](https://doi.org/10.1016/j.foodchem.2013.11.025) — at the levels yeast produces, succinic acid makes dough stronger and less extensible
+- [Thiele, Gänzle and Vogel — Fluorescence labeling of wheat proteins for determination of gluten hydrolysis and depolymerization during dough processing and sourdough fermentation, Journal of Agricultural and Food Chemistry, 2003](https://doi.org/10.1021/jf020897e) — flour's own proteases break gluten down faster at low pH
+- [Birch, Petersen and Hansen — The aroma profile of wheat bread crumb influenced by yeast concentration and fermentation temperature, LWT, 2013](https://doi.org/10.1016/j.lwt.2012.08.019) — fermenting at 5 °C raised three esters; 15 and 35 °C raised compounds from lipid oxidation
+- [Ponte, Glass and Geddes — Cereal Chemistry, 1960](https://cerealsgrains.org/publications/cc/backissues/1960/Documents/CC1960a31.html) — active dry yeast rehydrated at 40 °C leaked 5% of its dry weight and at 5 °C 29%; the leaked glutathione made doughs sticky and extensible
+- [Salvadó and others — Temperature adaptation markedly determines evolution within the genus Saccharomyces, Applied and Environmental Microbiology, 2011](https://doi.org/10.1128/AEM.01861-10) — Saccharomyces yeasts stop growing somewhere between 1.3 and 4.3 °C; S. cerevisiae grows fastest at 32.3 °C
 
 ---
 

@@ -9,16 +9,24 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-63 and FINDINGS-64 (9 November).
+MESSAGE-64 and FINDINGS-65 (10 November).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-63, and FINDINGS-64 is the
-  last thing sent.** No pin of any kind is live (`knownWrong` is empty) and
-  nothing is open. MESSAGE-63 changed wording only: the temper warms the
+- **The correspondence is applied through MESSAGE-64, and FINDINGS-65 is the
+  last thing sent.** No pin of any kind is live (`knownWrong` is empty).
+  FINDINGS-65 asks two wording questions (`schedule-architecture`'s 6–48 h
+  title on the classic track, and W16's unsourced steel claim); nothing
+  blocks. MESSAGE-64 was Dave's science review, wording only: the biga is a
+  yeast preferment, not a sourdough, and the retarded track moves part of
+  the work into the dough. Our cold-ferment slider hint still said the
+  opposite; it is per track now, and `contentLiterals.test.ts` bans the
+  retired phrases from our copy. **From MESSAGE-64 every MESSAGE opens with
+  the effort level Dave should run the round at.** The next four rounds are
+  Dave's queued app changes, one per round. MESSAGE-63 changed wording only: the temper warms the
   bowl faster than the biga, so `biga-6` quotes 1.6 °F per °F of biga for a
   reading and "about 2" for a skipped temper, and `bulk-1` asks for a steady
   spot near the target dough temperature. The prefill stays `T_biga`, Dave's

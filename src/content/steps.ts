@@ -112,7 +112,7 @@ export const STEPS: readonly Step[] = [
     title: `Start the yeast, break up the flour`,
     summary: `Weigh {bigaWater} g of water. Warm about ten times the yeast's weight of it to 100–110 °F, stir in {bigaADY} g ADY and leave it 10 minutes. Meanwhile whisk the flour hard or push it through a coarse sieve to break up the clumps, then weigh out {bigaFlour} g.`,
     values: [`Biga water: {bigaWater} g`, `ADY: {bigaADY} g`, `Biga flour: {bigaFlour} g`],
-    detail: `**The yeast gets warm water; the rest of the biga water stays at room temperature.** Active dry yeast rehydrates best near 104 °F. Below about 68 °F its cells can lose up to half their soluble contents, and the glutathione that leaks out slackens the dough. The warm water is only for rehydration: no sugar, no proofing test.
+    detail: `**The yeast gets warm water; the rest of the biga water stays at room temperature.** Active dry yeast rehydrates best near 104 °F. In colder water its cells leak several times as much of their contents, and the glutathione that leaks out slackens the dough. The warm water is only for rehydration: no sugar, no proofing test.
 
 The yeast water comes out of the biga water, not on top of it. It warms the biga water only 2–3 °F, which nothing downstream reads.
 
@@ -132,7 +132,7 @@ Break it up first and weigh after, so flour left in the sieve doesn't come out o
     summary: `In the mixer bowl, combine the rest of the water, at **room temperature**, with the yeast water. Add the flour and work it in with your fingers until no dry flour is left. When it gets too stiff to work, tear it into gnocchi-sized chunks. 3–6 minutes in all.`,
     timerLabel: `3–6 min`,
     timerMinutes: [3, 6],
-    detail: `The mass stiffens fast. Once it does, stop working it as one piece and tear it into gnocchi-sized chunks. Kneading builds gluten a biga shouldn't have yet; an over-mixed biga rises like a dough, can double, and then looks riper than it is.
+    detail: `The mass stiffens fast. Once it does, stop working it as one piece and tear it into gnocchi-sized chunks. Kneading works the gluten into a network that holds gas, which a biga shouldn't have yet; a kneaded biga rises like a dough, can double, and then looks riper than it is.
 
 Make sure no dry flour is left before you stop. Dry flour never ferments.
 
@@ -153,7 +153,7 @@ Cover the bowl so the biga doesn't dry out. A closed lid is fine.`,
     timerLabelClassic: `16–18 h`,
     detail: `**The retarded schedule**, 2 h at room temperature and then 18–20 h in the fridge, suits a kitchen that won't hold 61–65 °F: the 2 hours start fermentation, and the fridge then holds the biga at a steady temperature instead of wherever the room drifts. You give up a little acid character for control.
 
-**The classic room-temperature schedule** gives the truest biga flavor, if you have a wine fridge, a cool basement or a winter kitchen that holds the range.`,
+**The classic room-temperature schedule** is the one the yeast dose was set for, if you have a wine fridge, a cool basement or a winter kitchen that holds the range.`,
     concepts: ["why-61-65"],
   },
   {
@@ -165,23 +165,21 @@ Cover the bowl so the biga doesn't dry out. A closed lid is fine.`,
     timerLabel: `18–20 h`,
     detail: `The 2 hours at room temperature started fermentation; the fridge holds it steady while the biga ripens. Anywhere in the 18–20 h window works. Judge ripeness by the cue in the next step.
 
-**This schedule rests on an assumption.** The yeast dose is set for 16–18 h at 61–65 °F. Two hours warm, 18–20 h at 38–40 °F and the hour's temper give the biga less: by the recipe's fermentation model, with the rate doubling every 17 °F, about 11 hours' worth at 63 °F. The recipe assumes the biga is still ripe enough at pull, and that the final dough's schedule makes up any shortfall. Bake 1 ran this schedule; nothing has measured the biga's rise on it. If the balls are consistently behind on bake day, add an hour to the biga's time at room temperature before changing the dose.`,
+**This schedule rests on an assumption.** The yeast dose is set for 16–18 h at 61–65 °F. Two hours warm, 18–20 h at 38–40 °F and the hour's temper give the biga less: by the recipe's fermentation model, with the rate doubling every 17 °F, at most about 11 hours' worth at 63 °F. Most of that is fridge time, and the model is generous to the fridge, where yeast all but stops growing, so the real figure is likely lower. The recipe assumes the biga is still ripe enough at pull, and that the final dough's schedule makes up the shortfall. Bake 1 ran this schedule; nothing has measured the biga's rise on it. If the balls are consistently behind on bake day, add an hour to the biga's time at room temperature before changing the dose.`,
   },
   {
     id: "biga-5",
     phase: "biga",
     title: `Pull at ~20% rise`,
     summary: `Ripe when the chunks have puffed about 20%. **It won't double.**`,
-    detail: `A ripe biga rises about 20%. It doesn't double; one that does was over-mixed and rose like a dough.
+    detail: `A ripe biga rises about 20%. Loose chunks let most of the gas escape, so it doesn't double. One that does was either worked into a dough, which holds its gas, or fermented too far; the smell tells the two apart.
 
-The window is wide. A biga ferments slowly, makes acid slowly and breaks down little gluten, so an hour either way rarely matters. Go by the cue rather than the clock.
-
-To make the cue objective, fill a small straight-sided jar with biga from the same batch and mark the starting level. Then 20% is a line on the glass.`,
+The window is wide. A biga ferments slowly and breaks down little gluten, so an hour either way rarely matters. Go by the cue rather than the clock.`,
     watchFor: `Chunks slightly swollen, possibly knitted into a loose block. The smell is moderately sharp, a little sour and alcoholic, but not overpowering.`,
     troubleshoot: {
       headers: ["Symptom", "Cause", "Fix"],
       rows: [
-        [`Doubled in volume`, `**Over-mixed**: it developed gluten and rose like a dough`, `Mix by hand only, for less time, to loose chunks. It isn't a yeast problem.`],
+        [`Doubled in volume`, `**Over-mixed**: it was worked into a dough and held its gas. If it also smells sharp, over-fermented`, `Mix by hand only, for less time, to loose chunks. If it smells sharp too, shorten the ferment.`],
         [`Strong, sharp acidic or alcoholic smell`, `Over-fermented`, `Shorten it, or switch to the retarded schedule`],
         [`No puffing at all`, `Not ready, colder than you thought (room or fridge), or dead yeast`, `Give it longer. Probe the actual temperature where it's fermenting rather than trusting a wall thermometer. Check the yeast.`],
         [`Dry flour visible in the chunks`, `Under-mixed`, `Mix the full 3–6 min next time; dry flour never ferments`],
@@ -445,7 +443,7 @@ Oil keeps the dough from sticking to the container without drawing water out of 
     title: `Temper`,
     summary: `Each ball comes out of the fridge **1½–2 hours** before it's baked; the timeline plans {temper} h before the first launch. Target **60–65 °F at the core**, measured with a probe.`,
     timerLabel: `1.5–2 h`,
-    detail: `Below **55 °F** the dough tears when you open it and won't get good oven spring. Above **70 °F** it goes slack and sticky and loses its shape on the peel.
+    detail: `Colder than **60 °F**, the dough is stiff and springs back as you open it. Warmer than **65 °F**, it gets softer and stickier to handle.
 
 The look of the ball and the thermometer should agree. If a ball looks ready but reads 52 °F, trust the thermometer; the surface warms long before the core.
 
@@ -459,7 +457,7 @@ The look of the ball and the thermometer should agree. If a ball looks ready but
     summary: `Preheat until the gauge reads **750 °F**. Launch on **full flame** and bake 60–90 s, turning every 15–20 s.`,
     detail: `**Why 750 °F and full flame.** A Neapolitan bake depends on the balance between heat from above and heat from below more than on absolute temperature. The stone cooks the base by conduction; the flame cooks the top by radiation. If the base finishes before the top, you need more heat from above relative to below: a cooler stone, more flame, or both.
 
-A 750 °F stone with full flame gives that balance. Pushing the stone to 800 °F or more shifts it the wrong way and burns the base before the cornicione sets.
+A 750 °F stone with full flame gives that balance. Bake on the Tread's own stone, not a baking steel, which passes heat into the base several times faster. Pushing the stone to 800 °F or more shifts it the wrong way and burns the base before the cornicione sets.
 
 **Turn every 15–20 s.** The flame comes from one side of a small chamber, so whichever side faces it scorches fast.
 

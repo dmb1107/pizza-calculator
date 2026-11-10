@@ -21,9 +21,9 @@ export const CONCEPTS: readonly Concept[] = [
   {
     id: "why-biga",
     title: "Why this recipe uses a 65% biga",
-    body: `Low water activity slows the proteases that break down gluten, so the gluten survives a long ferment. It also pushes the bacteria toward heterofermentative pathways, which make more acetic acid: a sharper, more complex aroma, and the big irregular holes of the contemporary Neapolitan cornicione. A biga is also more forgiving than a liquid preferment, since it makes acid more slowly and has a wider window.
+    body: `A stiff preferment ferments slowly, and the slow ferment is where the flavor comes from: the yeast has time to make the alcohols, esters and acids that flavor the crumb. The gluten holds up through it, because a yeast-leavened biga never gets acidic enough for the flour's proteases to do much. The little acid the yeast does make firms the gluten, which helps a dough this wet hold its shape and the gas behind the big irregular holes of the contemporary Neapolitan cornicione. A biga is also more forgiving than a liquid preferment: it ferments more slowly, so its window is wider.
 
-**Why 65% and not 100%.** Flavor gains flatten sharply above about 60% biga, while the risks keep rising. Three reasons to stop at 65%:
+**Why 65% and not 100%.** Three reasons to stop at 65%:
 
 - **Flour strength.** Grain Craft Neapolitan is 12.2–12.8% protein, and Grain Craft doesn't publish a W value, so how well it holds up through a long biga is known only from baking it. Keeping 35% of the flour out of the biga leaves unfermented gluten in the final dough as a structural margin.
 - **Adjustable consistency.** The reserved water goes in by feel during the mix, so you can correct for a wetter or drier biga.
@@ -34,24 +34,24 @@ Once this has run cleanly three or four times, moving to 80% or 100% biga is a s
   {
     id: "formula-rationale",
     title: "Why 70% hydration, 2.8% salt, no malt",
-    body: `**70% hydration** gives an open crumb and a puffy cornicione in a 60–90 second bake without exceeding what a 12.5%-protein flour can hold through a long ferment. A biga dough handles drier than the number suggests, because the biga's gluten is built before the water goes in.
+    body: `**70% hydration** gives an open crumb and a puffy cornicione in a 60–90 second bake without exceeding what a 12.5%-protein flour can hold through a long ferment. A biga dough handles drier than the number suggests: most of the flour arrives already hydrated, with its gluten formed and firmed by the ferment.
 
 **50% biga hydration.** The documented band is 44–50%. Giorilli codified 45% and allows up to 50% for less-refined flours. Grain Craft sells this flour as a 00 type and publishes no milled ash figure, so a 50% biga on it sits slightly outside his formula. 50% mixes more evenly by hand, and a wetter biga ferments faster, which is one more reason to pull it by the cue.
 
 **2.8% salt** sits inside AVPN's range. AVPN specifies 40–60 g of salt per liter of water, with 1.6–1.8 kg of flour: 2.2–3.75% of the flour. This dough carries 70% water, so by AVPN's own measure 2.8% of the flour is 40 g per liter, the bottom of their range.
 
-**No diastatic malt.** At these oven temperatures, added sugars and extra amylase burn. Grain Craft is unmalted, which suits this recipe. AVPN's regulation rules out fat and sugar in the dough, and this recipe counts malt as sugar.`,
+**No diastatic malt.** Malt adds amylase, which turns starch into sugar, and at these oven temperatures the extra sugar scorches. Grain Craft is unmalted, which suits this recipe. AVPN's regulation rules out fat and sugar in the dough, and this recipe counts malt as sugar.`,
   },
   {
     id: "schedule-architecture",
     title: "Why the cold ferment is 6\u201348 h",
-    body: `A classic biga front-loads the fermentation. At 0.375% ADY on 65% biga flour you carry about 0.244% ADY on total flour, a heavy dose by pizza standards and a deliberate one: the biga is meant to do nearly all the work.
+    body: `A classic biga front-loads the fermentation. At 0.375% ADY on 65% biga flour you carry about 0.244% ADY on total flour, a heavy dose by pizza standards. On the classic track the biga ripens fully at room temperature and does most of the work, so the dough gets only 6–8 hours cold.
 
-That's the reverse of a lightly prefermented dough that develops its flavor over days in the fridge, and **a full-strength biga in front of a long cold ferment risks two complete fermentations.** Biga doughs that do spend a day or more in the fridge carry less yeast: Julian Sisofo's contemporary dough uses under half this recipe's dose per gram of biga flour, then gives the bulk and the balls each either a room-temperature rise or 24 h in the fridge.
+**The retarded track moves part of that work into the dough.** The fridge slows the biga, so it arrives less ripe, and the balls' longer cold ferment makes up the difference. By the recipe's fermentation model, the retarded biga with 24 h cold comes to about the same total as the classic biga with 6–8 hours.
+
+A heavy dose in front of a long cold ferment can still over-proof. Biga doughs that do spend a day or more in the fridge carry less yeast: Julian Sisofo's contemporary dough uses under half this recipe's dose per gram of biga flour, then gives the bulk and the balls each either a room-temperature rise or 24 h in the fridge.
 
 **Use 24 h cold for now.** 24 h and 48 h have both been baked: from one dough, with the fridge at 38–39 °F, the 48-hour balls had more flavor and didn't over-proof. A full batch at 48 h will decide the default. 6 h, the calculator's minimum, hasn't been baked.
-
-On the classic track the biga ripens fully at room temperature first, so the dough gets only 6–8 hours cold.
 
 In Italian practice, extra time goes into the biga rather than the ball proof. PizzaBlab's range is 12–24 h, and "biga lunga" runs 24 h at 39 °F, then 24 h at room temperature.`,
   },
@@ -81,7 +81,7 @@ With a fridge-retarded biga you'll usually need **warm** water. The biga's therm
   {
     id: "friction-factor",
     title: "Measuring your own friction factor",
-    body: `**FF = 14.0 °F, measured** on bake 1, 21 August 2026, with 6 balls. The Phase C friction rate agrees: 1.00 °F/min on the dough and bowl together is 1.11 °F/min for the dough alone, against 1.08 predicted.
+    body: `**FF = 14.0 °F, measured** on bake 1, 21 August 2026, with 6 balls. Late in Phase C the dough and bowl together were gaining 1.00 °F/min, which is 1.11 °F/min for the dough alone, against the 1.08 the calculator uses.
 
 **That mix ran long.** Its Phase C took 6.5 minutes, 3 more than the middle of the range, and at about a degree a minute that extra time is inside the 14.0. Taken out, bake 1 comes to **10.8**, and that's the figure the calculator uses at every batch size until you log a fully measured bake of your own.
 
@@ -116,23 +116,25 @@ Piergiorgio Giorilli codified this dose. Italian Pizza Secrets gives it with a 1
 
 **Giorilli's biga is 44–45% hydration; this one is 50%.** Giorilli allows up to 50% water only for semolina or less-refined flours, so a 50% biga on 00 is slightly outside his formula, and a wetter biga ferments faster. The dose is still the published starting point. It's another reason to pull the biga by the cue, about 20% rise, rather than by the clock.
 
-**The fresh-yeast dose is the sourced number.** The rest is unit conversion: fresh to instant at 0.30, instant to active dry at ×1.25, which gives exactly 0.375%.
+**The fresh-yeast dose is the sourced number.** The rest is unit conversion: fresh to instant at 0.30, instant to active dry at ×1.25, which gives 0.375%. Those factors sit at the low end: baking references convert fresh yeast to active dry at 0.40–0.50, so this dose is a little under Giorilli's and is kept as an assumption.
 
 The dose is set for that window. The retarded schedule gives the biga less fermentation than the window does, and rests on an assumption (see *Refrigerate the biga*).`,
   },
   {
     id: "mix-dont-knead",
     title: "Mix, don't knead",
-    body: `A biga should be **small-to-medium chunks, like gnocchi**, not a dough. A spiral mixer builds gluten, which a preferment shouldn't have.
+    body: `A biga should be **small-to-medium chunks, like gnocchi**, not a dough. A spiral mixer works the gluten into a network that holds gas, which a biga shouldn't have.
 
-An over-mixed biga rises like a dough. It then doubles in volume, which looks ripe and isn't. This one mistake explains most failed bigas.`,
+The gluten itself forms anyway, from water and time. Hand mixing only leaves out the network: loose chunks let the gas escape, so a ripe biga swells only a little. A kneaded biga traps its gas and can double, which looks ripe and isn't.`,
   },
   {
     id: "why-61-65",
     title: "Why 61\u201365 \u00b0F specifically",
-    body: `At 61–65 °F the bacteria produce the **balance of lactic and acetic acid** that gives biga its sharp, vinegary flavor. Much warmer and the biga ferments faster and tastes different.
+    body: `61–65 °F is the window the yeast dose is set for: at that temperature it ripens the biga in 16–18 hours. Warmer, the same dose gets there sooner and can overshoot.
 
-So an unstable kitchen affects flavor as well as timing, which is why the fridge-retarded schedule exists: it gives up a little acidity for a temperature that holds.`,
+Temperature also changes which aroma compounds the yeast makes. In one study of bread fermented at 5, 15 and 35 °C, the coldest doughs carried the most esters (Birch and others, 2013). This recipe has found no study showing that 61–65 °F tastes best.
+
+An unstable kitchen changes the timing first, which is why the fridge-retarded schedule exists: the fridge holds a temperature the kitchen can't.`,
   },
   {
     id: "no-creep-speed",
