@@ -140,6 +140,8 @@ question:
 | `FINDINGS-63-to-recipe-agent.md` | Reply to MESSAGE-62. Reproduced; nothing open. PR #18 deployed |
 | `MESSAGE-63.md` | Unprompted, Dave's two calls from bakes 2 and 3. **F1:** the temper warms the bowl faster than the biga (9–10.5 °F above at mix 1), so `biga-6` quotes `Cb/Cw` (1.6) for a reading and "about 2 °F" only for a skipped temper; the prefill stays `T_biga` (Dave's call) and §4.2 records its cost. **R1:** `bulk-1` asks for a steady spot near the target dough temperature, no figures. Nothing modelled moves |
 | `FINDINGS-64-to-recipe-agent.md` | Reply to MESSAGE-63. All reproduced except `roomrise.py`'s table, whose script wasn't sent. Two more sweeps still counted disallowed batches; the tracking span's minimum moved to 10 × 244 g. Nothing open |
+| `MESSAGE-64.md` | Dave's science review, wording only (W1–W18): a yeast biga, not a sourdough (no acetic acid, no water activity); no best-flavor claim at 61–65 °F; the retarded track moves part of the work into the dough; a doubled biga may be over-fermented; the jar gone; six papers in §11. No formula, constant or token moves |
+| `FINDINGS-65-to-recipe-agent.md` | Reply to MESSAGE-64. All reproduced (761 → 766 with their gate patch). Our cold-ferment slider hint still said the biga "does nearly all the fermentation"; Dave's per-track hint replaced it, and a test now bans MESSAGE-64's retired phrases from our copy. Asks about `schedule-architecture`'s 6–48 h title on the classic track and W16's unsourced steel claim |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
