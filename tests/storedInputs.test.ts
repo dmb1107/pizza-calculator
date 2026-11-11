@@ -182,7 +182,7 @@ describe('§6 stored inputs are read by the same rules as a link’s', () => {
 });
 
 describe('§10 Reset, then a reload', () => {
-  it('the readings come back at their defaults and the batch settings as they were', () => {
+  it('every input comes back at its default, batch settings included (Dave, 10 Nov 2026)', () => {
     const before: Inputs = {
       ...DEFAULT_INPUTS,
       balls: 12,
@@ -199,18 +199,12 @@ describe('§10 Reset, then a reload', () => {
     const afterReset = persistedForNewBake(stored(before));
     for (const standalone of [false, true]) {
       const back = reopen(afterReset, { standalone }).inputs;
-      expect(back).toEqual(inputsForNewBake(before));
-      expect(back).toMatchObject({
-        balls: 12,
-        ballWeightG: 250,
-        coldFermentH: 48,
-        bigaFridgeH: 18.5,
-        roomTempF: DEFAULT_INPUTS.roomTempF,
-        flourSameAsRoom: DEFAULT_INPUTS.flourSameAsRoom,
-        bigaTempF: DEFAULT_INPUTS.bigaTempF,
-        bowlTempF: DEFAULT_INPUTS.bowlTempF,
-        finalDoughTempF: DEFAULT_INPUTS.finalDoughTempF,
-      });
+      expect(back).toEqual(inputsForNewBake());
+      expect(back).toEqual(DEFAULT_INPUTS);
+      // A home-screen app with defaults stored doesn't fall back to its launch URL.
+      expect(reopen(afterReset, { standalone, search: '?balls=12&ball=250' }).inputs).toEqual(
+        standalone ? DEFAULT_INPUTS : { ...DEFAULT_INPUTS, balls: 12, ballWeightG: 250 },
+      );
     }
   });
 

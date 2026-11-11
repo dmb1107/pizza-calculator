@@ -47,7 +47,7 @@ const COLD_FERMENT_HINT: Record<Schedule, string> = {
 };
 
 export function BatchPanel(s: AppState & { onOpenConcept: (id: string) => void }) {
-  const { inputs, setInput, commitNumber, stepNumber, panels, togglePanel, ballsSplitHint, ballsRaisedNote, onOpenConcept } = s;
+  const { inputs, setInput, commitNumber, stepNumber, panels, togglePanel, ballsSplitHint, ballsRaisedNote, onOpenConcept, resetCount } = s;
   const scheduleLabel = inputs.schedule === 'retarded' ? 'Retarded' : 'Classic RT';
   // §7.3: stepping below 3 shows why, next to the field. Cleared by the next step up.
   const [belowMin, setBelowMin] = useState(false);
@@ -85,6 +85,8 @@ export function BatchPanel(s: AppState & { onOpenConcept: (id: string) => void }
           max={BOUNDS.balls.max}
         />
         <NumberField
+          // Reset puts the ball weight back to its default; remount so no edit survives it.
+          key={resetCount}
           label="Ball weight"
           unit="g"
           value={inputs.ballWeightG}

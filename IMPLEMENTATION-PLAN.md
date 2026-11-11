@@ -40,7 +40,10 @@ sentence is gone from `bake-2`, `schedule-architecture` is titled "How long
 the cold ferment runs, and why", and **the inputs are stored in the browser
 as well as written to the URL** (APP-3, §6 *Where the inputs are kept*), so
 a home-screen app that is closed and reopened keeps its batch settings and
-readings. FINDINGS-66 is the last thing sent.
+readings. After Dave's iPhone check, Reset discards a reading still being
+edited (PR #23), and **Reset now puts the batch settings and the schedule's
+adjustments back to their defaults too** (Dave's call, 10 Nov), ahead of
+§10. FINDINGS-67 is the last thing sent.
 
 ---
 

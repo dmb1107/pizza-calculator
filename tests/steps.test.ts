@@ -477,13 +477,36 @@ describe("§10's Reset copy is reproduced verbatim", () => {
 
   const text = jsxText('src/components/NewBakeReset.tsx');
 
+  /**
+   * Ahead of the spec: Dave's call on 10 Nov 2026 (after MESSAGE-65) made
+   * Reset put the batch settings back to their defaults too, and FINDINGS-67
+   * proposes this wording for §10. Pinned both ways, as `knownWrong` is: the
+   * component must say this, and §10 must still say the old copy. Once §10
+   * carries the new copy this fails; set `AHEAD_OF_SPEC` to null so the test
+   * reads the copy from the spec again.
+   */
+  const AHEAD_OF_SPEC: { spec: string; component: string } | null = {
+    spec:
+      "Start a new bake? This clears today's readings, any DDT override, the timeline's start or target time, " +
+      'the step checkboxes and the timers. Your batch settings and saved bakes stay.',
+    component:
+      "Start a new bake? This puts the batch settings and today's readings back to their defaults, and clears " +
+      "any DDT override, the timeline's start or target time, the step checkboxes and the timers. Your saved bakes stay.",
+  };
+
   it('asks in §10\'s words', () => {
     expect(quoted, 'the copy not found in §10').toBeDefined();
     const spec = quoted!.replace(/\*\*/g, '');
     // The question is a <strong> and the rest follows it: two text nodes.
     const at = text.indexOf('Start a new bake?');
     expect(at, 'the question not found in NewBakeReset').toBeGreaterThanOrEqual(0);
-    expect(`${text[at]} ${text[at + 1]}`).toBe(spec);
+    const rendered = `${text[at]} ${text[at + 1]}`;
+    if (AHEAD_OF_SPEC) {
+      expect(spec, '§10 now carries new copy: set AHEAD_OF_SPEC to null').toBe(AHEAD_OF_SPEC.spec);
+      expect(rendered).toBe(AHEAD_OF_SPEC.component);
+    } else {
+      expect(rendered).toBe(spec);
+    }
   });
 
   it('offers §10\'s two buttons', () => {

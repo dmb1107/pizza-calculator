@@ -135,10 +135,11 @@ export interface AppState {
   /** Clear a per-mix reading back to unread (the final temperature's "Clear"). */
   clearReading: (field: PerMixReading, index: number) => void;
   /**
-   * §10: the page's Reset, and its only one. Puts today's readings, the
-   * DDT override and the timeline's anchor back to their defaults and clears
-   * the step checkboxes and the timers; the batch settings and the saved bakes
-   * stay, and the next save is a new bake.
+   * §10: the page's Reset, and its only one. Puts every input (the batch
+   * settings, the schedule's adjustments and today's readings), the DDT
+   * override and the timeline's anchor back to their defaults and clears the
+   * step checkboxes and the timers; the saved bakes stay, and the next save
+   * is a new bake.
    */
   startNewBake: () => void;
   /**
@@ -640,7 +641,9 @@ export function useAppState(): AppState {
   const startNewBake = useCallback(() => {
     const next = persistedForNewBake(persisted);
     setResetCount((n) => n + 1);
-    setInputs(inputsForNewBake);
+    setInputs(inputsForNewBake());
+    // The balls are back at their default, so no raise is in force.
+    setBallsChosen(null);
     setCalibration(next.calibration);
     setPanels(next.panels);
     setBigaStartAt(bigaStartFrom(next.bigaStartAtIso));

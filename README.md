@@ -32,9 +32,10 @@ returns:
 
 The setup and the day's readings survive a refresh and a closed app, home-screen
 app included, and **Share setup** copies them as a link.
-**Reset**, above the panels, starts a new bake: it clears today's readings,
-any DDT override, the timeline's start or target time, the step
-checkboxes and the timers, and keeps the batch settings and the log. Reference
+**Reset**, above the panels, starts a new bake: it puts the batch settings
+and today's readings back to their defaults, clears any DDT override, the
+timeline's start or target time, the step checkboxes and the timers, and
+keeps the log. Reference
 tables, the recipe's sources and the bake log open in drawers at the bottom of
 the page.
 

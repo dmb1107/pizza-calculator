@@ -300,31 +300,14 @@ describe('localStorage persistence', () => {
 });
 
 describe('§10 Reset starts a new bake', () => {
-  it("puts today's readings back to their defaults and keeps the batch settings", () => {
-    const next = inputsForNewBake(CUSTOM);
-    // Today's readings: those in the prep steps and the final readings.
-    expect(next).toMatchObject({
-      roomTempF: DEFAULT_INPUTS.roomTempF,
-      flourSameAsRoom: DEFAULT_INPUTS.flourSameAsRoom,
-      flourTempF: DEFAULT_INPUTS.flourTempF,
-      bigaTempF: DEFAULT_INPUTS.bigaTempF,
-      bowlTempF: DEFAULT_INPUTS.bowlTempF,
-      finalDoughTempF: DEFAULT_INPUTS.finalDoughTempF,
-    });
-    // Balls, ball weight, schedule, cold ferment, and the schedule's adjustments.
-    expect(next).toMatchObject({
-      balls: CUSTOM.balls,
-      ballWeightG: CUSTOM.ballWeightG,
-      schedule: CUSTOM.schedule,
-      coldFermentH: CUSTOM.coldFermentH,
-      bigaFridgeH: CUSTOM.bigaFridgeH,
-      bigaRoomOnlyH: CUSTOM.bigaRoomOnlyH,
-      temperH: CUSTOM.temperH,
-    });
-    // Nothing else: every key of the inputs is one of the two lists above.
-    const reset = ['roomTempF', 'flourSameAsRoom', 'flourTempF', 'bigaTempF', 'bowlTempF', 'finalDoughTempF'];
-    const kept = ['balls', 'ballWeightG', 'schedule', 'coldFermentH', 'bigaFridgeH', 'bigaRoomOnlyH', 'temperH'];
-    expect(Object.keys(DEFAULT_INPUTS).sort()).toEqual([...reset, ...kept].sort());
+  it('puts every input back to its default: the batch settings, the adjustments and the readings', () => {
+    // Dave's call, 10 Nov 2026 (after MESSAGE-65): the batch settings and the
+    // schedule's adjustments reset too. Until then they were kept.
+    expect(inputsForNewBake()).toEqual(DEFAULT_INPUTS);
+    // Every input differs in CUSTOM, so each one is shown to move.
+    for (const key of Object.keys(DEFAULT_INPUTS) as (keyof Inputs)[]) {
+      expect(CUSTOM[key], key).not.toEqual(DEFAULT_INPUTS[key]);
+    }
   });
 
   // A session mid-bake: overridden DDT, both anchors set, ticks, a stopped
@@ -362,10 +345,11 @@ describe('§10 Reset starts a new bake', () => {
     const resetToDefault = ['calibration', 'bigaStartAtIso', 'bakeAtIso'];
     const cleared = ['checkedSteps', 'timers', 'sessionBakeId'];
     const kept = ['panels', 'timelineMode'];
-    // The stored inputs (MESSAGE-65) are none of the three as a whole: they
-    // follow `inputsForNewBake`, input by input.
+    // The stored inputs (MESSAGE-65) follow `inputsForNewBake`: every input
+    // at its default, which is '' (not null, nothing stored).
     const followsInputs = ['inputsQuery'];
-    expect(next.inputsQuery).toBe(encodeInputs(inputsForNewBake(CUSTOM)));
+    expect(next.inputsQuery).toBe(encodeInputs(inputsForNewBake()));
+    expect(next.inputsQuery).toBe('');
     expect(Object.keys(DEFAULT_PERSISTED).sort()).toEqual(
       [...resetToDefault, ...cleared, ...kept, ...followsInputs].sort(),
     );
