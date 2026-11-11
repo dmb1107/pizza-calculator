@@ -53,7 +53,10 @@ what APP-5 built) is applied. **MESSAGE-70 is applied** (APP-6, Task 12):
 the page is three tabs, Recipe, Toppings and Bake log, a bar at the bottom
 on a phone and a sticky strip from 768 px; the log's drawer and its two
 buttons are gone; and Dave's topping ideas have a tab, their own store and
-their own sync under `toppings/`. FINDINGS-71 is the last thing sent.
+their own sync under `toppings/`. MESSAGE-71 (spec only) is applied.
+**MESSAGE-72 is applied** (APP-7): each idea has a Comments field below
+Notes, and Expand all / Collapse all above the lists. FINDINGS-73 is the
+last thing sent.
 
 ---
 
@@ -803,8 +806,12 @@ the ideas' lists and editor, then their sync.
 - [x] **Their sync** (§13.3, `toppingsStore.ts`, `useToppings.ts`): one file
       per idea under `toppings/` in the log's repository, same token, own
       storage key and own changed and deleted lists. The log and the ideas
-      run the same sync (`repoSync.ts`); the last write to an idea wins by
-      `updated`.
+      run the same sync (`repoSync.ts`); the copy saved last wins by
+      `updated`, and between a deletion and an edit the last sync wins.
+- [x] **APP-7** (§13.2, MESSAGE-72): `comments`, Markdown, below Notes,
+      left off the card when empty; an idea saved before it reads as having
+      none. Keys a build doesn't know survive a read and a save. Expand all /
+      Collapse all above both lists, not stored; an open editor stays open.
 
 ---
 

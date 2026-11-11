@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type FormEvent } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { Markdown } from './Markdown';
 import { syncStatusText } from './BakeLog';
 import { formatRating } from '../lib/format';
@@ -21,8 +21,9 @@ import type { ToppingsState } from '../state/useToppings';
 
 /**
  * §13.2 (APP-6, MESSAGE-70): the Toppings tab. Two lists, Tested and
- * Untested; each idea a card that opens to its three Markdown fields; an
- * editor for adding and changing one.
+ * Untested; each idea a card that opens to its four Markdown fields; an
+ * editor for adding and changing one; and above the lists, one control that
+ * opens or closes every card (APP-7, MESSAGE-72).
  *
  * Everything that appears in response to a tap appears at or below it: the
  * editor takes the place of "Add idea", an idea's editor opens below its
@@ -211,6 +212,7 @@ function IdeaEditor({
       <TextArea label="Pre-bake" value={draft.pre_bake} onChange={(v) => set('pre_bake', v)} />
       <TextArea label="Post-bake" value={draft.post_bake} onChange={(v) => set('post_bake', v)} />
       <TextArea label="Notes" value={draft.notes} onChange={(v) => set('notes', v)} />
+      <TextArea label="Comments" value={draft.comments} onChange={(v) => set('comments', v)} />
       <RatingControl value={draft.rating} refused={shownRefusal} onPick={pick} />
 
       {confirmingDelete && idea ? (
@@ -294,7 +296,7 @@ function IdeaCard({
 }) {
   const bodyId = `idea-body-${idea.id}`;
   const shown = open || editing;
-  const empty = [idea.pre_bake, idea.post_bake, idea.notes].every((t) => t.trim() === '');
+  const empty = [idea.pre_bake, idea.post_bake, idea.notes, idea.comments].every((t) => t.trim() === '');
   return (
     <li id={`idea-${idea.id}`} className={`${cardClass} min-w-0 scroll-mt-4 md:scroll-mt-20`}>
       {/* The header: the name with its stars under it, which opens the card,
@@ -347,6 +349,7 @@ function IdeaCard({
               <Field label="Pre-bake" text={idea.pre_bake} />
               <Field label="Post-bake" text={idea.post_bake} />
               <Field label="Notes" text={idea.notes} />
+              <Field label="Comments" text={idea.comments} />
             </div>
           )}
         </div>
@@ -363,6 +366,35 @@ export function ToppingsPage({ toppings, github }: { toppings: ToppingsState; gi
 
   const tested = testedIdeas(toppings.ideas);
   const untested = untestedIdeas(toppings.ideas);
+
+  // §13.2: one control above both lists. A card being edited counts as open,
+  // since its editor shows whatever the control does.
+  const allOpen = toppings.ideas.every((i) => openIds.has(i.id) || editingId === i.id);
+  const pageRef = useRef<HTMLDivElement>(null);
+  const controlRef = useRef<HTMLButtonElement>(null);
+  const controlTop = useRef<number | null>(null);
+  // Collapse all shortens the page under the control. Held at its old height,
+  // a page scrolled into the lists can't clamp, so the control stays under
+  // the finger and nothing above it slides in. Released by Expand all and Add idea.
+  const [heldHeight, setHeldHeight] = useState<number | null>(null);
+
+  const expandAll = () => {
+    setHeldHeight(null);
+    setOpenIds(new Set(toppings.ideas.map((i) => i.id)));
+  };
+  const collapseAll = () => {
+    controlTop.current = controlRef.current?.getBoundingClientRect().top ?? null;
+    const height = pageRef.current?.getBoundingClientRect().height;
+    if (height !== undefined) setHeldHeight((held) => Math.max(held ?? 0, height));
+    // An open editor stays open: `shown` is `open || editing`.
+    setOpenIds(new Set());
+  };
+  useLayoutEffect(() => {
+    const before = controlTop.current;
+    controlTop.current = null;
+    const after = controlRef.current?.getBoundingClientRect().top;
+    if (before !== null && after !== undefined && after !== before) window.scrollBy(0, after - before);
+  }, [openIds]);
 
   const toggle = (id: string) =>
     setOpenIds((prev) => {
@@ -405,7 +437,11 @@ export function ToppingsPage({ toppings, github }: { toppings: ToppingsState; gi
   );
 
   return (
-    <div className="grid min-w-0 gap-6">
+    <div
+      ref={pageRef}
+      className="grid min-w-0 content-start gap-6"
+      style={heldHeight === null ? undefined : { minHeight: heldHeight }}
+    >
       {adding ? (
         <div className={`${cardClass} p-4`}>
           <IdeaEditor
@@ -418,8 +454,26 @@ export function ToppingsPage({ toppings, github }: { toppings: ToppingsState; gi
           />
         </div>
       ) : (
-        <button type="button" onClick={() => setAdding(true)} className={`${primaryClass} justify-self-start`}>
+        <button
+          type="button"
+          onClick={() => {
+            setHeldHeight(null);
+            setAdding(true);
+          }}
+          className={`${primaryClass} justify-self-start`}
+        >
           Add idea
+        </button>
+      )}
+
+      {toppings.ideas.length > 0 && (
+        <button
+          ref={controlRef}
+          type="button"
+          onClick={allOpen ? collapseAll : expandAll}
+          className={`${buttonClass} justify-self-start`}
+        >
+          {allOpen ? 'Collapse all' : 'Expand all'}
         </button>
       )}
 

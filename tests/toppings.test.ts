@@ -11,6 +11,7 @@ import {
   EMPTY_DRAFT,
   RATINGS,
   canRate,
+  draftOf,
   ideaProblem,
   isRating,
   newIdeaId,
@@ -58,6 +59,7 @@ function idea(id: string, overrides: Partial<ToppingIdea> = {}): ToppingIdea {
     pre_bake: 'San Marzano, fior di latte',
     post_bake: '',
     notes: '',
+    comments: '',
     rating: null,
     created: '2026-11-01T18:00:00.000Z',
     updated: '2026-11-01T18:00:00.000Z',
@@ -176,6 +178,34 @@ describe('§13.3 the local copy', () => {
     const { post_bake: _p, notes: _n, ...sparse } = good;
     expect(parseIdea(sparse)).toEqual({ ...good, post_bake: '', notes: '' });
     expect(parseIdea({ ...good, pre_bake: '' })).toMatchObject({ rating: 4, pre_bake: '' });
+  });
+
+  it('reads an idea saved before comments as having none, and saves it without error (APP-7)', () => {
+    const { comments: _c, ...before } = idea('a', { notes: 'Bake on the stone.' });
+    const read = parseIdea(before)!;
+    expect(read.comments).toBe('');
+    const draft = { ...draftOf(read), comments: '  Too salty with the anchovy.\nLess next time.  ' };
+    const saved = savedIdea(draft, read, 'unused', at('2026-11-11T20:00:00Z'));
+    expect(saved.comments).toBe('Too salty with the anchovy.\nLess next time.');
+    expect(saved.notes).toBe('Bake on the stone.');
+    expect(parseIdea(JSON.parse(serializeRecord(saved)))).toEqual(saved);
+    expect(parseIdea({ ...before, comments: 3 })).toBeNull();
+  });
+
+  it('keeps a key this build does not know through a read and a save', () => {
+    const photo = { path: 'toppings/a.jpg', width: 1200 };
+    const later = { ...idea('a'), photo };
+    const read = parseIdea(later)!;
+    const saved = savedIdea({ ...draftOf(read), name: 'Renamed' }, read, 'unused', at('2026-11-11T20:00:00Z'));
+    const file = JSON.parse(serializeRecord(saved));
+    expect(file.photo).toEqual(photo);
+    expect(file.name).toBe('Renamed');
+    // A known key is never taken from the unknown ones: the draft decides.
+    expect(savedIdea({ ...draftOf(read), comments: 'new' }, read, 'x', at('2026-11-11T20:00:00Z')).comments).toBe('new');
+    // Local storage keeps it too.
+    const s = fakeStorage();
+    saveToppings(s, upsertIdea(EMPTY_TOPPINGS, read));
+    expect((loadToppings(s).items[0] as unknown as { photo: unknown }).photo).toEqual(photo);
   });
 
   it('degrades to no ideas on garbage', () => {
@@ -304,6 +334,16 @@ describe('§13.3 sync through the bake log repository', () => {
     const { store: laptop } = await syncToppings(CFG, EMPTY_TOPPINGS, gh.fetchFn);
     expect(laptop.items.map((i) => i.name)).toEqual(['Hot honey']);
     expect(laptop.dirty).toEqual([]);
+  });
+
+  it('carries an idea\'s comments to another browser', async () => {
+    const gh = fakeGitHub();
+    const phone = upsertIdea(EMPTY_TOPPINGS, idea('p', { notes: 'Honey after the bake.', comments: 'Sweet, **good** heat.' }));
+    await syncToppings(CFG, phone, gh.fetchFn);
+    expect(gh.read('toppings/p.json').comments).toBe('Sweet, **good** heat.');
+    const { store: laptop } = await syncToppings(CFG, EMPTY_TOPPINGS, gh.fetchFn);
+    expect(laptop.items[0]!.comments).toBe('Sweet, **good** heat.');
+    expect(laptop.items[0]!.notes).toBe('Honey after the bake.');
   });
 
   it('keeps the last write to an idea, by when it was saved, whichever device syncs last', async () => {
@@ -444,11 +484,14 @@ describe("§13.2's rendered copy is the app's", () => {
       'Pre-bake',
       'Post-bake',
       'Notes',
+      'Comments',
       'Rating',
       'Add idea',
       'Save',
       'Delete',
       'Cancel',
+      'Expand all',
+      'Collapse all',
       'Delete "{name}"?',
       'Delete',
       'Cancel',

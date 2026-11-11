@@ -469,6 +469,199 @@ test.describe('APP-6: three tabs, and the topping ideas', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// APP-7 (MESSAGE-72): comments, and one control that opens or closes every card
+// ---------------------------------------------------------------------------
+
+const SHOTS7 = process.env['APP7_SHOTS'];
+
+/** The seed ideas, two with comments; the rest saved before comments existed. */
+const app7Ideas = () =>
+  SEED_IDEAS.map((idea, i) =>
+  i === 0
+    ? { ...idea, comments: 'Best one yet. The honey cut the **salt** of the soppressata.\nDave wants it again for the party.' }
+    : i === 1
+      ? { ...idea, comments: 'Crisp edges, soft middle. Needed more salt.' }
+      : idea,
+  );
+
+async function seedIdeas(page: Page, ideas: readonly object[]) {
+  await page.evaluate(
+    ({ key, ideas }) => localStorage.setItem(key, JSON.stringify({ items: ideas, shas: {}, dirty: [], deleted: [], lastSyncedAt: '' })),
+    { key: 'biga-calculator:toppings:v1', ideas },
+  );
+  await page.reload();
+  await phoneWidth(page);
+  await tab(page, 'Toppings').tap();
+}
+
+const control = (page: Page) => panel(page, 'Toppings').getByRole('button', { name: /^(Expand all|Collapse all)$/ });
+const header = (card: Locator) => card.getByRole('button').first();
+const openCards = (page: Page) => panel(page, 'Toppings').locator('li button[aria-expanded="true"]');
+
+test.describe('APP-7: comments, and expand or collapse every idea', () => {
+  test('a comment survives a reload and a force close, below Notes on the open card', async ({ baseURL }, info) => {
+    const profile = info.outputPath('profile');
+    let phone = await openPhone(profile, { time: T0 }, baseURL!);
+    let { page } = phone;
+    await phoneWidth(page);
+
+    await addIdea(page, 'Pistachio pesto', { pre: 'Pistachio pesto\nFior di latte', notes: 'Toast the pistachios first.' });
+    const card = ideaCard(page, 'Pistachio pesto');
+    // Saved without a comment: the open card leaves the field out.
+    await expect(card.getByRole('heading', { name: 'Notes' })).toBeVisible();
+    await expect(card.getByRole('heading', { name: 'Comments' })).toHaveCount(0);
+
+    await card.getByRole('button', { name: 'Edit', exact: true }).tap();
+    // In the editor, Comments sits below Notes.
+    const notesBox = (await card.getByRole('textbox', { name: 'Notes', exact: true }).boundingBox())!;
+    const comments = card.getByRole('textbox', { name: 'Comments', exact: true });
+    expect((await comments.boundingBox())!.y).toBeGreaterThan(notesBox.y);
+    await comments.fill('Nutty, *rich*.\nMortadella next time, see [this one](https://mortadella.example/).');
+    await card.getByRole('button', { name: 'Save', exact: true }).tap();
+
+    const check = async (p: Page) => {
+      const c = ideaCard(p, 'Pistachio pesto');
+      if ((await header(c).getAttribute('aria-expanded')) !== 'true') await header(c).tap();
+      const notesY = (await c.getByRole('heading', { name: 'Notes' }).boundingBox())!.y;
+      const commentsH = c.getByRole('heading', { name: 'Comments' });
+      await expect(commentsH).toBeVisible();
+      expect((await commentsH.boundingBox())!.y).toBeGreaterThan(notesY);
+      // Markdown: emphasis, a kept line break, a link in a new tab.
+      const body = c.locator('h4:text-is("Comments") + *');
+      await expect(body.locator('em')).toHaveText('rich');
+      await expect(body.locator('br')).toHaveCount(1);
+      await expect(body.getByRole('link', { name: 'this one' })).toHaveAttribute('target', '_blank');
+    };
+    await check(page);
+
+    await page.reload();
+    await check(page);
+    await forceClose(phone);
+    phone = await openPhone(profile, { time: T0 + 10 * MIN }, baseURL!);
+    page = phone.page;
+    await phoneWidth(page);
+    await check(page);
+    await expectNoSidewaysScroll(page);
+    await forceClose(phone);
+  });
+
+  test('Expand all and Collapse all act on both lists, and nothing is stored', async ({ baseURL }, info) => {
+    const phone = await openPhone(info.outputPath('profile'), { time: T0 }, baseURL!);
+    const { page } = phone;
+    await phoneWidth(page);
+    await seedIdeas(page, app7Ideas());
+    const all = app7Ideas().length;
+
+    // The control sits above both lists.
+    const ctl = control(page);
+    expect((await ctl.boundingBox())!.y).toBeLessThan((await list(page, 'Tested').boundingBox())!.y);
+    await expect(ctl).toHaveText('Expand all');
+    if (SHOTS7) await page.screenshot({ path: `${SHOTS7}/lists-375-expand-all.png` });
+
+    // With one card open it still reads Expand all, and opens every card in both lists.
+    await header(ideaCard(page, 'Mushroom and taleggio')).tap();
+    await expect(ctl).toHaveText('Expand all');
+    await ctl.tap();
+    await expect(openCards(page)).toHaveCount(all);
+    await expect(ctl).toHaveText('Collapse all');
+    await expect(list(page, 'Untested').locator('button[aria-expanded="true"]')).toHaveCount(2);
+    // An old idea with no comments shows none; one with comments shows them below Notes.
+    const first = ideaCard(page, 'Hot honey soppressata');
+    await expect(first.getByRole('heading', { name: 'Comments' })).toBeVisible();
+    await expect(ideaCard(page, 'Mushroom and taleggio').getByRole('heading', { name: 'Comments' })).toHaveCount(0);
+    await expectNoSidewaysScroll(page);
+    if (SHOTS7) {
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.screenshot({ path: `${SHOTS7}/lists-375-collapse-all.png` });
+      // Taller, so the fixed bar doesn't cover the end of the card.
+      await page.setViewportSize({ width: 375, height: 1600 });
+      await first.screenshot({ path: `${SHOTS7}/card-375-notes-and-comments.png` });
+      await phoneWidth(page);
+    }
+
+    // Closing one card by its header turns the control back to Expand all.
+    await header(ideaCard(page, 'Clams, garlic, parsley')).tap();
+    await expect(ctl).toHaveText('Expand all');
+    await ctl.tap();
+    await expect(ctl).toHaveText('Collapse all');
+
+    // Collapse all from scrolled into the lists: the control stays under the finger.
+    await page.evaluate(() => window.scrollBy(0, 200));
+    const before = (await ctl.boundingBox())!.y;
+    await ctl.tap();
+    await expect(openCards(page)).toHaveCount(0);
+    await expect(ctl).toHaveText('Expand all');
+    expect((await ctl.boundingBox())!.y).toBe(before);
+
+    // Not stored: after a reload every card is closed.
+    await ctl.tap();
+    await expect(openCards(page)).toHaveCount(all);
+    await page.reload();
+    await phoneWidth(page);
+    await expect(tab(page, 'Toppings')).toHaveAttribute('aria-selected', 'true');
+    await expect(openCards(page)).toHaveCount(0);
+    await expect(control(page)).toHaveText('Expand all');
+    await forceClose(phone);
+  });
+
+  test('Collapse all leaves an open editor and its unsaved text', async ({ baseURL }, info) => {
+    const phone = await openPhone(info.outputPath('profile'), { time: T0 }, baseURL!);
+    const { page } = phone;
+    await phoneWidth(page);
+    await seedIdeas(page, app7Ideas());
+
+    await control(page).tap();
+    const card = ideaCard(page, 'Potato, rosemary, pecorino');
+    await card.getByRole('button', { name: 'Edit', exact: true }).tap();
+    const comments = card.getByRole('textbox', { name: 'Comments', exact: true });
+    await comments.fill('Crisp edges. Try it with lemon.');
+    // Still focused as on iOS (the harness keeps focus through a button tap).
+    await comments.focus();
+    await control(page).tap();
+    await expect(card.locator('form')).toBeVisible();
+    await expect(comments).toHaveValue('Crisp edges. Try it with lemon.');
+    // Every other card closed; the one being edited is the only one open.
+    await expect(openCards(page)).toHaveCount(1);
+    await expect(control(page)).toHaveText('Expand all');
+
+    await card.getByRole('button', { name: 'Save', exact: true }).tap();
+    await expect(card.locator('form')).toHaveCount(0);
+    await expect(ideaCard(page, 'Potato, rosemary, pecorino')).toContainText('Crisp edges. Try it with lemon.');
+    await forceClose(phone);
+  });
+
+  test('an idea added with a comment in one profile appears with it in another after a sync', async ({ baseURL }, info) => {
+    const repo = newRepo();
+    const phoneA = await openPhone(info.outputPath('a'), { time: T0 }, baseURL!);
+    await stubGitHub(phoneA.context, repo);
+    const a = phoneA.page;
+    await phoneWidth(a);
+    await connect(a);
+
+    await tab(a, 'Toppings').tap();
+    await a.getByRole('button', { name: 'Add idea', exact: true }).tap();
+    const form = panel(a, 'Toppings').locator('form');
+    await form.getByRole('textbox', { name: 'Name', exact: true }).fill('Fig and gorgonzola');
+    await form.getByRole('textbox', { name: 'Comments', exact: true }).fill('Too sweet with the honey.');
+    await form.getByRole('button', { name: 'Save', exact: true }).tap();
+    await a.clock.runFor(2 * S);
+    await expect.poll(() => ideaFiles(repo).length).toBe(1);
+
+    const phoneB = await openPhone(info.outputPath('b'), { time: T0 + MIN }, baseURL!);
+    await stubGitHub(phoneB.context, repo);
+    const b = phoneB.page;
+    await phoneWidth(b);
+    await connect(b);
+    await tab(b, 'Toppings').tap();
+    const card = ideaCard(b, 'Fig and gorgonzola');
+    await header(card).tap();
+    await expect(card.locator('h4:text-is("Comments") + *')).toHaveText('Too sweet with the honey.');
+    await forceClose(phoneA);
+    await forceClose(phoneB);
+  });
+});
+
 /** A few ideas for the screenshots, shaped as the app saves them. */
 const SEED_IDEAS = [
   {

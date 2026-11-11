@@ -33,9 +33,10 @@ returns:
   the next water target uses. The four mixer-phase timers it reads are tagged **Logged**, and
   the bake is saved from the card after the last mix, once the final dough
   temperature is in;
-- a place for topping ideas: a name, pre-bake and post-bake toppings, notes
-  and a rating in half stars, all in Markdown so they can carry links. Rated
-  ideas list best first, and untested ones in a list of their own.
+- a place for topping ideas: a name, pre-bake and post-bake toppings, notes,
+  comments on how the pizza tasted, and a rating in half stars, all in
+  Markdown so they can carry links. Rated ideas list best first, and untested
+  ones in a list of their own; one button opens or closes every idea.
 
 The page has three tabs, **Recipe**, **Toppings** and **Bake log**: on a
 phone a bar fixed to the bottom of the screen, and from 768 px wide a strip
