@@ -776,12 +776,6 @@ const CLAIMS: readonly Claim[] = [
     text: `the dough gets only ${COLD_FERMENT_H.classic.min}–${COLD_FERMENT_H.classic.max} hours cold`,
     covers: ['6–8 hours'],
   },
-  {
-    at: 'concept:schedule-architecture',
-    restates: 'BOUNDS.coldFermentH, in the title',
-    text: `Why the cold ferment is ${BOUNDS.coldFermentH.min}–${BOUNDS.coldFermentH.max} h`,
-    covers: ['6–48 h'],
-  },
 
   // --- concepts: the thermal model ------------------------------------------
   {

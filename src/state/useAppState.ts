@@ -1,9 +1,12 @@
 /**
  * State wiring — WEBSITE-SPEC-biga-calculator.md §2 and §6.
  *
- * Precedence on load is URL > localStorage > default. A shared link therefore
- * always shows the sender's setup, while the recipient's own calibration and
- * preferences still apply underneath it.
+ * The inputs are stored and written to the URL (§6 *Where the inputs are
+ * kept*, MESSAGE-65). Which wins on load is `resolveInitialInputs`: a
+ * home-screen app takes what is stored, a browser takes a link over what is
+ * stored, and a bare URL takes what is stored. A shared link shows the
+ * sender's setup, while the recipient's own calibration and preferences still
+ * apply underneath it.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -30,11 +33,9 @@ import {
 } from '../lib/timeline';
 import { timerDueAt, type RunningTimer, type TimerSpec } from '../lib/timers';
 import {
-  DEFAULT_INPUTS,
   applyInput,
   clampField,
   inputsForNewBake,
-  persistedForNewBake,
   type BoundedField,
 } from './defaults';
 import { browserStorage, loadPersisted, savePersisted } from './storage';
@@ -51,7 +52,8 @@ import {
 } from './bakeLogStore';
 import { mergeAfterSync, syncLog, type FetchLike } from './githubSync';
 import { newBakeId, saveConflict, sessionBake } from './sessionBake';
-import { decodeInputsWithReport, encodeInputs } from './url';
+import { encodeInputs } from './url';
+import { isStandalone, persistedForNewBake, resolveInitialInputs, storedInputsOf } from './storedInputs';
 import { tokenValues } from '../lib/bindTokens';
 import type {
   Calibration,
@@ -232,13 +234,17 @@ export interface AppState {
 export function useAppState(): AppState {
   const storage = useMemo(() => browserStorage(), []);
 
-  // Read storage once, then the URL for the inputs. The bowl mass used to be
-  // the one unshared input here; it is a constant now (MESSAGE-29), and a
-  // stored value from before is ignored.
+  // Read storage once, then decide the inputs by §6's load rule: the stored
+  // ones, the URL's, or the defaults. The bowl mass is a constant
+  // (MESSAGE-29), and a stored or linked value from before is ignored.
   const initial = useMemo(() => {
     const persisted = loadPersisted(storage);
-    const decoded = decodeInputsWithReport(currentSearch(), DEFAULT_INPUTS);
-    return { persisted, inputs: decoded.inputs, ballsAskedFor: decoded.ballsAskedFor };
+    const resolved = resolveInitialInputs({
+      search: currentSearch(),
+      stored: persisted.inputsQuery,
+      standalone: isStandalone(),
+    });
+    return { persisted, inputs: resolved.inputs, ballsAskedFor: resolved.ballsAskedFor };
   }, [storage]);
 
   const [inputs, setInputs] = useState<Inputs>(initial.inputs);
@@ -289,7 +295,10 @@ export function useAppState(): AppState {
     return () => clearInterval(id);
   }, [hasTimers]);
 
-  // Skip the first persist: it would only write back what we just read.
+  // The first persist writes only the inputs, and only when they differ from
+  // what was stored: a link is stored when it loads (MESSAGE-65), not at the
+  // first edit after it. The rest would only write back what we just read,
+  // and writing it would fix a fresh session's biga start ('' reads as now).
   const hydrated = useRef(false);
 
   useEffect(() => {
@@ -306,17 +315,22 @@ export function useAppState(): AppState {
       checkedSteps: [...checkedSteps],
       timers,
       sessionBakeId,
+      // §6: every change to an input writes storage and the URL together.
+      inputsQuery: storedInputsOf(inputs),
     }),
-    [calibration, panels, bigaStartAt, timelineMode, bakeAt, checkedSteps, timers, sessionBakeId],
+    [calibration, panels, bigaStartAt, timelineMode, bakeAt, checkedSteps, timers, sessionBakeId, inputs],
   );
 
   useEffect(() => {
     if (!hydrated.current) {
       hydrated.current = true;
+      if (persisted.inputsQuery !== initial.persisted.inputsQuery) {
+        savePersisted(storage, { ...initial.persisted, inputsQuery: persisted.inputsQuery });
+      }
       return;
     }
     savePersisted(storage, persisted);
-  }, [storage, persisted]);
+  }, [storage, persisted, initial]);
 
   useEffect(() => {
     saveLog(storage, log);

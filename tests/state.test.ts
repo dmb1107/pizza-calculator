@@ -9,8 +9,8 @@ import {
   applyInput,
   clampField,
   inputsForNewBake,
-  persistedForNewBake,
 } from '../src/state/defaults';
+import { persistedForNewBake } from '../src/state/storedInputs';
 import { decodeInputs, encodeInputs, hasInputs } from '../src/state/url';
 import { STORAGE_KEY, loadPersisted, savePersisted, type StorageLike } from '../src/state/storage';
 import type { Inputs, Persisted } from '../src/state/types';
@@ -242,6 +242,7 @@ describe('localStorage persistence', () => {
         { stepId: 'mix-5', startedAt: 1_700_000_000_000, minMinutes: 3, maxMinutes: 4, stoppedAt: 1_700_000_210_000 },
       ],
       sessionBakeId: '2026-09-28-193000',
+      inputsQuery: 'balls=12&cold=36&room=66.5',
     };
     savePersisted(s, value);
     expect(loadPersisted(s)).toEqual(value);
@@ -273,6 +274,7 @@ describe('localStorage persistence', () => {
       expect(Array.isArray(loaded.checkedSteps)).toBe(true);
       expect(Array.isArray(loaded.timers)).toBe(true);
       expect(typeof loaded.sessionBakeId).toBe('string');
+      expect(loaded.inputsQuery === null || typeof loaded.inputsQuery === 'string').toBe(true);
     });
 
     it('drops a stop recorded before its start, and ignores typing times an earlier build stored', () => {
@@ -336,6 +338,7 @@ describe('§10 Reset starts a new bake', () => {
     checkedSteps: ['biga-1', 'mix-2#1'],
     timers: [{ stepId: 'mix-3#1', startedAt: 1_000, minMinutes: 3, maxMinutes: 4, stoppedAt: 200_000 }],
     sessionBakeId: 'bake-2026-09-28-1',
+    inputsQuery: encodeInputs(CUSTOM),
   };
 
   it('puts the DDT override and the timeline anchor back to their defaults, and clears the bake in progress', () => {
@@ -359,7 +362,13 @@ describe('§10 Reset starts a new bake', () => {
     const resetToDefault = ['calibration', 'bigaStartAtIso', 'bakeAtIso'];
     const cleared = ['checkedSteps', 'timers', 'sessionBakeId'];
     const kept = ['panels', 'timelineMode'];
-    expect(Object.keys(DEFAULT_PERSISTED).sort()).toEqual([...resetToDefault, ...cleared, ...kept].sort());
+    // The stored inputs (MESSAGE-65) are none of the three as a whole: they
+    // follow `inputsForNewBake`, input by input.
+    const followsInputs = ['inputsQuery'];
+    expect(next.inputsQuery).toBe(encodeInputs(inputsForNewBake(CUSTOM)));
+    expect(Object.keys(DEFAULT_PERSISTED).sort()).toEqual(
+      [...resetToDefault, ...cleared, ...kept, ...followsInputs].sort(),
+    );
     expect(Object.keys(DEFAULT_CALIBRATION)).toEqual(['ddtOverrideF']);
   });
 });

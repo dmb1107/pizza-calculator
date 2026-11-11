@@ -44,7 +44,7 @@ Once this has run cleanly three or four times, moving to 80% or 100% biga is a s
   },
   {
     id: "schedule-architecture",
-    title: "Why the cold ferment is 6\u201348 h",
+    title: "How long the cold ferment runs, and why",
     body: `A classic biga front-loads the fermentation. At 0.375% ADY on 65% biga flour you carry about 0.244% ADY on total flour, a heavy dose by pizza standards. On the classic track the biga ripens fully at room temperature and does most of the work, so the dough gets only 6–8 hours cold.
 
 **The retarded track moves part of that work into the dough.** The fridge slows the biga, so it arrives less ripe, and the balls' longer cold ferment makes up the difference. By the recipe's fermentation model, the retarded biga with 24 h cold comes to about the same total as the classic biga with 6–8 hours.

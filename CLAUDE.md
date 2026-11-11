@@ -142,6 +142,8 @@ question:
 | `FINDINGS-64-to-recipe-agent.md` | Reply to MESSAGE-63. All reproduced except `roomrise.py`'s table, whose script wasn't sent. Two more sweeps still counted disallowed batches; the tracking span's minimum moved to 10 × 244 g. Nothing open |
 | `MESSAGE-64.md` | Dave's science review, wording only (W1–W18): a yeast biga, not a sourdough (no acetic acid, no water activity); no best-flavor claim at 61–65 °F; the retarded track moves part of the work into the dough; a doubled biga may be over-fermented; the jar gone; six papers in §11. No formula, constant or token moves |
 | `FINDINGS-65-to-recipe-agent.md` | Reply to MESSAGE-64. All reproduced (761 → 766 with their gate patch). Our cold-ferment slider hint still said the biga "does nearly all the fermentation"; Dave's per-track hint replaced it, and a test now bans MESSAGE-64's retired phrases from our copy. Asks about `schedule-architecture`'s 6–48 h title on the classic track and W16's unsourced steel claim |
+| `MESSAGE-65.md` | Reply to FINDINGS-65. W16's steel sentence removed (Dave's call), `schedule-architecture` retitled "How long the cold ferment runs, and why". **APP-3: the inputs are stored as well as written to the URL** (§6 *Where the inputs are kept*), with a four-case load rule; a home-screen app takes what is stored |
+| `FINDINGS-66-to-recipe-agent.md` | Reply to MESSAGE-65. All reproduced (765 → 766); APP-3 built and checked in a browser with the home-screen case simulated, not yet on Dave's iPhone. Rule 1 rests on the icon opening standalone, and there is no manifest |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -444,6 +446,31 @@ until FINDINGS-60, and `steps.test.ts` now fails on that. `bigaReadingCost`,
 bases are tested, though nothing renders them. A link's `bowlst` is ignored;
 don't reuse the key.
 
+**The inputs are stored and written to the URL** (§6 *Where the inputs are
+kept*, MESSAGE-65, APP-3). Until then they lived only in the URL, and a
+home-screen app on iOS reopens the address its icon was saved with: Dave's
+batch settings came back at their defaults beside his stored ticks and
+timers, and mid-bake the readings would have gone too. Storage holds
+**what `encodeInputs` writes** (`Persisted.inputsQuery`) and reads it back
+through the codec, so the even split, each track's cold ferment, the
+temper's range and the ignored keys apply with nothing restated. **null is
+nothing stored; '' is every input at its default**, and they differ: a
+home-screen app with nothing stored takes its launch URL, one with '' does
+not. The load rule is `resolveInitialInputs` in `src/state/storedInputs.ts`,
+pure, the first case that applies: (1) a home-screen app
+(`navigator.standalone`, or `(display-mode: standalone)`) takes what is
+stored and ignores its launch URL; (2) a URL with any input key is a link,
+it wins whole (never merged with the stored inputs) and **is stored when it
+loads**, by the hook's first persist; (3) a bare URL takes what is stored;
+(4) the defaults. After load every input change writes both, Reset
+included: `persistedForNewBake` (in `storedInputs.ts`, since it needs the
+codec) stores `inputsForNewBake`'s result, so the stored inputs are a fourth
+Reset category, "follows the inputs". The first persist writes only the
+inputs, and only when they differ: writing the rest would fix a fresh
+session's biga start, which '' reads as now. There is **no web manifest**
+(MESSAGE-65 kept it out), so rule 1 rests on iOS opening the icon
+standalone.
+
 **Save records the inputs as they stand** (§10 *Capture and saving*, Dave's
 call in MESSAGE-47). Nothing tracks which values were typed or when: a
 default left in place (room 70, biga 58) and a value from a link are
@@ -528,7 +555,8 @@ water temperature 5 °F wrong on bake 1. Two traps:
    UI, no tiny controls.
 3. **Progressive disclosure.** Steps terse by default, every one expanding into
    the full explanation.
-4. **Shareable/resumable state.** Survives a refresh, sends as a link.
+4. **Shareable/resumable state.** Settings and the day's readings survive a
+   refresh and a closed app, and send as a link.
 
 ## Writing anything the site shows
 
@@ -609,7 +637,8 @@ src/lib/          pure calculation — no UI imports, this is what gets unit-tes
                   seed, §10's counting rules)
 src/content/      step and concept prose (steps.ts, concepts.ts)
 src/components/   React components
-src/state/        URL + browser-storage persistence; the bake log's local copy
+src/state/        URL + browser-storage persistence (the inputs in both:
+                  storedInputs.ts holds §6's load rule); the bake log's local copy
                   (bakeLogStore.ts), its GitHub sync (githubSync.ts) and the
                   session as a bake (sessionBake.ts)
 public/           icon.svg (browser tab: the pizza alone, transparent) and

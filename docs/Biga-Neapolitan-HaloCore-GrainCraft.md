@@ -661,7 +661,7 @@ Flour dusting comes from **wooden** dough boxes, which breathe and buffer moistu
 
 ## 9. Baking on the Tread
 
-**Keep the oven settings that already work: preheat until the gauge reads 750 °F, launch on full flame, 60–90 s.** Bake on the Tread's own stone, not the baking steel: steel passes heat into the base several times faster than the stone and would scorch it at this temperature. Don't change the oven and the dough in the same bake; change one variable at a time.
+**Keep the oven settings that already work: preheat until the gauge reads 750 °F, launch on full flame, 60–90 s.** Don't change the oven and the dough in the same bake; change one variable at a time.
 
 - **Turn every 15–20 s.** The flame comes from one side of a small chamber, so whichever side faces it scorches fast.
 - **Let the stone recover between pizzas.** The Tread heats and cools quickly because it has little thermal mass, so across 9–18 pizzas the stone limits you more than the dough does. Let the gauge come back to 750 rather than launching on a cooling stone.

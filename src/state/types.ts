@@ -14,9 +14,10 @@ export type Schedule = 'retarded' | 'classic';
 export type TimelineMode = 'forward' | 'backward';
 
 /**
- * Per-session inputs. These serialize to the URL so a setup can be shared or
- * survive a refresh (§2). Derived values never live here — they come from the
- * engine.
+ * Per-session inputs. Each is stored in the browser and written to the URL
+ * (§2, §6 *Where the inputs are kept*, MESSAGE-65): storage brings a session
+ * back, the URL shares it. Derived values never live here — they come from
+ * the engine.
  */
 export interface Inputs {
   // Panel 1 — Batch
@@ -131,4 +132,16 @@ export interface Persisted {
    * again replaces that bake rather than adding a second.
    */
   sessionBakeId: string;
+  /**
+   * §6 *Where the inputs are kept* (MESSAGE-65): the inputs, as the query
+   * string `encodeInputs` writes, so they are read back through the URL codec
+   * and its rules (the even split, each track's cold ferment, the temper's
+   * range, the ignored keys). null when nothing is stored yet, which is not
+   * the same as '' (every input at its default): a home-screen app with
+   * nothing stored takes its launch URL, and one with '' doesn't.
+   *
+   * Until MESSAGE-65 the inputs lived only in the URL, and a home-screen app
+   * on iOS reopens the address its icon was saved with.
+   */
+  inputsQuery: string | null;
 }

@@ -1,7 +1,8 @@
 /**
  * Browser-storage persistence — WEBSITE-SPEC-biga-calculator.md §2 and §6.
  *
- * Preferences and the session persist to browser storage. The FF doesn't: it
+ * Preferences, the session and the inputs persist to browser storage (the
+ * inputs as the URL codec writes them; `storedInputs.ts` reads them). The FF doesn't: it
  * is computed from the bake log each time (§6, Panel 2), and a map stored by
  * an earlier version is ignored. The log itself is in `bakeLogStore.ts`.
  * Everything here takes
@@ -143,7 +144,19 @@ export function loadPersisted(storage: StorageLike | null): Persisted {
     // Typing times stored by an earlier build are ignored: nothing tracks
     // which values were typed (§10, Dave's call on 28 Sep).
     sessionBakeId: typeof parsed['sessionBakeId'] === 'string' ? parsed['sessionBakeId'] : '',
+    inputsQuery: parseInputsQuery(parsed),
   };
+}
+
+/**
+ * §6 *Where the inputs are kept*. Absent means nothing stored (null). A value
+ * that isn't a string doesn't parse, so it takes the defaults (''), as a
+ * stored key that doesn't parse does inside the codec; it never blocks the page.
+ */
+function parseInputsQuery(parsed: Record<string, unknown>): string | null {
+  if (!('inputsQuery' in parsed) || parsed['inputsQuery'] === null) return null;
+  const raw = parsed['inputsQuery'];
+  return typeof raw === 'string' ? raw : '';
 }
 
 /** Write persisted state. A failure here must never break the calculator. */

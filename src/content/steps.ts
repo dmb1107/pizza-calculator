@@ -457,7 +457,7 @@ The look of the ball and the thermometer should agree. If a ball looks ready but
     summary: `Preheat until the gauge reads **750 °F**. Launch on **full flame** and bake 60–90 s, turning every 15–20 s.`,
     detail: `**Why 750 °F and full flame.** A Neapolitan bake depends on the balance between heat from above and heat from below more than on absolute temperature. The stone cooks the base by conduction; the flame cooks the top by radiation. If the base finishes before the top, you need more heat from above relative to below: a cooler stone, more flame, or both.
 
-A 750 °F stone with full flame gives that balance. Bake on the Tread's own stone, not a baking steel, which passes heat into the base several times faster. Pushing the stone to 800 °F or more shifts it the wrong way and burns the base before the cornicione sets.
+A 750 °F stone with full flame gives that balance. Pushing the stone to 800 °F or more shifts it the wrong way and burns the base before the cornicione sets.
 
 **Turn every 15–20 s.** The flame comes from one side of a small chamber, so whichever side faces it scorches fast.
 
