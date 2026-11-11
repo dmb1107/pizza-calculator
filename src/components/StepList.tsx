@@ -1,19 +1,28 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Markdown } from './Markdown';
-import { StepTimer } from './StepTimer';
+import { StepTimer, TimerBeeper } from './StepTimer';
+import { WarningItem } from './cards';
 import { BakeLogCard, FinalTempCapture } from './BakeLog';
 import { MixReadings } from './MixReadings';
 import { ConceptLink } from './ConceptLink';
-import { parseTimerLabel } from '../lib/timers';
+import { formatElapsed, parseTimerLabel, timerPhaseLabel, type TimerPhase } from '../lib/timers';
+import {
+  closedGroupsIn,
+  groupProgress,
+  groupSteps,
+  groupTimerMark,
+  hasRunningTimer,
+  lastMixGroupKey,
+  liveTimerKeys,
+  prepMixesIn,
+  stepFolded,
+  type GroupTimerMark,
+  type StepGroup,
+} from '../lib/stepGroups';
+import type { Warning } from '../lib/engine';
 import { loggedTimerTag } from '../lib/bakeLog';
 import { SpeedIndicator } from './SpeedIndicator';
-import {
-  PHASE_LABELS,
-  type DetailCondition,
-  type Phase,
-  type Step,
-  type StepTable,
-} from '../content/steps';
+import { type DetailCondition, type Step, type StepTable } from '../content/steps';
 import { bindTokens, tokenValues } from '../lib/bindTokens';
 import {
   detailConditionContext,
@@ -80,6 +89,8 @@ function StepRow({
   onOpenConcept,
   extra,
   timer,
+  timerRunning,
+  foldedWarnings,
 }: {
   step: Step;
   /** "Mix 2" on a repeated instance, so the list reads unambiguously. */
@@ -98,8 +109,23 @@ function StepRow({
   extra?: React.ReactNode;
   /** The timer control, when this step names a duration. */
   timer?: React.ReactNode;
+  /** Whether one of this step's timers is running: a ticked step stays open while it is. */
+  timerRunning: boolean;
+  /** `mix-1`'s water warnings, kept in sight while the step is folded (§7.3). */
+  foldedWarnings?: readonly Warning[];
 }) {
   const [open, setOpen] = useState(false);
+  // §7.5 (APP-5): a ticked step reopened by a tap on its row. In memory only,
+  // as the "Why" is: after a reload every ticked step is one line again.
+  const [reopened, setReopened] = useState(false);
+  // A running timer holds a ticked step open (after a Resume, or a reload with
+  // one running), and it stays open once the timer stops, as if the baker had
+  // opened it. Folding on Stop would pull the next step up under a second tap,
+  // and Stop and Resume share a spot so that a double tap is safe.
+  useEffect(() => {
+    if (checked && timerRunning) setReopened(true);
+  }, [checked, timerRunning]);
+  const folded = stepFolded(checked, reopened, timerRunning);
   const conditionalDetail =
     step.detailWhen && conditionHolds?.(step.detailWhen.condition)
       ? step.detailWhen.detail
@@ -132,7 +158,15 @@ function StepRow({
           <input
             type="checkbox"
             checked={checked}
-            onChange={onToggleChecked}
+            onChange={() => {
+              // Ticking folds the step, so finish a reading still being typed
+              // in it first: iOS keeps a field focused through a tap.
+              if (!checked) {
+                finishEdit();
+                setReopened(false);
+              }
+              onToggleChecked();
+            }}
             aria-label={`Mark "${step.title}"${label ? ` (${label})` : ''} done`}
             className="mt-1 size-6 accent-amber-700 dark:accent-amber-500"
           />
@@ -141,14 +175,40 @@ function StepRow({
           <h3
             className={`text-lg font-semibold ${checked ? 'text-stone-500 line-through dark:text-stone-500' : ''}`}
           >
-            {step.title}
-            {label && (
-              <span className="ml-2 rounded bg-stone-200 px-1.5 py-0.5 align-middle text-xs font-medium text-stone-700 dark:bg-stone-700 dark:text-stone-200">
-                {label}
-              </span>
+            {checked && !timerRunning ? (
+              // §7.5: the row of a ticked step opens and folds it, without
+              // unticking it. 48 px tall; the negative margin keeps the title
+              // where it sits unticked, so nothing moves when it becomes a button.
+              <button
+                type="button"
+                onClick={() => {
+                  if (!folded) finishEdit();
+                  setReopened(folded);
+                }}
+                aria-expanded={!folded}
+                className="-my-2.5 block min-h-touch w-full py-2.5 text-left line-through"
+              >
+                {step.title}
+                {label && <MixLabel label={label} />}
+              </button>
+            ) : (
+              <>
+                {step.title}
+                {label && <MixLabel label={label} />}
+              </>
             )}
           </h3>
 
+          {folded ? (
+            foldedWarnings && foldedWarnings.length > 0 && (
+              <div className="mt-3 grid gap-2">
+                {foldedWarnings.map((w) => (
+                  <WarningItem key={w.id} warning={w} />
+                ))}
+              </div>
+            )
+          ) : (
+          <>
           <div className={checked ? 'opacity-60' : undefined}>
             <div className="mt-1">
               <Markdown>{summary}</Markdown>
@@ -234,9 +294,98 @@ function StepRow({
               )}
             </>
           )}
+          </>
+          )}
         </div>
       </div>
     </li>
+  );
+}
+
+function MixLabel({ label }: { label: string }) {
+  return (
+    <span className="ml-2 rounded bg-stone-200 px-1.5 py-0.5 align-middle text-xs font-medium text-stone-700 dark:bg-stone-700 dark:text-stone-200">
+      {label}
+    </span>
+  );
+}
+
+/**
+ * Commit a reading still being typed, before the step or group holding it
+ * folds away. iOS keeps a field focused through a tap (FINDINGS-67), so
+ * without this the field would unmount with its edit and record nothing.
+ */
+function finishEdit(): void {
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+}
+
+const MARK_TONES: Record<TimerPhase, string> = {
+  running: 'bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200',
+  window: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200',
+  past: 'bg-amber-100 text-amber-950 dark:bg-amber-950 dark:text-amber-100',
+};
+
+function markText(mark: GroupTimerMark): string {
+  return `Timer · ${timerPhaseLabel(mark.phase, false, mark.isWindow)} · ${formatElapsed(mark.elapsedMs)}`;
+}
+
+/**
+ * §7.5 (APP-5): a group heading is its toggle. It shows the group's count in
+ * the list count's form, and, while closed, a mark for a running timer in it,
+ * worded and toned as the timer card is, so it turns at the lower bound.
+ * The mark sits under the label inside the button: it appears below the
+ * point of the tap that closed the group.
+ */
+function GroupHeading({
+  group,
+  done,
+  total,
+  closed,
+  mark,
+  onToggle,
+}: {
+  group: StepGroup;
+  done: number;
+  total: number;
+  closed: boolean;
+  mark: GroupTimerMark | null;
+  onToggle: () => void;
+}) {
+  const shownMark = closed ? mark : null;
+  return (
+    <h3 className="mb-2">
+      <button
+        type="button"
+        onClick={() => {
+          if (!closed) finishEdit();
+          onToggle();
+        }}
+        aria-expanded={!closed}
+        aria-controls={`steps-${group.key}`}
+        // The phase without the running time, which would change the label every second.
+        aria-label={`${group.label}, ${done} of ${total} done${shownMark ? `, timer ${timerPhaseLabel(shownMark.phase, false, shownMark.isWindow).toLowerCase()}` : ''}`}
+        className="flex min-h-touch w-full flex-col justify-center text-left"
+      >
+        <span className="flex w-full items-center gap-2">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 20 20"
+            className={`size-5 shrink-0 text-stone-500 transition-transform ${closed ? '-rotate-90' : ''}`}
+          >
+            <path d="M5 7.5l5 5 5-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <span className="min-w-0 flex-1 text-base font-semibold text-stone-800 dark:text-stone-200">{group.label}</span>
+          <span className="shrink-0 text-sm text-stone-500 tabular">
+            {done} / {total} done
+          </span>
+        </span>
+        {shownMark && (
+          <span className={`mt-1 ml-7 self-start rounded-full px-2 py-0.5 text-sm font-medium tabular ${MARK_TONES[shownMark.phase]}`}>
+            {markText(shownMark)}
+          </span>
+        )}
+      </button>
+    </h3>
   );
 }
 
@@ -285,8 +434,14 @@ export function StepList({
   // A dough, on a per-dough timer: `{roomMin}` binds that dough's rise (§7.5).
   const tokensFor = (mixIndex: number, dough?: number) =>
     mixIndex === 1 && dough === undefined ? tokens : tokenValues(state.result, state.scheduleTokens, mixIndex, dough);
-  const phases: Phase[] = ['biga', 'mix', 'bulk', 'bake'];
   const doneCount = instances.filter((i) => checkedSteps.has(i.key)).length;
+  // §7.5 (APP-5): the groups, which are closed, and where the log card goes.
+  const groups = useMemo(() => groupSteps(instances, nMix), [instances, nMix]);
+  const closed = closedGroupsIn(state.closedGroups, groups);
+  const logAfter = lastMixGroupKey(groups);
+  const liveKeys = useMemo(() => liveTimerKeys(instances, nMix), [instances, nMix]);
+  /** §7.3: a mix's water warnings, shown wherever its prep step is folded away. */
+  const waterWarnings = (mixIndex: number) => state.result.mixes[mixIndex - 1]?.warnings ?? [];
 
   /**
    * A timer for any step whose label states a duration. The label is bound
@@ -307,7 +462,6 @@ export function StepList({
       const timer = timers.find((t) => t.stepId === slot.key);
       const control = (
         <StepTimer
-          stepId={slot.key}
           spec={spec}
           timer={timer}
           tag={loggedTimerTag(stepId, timer)}
@@ -358,15 +512,34 @@ export function StepList({
         </span>
       </div>
 
-      {phases.map((phase) => (
-        <div key={phase} className="mb-5 last:mb-0">
-          <h3 className="mb-2 text-base font-semibold text-stone-800 dark:text-stone-200">
-            {PHASE_LABELS[phase]}
-          </h3>
-          <ol className="grid gap-2">
-            {instances
-              .filter((i) => i.step.phase === phase)
-              .map(({ key, step, mixIndex }) => {
+      {/* Beeps for every live timer, whatever is folded or closed. */}
+      <TimerBeeper timers={timers} now={nowMs} liveKeys={liveKeys} />
+
+      {groups.map((group) => {
+        const isClosed = closed.has(group.key);
+        const { done, total } = groupProgress(group, checkedSteps);
+        // A closed group keeps its mixes' water warnings in sight (§7.3).
+        const closedWarnings = isClosed ? prepMixesIn(group).flatMap(waterWarnings) : [];
+        return (
+          <div key={group.key} className="mb-5 last:mb-0">
+            <GroupHeading
+              group={group}
+              done={done}
+              total={total}
+              closed={isClosed}
+              mark={isClosed ? groupTimerMark(group, timers, nMix, nowMs) : null}
+              onToggle={() => state.toggleGroup(group.key)}
+            />
+            {closedWarnings.length > 0 && (
+              <div className="grid gap-2">
+                {closedWarnings.map((w, n) => (
+                  <WarningItem key={`${w.id}-${n}`} warning={w} />
+                ))}
+              </div>
+            )}
+            {!isClosed && (
+            <ol id={`steps-${group.key}`} className="grid gap-2">
+            {group.instances.map(({ key, step, mixIndex }) => {
                 const bindHere = (text: string) => bindTokens(text, tokensFor(mixIndex));
                 // biga-4 reads and times differently depending on the schedule.
                 const timerLabel = timerLabelFor(step, inputs.schedule, inputs.bigaRoomOnlyH);
@@ -408,19 +581,23 @@ export function StepList({
                       ) : undefined
                     }
                     timer={renderTimers(timerLabel, key, step.id, mixIndex)}
+                    timerRunning={hasRunningTimer(key, timers)}
+                    foldedWarnings={step.id === 'mix-1' ? waterWarnings(mixIndex) : undefined}
                   />
                 );
               })}
-            {/* The log card follows the last mix, once every mix has been
-                read. Its own item, so ticking mix-7 doesn't dim it. */}
-            {phase === 'mix' && (
-              <li className="min-w-0">
-                <BakeLogCard state={state} onOpenLog={onOpenLog} />
-              </li>
+            </ol>
             )}
-          </ol>
-        </div>
-      ))}
+            {/* The log card follows the last mix's group, outside every group,
+                so closing them all never hides Save (§7.5, APP-5). */}
+            {group.key === logAfter && (
+              <div className="mt-2 min-w-0">
+                <BakeLogCard state={state} onOpenLog={onOpenLog} />
+              </div>
+            )}
+          </div>
+        );
+      })}
     </section>
   );
 }

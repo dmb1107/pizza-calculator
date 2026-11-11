@@ -4,6 +4,7 @@ import {
   describeSpec,
   effectiveStartAt,
   formatElapsed,
+  timerPhaseLabel,
   timerState,
   type RunningTimer,
   type TimerSpec,
@@ -86,8 +87,43 @@ function beep(): void {
   }
 }
 
+/**
+ * The beep, for every timer the list renders, whether or not its card is on
+ * screen (§7.5, APP-5). Each card beeped for itself until steps and groups
+ * folded: a closed group unmounted its cards, so a timer in it crossed its
+ * bound in silence, and reopening the group remounted the card with its
+ * memory empty and beeped late. This stays mounted with the list.
+ *
+ * Once, when the count crosses the lower bound while the timer runs. A
+ * stopped timer never beeps, and one resumed at or past its bound stays quiet,
+ * a reload included: `beepDecision` reads that from the timer.
+ */
+export function TimerBeeper({
+  timers,
+  now,
+  liveKeys,
+}: {
+  timers: readonly RunningTimer[];
+  now: number;
+  /** The timer keys the list renders at this size (`liveTimerKeys`). */
+  liveKeys: ReadonlySet<string>;
+}) {
+  const alerted = useRef(new Map<string, string | null>());
+  useEffect(() => {
+    let sound = false;
+    for (const timer of timers) {
+      if (!liveKeys.has(timer.stepId)) continue;
+      const decision = beepDecision(timer.stepId, timer, now, alerted.current.get(timer.stepId) ?? null);
+      alerted.current.set(timer.stepId, decision.key);
+      if (decision.beep) sound = true;
+    }
+    // Two timers crossing on one tick make one beep, not a chord.
+    if (sound) beep();
+  }, [timers, now, liveKeys]);
+  return null;
+}
+
 export function StepTimer({
-  stepId,
   spec,
   timer,
   now,
@@ -98,7 +134,6 @@ export function StepTimer({
   note,
   tag,
 }: {
-  stepId: string;
   spec: TimerSpec;
   timer: RunningTimer | undefined;
   now: number;
@@ -115,20 +150,6 @@ export function StepTimer({
   tag?: string | null;
 }) {
   const state = timer ? timerState(timer, now) : null;
-  const phase = state?.phase;
-
-  // Beep once, when the count crosses the lower bound while the timer runs
-  // (§7.5). A stopped timer never beeps, and one resumed at or past its bound
-  // stays quiet, a reload included: `beepDecision` reads that from the timer.
-  const alerted = useRef<string | null>(null);
-  useEffect(() => {
-    if (!timer || !phase) return;
-    const decision = beepDecision(stepId, timer, now, alerted.current);
-    alerted.current = decision.key;
-    if (decision.beep) beep();
-    // `phase` stands in for `now`: the decision can only change when it does.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stepId, timer, phase]);
 
   if (!timer || !state) {
     return (
@@ -165,17 +186,7 @@ export function StepTimer({
 
   // The phase alone: the bounds are in the line under the bar, and a longer
   // label wrapped at phone width, so the card changed height as it turned.
-  const label = state.stopped
-    ? 'Stopped'
-    : spec.isWindow
-    ? state.phase === 'running'
-      ? 'Before the window'
-      : state.phase === 'window'
-        ? 'In the window'
-        : 'Past the window'
-    : state.phase === 'running'
-      ? 'Running'
-      : "Time's up";
+  const label = timerPhaseLabel(state.phase, state.stopped, spec.isWindow);
 
   return (
     <div className={`mt-3 rounded-lg border p-3 ${tone}`}>

@@ -836,7 +836,7 @@ Each target computes from that mix's own biga and bowl readings, so it updates a
 Quoting −1.92 against two separate readings overstates the effect, and quoting −1.59 for a skipped temper understates it. Across every legal mix size the bowl-tracking figure spans **1.81 to 2.32** — all of which round to "about two degrees".
 
 ### 7.3 Warnings
-Render above the step list, never hidden in a collapsed panel. Sources: **capacity** (below) and overnight timeline stages. ⚠️ **The two water warnings** (below 38 °F and above 120 °F, §4.4) render under the water target in the prep step they belong to, since that's where the number now appears (MESSAGE-54).
+Render above the step list, never hidden in a collapsed panel. Sources: **capacity** (below) and overnight timeline stages. ⚠️ **The two water warnings** (below 38 °F and above 120 °F, §4.4) render under the water target in the prep step they belong to, since that's where the number now appears (MESSAGE-54). A ticked `mix-1` or a closed group still shows them (§7.5, *Finished steps and groups fold away*).
 
 #### Capacity: say when the batch must be split, and how
 
@@ -902,6 +902,19 @@ See §8. Each step: a checkbox that persists, a summary, computed values inlined
 **One timer per dough.** At `nMix > 1`, `bulk-1`, `bulk-2` and `bulk-3` each carry one timer per dough, labelled *Dough 1*, *Dough 2* …, in mix order; the three steps are pinned by id, like `mix-6`. `bulk-1`'s and `bulk-2`'s time their printed ranges, and `bulk-3`'s each time that dough's own rise. Each timer keeps its own state, and starting one never moves anything above the tap. At `nMix = 1` each step has its one timer, as before. Dave's call (MESSAGE-61): he times these stages on his phone, and wants the app's timers there for consistency.
 
 **One exception on the classic track:** if the baker has planned `bigaRoomOnly` outside 16–18 h (the calculator allows 12–18, crediting 12–16 to PizzaBlab), `biga-4`'s classic timer uses the planned value instead — they have chosen to run off the Giorilli window, and the timer should follow the plan they made.
+
+**Finished steps and groups fold away** (APP-5; Dave's calls, 9 and 10 Nov 2026). Dave asked for less scrolling.
+
+- **A ticked step shrinks to one line:** its checkbox, its struck-through title and its mix label. Its summary, values, timers, readings and "Why" are hidden. Tapping the row opens it again without unticking it, so a reading can be corrected or the "Why" read, and tapping it again folds it. A step opened this way isn't stored: after a reload every ticked step is one line again.
+- **A ticked step with a running timer stays open** until the timer stops. Ticking stops a step's timers, so this happens only after a Resume.
+- **The group headings are toggles.** A closed group shows only its heading and its count, "3 / 6 done", in the form the list's own count uses. At `nMix = 1` the groups are the four phases: Biga; Final mix; Bulk, ball, cold; Temper and bake. At `nMix > 1` the mix steps make one group per mix, "Mix 1", "Mix 2" …, since they repeat per mix (§8.2a). Where `mix-0` (split the biga) sits is the calculator agent's to propose.
+- **A group closes only from its heading.** Ticking its last step leaves it open; the ticked steps are one line each already.
+- **Which groups are closed is stored**, so it survives a reload, and Reset opens every group (§10). A stored group that no longer exists, such as a mix group after the batch drops to one mix, is ignored.
+- **The log card stays out of the groups.** It sits after the last mix's group, so closing every mix group never hides Save.
+- **Warnings stay in sight** (§7.3). A water warning shows on its `mix-1` row while the step is ticked, and under its group's heading while the group is closed.
+- **A closed group with a running timer in it says so on its heading**, and the mark changes when the timer reaches its lower bound. The mark's form is the calculator agent's to propose.
+- **Nothing depends on the fold.** Dave doesn't always tick steps (*The logged timers are marked*, above), so an unticked step in an open group looks and works as it does now.
+- **Layout:** nothing appears above the point of a tap, every new control is a 48 px target, and the page fits at 375 px in both timeline modes.
 
 #### Speed: show what the mixer shows
 
@@ -1583,7 +1596,7 @@ Blend fridge-cold water with tap water to within 1 °F of the target. Fridge wat
 
 ## 10. Bake log
 
-The log holds the readings that solve FF, and it is the only source of the FF in use (§6, Panel 2). Dave logs FF inputs only; the rest of the recipe's bake diary (biga rise, fridge, oven, stone, crumb) stays out of the app. **Storage** is in §2: a private GitHub repository with one JSON file per bake when a token is set, browser storage when it isn't. The files are plain JSON, so they are the export.
+The log holds the readings that solve FF, and it is the only source of the FF in use (§6, Panel 2). Dave logs FF inputs only; the rest of the recipe's bake diary (biga rise, fridge, oven, stone, crumb) stays out of the app. **Storage** is in §2: a private GitHub repository with one JSON file per bake when a token is set, browser storage when it isn't. The files are plain JSON, so they are the export. The log is a drawer. It opens from a **Bake log** button in the page header, beside "Share setup", and from the footer, the Calibration panel and the log card after the last mix (APP-5).
 
 Auto-populate each bake from the session's inputs so only the measured values need typing.
 
@@ -1628,7 +1641,7 @@ Pauses aren't normalized. The rest has a fixed timer, and nothing measures what 
 
 - **Reset starts a new bake.** A **Reset** button near the top of the page asks first. The baker presses it when starting a new bake, and it is the page's only reset: ⚠️ the Steps header's own Reset, which cleared the checkboxes alone, is removed, so no two controls share the label. Every input is classified, and a test keeps it that way:
   - **Reset to defaults:** balls, ball weight, schedule and cold ferment, the schedule's adjustments (fridge hours, the classic biga's room hours, temper), the readings in the prep steps (room, flour and its "Same as room" switch, each mix's biga and bowl), each mix's final reading, the DDT override (back to auto) and the timeline's anchor. The last two are per-bake choices: a stale override silently moves the water target and the rise, and a stale anchor puts every stage in the past.
-  - **Cleared:** the step checkboxes, the timers, and the link to the saved bake, so the next save is a new bake.
+  - **Cleared:** the step checkboxes, the timers, and the link to the saved bake, so the next save is a new bake; and which step groups are closed, so every group opens (APP-5).
   - **Kept:** which end of the timeline is held, which panels are open, this device's sync settings, and saved bakes. The anchor is the held time, not the mode: a Reset in either mode starts the schedule now. Since MESSAGE-65 the inputs are stored as well as written to the URL (§6, *Where the inputs are kept*), so all three lists hold when the app is closed and reopened. ⚠️ Until Dave's call on 10 Nov 2026 (FINDINGS-67) the batch settings and the schedule's adjustments were kept.
 
   Copy (rendered):

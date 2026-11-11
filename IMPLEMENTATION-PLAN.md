@@ -45,7 +45,10 @@ edited (PR #23), and **Reset now puts the batch settings and the schedule's
 adjustments back to their defaults too** (Dave's call, 10 Nov), ahead of
 §10. **MESSAGE-67 is applied**: §10 carries that Reset, and **a stopped
 timer resumes** (APP-4), the pause left out, with Resume in Stop's place
-and Clear moved away. FINDINGS-68 is the last thing sent.
+and Clear moved away. **MESSAGE-68 is applied**: finished steps and groups
+fold away (APP-5): a ticked step is one line until its row is tapped, each
+group heading closes its group (stored; Reset opens them all), and the Bake
+log opens from the header too. FINDINGS-69 is the last thing sent.
 
 ---
 

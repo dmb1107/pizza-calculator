@@ -22,7 +22,10 @@ returns:
   dough, with each earlier dough's bulk and rise end times beside it;
 - a guided step list with timers (stop and resume, the pause left out) and
   mixer speeds drawn as the Core's lit segments, where every step expands
-  into the reasoning behind it, and longer
+  into the reasoning behind it. A ticked step folds to one line, and each
+  group of steps (a phase, or one mix of a split batch) closes from its
+  heading; a closed group still shows a running timer and any water
+  warning. Longer
   background pieces open from the steps, the cold-ferment slider, the
   ingredients card and the Calibration panel;
 - a bake log that solves the mixer's friction factor from each bake's measured
@@ -35,10 +38,10 @@ The setup and the day's readings survive a refresh and a closed app, home-screen
 app included, and **Share setup** copies them as a link.
 **Reset**, above the panels, starts a new bake: it puts the batch settings
 and today's readings back to their defaults, clears any DDT override, the
-timeline's start or target time, the step checkboxes and the timers, and
-keeps the log. Reference
-tables, the recipe's sources and the bake log open in drawers at the bottom of
-the page.
+timeline's start or target time, the step checkboxes and the timers, opens
+every step group, and keeps the log. The bake log opens from the top of the
+page and the bottom; reference tables and the recipe's sources open in drawers
+at the bottom.
 
 The bake log stays in the browser unless you give it a private GitHub
 repository and a token that can reach only that repository; then each device
@@ -58,7 +61,8 @@ mix of a split batch runs on its own clock, with its own rise and timers.
 MESSAGE-64 checked the recipe against food and baking science, and the papers
 it rests on are in spec §11 and the About drawer. Since MESSAGE-65 the inputs
 are stored in the browser as well as the URL, so a home-screen app reopens
-where it was. See
+where it was. Since MESSAGE-67 a stopped timer resumes, and since MESSAGE-68
+finished steps and groups fold away. See
 [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
 ## Home screen icon

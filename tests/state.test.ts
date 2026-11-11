@@ -237,6 +237,7 @@ describe('localStorage persistence', () => {
       timelineMode: 'backward' as const,
       bakeAtIso: '2026-08-23T22:00:00.000Z',
       checkedSteps: ['biga-1', 'biga-2'],
+      closedGroups: ['biga', 'mix#2'],
       timers: [
         { stepId: 'mix-6', startedAt: 1_700_000_000_000, minMinutes: 10, maxMinutes: 10 },
         { stepId: 'mix-5', startedAt: 1_700_000_000_000, minMinutes: 3, maxMinutes: 4, stoppedAt: 1_700_000_210_000 },
@@ -265,13 +266,14 @@ describe('localStorage persistence', () => {
       ['a JSON string', '"hello"'],
       ['null', 'null'],
       ['an empty object', '{}'],
-      ['wrong-typed fields', '{"calibration":42,"panels":"open","bowlMassG":"heavy"}'],
+      ['wrong-typed fields', '{"calibration":42,"panels":"open","bowlMassG":"heavy","closedGroups":"biga"}'],
     ])('%s', (_label, raw) => {
       const loaded = loadPersisted(fakeStorage({ [STORAGE_KEY]: raw }));
 
       // Every field is a usable value rather than a crash or a NaN.
       expect(typeof loaded.panels.batch).toBe('boolean');
       expect(Array.isArray(loaded.checkedSteps)).toBe(true);
+      expect(Array.isArray(loaded.closedGroups)).toBe(true);
       expect(Array.isArray(loaded.timers)).toBe(true);
       expect(typeof loaded.sessionBakeId).toBe('string');
       expect(loaded.inputsQuery === null || typeof loaded.inputsQuery === 'string').toBe(true);
@@ -319,6 +321,7 @@ describe('§10 Reset starts a new bake', () => {
     timelineMode: 'backward',
     bakeAtIso: '2026-09-28T23:30:00.000Z',
     checkedSteps: ['biga-1', 'mix-2#1'],
+    closedGroups: ['biga', 'mix#1'],
     timers: [{ stepId: 'mix-3#1', startedAt: 1_000, minMinutes: 3, maxMinutes: 4, stoppedAt: 200_000 }],
     sessionBakeId: 'bake-2026-09-28-1',
     inputsQuery: encodeInputs(CUSTOM),
@@ -334,6 +337,8 @@ describe('§10 Reset starts a new bake', () => {
     expect(next.bakeAtIso).toBe(DEFAULT_PERSISTED.bakeAtIso);
     // Cleared.
     expect(next.checkedSteps).toEqual([]);
+    // §10 (APP-5): which step groups are closed, so every group opens.
+    expect(next.closedGroups).toEqual([]);
     expect(next.timers).toEqual([]);
     expect(next.sessionBakeId).toBe('');
     // Kept (§10, MESSAGE-49): which panels are open, and which end of the
@@ -343,7 +348,7 @@ describe('§10 Reset starts a new bake', () => {
     // Nothing else: every persisted field is in one of the three lists, and
     // the calibration holds the override alone.
     const resetToDefault = ['calibration', 'bigaStartAtIso', 'bakeAtIso'];
-    const cleared = ['checkedSteps', 'timers', 'sessionBakeId'];
+    const cleared = ['checkedSteps', 'closedGroups', 'timers', 'sessionBakeId'];
     const kept = ['panels', 'timelineMode'];
     // The stored inputs (MESSAGE-65) follow `inputsForNewBake`: every input
     // at its default, which is '' (not null, nothing stored).

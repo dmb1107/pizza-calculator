@@ -9,21 +9,31 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-65 and FINDINGS-66 (10 November).
+MESSAGE-68 and FINDINGS-69 (10 November).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-67, and FINDINGS-68 is the
-  last thing sent. There is no MESSAGE-66**: MESSAGE-67 replaced it, after
+- **The correspondence is applied through MESSAGE-68, and FINDINGS-69 is the
+  last thing sent.** MESSAGE-68 was APP-5, the third of Dave's queued app
+  changes: **finished steps and groups fold away** and the Bake log opens
+  from the header (CLAUDE.md's "Steps and groups fold" has the rules).
+  FINDINGS-69 asks four things: `mix-0` opening Mix 1, a ticked step that
+  stays open after its timer stops, the closed heading's timer mark, and
+  long titles on a folded step. **From MESSAGE-68 Dave runs no phone
+  checks:** each round's *Done when* goes in the WebKit suite
+  (`npm run test:e2e`), and FINDINGS says which parts it can't reach.
+  Building APP-5 found that the beep lived in the timer card, so a closed
+  group would have silenced it; `TimerBeeper` now stays mounted with the
+  list. **There is no MESSAGE-66**: MESSAGE-67 replaced it, after
   FINDINGS-67 arrived first. MESSAGE-67 brought §10 up to Dave's Reset
   (the confirmation names "the schedule adjustments") and **APP-4, a
   stopped timer resumes**: the pause left out on every timer, Resume in
   Stop's place, Clear in the card's far corner, the beep only when the
   count crosses the bound during the current run (CLAUDE.md's timer gotcha
-  has the rules). Dave's iPhone check of APP-4 is still to do. Done on the
+  has the rules). APP-4 is done on the WebKit suite's check (MESSAGE-68). Done on the
   iPhone's keypad commits a reading at once (Dave, 10 Nov), so FINDINGS-67's
   open question is closed.
   MESSAGE-65 was the first of Dave's queued app changes
@@ -358,6 +368,8 @@ true and what they need to change.
 | `storedInputs.test.ts` | §6 *Where the inputs are kept* (MESSAGE-65): every input round-trips through storage, walked from a map keyed on every input (a new input won't compile without an entry, and the walk is held to the URL codec's keys); the load rule's four cases, browser and home-screen app; a link replaces the stored inputs whole; stored defaults ('') against nothing stored (null); a stored value read by the link's rules (19 × 265 g → 21, 30 h classic → 8, the temper, the retired keys); Reset then a reload; bad stored data, and `isStandalone` | A home-screen app reopened at its icon's address with default inputs beside stored ticks and timers. Each branch confirmed by mutation: ignoring standalone (the bug), a link that never wins, a link merged over the stored inputs, a bare URL that ignores storage, a Reset that keeps the readings, a non-string read as nothing stored. The hook's first persist (a link stored on load) only a browser reaches |
 | `timerResume.test.ts` | §7.5 *A stopped timer resumes* (APP-4): MESSAGE-67's eight behaviours (Phase C 3:00 + 20 s pause + 1:00 logs 4:00 on the tag and the saved bake; pauses add up; the window and due time move by the pause; the beep only for a crossing in the current run, through a reload; unticking resumes nothing, per dough; a resume past midnight keeps the date; storage round-trips; old and bad stored timers); and a scan that fails on any start-and-stop subtraction outside `timers.ts` | Each rule confirmed by mutation (ten breaks, each failing). The scan exists because MESSAGE-67 found five places that computed elapsed time on their own |
 | `e2e/iphone.spec.ts` (`npm run test:e2e`) | Dave's device checks in WebKit as an iPhone home-screen app: MESSAGE-65's done-when from a stale icon, then Reset, across force closes; a shared link in Safari; Reset with a reading still being edited; MESSAGE-67's done-when (Phase C 4:00 on the log card, bulk rest from 30:00, beeps, a double tap on Stop, reload and force close). Not in CI | Chrome and desktop WebKit both hid the Reset focus bug, so the harness models iOS keeping focus on a field when a button is tapped. Each scenario confirmed by putting its bug back: the focus bug, Stop then Clear in one spot, a home-screen app taking its launch address, and Resume's stale `now` (found by the suite's first run) |
+| `stepGroups.test.ts` | §7.5 *Finished steps and groups fold away* (APP-5): the groups at one, two and three mixes on both tracks (`mix-0` opens Mix 1; every instance in one group, in order), each group's count, closing and reopening, stored keys from another size ignored, the fold rule, the closed heading's timer mark at both bounds (the timer due first; per-dough timers; nothing from a stopped timer or another group), the log card after the last mix group | MESSAGE-68. Each rule confirmed by mutation (six breaks, each failing) |
+| `e2e/fold.spec.ts` | MESSAGE-68's *Done when* at 375 px, a split batch's groups, a running timer in a closed group (mark, beep, no second beep on reopening, a ticked step held open), and a reading being typed when its step folds or its group closes | The beep lived in the card: a closed group would have unmounted it. Each scenario confirmed by putting its bug back. **Can't see** whether iOS keeps a field focused through a checkbox tap (the harness models buttons only) |
 | `fieldCommit.test.ts` | §6's rule for leaving a number field (MESSAGE-58): an edited reading commits even at the value shown, through to `bowl_prefilled: false` and a counted mix; no edit commits nothing; other fields keep the old rule | A bowl read at its prefill and a final on DDT were dropped as unchanged. The edit tracking itself is in `NumberField` and only a browser check reaches it |
 | `recipeText.test.ts` | Copy-as-text, and the dough total rounded once (2501.9 at 9 × 272 g, never the 2501.7 its rounded parts sum to) | The gate doesn't read `recipeText.ts` |
 | `timers.test.ts` | Timer state derived from an absolute start and `now`, windows as earliest → latest. Every step's timer, resolved per schedule and bound with the real token table, parses as a duration. The generator's `timerMinutes` and the runtime parser agree on every fixed label (seconds included) | `biga-4` said "per schedule" and had no timer for the longest stage in the recipe. Seconds are where two parsers of one label could part |
