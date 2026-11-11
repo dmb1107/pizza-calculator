@@ -1760,14 +1760,14 @@ APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in A
 
 **Three tabs, in this order: Recipe, Toppings, Bake log.** Recipe is everything the page shows today: the panels, the timeline, the warnings and the steps. Toppings is §13.2. Bake log is §10's log, which until MESSAGE-70 opened as a drawer.
 
-**On a phone the tabs are a bar fixed to the bottom of the screen** (Dave's choice from two drawn options, 10 Nov 2026). It sits clear of the home indicator, and the page is padded so the bar covers nothing. It stays under the thumb mid-bake, one tap from anywhere. While a field has focus and the on-screen keyboard is up, the bar hides, so it never sits over a reading being typed.
+**On a phone the tabs are a bar fixed to the bottom of the screen** (Dave's choice from two drawn options, 10 Nov 2026). It sits clear of the home indicator, and the page is padded so the bar covers nothing. It stays under the thumb mid-bake, one tap from anywhere. While a field that takes typing has focus (text, number, a text area or a select), the bar hides, so it never sits over a reading being typed. Focus is the signal, since nothing reports the iOS keyboard itself, so a narrow desktop window hides it too until the field is left.
 
 **From 768 px wide the same tabs are a strip at the top of the page's column**, under the title, and stay in view as the page scrolls. The width decides, not the device. Labels, order and behaviour are the same in both forms.
 
 - **Each tab keeps its place.** Leaving Recipe for the Bake log and coming back returns to the same step, scrolled where it was. Switching tabs finishes an edit in progress first, as folding does (§7.5).
-- **Timers run and beep on any tab.** The beep can't belong to anything that leaves the screen with the Recipe tab. While a timer runs and another tab is open, the Recipe tab carries a mark, and the mark changes when a timer reaches its lower bound, as a closed group's heading does (§7.5). The mark's form is the calculator agent's to propose.
-- **The open tab is stored**, so a reload or a reopened app comes back to it. Reset keeps it (§10). A link that carries input keys opens on Recipe (§6, rule 2).
-- **The address doesn't change between tabs.** "Share setup" shares the Recipe tab's setup, and it belongs on that tab.
+- **Timers run and beep on any tab.** The beep can't belong to anything that leaves the screen with the Recipe tab. While a timer runs and another tab is open, the Recipe tab carries a mark, and the mark changes when a timer reaches its lower bound, as a closed group's heading does (§7.5). The mark is the running time of the timer due first across the list, in a pill: outlined before the lower bound, filled from it, green in the window and amber past it. On the bar it sits on the icon's corner, on the strip beside the label. It shows no phase words; screen readers hear them.
+- **The open tab is stored**, so a reload or a reopened app comes back to it. Reset keeps it (§10). A link whose setup differs from the stored one opens on Recipe (§6, rule 2). The page's own address carries the stored setup, so a reload comes back to the stored tab.
+- **The address doesn't change between tabs.** "Share setup" shares the Recipe tab's setup, and it sits on that tab beside Reset. The header is the title alone on every tab.
 - **The concept, Reference and About drawers stay drawers** and open over whichever tab is showing.
 - **The Bake log's buttons go.** The header's and the footer's "Bake log" buttons are replaced by the tab. The Calibration panel's link and the log card's link switch to it.
 - **Layout:** nothing appears above the point of a tap, every tab is a 48 px target, and nothing scrolls sideways at 375 px.
@@ -1790,11 +1790,11 @@ APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in A
 
 **Two lists on the Toppings tab:**
 - **Tested**, the rated ideas, highest rating first; ideas with the same rating, most recently updated first.
-- **Untested**, the unrated ideas, newest first.
+- **Untested**, the unrated ideas, newest first by when each was first written down (`created`), so editing one doesn't move it.
 
 **The three text fields are Markdown** (Dave, 10 Nov 2026), so they can carry links, rendered by the app's existing renderer. A single line break shows as a line break, as it does in Apple Notes, since Dave pastes his notes in as they are. Links open in a new tab. Raw HTML isn't rendered. The editor shows the raw text.
 
-**Add, edit and delete.** Delete asks first. The rating control works in half steps with 48 px targets on a phone; its form is the calculator agent's to propose.
+**Add, edit and delete.** Delete asks first. The rating control is nine buttons, 1 to 5 by halves, and Clear, each a 48 px target on a phone. In the lists a rating shows as five stars, the half drawn as a half, with no number beside it (Dave's call, 11 Nov 2026); screen readers hear "Rated 3.5 of 5".
 
 **There is no import screen.** Dave pastes his existing ideas in himself (10 Nov 2026).
 
@@ -1811,7 +1811,7 @@ APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in A
 
 **One JSON file per idea under `toppings/`**, in the bake log's private repository, with the same token and settings as the log (§2, §10). The fields are §13.2's table.
 
-**The same local-first sync as the bake log.** Each device writes its own copy first and syncs after; changed and deleted ideas are tracked; the last write to an idea wins. Without a token the ideas stay in this browser.
+**The same local-first sync as the bake log.** Each device writes its own copy first and syncs after; changed and deleted ideas are tracked; the copy saved last wins, by `updated`, and on a tie the device syncing keeps its own; a deletion wins over any edit it hasn't seen, since a deletion carries no time to compare. The bake log's own rule (the device pushing last wins) is unchanged. Without a token the ideas stay in this browser.
 
 **Kept apart from the bake log:** the ideas have their own storage key and their own changed and deleted lists, so a failed toppings sync never holds up the log, and the reverse.
 
