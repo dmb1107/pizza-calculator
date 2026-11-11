@@ -339,6 +339,29 @@ describe('§13.3 sync through the bake log repository', () => {
     expect(store.items).toEqual([]);
   });
 
+  // §13.3: "a deletion wins over any edit it hasn't seen". The deleting
+  // device removes whatever the repository holds. An edit pushed after a
+  // deletion it hadn't seen finds no file and writes the idea back.
+  it('lets a deletion remove an edit it has not seen, and an edit pushed later restore it', async () => {
+    const a = idea('a', { notes: 'first' });
+
+    // Laptop edits and pushes; phone deletes without having pulled it.
+    const gh1 = fakeGitHub();
+    const { store: base1 } = await syncToppings(CFG, upsertIdea(EMPTY_TOPPINGS, a), gh1.fetchFn);
+    gh1.put({ ...a, notes: 'laptop edit', updated: '2026-11-05T00:00:00.000Z' });
+    await syncToppings(CFG, removeIdea(base1, 'a'), gh1.fetchFn);
+    expect(gh1.files.size).toBe(0);
+
+    // Phone deletes and pushes; laptop, holding an unpushed edit, syncs after.
+    const gh2 = fakeGitHub();
+    const { store: base2 } = await syncToppings(CFG, upsertIdea(EMPTY_TOPPINGS, a), gh2.fetchFn);
+    await syncToppings(CFG, removeIdea(base2, 'a'), gh2.fetchFn);
+    const laptop = upsertIdea(base2, { ...a, notes: 'laptop edit', updated: '2026-11-05T00:00:00.000Z' });
+    const { store } = await syncToppings(CFG, laptop, gh2.fetchFn);
+    expect(gh2.read('toppings/a.json').notes).toBe('laptop edit');
+    expect(store.items.map((i) => i.notes)).toEqual(['laptop edit']);
+  });
+
   it('leaves the bake log syncing when the toppings sync fails, and the reverse', async () => {
     const ideas = upsertIdea(EMPTY_TOPPINGS, idea('a'));
     const log = upsertBake(EMPTY_LOG, bake('2026-11-10-190000'));

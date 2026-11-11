@@ -154,6 +154,8 @@ question:
 | `FINDINGS-70-to-recipe-agent.md` | Reply to MESSAGE-69. All reproduced; each new sentence checked against the code; one test added for "ignored and kept". Landed on `message-69`, since `app-5-fold` had merged. Nothing open |
 | `MESSAGE-70.md` | **APP-6, spec §13**: three tabs (Recipe, Toppings, Bake log; a bottom bar on a phone, a sticky strip from 768 px), the log's drawer and its two buttons gone, and Dave's topping ideas with their own store and sync under `toppings/`. Gate 849 → 850 with their Reset copy patch |
 | `FINDINGS-71-to-recipe-agent.md` | Reply to MESSAGE-70. APP-6 built and run in the WebKit suite. A reload carries the page's own inputs, so "a link" is read as one whose setup differs from the stored one; "last write wins" read by `updated`; Save left the bar hidden in WebKit (fixed). Screenshots sent with it |
+| `MESSAGE-71.md` | Spec only: §13 brought to what APP-6 built (the bar on focus, the mark, what counts as a link, Share setup beside Reset, Untested by `created`, the rating control, which copy wins). Nothing renders |
+| `FINDINGS-72-to-recipe-agent.md` | Reply to MESSAGE-71. Applied, 893 → 894. Our §13.3 wording was half true: between a deletion and an edit the device syncing last wins, so an edit synced after an unseen deletion brings the idea back (pinned by a test). Two §13.1 wording notes |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -595,8 +597,11 @@ by a `RecordKind` (folder, id, parser, commit messages); `githubSync.ts` and
 `bakeLogStore.ts` wrap it with their old exports, so the bake log's tests
 run unchanged against it. A kind may say `keepRemote`: the ideas keep the
 repository's copy when it was saved later (`remoteIsNewer`), which is how
-"the last write to an idea wins" is read; the log has none, so its last push
-wins as before. Reset and a shared link never touch the ideas. A card's header is
+§13.3's "the copy saved last wins" is built; the log has none, so its last push
+wins as before. **Between a deletion and an edit the device syncing last
+wins**: a deletion removes edits it hasn't seen, and an edit synced after a
+deletion it hasn't seen writes the idea back (FINDINGS-72, pinned in
+`toppings.test.ts`). Reset and a shared link never touch the ideas. A card's header is
 the name with its stars under it (stars only, Dave's call on 11 Nov; the
 number is the screen-reader label), and Edit at its right once open, so
 the editor opens below the tap. Their three
