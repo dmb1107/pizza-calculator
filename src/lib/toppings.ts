@@ -6,7 +6,13 @@
  * Nothing in the recipe's calculations reads an idea (§13.3).
  */
 
-/** §13.2's table. The three text fields are Markdown. */
+/**
+ * §13.2's table. The four text fields are Markdown.
+ *
+ * An idea read from storage or the repository also carries, at run time, any
+ * key this build doesn't know (`parseIdea` keeps them), and `savedIdea`
+ * writes them back, so a field a later build adds survives an edit here.
+ */
 export interface ToppingIdea {
   /** Made when the idea is first saved; the file name in the repository. */
   id: string;
@@ -15,8 +21,10 @@ export interface ToppingIdea {
   /** Required once the idea is rated. */
   pre_bake: string;
   post_bake: string;
-  /** Critiques, recipes for toppings, ideas for next time. */
+  /** Recipes for the toppings and advice for making the pizza. */
   notes: string;
+  /** How the pizza tasted (APP-7). An idea saved without it has none. */
+  comments: string;
   /** 1 to 5 in steps of 0.5; null is untested. */
   rating: number | null;
   /** ISO instants, set by the app. */
@@ -25,9 +33,9 @@ export interface ToppingIdea {
 }
 
 /** What the editor holds before Save. */
-export type IdeaDraft = Pick<ToppingIdea, 'name' | 'pre_bake' | 'post_bake' | 'notes' | 'rating'>;
+export type IdeaDraft = Pick<ToppingIdea, 'name' | 'pre_bake' | 'post_bake' | 'notes' | 'comments' | 'rating'>;
 
-export const EMPTY_DRAFT: IdeaDraft = { name: '', pre_bake: '', post_bake: '', notes: '', rating: null };
+export const EMPTY_DRAFT: IdeaDraft = { name: '', pre_bake: '', post_bake: '', notes: '', comments: '', rating: null };
 
 /** §13.2: 1 to 5 in steps of 0.5. */
 export const RATING_MIN = 1;
@@ -68,16 +76,19 @@ export function canRate(draft: Pick<IdeaDraft, 'pre_bake'>): boolean {
 /**
  * The idea a valid draft saves as. Text is kept as typed apart from the
  * whitespace at either end. `created` is the first save's and `updated` this
- * one's, both from `at`.
+ * one's, both from `at`. Keys of the previous copy this build doesn't know
+ * are kept.
  */
 export function savedIdea(draft: IdeaDraft, previous: ToppingIdea | null, id: string, at: Date): ToppingIdea {
   const iso = at.toISOString();
   return {
+    ...previous,
     id: previous?.id ?? id,
     name: draft.name.trim(),
     pre_bake: draft.pre_bake.trim(),
     post_bake: draft.post_bake.trim(),
     notes: draft.notes.trim(),
+    comments: draft.comments.trim(),
     rating: draft.rating,
     created: previous?.created ?? iso,
     updated: iso,
@@ -86,8 +97,8 @@ export function savedIdea(draft: IdeaDraft, previous: ToppingIdea | null, id: st
 
 /** The editor's draft for a saved idea. */
 export function draftOf(idea: ToppingIdea): IdeaDraft {
-  const { name, pre_bake, post_bake, notes, rating } = idea;
-  return { name, pre_bake, post_bake, notes, rating };
+  const { name, pre_bake, post_bake, notes, comments, rating } = idea;
+  return { name, pre_bake, post_bake, notes, comments, rating };
 }
 
 /**
@@ -117,9 +128,11 @@ export function untestedIdeas(ideas: readonly ToppingIdea[]): ToppingIdea[] {
 }
 
 /**
- * §13.3: "the last write to an idea wins". When an idea changed on two
- * devices since they last synced, the copy saved later is kept, by
- * `updated`; on a tie the device pushing keeps its own.
+ * §13.3: "the copy saved last wins". When an idea changed on two devices
+ * since they last synced, the copy saved later is kept, by `updated`; on a
+ * tie the device pushing keeps its own. A deletion has no time, so this is
+ * never asked about one: between a deletion and an edit, the device that
+ * syncs last wins.
  */
 export function remoteIsNewer(remote: ToppingIdea, local: ToppingIdea): boolean {
   return time(remote.updated) > time(local.updated);

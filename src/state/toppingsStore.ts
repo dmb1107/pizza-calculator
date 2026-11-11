@@ -43,6 +43,10 @@ const isInstant = (v: unknown): v is string => typeof v === 'string' && !Number.
  * or a missing date is malformed. A rated idea without pre-bake toppings is
  * read as it is: the editor asks for them, and a reader shouldn't hide an
  * idea for it.
+ *
+ * Keys this build doesn't know are kept, so a device on this build that saves
+ * an idea doesn't strip a field a later build added (the way an APP-6 bundle
+ * drops `comments`).
  */
 export function parseIdea(raw: unknown): ToppingIdea | null {
   if (!isRecord(raw)) return null;
@@ -50,18 +54,44 @@ export function parseIdea(raw: unknown): ToppingIdea | null {
   // The id is a file name in the repository.
   if (typeof id !== 'string' || !/^[\w-]+$/.test(id)) return null;
   if (typeof name !== 'string' || name.trim() === '') return null;
-  const text = (key: 'pre_bake' | 'post_bake' | 'notes') => {
+  const text = (key: 'pre_bake' | 'post_bake' | 'notes' | 'comments') => {
     const v = raw[key];
     return v === undefined || v === null ? '' : typeof v === 'string' ? v : undefined;
   };
   const pre = text('pre_bake');
   const post = text('post_bake');
   const notes = text('notes');
-  if (pre === undefined || post === undefined || notes === undefined) return null;
+  const comments = text('comments');
+  if (pre === undefined || post === undefined || notes === undefined || comments === undefined) return null;
   if (!(rating === null || rating === undefined || isRating(rating))) return null;
   if (!isInstant(created) || !isInstant(updated)) return null;
-  return { id, name, pre_bake: pre, post_bake: post, notes, rating: rating ?? null, created, updated };
+  const unknown = Object.fromEntries(Object.entries(raw).filter(([key]) => !IDEA_KEYS.has(key)));
+  return {
+    ...unknown,
+    id,
+    name,
+    pre_bake: pre,
+    post_bake: post,
+    notes,
+    comments,
+    rating: rating ?? null,
+    created,
+    updated,
+  };
 }
+
+/** §13.2's fields: every key `parseIdea` reads. */
+const IDEA_KEYS: ReadonlySet<string> = new Set([
+  'id',
+  'name',
+  'pre_bake',
+  'post_bake',
+  'notes',
+  'comments',
+  'rating',
+  'created',
+  'updated',
+]);
 
 /** What the shared sync needs to know about an idea. */
 export const TOPPING_KIND: RecordKind<ToppingIdea> = {
@@ -72,7 +102,7 @@ export const TOPPING_KIND: RecordKind<ToppingIdea> = {
   deleteMessage: (id) => `Delete topping idea ${id}`,
   offline: 'The ideas are saved on this device and will sync later.',
   noun: 'the idea',
-  // §13.3: the last write to an idea wins, by when it was saved.
+  // §13.3: the copy saved last wins, by when it was saved.
   keepRemote: remoteIsNewer,
 };
 

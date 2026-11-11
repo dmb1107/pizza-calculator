@@ -1760,21 +1760,21 @@ APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in A
 
 **Three tabs, in this order: Recipe, Toppings, Bake log.** Recipe is everything the page shows today: the panels, the timeline, the warnings and the steps. Toppings is §13.2. Bake log is §10's log, which until MESSAGE-70 opened as a drawer.
 
-**On a phone the tabs are a bar fixed to the bottom of the screen** (Dave's choice from two drawn options, 10 Nov 2026). It sits clear of the home indicator, and the page is padded so the bar covers nothing. It stays under the thumb mid-bake, one tap from anywhere. While a field that takes typing has focus (text, number, a text area or a select), the bar hides, so it never sits over a reading being typed. Focus is the signal, since nothing reports the iOS keyboard itself, so a narrow desktop window hides it too until the field is left.
+**On a phone the tabs are a bar fixed to the bottom of the screen** (Dave's choice from two drawn options, 10 Nov 2026). It sits clear of the home indicator, and the page is padded so the bar covers nothing. It stays under the thumb mid-bake, one tap from anywhere. While a field that takes typing has focus (text, number, a date and time, a text area or a select), the bar hides, so it never sits over a reading being typed. Focus is the signal, since nothing reports the iOS keyboard itself, so a narrow desktop window hides it too until the field is left.
 
 **From 768 px wide the same tabs are a strip at the top of the page's column**, under the title, and stay in view as the page scrolls. The width decides, not the device. Labels, order and behaviour are the same in both forms.
 
 - **Each tab keeps its place.** Leaving Recipe for the Bake log and coming back returns to the same step, scrolled where it was. Switching tabs finishes an edit in progress first, as folding does (§7.5).
 - **Timers run and beep on any tab.** The beep can't belong to anything that leaves the screen with the Recipe tab. While a timer runs and another tab is open, the Recipe tab carries a mark, and the mark changes when a timer reaches its lower bound, as a closed group's heading does (§7.5). The mark is the running time of the timer due first across the list, in a pill: outlined before the lower bound, filled from it, green in the window and amber past it. On the bar it sits on the icon's corner, on the strip beside the label. It shows no phase words; screen readers hear them.
 - **The open tab is stored**, so a reload or a reopened app comes back to it. Reset keeps it (§10). A link whose setup differs from the stored one opens on Recipe (§6, rule 2). The page's own address carries the stored setup, so a reload comes back to the stored tab.
-- **The address doesn't change between tabs.** "Share setup" shares the Recipe tab's setup, and it sits on that tab beside Reset. The header is the title alone on every tab.
+- **The address doesn't change between tabs.** "Share setup" shares the Recipe tab's setup, and it sits on that tab beside Reset. The header is the title and its formula line on every tab, with no buttons.
 - **The concept, Reference and About drawers stay drawers** and open over whichever tab is showing.
 - **The Bake log's buttons go.** The header's and the footer's "Bake log" buttons are replaced by the tab. The Calibration panel's link and the log card's link switch to it.
 - **Layout:** nothing appears above the point of a tap, every tab is a 48 px target, and nothing scrolls sideways at 375 px.
 
 ### 13.2 Topping ideas
 
-**Each idea has a name, pre-bake toppings, post-bake toppings, notes and a rating.**
+**Each idea has a name, pre-bake toppings, post-bake toppings, notes, comments and a rating.**
 
 | Field | Kind | Rule |
 |---|---|---|
@@ -1782,7 +1782,8 @@ APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in A
 | `name` | text | required on every idea (Dave, 9 Nov 2026) |
 | `pre_bake` | Markdown | required once the idea is rated |
 | `post_bake` | Markdown | may be empty |
-| `notes` | Markdown | may be empty: critiques, recipes for toppings, ideas for next time |
+| `notes` | Markdown | may be empty: recipes for the toppings and advice for making the pizza |
+| `comments` | Markdown | may be empty: how the pizza tasted (APP-7, Dave, 11 Nov 2026); an idea saved without it has none |
 | `rating` | number or `null` | 1 to 5 in steps of 0.5; `null` is untested |
 | `created`, `updated` | ISO time | set by the app |
 
@@ -1792,7 +1793,11 @@ APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in A
 - **Tested**, the rated ideas, highest rating first; ideas with the same rating, most recently updated first.
 - **Untested**, the unrated ideas, newest first by when each was first written down (`created`), so editing one doesn't move it.
 
-**The three text fields are Markdown** (Dave, 10 Nov 2026), so they can carry links, rendered by the app's existing renderer. A single line break shows as a line break, as it does in Apple Notes, since Dave pastes his notes in as they are. Links open in a new tab. Raw HTML isn't rendered. The editor shows the raw text.
+**One control above both lists opens or closes every card at once** (Dave, 11 Nov 2026). It reads **Expand all** while any card is closed and **Collapse all** once every card is open, and it acts on Tested and Untested together. It isn't stored, as a card's own open state isn't. An open editor stays open, so text being typed is never lost; Collapse all closes every other card.
+
+**The four text fields are Markdown** (Dave, 10 Nov 2026), so they can carry links, rendered by the app's existing renderer. A single line break shows as a line break, as it does in Apple Notes, since Dave pastes his notes in as they are. Links open in a new tab. Raw HTML isn't rendered. The editor shows the raw text.
+
+**Comments sit below Notes**, in the editor and on an open card (Dave, 11 Nov 2026), and the card leaves out an empty one.
 
 **Add, edit and delete.** Delete asks first. The rating control is nine buttons, 1 to 5 by halves, and Clear, each a 48 px target on a phone. In the lists a rating shows as five stars, the half drawn as a half, with no number beside it (Dave's call, 11 Nov 2026); screen readers hear "Rated 3.5 of 5".
 
@@ -1802,8 +1807,8 @@ APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in A
 
 **Rendered copy** (the calculator agent words the rest under the writing rules):
 - The tab: **Toppings**. The lists: **Tested** and **Untested**.
-- Fields: **Name**, **Pre-bake**, **Post-bake**, **Notes**, **Rating**.
-- Buttons: **Add idea**, **Save**, **Delete**, **Cancel**.
+- Fields: **Name**, **Pre-bake**, **Post-bake**, **Notes**, **Comments**, **Rating**.
+- Buttons: **Add idea**, **Save**, **Delete**, **Cancel**; above the lists, **Expand all** or **Collapse all**.
 - Delete asks: **Delete "{name}"?** with **Delete** and **Cancel**.
 - Rating an idea with no pre-bake toppings: **Add the pre-bake toppings before rating it.**
 
@@ -1811,7 +1816,7 @@ APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in A
 
 **One JSON file per idea under `toppings/`**, in the bake log's private repository, with the same token and settings as the log (§2, §10). The fields are §13.2's table.
 
-**The same local-first sync as the bake log.** Each device writes its own copy first and syncs after; changed and deleted ideas are tracked; the copy saved last wins, by `updated`, and on a tie the device syncing keeps its own; a deletion wins over any edit it hasn't seen, since a deletion carries no time to compare. The bake log's own rule (the device pushing last wins) is unchanged. Without a token the ideas stay in this browser.
+**The same local-first sync as the bake log.** Each device writes its own copy first and syncs after; changed and deleted ideas are tracked; the copy saved last wins, by `updated`, and on a tie the device syncing keeps its own. A deletion carries no time to compare, so between a deletion and an edit the device that syncs last wins: a deletion removes edits it hasn't seen, and an edit synced after a deletion it hasn't seen brings the idea back. The bake log's own rule (the device pushing last wins) is unchanged. Without a token the ideas stay in this browser.
 
 **Kept apart from the bake log:** the ideas have their own storage key and their own changed and deleted lists, so a failed toppings sync never holds up the log, and the reverse.
 

@@ -156,6 +156,8 @@ question:
 | `FINDINGS-71-to-recipe-agent.md` | Reply to MESSAGE-70. APP-6 built and run in the WebKit suite. A reload carries the page's own inputs, so "a link" is read as one whose setup differs from the stored one; "last write wins" read by `updated`; Save left the bar hidden in WebKit (fixed). Screenshots sent with it |
 | `MESSAGE-71.md` | Spec only: §13 brought to what APP-6 built (the bar on focus, the mark, what counts as a link, Share setup beside Reset, Untested by `created`, the rating control, which copy wins). Nothing renders |
 | `FINDINGS-72-to-recipe-agent.md` | Reply to MESSAGE-71. Applied, 893 → 894. Our §13.3 wording was half true: between a deletion and an edit the device syncing last wins, so an edit synced after an unseen deletion brings the idea back (pinned by a test). Two §13.1 wording notes |
+| `MESSAGE-72.md` | FINDINGS-72's three corrections taken (Dave's 72a: no tombstones). **APP-7:** a `comments` field (how it tasted; `notes` is recipes and advice) below Notes, and one Expand all / Collapse all control above both lists, not stored, an open editor kept |
+| `FINDINGS-73-to-recipe-agent.md` | Reply to MESSAGE-72. APP-7 built, 897 unit and 19 WebKit tests. Unknown keys kept through a read and a save; reload every device after the deploy. Collapse all holds the page's height so the control stays under the finger. Screenshots sent with it |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -604,12 +606,23 @@ deletion it hasn't seen writes the idea back (FINDINGS-72, pinned in
 `toppings.test.ts`). Reset and a shared link never touch the ideas. A card's header is
 the name with its stars under it (stars only, Dave's call on 11 Nov; the
 number is the screen-reader label), and Edit at its right once open, so
-the editor opens below the tap. Their three
+the editor opens below the tap. Their four
 text fields render through `<Markdown breaks>`, which keeps single line
 breaks (`markdownBreaks.ts`, a remark plugin over text nodes only); **only
 `Toppings.tsx` passes `breaks`**, and a test holds that, so §8 prose
 renders as standard Markdown. Links in the shared renderer open in a new
-tab with `rel="noopener noreferrer"`; raw HTML shows as text.
+tab with `rel="noopener noreferrer"`; raw HTML shows as text. **`comments`**
+(APP-7, MESSAGE-72) is how the pizza tasted, below Notes in the editor and
+on the card, left out when empty; `notes` holds the recipes and advice.
+**`parseIdea` keeps keys it doesn't know** and `savedIdea` spreads the
+previous copy first, so a later field (APP-8's photo) survives an edit on
+an older bundle; the APP-6 bundle had no such rule and drops `comments`.
+**Expand all / Collapse all** sits above both lists (`openIds` in
+`ToppingsPage`, not stored). A card being edited counts as open and stays
+open through Collapse all (`shown = open || editing`). Collapse all holds
+the page at its old height (`heldHeight`, released by Expand all and Add
+idea), so a page scrolled into the lists can't clamp and slide the control
+from under the finger; the WebKit suite fails without it.
 
 ## Design priorities, in order
 
