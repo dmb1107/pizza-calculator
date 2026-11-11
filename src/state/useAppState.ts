@@ -141,6 +141,14 @@ export interface AppState {
    * stay, and the next save is a new bake.
    */
   startNewBake: () => void;
+  /**
+   * How many times Reset has run. The fields Reset changes are keyed on it,
+   * so they remount with the reset values: a field's text follows its value
+   * only when the value changes, so a reading still being edited when Reset
+   * ran (iOS keeps a field focused through a button tap) kept its typed text
+   * and recorded it on leaving.
+   */
+  resetCount: number;
 
   /** The bake log's local copy. */
   log: LocalLog;
@@ -628,8 +636,10 @@ export function useAppState(): AppState {
    * decide every field; this applies all of them, kept ones included, so the
    * decision lives in one place. The log stays.
    */
+  const [resetCount, setResetCount] = useState(0);
   const startNewBake = useCallback(() => {
     const next = persistedForNewBake(persisted);
+    setResetCount((n) => n + 1);
     setInputs(inputsForNewBake);
     setCalibration(next.calibration);
     setPanels(next.panels);
@@ -710,6 +720,7 @@ export function useAppState(): AppState {
     commitReading,
     clearReading,
     startNewBake,
+    resetCount,
     log,
     sessionDraft,
     sessionBakeId,

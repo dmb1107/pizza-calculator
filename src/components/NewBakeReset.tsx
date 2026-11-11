@@ -37,6 +37,10 @@ export function NewBakeReset({ onReset }: { onReset: () => void }) {
         <button
           type="button"
           onClick={() => {
+            // A reading still being edited is finished first, so its commit
+            // lands before the reset and the reset wins. On iOS a field stays
+            // focused through a button tap, and the edit used to survive Reset.
+            if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
             onReset();
             setAsking(false);
           }}

@@ -130,7 +130,7 @@ const FRICTION_HINT: Record<1 | 2 | 3 | 4, string> = {
 };
 
 export function CalibrationPanel(s: AppState & { onOpenLog: () => void; onOpenConcept: (id: string) => void }) {
-  const { panels, togglePanel, friction, calibration, setDdtOverride, autoDdtF, ddtF, mixSize, onOpenLog, onOpenConcept } = s;
+  const { panels, togglePanel, friction, calibration, setDdtOverride, autoDdtF, ddtF, mixSize, onOpenLog, onOpenConcept, resetCount } = s;
 
   const ddtIsAuto = calibration.ddtOverrideF === null;
   const estimated = friction.badge.tone === 'estimate';
@@ -167,6 +167,8 @@ export function CalibrationPanel(s: AppState & { onOpenLog: () => void; onOpenCo
 
         <div>
           <NumberField
+            // Reset puts the override back to auto; remount so no edit survives it.
+            key={resetCount}
             label="Desired dough temperature"
             unit="°F"
             value={ddtF}

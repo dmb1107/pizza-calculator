@@ -727,6 +727,15 @@ don't inline a `toFixed` somewhere else.
   and the mix didn't count. Focus and leave without an edit commits nothing,
   so a glance can't make a prefill a reading. Other fields (ball weight, the
   DDT override) keep the old rule: typing the auto DDT mustn't pin it.
+  **Reset finishes any edit, then remounts the fields it changes**
+  (`resetCount` keys `MixReadings`, `FinalTempCapture` and the DDT field).
+  A field's text follows its value only when the value changes, and iOS
+  keeps a field focused through a button tap, so a reading being edited
+  when Reset ran stayed on screen and was recorded on leaving: a typed room
+  over the default 70 survived, and a focused bowl recorded its prefill as
+  a reading (Dave's iPhone, after MESSAGE-65). Chrome hides it, because a
+  click there blurs the field first; reproduce it with a scripted
+  `.click()`.
 - **The bowl mass is a constant, `BOWL_MASS_G`, not an input** (MESSAGE-29):
   the app supports only the Halo Core, whose bowl never changes. There is no
   field, no persistence and no URL key; a stored or linked value from before
