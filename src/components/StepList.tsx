@@ -398,9 +398,11 @@ export function StepList({
                     // at its end. The log takes the target as the water used.
                     extra={
                       step.id === 'mix-1' ? (
-                        <MixReadings state={state} mixIndex={mixIndex} />
+                        // Keyed on Reset, so every field remounts from the
+                        // reset values (`resetCount`).
+                        <MixReadings key={state.resetCount} state={state} mixIndex={mixIndex} />
                       ) : step.id === 'mix-7' ? (
-                        <FinalTempCapture state={state} mixIndex={mixIndex} />
+                        <FinalTempCapture key={state.resetCount} state={state} mixIndex={mixIndex} />
                       ) : undefined
                     }
                     timer={renderTimers(timerLabel, key, step.id, mixIndex)}
