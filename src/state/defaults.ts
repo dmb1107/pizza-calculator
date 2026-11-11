@@ -63,23 +63,16 @@ export const DEFAULT_INPUTS: Inputs = {
 };
 
 /**
- * §10: Reset starts a new bake. Today's readings go back to their defaults:
- * the readings in the prep steps (room, flour and its "Same as room" switch,
- * each mix's biga and bowl), the water poured and the final readings.
- * The batch settings stay (balls, ball weight, schedule, cold ferment), and so
- * do the schedule's adjustments, which are how the baker plans rather than
- * what they measured. `persistedForNewBake` (`storedInputs.ts`) covers the rest of the page.
+ * §10: Reset starts a new bake, and every input goes back to its default:
+ * the batch settings (balls, ball weight, schedule, cold ferment), the
+ * schedule's adjustments, and today's readings (room, flour and its "Same as
+ * room" switch, each mix's biga and bowl, the final readings). Dave's call on
+ * 10 Nov 2026, after MESSAGE-65: until then the batch settings and the
+ * adjustments were kept. `persistedForNewBake` (`storedInputs.ts`) covers the
+ * rest of the page.
  */
-export function inputsForNewBake(prev: Inputs): Inputs {
-  return {
-    ...prev,
-    roomTempF: DEFAULT_INPUTS.roomTempF,
-    flourSameAsRoom: DEFAULT_INPUTS.flourSameAsRoom,
-    flourTempF: DEFAULT_INPUTS.flourTempF,
-    bigaTempF: DEFAULT_INPUTS.bigaTempF,
-    bowlTempF: DEFAULT_INPUTS.bowlTempF,
-    finalDoughTempF: DEFAULT_INPUTS.finalDoughTempF,
-  };
+export function inputsForNewBake(): Inputs {
+  return DEFAULT_INPUTS;
 }
 
 /** No DDT override. The FF isn't stored: bake 1's seed lives in `bakeLog.ts`. */

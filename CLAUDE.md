@@ -144,6 +144,7 @@ question:
 | `FINDINGS-65-to-recipe-agent.md` | Reply to MESSAGE-64. All reproduced (761 → 766 with their gate patch). Our cold-ferment slider hint still said the biga "does nearly all the fermentation"; Dave's per-track hint replaced it, and a test now bans MESSAGE-64's retired phrases from our copy. Asks about `schedule-architecture`'s 6–48 h title on the classic track and W16's unsourced steel claim |
 | `MESSAGE-65.md` | Reply to FINDINGS-65. W16's steel sentence removed (Dave's call), `schedule-architecture` retitled "How long the cold ferment runs, and why". **APP-3: the inputs are stored as well as written to the URL** (§6 *Where the inputs are kept*), with a four-case load rule; a home-screen app takes what is stored |
 | `FINDINGS-66-to-recipe-agent.md` | Reply to MESSAGE-65. All reproduced (765 → 766); APP-3 built and checked in a browser with the home-screen case simulated, not yet on Dave's iPhone. Rule 1 rests on the icon opening standalone, and there is no manifest |
+| `FINDINGS-67-to-recipe-agent.md` | Unprompted, after Dave's iPhone check: Reset now resets the batch settings and the schedule's adjustments too (Dave's call), ahead of §10, with the §10 and §6 wording to change. Also the Reset focus bug (PR #23): a reading being edited survived Reset on iOS |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -464,8 +465,9 @@ it wins whole (never merged with the stored inputs) and **is stored when it
 loads**, by the hook's first persist; (3) a bare URL takes what is stored;
 (4) the defaults. After load every input change writes both, Reset
 included: `persistedForNewBake` (in `storedInputs.ts`, since it needs the
-codec) stores `inputsForNewBake`'s result, so the stored inputs are a fourth
-Reset category, "follows the inputs". The first persist writes only the
+codec) stores `inputsForNewBake`'s result, every input at its default
+(`''`), so the stored inputs are a fourth Reset category, "follows the
+inputs". The first persist writes only the
 inputs, and only when they differ: writing the rest would fix a fresh
 session's biga start, which '' reads as now. There is **no web manifest**
 (MESSAGE-65 kept it out), so rule 1 rests on iOS opening the icon
@@ -490,11 +492,15 @@ carried so a rewrite doesn't strip it) and nothing reads it, so an unknown
 value is dropped rather than rejecting the bake. **The
 page's Reset starts a new bake, and it is the only reset** (`NewBakeReset`,
 above the panels; MESSAGE-48 removed the Steps header's). It asks, then
-`inputsForNewBake` and `persistedForNewBake` decide every field: today's
-readings (those in the prep steps and the final readings), the DDT override and
-the timeline's anchor go back to their defaults; the checkboxes, timers and
-session bake are cleared; batch settings, schedule adjustments, the timeline
-mode, the open panels and the log stay. In backward mode the hook then takes
+`inputsForNewBake` and `persistedForNewBake` decide every field: **every
+input** (the batch settings, the schedule's adjustments and today's
+readings), the DDT override and the timeline's anchor go back to their
+defaults; the checkboxes, timers and session bake are cleared; the timeline
+mode, the open panels and the log stay. **The batch settings and the
+adjustments reset since Dave's call on 10 Nov 2026**, ahead of §10, which
+still lists them as kept: FINDINGS-67 asks for the change, and
+`steps.test.ts` pins the confirmation copy both ways (`AHEAD_OF_SPEC`) until
+§10 carries it. In backward mode the hook then takes
 the bake time the reset start implies, as a mode switch does, so a reload
 doesn't drop to forward. `state.test.ts` requires every input and every
 persisted field to be classified, so a new one forces the decision, and

@@ -11,7 +11,7 @@
  */
 
 import { DEFAULT_CALIBRATION, DEFAULT_PERSISTED, inputsForNewBake } from './defaults';
-import { decodeInputs, decodeInputsWithReport, encodeInputs, hasInputs } from './url';
+import { decodeInputsWithReport, encodeInputs, hasInputs } from './url';
 import type { Inputs, Persisted } from './types';
 
 /** Which of §6's four load cases applied. */
@@ -94,10 +94,9 @@ export function isStandalone(env: { navigator?: unknown; matchMedia?: unknown } 
  * mode the hook takes the bake time the reset start implies, as switching
  * modes does.
  *
- * The stored inputs follow `inputsForNewBake`, input by input (MESSAGE-65):
- * the readings it resets are stored as their defaults, so a reopened app
- * doesn't bring back the last bake's, and the batch settings stay. Nothing
- * stored stays nothing stored.
+ * The stored inputs follow `inputsForNewBake` (MESSAGE-65): every input is
+ * stored at its default, so a reopened app doesn't bring back the last
+ * bake's. Nothing stored stays nothing stored.
  */
 export function persistedForNewBake(prev: Persisted): Persisted {
   return {
@@ -109,6 +108,6 @@ export function persistedForNewBake(prev: Persisted): Persisted {
     timers: [],
     sessionBakeId: '',
     inputsQuery:
-      prev.inputsQuery === null ? null : storedInputsOf(inputsForNewBake(decodeInputs(prev.inputsQuery))),
+      prev.inputsQuery === null ? null : storedInputsOf(inputsForNewBake()),
   };
 }

@@ -16,13 +16,19 @@ Don't trust any status here that you can check instead (§7).
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-65, and FINDINGS-66 is the
-  last thing sent.** MESSAGE-65 was the first of Dave's queued app changes
+- **The correspondence is applied through MESSAGE-65, and FINDINGS-67 is the
+  last thing sent** (unprompted, after FINDINGS-66). MESSAGE-65 was the first of Dave's queued app changes
   (APP-3): **the inputs are stored in the browser as well as the URL**, with
   §6's four-case load rule in `src/state/storedInputs.ts` (CLAUDE.md has the
   rules). It was checked in a browser with `navigator.standalone` faked and
-  the app remounted at a stale launch URL; **Dave's iPhone check is still
-  open**, and rule 1 rests on the icon opening standalone, with no manifest.
+  the app remounted at a stale launch URL. **On Dave's iPhone the inputs
+  survived a force close.** Reset didn't clear a reading still being edited
+  (iOS keeps a field focused through a button tap), fixed in PR #23. Then
+  **Dave's call: Reset puts the batch settings and the adjustments back to
+  their defaults too**, built ahead of §10 and sent as FINDINGS-67 with the
+  wording to change; `steps.test.ts`'s `AHEAD_OF_SPEC` pins the Reset copy
+  both ways until §10 carries it, then set it to null. Rule 1 rests on the
+  icon opening standalone, with no manifest.
   It also removed W16's steel sentence and retitled `schedule-architecture`.
   Before it: FINDINGS-65 was the reply to MESSAGE-64. No pin of any kind is live (`knownWrong` is empty).
   FINDINGS-65 asks two wording questions (`schedule-architecture`'s 6–48 h
