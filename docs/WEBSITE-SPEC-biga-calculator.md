@@ -17,7 +17,7 @@ The user enters batch size, their measured temperatures, and how long they want 
 1. **Correctness.** Verify against the test vectors in §5. A wrong number here ruins 50 hours of work.
 2. **Kitchen usability.** This gets read on a phone propped against a mixer, by someone with flour on their hands. Large type, big touch targets, no hover-dependent UI, no tiny controls.
 3. **Progressive disclosure.** Steps are terse by default. Every step expands into a full explanation — multiple paragraphs, tables, the actual reasoning. §8 contains that prose written out; **use it verbatim rather than summarizing it.** The explanations are the point of the app, not decoration on top of it.
-4. **Shareable/resumable state.** Settings survive a refresh and can be sent as a link.
+4. **Shareable/resumable state.** Settings and the day's readings survive a refresh and a closed app, and can be sent as a link.
 
 ---
 
@@ -27,7 +27,7 @@ The user enters batch size, their measured temperatures, and how long they want 
 - **Recommended stack:** Vite + React + TypeScript + Tailwind. Use something else if you have a strong reason, but it must build to static assets.
 - ⚠️ **Set `base: '/<repo-name>/'` in `vite.config.ts`.** GitHub Pages serves from a subpath and asset links break silently without this. Same for the router — use a hash router or configure the basename.
 - Include a GitHub Actions workflow that builds and deploys to Pages on push to `main`.
-- **State:** inputs serialize to URL query params (shareable), and preferences persist to browser storage.
+- **State:** every input is kept in browser storage and written to the URL's query string. Storage brings a session back and the URL shares it (§6, *Where the inputs are kept*). Preferences persist to browser storage.
 - **The bake log (§10)** lives in a private GitHub repository, one JSON file per bake, read and written from the browser through GitHub's API with a token that can reach only that repository, pasted once on each device. Each device writes its own copy first and syncs after, so a mix never waits on the network. **Without a token** the log stays in browser storage, so anyone opening a shared link gets a working calculator that saves nothing outside their own browser.
 - **The calibration isn't stored.** The FF in use is computed from the log each time (§6, Panel 2). ⚠️ An earlier version persisted it to `localStorage` as a map of typed values.
 - No analytics, no external fonts that block render, no CDN dependencies that can disappear.
@@ -746,6 +746,25 @@ Group into two panels: **Batch** open by default, **Calibration** collapsed with
 
 **Bowl mass is not an input.** The app supports only the Halo Core, and its bowl always weighs the same, so the mass is the constant `BOWL_MASS_G` (§3). ⚠️ **Removed:** an earlier version had an editable, persisted *Bowl mass (g)* field. Ignore any stored value. Bowl **temperature** stays a real input — it changes every bake.
 
+### Where the inputs are kept
+
+**Every input is stored in the browser and written to the URL** (MESSAGE-65). Storage brings a session back; the URL is for sharing. An input here is anything the URL codec carries: the batch settings (balls, ball weight, schedule, cold ferment and the schedule's adjustments) and the day's readings (room, flour and its "Same as room" switch, each mix's biga and bowl, each mix's final dough temperature).
+
+⚠️ **Until MESSAGE-65 the inputs lived only in the URL.** A home-screen web app on iOS reopens the address its icon was saved with, so a closed app came back with default inputs beside its stored ticks and timers. The batch settings reset, and the readings went with them: mid-bake, the water targets fell back to their prefills and a Save would have recorded defaults (Dave, 9 Nov 2026).
+
+**On load, the first of these that applies:**
+
+1. **A home-screen app takes the stored inputs and ignores the launch URL** (Dave's call). The page is a home-screen app when `navigator.standalone` is true or `(display-mode: standalone)` matches. Its launch URL is the address the icon was saved with, which says nothing about the session. If no inputs are stored yet, the launch URL's apply, as in 2.
+2. **In a browser, a URL that carries any input key is a link, and the link wins.** Its inputs replace the stored ones at once (Dave's call). A key the link leaves out takes its default, as it always has: a link is a whole setup and is never merged with what was stored.
+3. **A bare URL takes the stored inputs.**
+4. **With nothing stored, the defaults.**
+
+**After load the two stay in step.** Every change to an input writes storage and the URL together. Reset does too (§10): the readings it resets are stored as their defaults, so a reopened app doesn't bring back the last bake's.
+
+**Stored inputs are read by the same rules as a link's:** the even-split ball rule (Panel 1), the cold ferment's range for its track (§4.7), the temper's range, and the keys that are ignored (`bowlst`, `water`, a bowl mass). Storing what the URL codec writes and reading it back through the codec gives all of that with nothing restated. A stored value that doesn't parse takes its default and never blocks the page.
+
+**What stays as it is:** the URL codec and its keys; "Share setup"; a shared link carries no log, no token and none of the session's ticks, timers or saved-bake id; the DDT override, the timeline's mode and anchor and the open panels, which were stored already; and the three Reset lists (§10).
+
 ### Panel 2 — Calibration
 | Field | Type | Default | Note |
 |---|---|---|---|
@@ -1368,7 +1387,7 @@ A bare token on a per-mix step is then a **visible** error rather than one that 
 **detail:**
 > **Why 750 °F and full flame.** A Neapolitan bake depends on the balance between heat from above and heat from below more than on absolute temperature. The stone cooks the base by conduction; the flame cooks the top by radiation. If the base finishes before the top, you need more heat from above relative to below: a cooler stone, more flame, or both.
 >
-> A 750 °F stone with full flame gives that balance. Bake on the Tread's own stone, not a baking steel, which passes heat into the base several times faster. Pushing the stone to 800 °F or more shifts it the wrong way and burns the base before the cornicione sets.
+> A 750 °F stone with full flame gives that balance. Pushing the stone to 800 °F or more shifts it the wrong way and burns the base before the cornicione sets.
 >
 > **Turn every 15–20 s.** The flame comes from one side of a small chamber, so whichever side faces it scorches fast.
 >
@@ -1415,7 +1434,7 @@ interface Concept { id: string; title: string; body: string; /* markdown */ }
 >
 > **No diastatic malt.** Malt adds amylase, which turns starch into sugar, and at these oven temperatures the extra sugar scorches. Grain Craft is unmalted, which suits this recipe. AVPN's regulation rules out fat and sugar in the dough, and this recipe counts malt as sugar.
 
-**`schedule-architecture`** — *Why the cold ferment is 6–48 h*
+**`schedule-architecture`** — *How long the cold ferment runs, and why*
 > A classic biga front-loads the fermentation. At 0.375% ADY on 65% biga flour you carry about 0.244% ADY on total flour, a heavy dose by pizza standards. On the classic track the biga ripens fully at room temperature and does most of the work, so the dough gets only 6–8 hours cold.
 >
 > **The retarded track moves part of that work into the dough.** The fridge slows the biga, so it arrives less ripe, and the balls' longer cold ferment makes up the difference. By the recipe's fermentation model, the retarded biga with 24 h cold comes to about the same total as the classic biga with 6–8 hours.
@@ -1600,7 +1619,7 @@ Pauses aren't normalized. The rest has a fixed timer, and nothing measures what 
 - **Reset starts a new bake.** A **Reset** button near the top of the page asks first. The baker presses it when starting a new bake, and it is the page's only reset: ⚠️ the Steps header's own Reset, which cleared the checkboxes alone, is removed, so no two controls share the label. Every input is classified, and a test keeps it that way:
   - **Reset to defaults:** the readings in the prep steps (room, flour and its "Same as room" switch, each mix's biga and bowl), each mix's final reading, the DDT override (back to auto) and the timeline's anchor. The last two are per-bake choices: a stale override silently moves the water target and the rise, and a stale anchor puts every stage in the past.
   - **Cleared:** the step checkboxes, the timers, and the link to the saved bake, so the next save is a new bake.
-  - **Kept:** balls, ball weight, schedule and cold ferment, the schedule's adjustments (fridge hours, the classic biga's room hours, temper), which end of the timeline is held, which panels are open, this device's sync settings, and saved bakes. The anchor is the held time, not the mode: a Reset in either mode starts the schedule now.
+  - **Kept:** balls, ball weight, schedule and cold ferment, the schedule's adjustments (fridge hours, the classic biga's room hours, temper), which end of the timeline is held, which panels are open, this device's sync settings, and saved bakes. The anchor is the held time, not the mode: a Reset in either mode starts the schedule now. Since MESSAGE-65 the inputs are stored as well as written to the URL (§6, *Where the inputs are kept*), so all three lists hold when the app is closed and reopened.
 
   Copy (rendered):
 

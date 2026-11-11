@@ -34,8 +34,13 @@ ones' end times; the stagger correction is gone; one timer per dough on
 `bulk-1`–`bulk-3`), ball counts split evenly between the mixes, and DDT
 goes by balls per mix. MESSAGE-62 (spec only: `thermal-model`'s 6.4) is
 applied too, and so is MESSAGE-63 (wording: the bowl warms faster than the
-biga in the temper, and a steady spot for the bulk). FINDINGS-64 is the last
-thing sent.
+biga in the temper, and a steady spot for the bulk). MESSAGE-64 (wording:
+Dave's science review) is applied. **MESSAGE-65 is applied**: the steel
+sentence is gone from `bake-2`, `schedule-architecture` is titled "How long
+the cold ferment runs, and why", and **the inputs are stored in the browser
+as well as written to the URL** (APP-3, §6 *Where the inputs are kept*), so
+a home-screen app that is closed and reopened keeps its batch settings and
+readings. FINDINGS-66 is the last thing sent.
 
 ---
 

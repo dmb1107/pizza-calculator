@@ -9,15 +9,22 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-64 and FINDINGS-65 (10 November).
+MESSAGE-65 and FINDINGS-66 (10 November).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-64, and FINDINGS-65 is the
-  last thing sent.** No pin of any kind is live (`knownWrong` is empty).
+- **The correspondence is applied through MESSAGE-65, and FINDINGS-66 is the
+  last thing sent.** MESSAGE-65 was the first of Dave's queued app changes
+  (APP-3): **the inputs are stored in the browser as well as the URL**, with
+  §6's four-case load rule in `src/state/storedInputs.ts` (CLAUDE.md has the
+  rules). It was checked in a browser with `navigator.standalone` faked and
+  the app remounted at a stale launch URL; **Dave's iPhone check is still
+  open**, and rule 1 rests on the icon opening standalone, with no manifest.
+  It also removed W16's steel sentence and retitled `schedule-architecture`.
+  Before it: FINDINGS-65 was the reply to MESSAGE-64. No pin of any kind is live (`knownWrong` is empty).
   FINDINGS-65 asks two wording questions (`schedule-architecture`'s 6–48 h
   title on the classic track, and W16's unsourced steel claim); nothing
   blocks. MESSAGE-64 was Dave's science review, wording only: the biga is a
@@ -332,6 +339,7 @@ true and what they need to change.
 | `capacity.test.ts` | §7.3: which capacity message fires and when, its bound wording, the binding-limit guards (flour cap never first for a mix), the one-biga line exactly when the batch splits, the below-minimum guard silent across the range, decisions on the **printed** per-mix dough, the near-limit ball list across 240–300 g. §7.5 segment states (lit / dim / off), and the chip's smaller line for every speed step | The spec says conditions are decided on displayed values; 2374.96 g prints 2375.0 and must fire. **The ball list can't see the 5%**: it holds for any threshold from 94.03% to 98.11%, so the edge test is what pins the threshold |
 | the gate's component walker | Widened in MESSAGE-59's round to strings in **object and array literals**, not just inside JSX. Markup is skipped by shape (a CSS color, or a list of lowercase hyphenated tokens), never by key, since a Tailwind map's keys are tones. A phrase guard bans any copy saying the log corrects more than Phase C | Reading only inside JSX hid `FRICTION_HINT`, whose step-1 badge still said each bake is corrected "to the middle of every phase time", and the Batch panel's two schedule descriptions — four rendered figures nothing had ever checked. The guard was blind when first written, and was found so by reinstating the stale hint |
 | concept reachability (`steps.test.ts`) | Every concept is opened by a step's `concepts` or a `PAGE_CONCEPT_LINKS` entry, and each entry is rendered as a `ConceptLink` in the component §8.3 names (read from the syntax tree, by function). Also pins `biga-1`'s two links in order and that `watchFor` goes through `<Markdown>`. A phrase guard in `contentLiterals.test.ts` bans "tray" from our copy, the stage text and `recipeText.ts` | Three concepts were reproduced verbatim and opened by nothing (FINDINGS-60): the verbatim test compares text, not reachability. Each check was confirmed by mutation |
+| `storedInputs.test.ts` | §6 *Where the inputs are kept* (MESSAGE-65): every input round-trips through storage, walked from a map keyed on every input (a new input won't compile without an entry, and the walk is held to the URL codec's keys); the load rule's four cases, browser and home-screen app; a link replaces the stored inputs whole; stored defaults ('') against nothing stored (null); a stored value read by the link's rules (19 × 265 g → 21, 30 h classic → 8, the temper, the retired keys); Reset then a reload; bad stored data, and `isStandalone` | A home-screen app reopened at its icon's address with default inputs beside stored ticks and timers. Each branch confirmed by mutation: ignoring standalone (the bug), a link that never wins, a link merged over the stored inputs, a bare URL that ignores storage, a Reset that keeps the readings, a non-string read as nothing stored. The hook's first persist (a link stored on load) only a browser reaches |
 | `fieldCommit.test.ts` | §6's rule for leaving a number field (MESSAGE-58): an edited reading commits even at the value shown, through to `bowl_prefilled: false` and a counted mix; no edit commits nothing; other fields keep the old rule | A bowl read at its prefill and a final on DDT were dropped as unchanged. The edit tracking itself is in `NumberField` and only a browser check reaches it |
 | `recipeText.test.ts` | Copy-as-text, and the dough total rounded once (2501.9 at 9 × 272 g, never the 2501.7 its rounded parts sum to) | The gate doesn't read `recipeText.ts` |
 | `timers.test.ts` | Timer state derived from an absolute start and `now`, windows as earliest → latest. Every step's timer, resolved per schedule and bound with the real token table, parses as a duration. The generator's `timerMinutes` and the runtime parser agree on every fixed label (seconds included) | `biga-4` said "per schedule" and had no timer for the longest stage in the recipe. Seconds are where two parsers of one label could part |

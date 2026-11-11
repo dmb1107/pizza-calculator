@@ -30,7 +30,8 @@ returns:
   the bake is saved from the card after the last mix, once the final dough
   temperature is in.
 
-The setup survives a refresh, and **Share setup** copies it as a link.
+The setup and the day's readings survive a refresh and a closed app, home-screen
+app included, and **Share setup** copies them as a link.
 **Reset**, above the panels, starts a new bake: it clears today's readings,
 any DDT override, the timeline's start or target time, the step
 checkboxes and the timers, and keeps the batch settings and the log. Reference
@@ -53,7 +54,9 @@ MESSAGE-54 moved the day's readings into the steps, and bakes 2 and 3
 (MESSAGE-59 and 60) are the first the log counts. Since MESSAGE-61 each
 mix of a split batch runs on its own clock, with its own rise and timers.
 MESSAGE-64 checked the recipe against food and baking science, and the papers
-it rests on are in spec §11 and the About drawer. See
+it rests on are in spec §11 and the About drawer. Since MESSAGE-65 the inputs
+are stored in the browser as well as the URL, so a home-screen app reopens
+where it was. See
 [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
 ## Home screen icon
