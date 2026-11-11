@@ -596,7 +596,10 @@ by a `RecordKind` (folder, id, parser, commit messages); `githubSync.ts` and
 run unchanged against it. A kind may say `keepRemote`: the ideas keep the
 repository's copy when it was saved later (`remoteIsNewer`), which is how
 "the last write to an idea wins" is read; the log has none, so its last push
-wins as before. Reset and a shared link never touch the ideas. Their three
+wins as before. Reset and a shared link never touch the ideas. A card's header is
+the name with its stars under it (stars only, Dave's call on 11 Nov; the
+number is the screen-reader label), and Edit at its right once open, so
+the editor opens below the tap. Their three
 text fields render through `<Markdown breaks>`, which keeps single line
 breaks (`markdownBreaks.ts`, a remark plugin over text nodes only); **only
 `Toppings.tsx` passes `breaks`**, and a test holds that, so §8 prose

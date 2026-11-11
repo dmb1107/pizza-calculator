@@ -281,9 +281,20 @@ test.describe('APP-6: three tabs, and the topping ideas', () => {
     await expect(list(page, 'Untested')).toContainText('Hot honey soppressata');
     await expect(list(page, 'Tested')).toContainText('Nothing rated yet.');
 
-    // Rating it without its pre-bake toppings is refused, in §13.2's words.
+    // Edit sits in the opened card's header, and the editor opens below it:
+    // nothing appears above the point of the tap, and the header stays put.
     const card = ideaCard(page, 'Hot honey soppressata');
-    await card.getByRole('button', { name: 'Edit', exact: true }).tap();
+    const edit = card.getByRole('button', { name: 'Edit', exact: true });
+    await edit.scrollIntoViewIfNeeded();
+    const editBox = (await edit.boundingBox())!;
+    const headerY = (await card.getByRole('button').first().boundingBox())!.y;
+    await edit.tap();
+    const form = card.locator('form');
+    expect((await form.boundingBox())!.y).toBeGreaterThanOrEqual(editBox.y + editBox.height);
+    expect((await card.getByRole('button').first().boundingBox())!.y).toBe(headerY);
+    await expect(card.getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0);
+
+    // Rating it without its pre-bake toppings is refused, in §13.2's words.
     await card.getByRole('button', { name: 'Rate 3.5' }).tap();
     await expect(card.getByRole('alert')).toHaveText('Add the pre-bake toppings before rating it.');
     await expect(card.getByRole('button', { name: 'Rate 3.5' })).toHaveAttribute('aria-pressed', 'false');
@@ -297,6 +308,8 @@ test.describe('APP-6: three tabs, and the topping ideas', () => {
     await expect(list(page, 'Tested')).toContainText('Hot honey soppressata');
     await expect(list(page, 'Untested')).toContainText('Nothing waiting to be tried.');
     await expect(rated.getByLabel('Rated 3.5 of 5')).toBeVisible();
+    // Stars only on screen, the number for screen readers (Dave, 11 Nov 2026).
+    expect((await rated.getByRole('button').first().innerText()).trim()).toBe('Hot honey soppressata');
     // Single line breaks kept.
     await expect(rated.locator('br')).toHaveCount(3);
 

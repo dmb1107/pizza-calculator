@@ -47,14 +47,14 @@ const cardClass = 'rounded-xl border border-stone-300 bg-white dark:border-stone
 
 const STAR = 'M12 2.6l2.85 5.78 6.38.93-4.62 4.5 1.09 6.35L12 17.16l-5.7 3 1.09-6.35-4.62-4.5 6.38-.93z';
 
-/** Five stars, a half drawn as a half. Decorative: the number beside it is the reading. */
+/** Five stars, a half drawn as a half. The number is for screen readers only (Dave, 11 Nov 2026). */
 function Stars({ rating }: { rating: number }) {
   const clip = `half${useId().replace(/[^\w-]/g, '')}`;
   const { full, half } = starParts(rating);
   return (
     <span aria-hidden="true" className="inline-flex shrink-0 text-amber-600 dark:text-amber-400">
       {Array.from({ length: RATING_MAX }, (_, i) => (
-        <svg key={i} viewBox="0 0 24 24" className="size-4">
+        <svg key={i} viewBox="0 0 24 24" className="size-[18px]">
           {i === full && half && (
             <clipPath id={clip}>
               <rect x="0" y="0" width="12" height="24" />
@@ -71,11 +71,8 @@ function Stars({ rating }: { rating: number }) {
 
 function RatingShown({ rating }: { rating: number }) {
   return (
-    <span className="flex shrink-0 items-center gap-1.5" aria-label={`Rated ${formatRating(rating)} of ${RATING_MAX}`}>
+    <span role="img" className="inline-flex shrink-0 items-center" aria-label={`Rated ${formatRating(rating)} of ${RATING_MAX}`}>
       <Stars rating={rating} />
-      <span aria-hidden="true" className="text-sm font-semibold tabular">
-        {formatRating(rating)}
-      </span>
     </span>
   );
 }
@@ -296,42 +293,57 @@ function IdeaCard({
   onDone: (savedId: string | null) => void;
 }) {
   const bodyId = `idea-body-${idea.id}`;
+  const shown = open || editing;
+  const empty = [idea.pre_bake, idea.post_bake, idea.notes].every((t) => t.trim() === '');
   return (
     <li id={`idea-${idea.id}`} className={`${cardClass} min-w-0 scroll-mt-4 md:scroll-mt-20`}>
-      <h3>
-        <button
-          type="button"
-          onClick={editing ? undefined : onToggle}
-          aria-expanded={open || editing}
-          aria-controls={bodyId}
-          className="flex min-h-touch w-full items-center gap-3 px-4 py-2 text-left"
-        >
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 20 20"
-            className={`size-5 shrink-0 text-stone-500 transition-transform ${open || editing ? '' : '-rotate-90'}`}
+      {/* The header: the name with its stars under it, which opens the card,
+          and once open, Edit at its right. The editor opens below the
+          header, so it appears below the tap that asked for it. */}
+      <div className="flex items-center">
+        <h3 className="min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={editing ? undefined : onToggle}
+            aria-expanded={shown}
+            aria-controls={bodyId}
+            className="flex min-h-touch w-full items-start gap-3 py-3 pr-2 pl-4 text-left"
           >
-            <path d="M5 7.5l5 5 5-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <span className="min-w-0 flex-1 font-semibold [overflow-wrap:anywhere]">{idea.name}</span>
-          {idea.rating !== null && <RatingShown rating={idea.rating} />}
-        </button>
-      </h3>
-      {(open || editing) && (
-        <div id={bodyId} className="px-4 pb-4">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 20 20"
+              className={`mt-0.5 size-5 shrink-0 text-stone-500 transition-transform ${shown ? '' : '-rotate-90'}`}
+            >
+              <path d="M5 7.5l5 5 5-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold [overflow-wrap:anywhere]">{idea.name}</span>
+              {idea.rating !== null && (
+                <span className="mt-1 flex">
+                  <RatingShown rating={idea.rating} />
+                </span>
+              )}
+            </span>
+          </button>
+        </h3>
+        {open && !editing && (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="mr-2 min-h-touch min-w-touch shrink-0 self-center rounded-lg px-3 font-semibold text-amber-800 active:bg-amber-50 dark:text-amber-400 dark:active:bg-stone-800"
+          >
+            Edit
+          </button>
+        )}
+      </div>
+      {shown && (
+        <div id={bodyId} className="border-t border-stone-200 px-4 pt-3 pb-4 dark:border-stone-800">
           {editing ? (
             <IdeaEditor idea={idea} toppings={toppings} onDone={onDone} />
+          ) : empty ? (
+            <p className="text-sm text-stone-600 dark:text-stone-400">Only a name so far.</p>
           ) : (
             <div className="grid gap-3">
-              {/* At the top of the body, so the editor opens at or below the tap. */}
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm text-stone-600 dark:text-stone-400">
-                  {[idea.pre_bake, idea.post_bake, idea.notes].every((t) => t.trim() === '') ? 'Only a name so far.' : ''}
-                </p>
-                <button type="button" onClick={onEdit} className={`${buttonClass} shrink-0`}>
-                  Edit
-                </button>
-              </div>
               <Field label="Pre-bake" text={idea.pre_bake} />
               <Field label="Post-bake" text={idea.post_bake} />
               <Field label="Notes" text={idea.notes} />
