@@ -149,6 +149,8 @@ question:
 | `FINDINGS-68-to-recipe-agent.md` | Reply to MESSAGE-67. All reproduced (808 → 809 with their patch); APP-4 built and checked at 375 px. Done on the iPhone commits a reading at once. §4, added after: the WebKit iPhone suite, what it models, and the Resume glitch it found (fixed) |
 | `MESSAGE-68.md` | Reply to FINDINGS-68, and **APP-5: finished steps and groups fold away** (a ticked step is one line until its row is tapped; group headings close their groups, stored, opened by Reset), and the Bake log in the header. From here Dave runs no phone checks: each round's *Done when* goes in the WebKit suite |
 | `FINDINGS-69-to-recipe-agent.md` | Reply to MESSAGE-68. APP-5 built; `mix-0` opens Mix 1; a ticked step stays open after its timer stops (a double tap on Stop); the beep moved out of the card, since a closed group would have silenced it. Asks about all three and long titles |
+| `MESSAGE-69.md` | Reply to FINDINGS-69, spec only: §7.5 and §10 brought to what APP-5 built. `mix-0` opens Mix 1; a ticked step stays open after its timer stops (Dave); the mark's form and the first-due rule; stored groups from another size ignored and kept; the beep off screen; an edit finished before a fold; "Bake log" under "Share setup" (Dave) |
+| `FINDINGS-70-to-recipe-agent.md` | Reply to MESSAGE-69. All reproduced; each new sentence checked against the code; one test added for "ignored and kept". Landed on `message-69`, since `app-5-fold` had merged. Nothing open |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -733,7 +735,8 @@ don't inline a `toFixed` somewhere else.
   reason: the forward-mode date field beside "Now" pushed the page 15 px past a
   375 px phone from Task 4 until Task 9. **Check phone width in both timeline
   modes** — the Task 8 check ran in backward mode only and missed it.
-- **Steps and groups fold** (§7.5, APP-5, MESSAGE-68). The rules are in
+- **Steps and groups fold** (§7.5, APP-5, MESSAGE-68; the spec matches what
+  is built since MESSAGE-69). The rules are in
   `src/lib/stepGroups.ts`: the groups (`groupSteps`: four phases, or one
   group per mix at `nMix > 1` with `mix-0` opening Mix 1), keyed `biga`,
   `mix`, `mix#2`, `bulk`, `bake`; a stored key that names no group at this

@@ -9,20 +9,22 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-68 and FINDINGS-69 (10 November).
+MESSAGE-69 and FINDINGS-70 (10 November).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-68, and FINDINGS-69 is the
-  last thing sent.** MESSAGE-68 was APP-5, the third of Dave's queued app
+- **The correspondence is applied through MESSAGE-69, and FINDINGS-70 is the
+  last thing sent.** Nothing is open. MESSAGE-69 was spec only: §7.5 and §10
+  now describe APP-5 as built, with all four of FINDINGS-69's answers
+  accepted (two of them Dave's calls). MESSAGE-68 was APP-5, the third of Dave's queued app
   changes: **finished steps and groups fold away** and the Bake log opens
   from the header (CLAUDE.md's "Steps and groups fold" has the rules).
-  FINDINGS-69 asks four things: `mix-0` opening Mix 1, a ticked step that
+  FINDINGS-69 asked four things (`mix-0` opening Mix 1, a ticked step that
   stays open after its timer stops, the closed heading's timer mark, and
-  long titles on a folded step. **From MESSAGE-68 Dave runs no phone
+  long titles on a folded step), all settled in MESSAGE-69. **From MESSAGE-68 Dave runs no phone
   checks:** each round's *Done when* goes in the WebKit suite
   (`npm run test:e2e`), and FINDINGS says which parts it can't reach.
   Building APP-5 found that the beep lived in the timer card, so a closed
