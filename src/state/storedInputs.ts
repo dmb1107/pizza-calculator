@@ -12,6 +12,7 @@
 
 import { DEFAULT_CALIBRATION, DEFAULT_PERSISTED, inputsForNewBake } from './defaults';
 import { decodeInputsWithReport, encodeInputs, hasInputs } from './url';
+import type { Tab } from '../lib/tabs';
 import type { Inputs, Persisted } from './types';
 
 /** Which of §6's four load cases applied. */
@@ -61,6 +62,23 @@ export function resolveInitialInputs(args: {
   return from('', 'defaults');
 }
 
+/**
+ * §13.1: the tab the page opens on. The stored one, except that a link opens
+ * on Recipe (§6, rule 2), since it was sent to show a setup.
+ *
+ * "A link" here is a URL whose input keys name a setup other than the one
+ * stored. The page writes its own inputs to the address bar, so a reload in
+ * a browser is a URL with input keys too, and reading every such URL as a
+ * link would send a reload back to Recipe. A shared link carrying the setup
+ * already stored shows nothing new, so it takes the stored tab as a reload
+ * does. A home-screen app ignores its launch URL (rule 1), so it always takes
+ * the stored tab.
+ */
+export function initialTab(stored: Tab, initial: InitialInputs, storedQuery: string | null): Tab {
+  if (initial.source !== 'link') return stored;
+  return storedQuery !== null && storedInputsOf(initial.inputs) === storedQuery ? stored : 'recipe';
+}
+
 /** What storage holds for a set of inputs: the URL codec's query string. */
 export function storedInputsOf(inputs: Inputs): string {
   return encodeInputs(inputs);
@@ -90,7 +108,9 @@ export function isStandalone(env: { navigator?: unknown; matchMedia?: unknown } 
  * saved bake are cleared, so the next save is a new bake.
  *
  * Kept (§10, MESSAGE-49): which panels are open, and which end of the
- * timeline is held. The anchor is the held time, not the mode, so in backward
+ * timeline is held; and since MESSAGE-70, which tab is open (§13.1). The
+ * topping ideas have a store of their own, which Reset never touches. The
+ * anchor is the held time, not the mode, so in backward
  * mode the hook takes the bake time the reset start implies, as switching
  * modes does.
  *

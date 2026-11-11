@@ -52,9 +52,11 @@ import {
   type LocalLog,
 } from './bakeLogStore';
 import { mergeAfterSync, syncLog, type FetchLike } from './githubSync';
+import type { SyncState } from './repoSync';
 import { newBakeId, saveConflict, sessionBake } from './sessionBake';
 import { encodeInputs } from './url';
-import { isStandalone, persistedForNewBake, resolveInitialInputs, storedInputsOf } from './storedInputs';
+import { initialTab, isStandalone, persistedForNewBake, resolveInitialInputs, storedInputsOf } from './storedInputs';
+import type { Tab } from '../lib/tabs';
 import { tokenValues } from '../lib/bindTokens';
 import type {
   Calibration,
@@ -72,12 +74,7 @@ function currentSearch(): string {
 /** The FF in use and the badge Panel 2 shows for it (§6). */
 export type FrictionInUse = FfInUse & { badge: { text: string; tone: BadgeTone } };
 
-export type SyncState =
-  /** No token on this device: the log stays in browser storage. */
-  | { state: 'off' }
-  | { state: 'idle' }
-  | { state: 'syncing' }
-  | { state: 'error'; message: string };
+export type { SyncState } from './repoSync';
 
 /** Per-mix readings, as opposed to the two that belong to the whole bake. */
 type PerMixReading = Exclude<ReadingField, 'roomTempF' | 'flourTempF'>;
@@ -248,6 +245,10 @@ export interface AppState {
   result: CalculatorResult;
   /** Absolute link reproducing the current inputs. */
   shareUrl: string;
+
+  /** §13.1 (APP-6): the open tab, stored. */
+  tab: Tab;
+  setTab: (tab: Tab) => void;
 }
 
 export function useAppState(): AppState {
@@ -263,7 +264,12 @@ export function useAppState(): AppState {
       stored: persisted.inputsQuery,
       standalone: isStandalone(),
     });
-    return { persisted, inputs: resolved.inputs, ballsAskedFor: resolved.ballsAskedFor };
+    return {
+      persisted,
+      inputs: resolved.inputs,
+      ballsAskedFor: resolved.ballsAskedFor,
+      tab: initialTab(persisted.tab, resolved, persisted.inputsQuery),
+    };
   }, [storage]);
 
   const [inputs, setInputs] = useState<Inputs>(initial.inputs);
@@ -292,6 +298,7 @@ export function useAppState(): AppState {
   const [closedGroups, setClosedGroups] = useState<string[]>(initial.persisted.closedGroups);
   const [timers, setTimers] = useState<RunningTimer[]>(initial.persisted.timers);
   const [sessionBakeId, setSessionBakeId] = useState<string>(initial.persisted.sessionBakeId);
+  const [tab, setTab] = useState<Tab>(initial.tab);
 
   // §2 / §10: the log's local copy, written first; the repository follows.
   const [log, setLog] = useState<LocalLog>(() => loadLog(storage));
@@ -315,10 +322,12 @@ export function useAppState(): AppState {
     return () => clearInterval(id);
   }, [hasTimers]);
 
-  // The first persist writes only the inputs, and only when they differ from
-  // what was stored: a link is stored when it loads (MESSAGE-65), not at the
-  // first edit after it. The rest would only write back what we just read,
-  // and writing it would fix a fresh session's biga start ('' reads as now).
+  // The first persist writes only the inputs and the tab, and only when they
+  // differ from what was stored: a link is stored when it loads (MESSAGE-65),
+  // not at the first edit after it, and so is the Recipe tab it opened on
+  // (§13.1), or a reload straight after would return to the stored tab. The
+  // rest would only write back what we just read, and writing it would fix a
+  // fresh session's biga start ('' reads as now).
   const hydrated = useRef(false);
 
   useEffect(() => {
@@ -338,15 +347,16 @@ export function useAppState(): AppState {
       sessionBakeId,
       // §6: every change to an input writes storage and the URL together.
       inputsQuery: storedInputsOf(inputs),
+      tab,
     }),
-    [calibration, panels, bigaStartAt, timelineMode, bakeAt, checkedSteps, closedGroups, timers, sessionBakeId, inputs],
+    [calibration, panels, bigaStartAt, timelineMode, bakeAt, checkedSteps, closedGroups, timers, sessionBakeId, inputs, tab],
   );
 
   useEffect(() => {
     if (!hydrated.current) {
       hydrated.current = true;
-      if (persisted.inputsQuery !== initial.persisted.inputsQuery) {
-        savePersisted(storage, { ...initial.persisted, inputsQuery: persisted.inputsQuery });
+      if (persisted.inputsQuery !== initial.persisted.inputsQuery || persisted.tab !== initial.persisted.tab) {
+        savePersisted(storage, { ...initial.persisted, inputsQuery: persisted.inputsQuery, tab: persisted.tab });
       }
       return;
     }
@@ -665,6 +675,8 @@ export function useAppState(): AppState {
     setClosedGroups(next.closedGroups);
     setTimers(next.timers);
     setSessionBakeId(next.sessionBakeId);
+    // Kept (§13.1): applied, like the rest, so the decision stays in one place.
+    setTab(next.tab);
   }, [persisted]);
 
   /** §7.5 (APP-5): a group closes and opens only from its heading. */
@@ -797,5 +809,7 @@ export function useAppState(): AppState {
     timeline,
     result,
     shareUrl,
+    tab,
+    setTab,
   };
 }

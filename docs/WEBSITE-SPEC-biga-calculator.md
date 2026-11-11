@@ -10,7 +10,7 @@ Every formula, constant, and piece of step content you need is in this document.
 
 A single-page tool that replaces a generic dough app with one tuned to a specific setup: **Grain Craft Neapolitan 00 flour, an Ooni Halo Core spiral mixer, a Gozney Tread oven, and a 65% biga.**
 
-The user enters batch size, their measured temperatures, and how long they want the cold ferment. The app returns exact gram weights, the water temperature to hit, a timeline with real clock times, and a guided step list.
+The user enters batch size, their measured temperatures, and how long they want the cold ferment. The app returns exact gram weights, the water temperature to hit, a timeline with real clock times, and a guided step list. It also keeps the bake log (§10) and Dave's topping ideas (§13), each on its own tab.
 
 ### Design priorities, in order
 
@@ -28,7 +28,7 @@ The user enters batch size, their measured temperatures, and how long they want 
 - ⚠️ **Set `base: '/<repo-name>/'` in `vite.config.ts`.** GitHub Pages serves from a subpath and asset links break silently without this. Same for the router — use a hash router or configure the basename.
 - Include a GitHub Actions workflow that builds and deploys to Pages on push to `main`.
 - **State:** every input is kept in browser storage and written to the URL's query string. Storage brings a session back and the URL shares it (§6, *Where the inputs are kept*). Preferences persist to browser storage.
-- **The bake log (§10)** lives in a private GitHub repository, one JSON file per bake, read and written from the browser through GitHub's API with a token that can reach only that repository, pasted once on each device. Each device writes its own copy first and syncs after, so a mix never waits on the network. **Without a token** the log stays in browser storage, so anyone opening a shared link gets a working calculator that saves nothing outside their own browser.
+- **The bake log (§10)** lives in a private GitHub repository, one JSON file per bake, read and written from the browser through GitHub's API with a token that can reach only that repository, pasted once on each device. Each device writes its own copy first and syncs after, so a mix never waits on the network. **Without a token** the log stays in browser storage, so anyone opening a shared link gets a working calculator that saves nothing outside their own browser. The topping ideas (§13) sync the same way, one file per idea under `toppings/` in the same repository.
 - **The calibration isn't stored.** The FF in use is computed from the log each time (§6, Panel 2). ⚠️ An earlier version persisted it to `localStorage` as a map of typed values.
 - No analytics, no external fonts that block render, no CDN dependencies that can disappear.
 
@@ -763,7 +763,7 @@ Group into two panels: **Batch** open by default, **Calibration** collapsed with
 
 **Stored inputs are read by the same rules as a link's:** the even-split ball rule (Panel 1), the cold ferment's range for its track (§4.7), the temper's range, and the keys that are ignored (`bowlst`, `water`, a bowl mass). Storing what the URL codec writes and reading it back through the codec gives all of that with nothing restated. A stored value that doesn't parse takes its default and never blocks the page.
 
-**What stays as it is:** the URL codec and its keys; "Share setup"; a shared link carries no log, no token and none of the session's ticks, timers or saved-bake id; the DDT override, the timeline's mode and anchor and the open panels, which were stored already; and the three Reset lists (§10).
+**What stays as it is:** the URL codec and its keys; "Share setup"; a shared link carries no log, no token, no topping ideas and none of the session's ticks, timers or saved-bake id; the DDT override, the timeline's mode and anchor and the open panels, which were stored already; and the three Reset lists (§10).
 
 ### Panel 2 — Calibration
 | Field | Type | Default | Note |
@@ -1597,7 +1597,7 @@ Blend fridge-cold water with tap water to within 1 °F of the target. Fridge wat
 
 ## 10. Bake log
 
-The log holds the readings that solve FF, and it is the only source of the FF in use (§6, Panel 2). Dave logs FF inputs only; the rest of the recipe's bake diary (biga rise, fridge, oven, stone, crumb) stays out of the app. **Storage** is in §2: a private GitHub repository with one JSON file per bake when a token is set, browser storage when it isn't. The files are plain JSON, so they are the export. The log is a drawer. It opens from a **Bake log** button in the page header, under "Share setup" so the title keeps its width (Dave's call, FINDINGS-69), and from the footer, the Calibration panel and the log card after the last mix (APP-5).
+The log holds the readings that solve FF, and it is the only source of the FF in use (§6, Panel 2). Dave logs FF inputs only; the rest of the recipe's bake diary (biga rise, fridge, oven, stone, crumb) stays out of the app. **Storage** is in §2: a private GitHub repository with one JSON file per bake when a token is set, browser storage when it isn't. The files are plain JSON, so they are the export. The log is the Bake log tab (§13.1), and the Calibration panel and the log card after the last mix open it. ⚠️ Until MESSAGE-70 it was a drawer, opened from buttons in the header and the footer.
 
 Auto-populate each bake from the session's inputs so only the measured values need typing.
 
@@ -1643,11 +1643,11 @@ Pauses aren't normalized. The rest has a fixed timer, and nothing measures what 
 - **Reset starts a new bake.** A **Reset** button near the top of the page asks first. The baker presses it when starting a new bake, and it is the page's only reset: ⚠️ the Steps header's own Reset, which cleared the checkboxes alone, is removed, so no two controls share the label. Every input is classified, and a test keeps it that way:
   - **Reset to defaults:** balls, ball weight, schedule and cold ferment, the schedule's adjustments (fridge hours, the classic biga's room hours, temper), the readings in the prep steps (room, flour and its "Same as room" switch, each mix's biga and bowl), each mix's final reading, the DDT override (back to auto) and the timeline's anchor. The last two are per-bake choices: a stale override silently moves the water target and the rise, and a stale anchor puts every stage in the past.
   - **Cleared:** the step checkboxes, the timers, and the link to the saved bake, so the next save is a new bake; and which step groups are closed, so every group opens (APP-5).
-  - **Kept:** which end of the timeline is held, which panels are open, this device's sync settings, and saved bakes. The anchor is the held time, not the mode: a Reset in either mode starts the schedule now. Since MESSAGE-65 the inputs are stored as well as written to the URL (§6, *Where the inputs are kept*), so all three lists hold when the app is closed and reopened. ⚠️ Until Dave's call on 10 Nov 2026 (FINDINGS-67) the batch settings and the schedule's adjustments were kept.
+  - **Kept:** which end of the timeline is held, which panels are open, which tab is open (§13.1), this device's sync settings, saved bakes, and the topping ideas (§13). The anchor is the held time, not the mode: a Reset in either mode starts the schedule now. Since MESSAGE-65 the inputs are stored as well as written to the URL (§6, *Where the inputs are kept*), so all three lists hold when the app is closed and reopened. ⚠️ Until Dave's call on 10 Nov 2026 (FINDINGS-67) the batch settings and the schedule's adjustments were kept.
 
   Copy (rendered):
 
-  > **Start a new bake?** This puts the batch settings, the schedule adjustments and today's readings back to their defaults, and clears any DDT override, the timeline's start or target time, the step checkboxes and the timers. Your saved bakes stay.
+  > **Start a new bake?** This puts the batch settings, the schedule adjustments and today's readings back to their defaults, and clears any DDT override, the timeline's start or target time, the step checkboxes and the timers. Your saved bakes and topping ideas stay.
   >
   > [Reset] [Cancel]
 
@@ -1736,6 +1736,7 @@ Link these from an About page. The recipe draws on these published sources.
 8. Reference drawer, About page.
 9. GitHub Actions deploy.
 10. Bake log.
+11. The tabs (§13.1), then the topping ideas: their lists and editor first, the sync second (§13.2, §13.3).
 
 **Ask before deviating on any number.** The formulas were derived and cross-checked; a plausible-looking simplification will produce a wrong answer that won't be obvious until 50 hours later.
 
@@ -1748,3 +1749,70 @@ Link these from an About page. The recipe draws on these published sources.
 **Do not shorten the prose in §8.** If a step's detail feels long for a UI, that's what the disclosure is for — collapse it, don't cut it.
 
 `Biga-Neapolitan-HaloCore-GrainCraft.md` is the human-readable source document this spec was derived from. Keep the two in sync if either changes.
+
+---
+
+## 13. Tabs, and the topping ideas
+
+APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in Apple Notes and wants them in the app, synced like the bake log. The app becomes three tabs, and the topping ideas are one of them.
+
+### 13.1 The tabs
+
+**Three tabs, in this order: Recipe, Toppings, Bake log.** Recipe is everything the page shows today: the panels, the timeline, the warnings and the steps. Toppings is §13.2. Bake log is §10's log, which until MESSAGE-70 opened as a drawer.
+
+**On a phone the tabs are a bar fixed to the bottom of the screen** (Dave's choice from two drawn options, 10 Nov 2026). It sits clear of the home indicator, and the page is padded so the bar covers nothing. It stays under the thumb mid-bake, one tap from anywhere. While a field has focus and the on-screen keyboard is up, the bar hides, so it never sits over a reading being typed.
+
+**From 768 px wide the same tabs are a strip at the top of the page's column**, under the title, and stay in view as the page scrolls. The width decides, not the device. Labels, order and behaviour are the same in both forms.
+
+- **Each tab keeps its place.** Leaving Recipe for the Bake log and coming back returns to the same step, scrolled where it was. Switching tabs finishes an edit in progress first, as folding does (§7.5).
+- **Timers run and beep on any tab.** The beep can't belong to anything that leaves the screen with the Recipe tab. While a timer runs and another tab is open, the Recipe tab carries a mark, and the mark changes when a timer reaches its lower bound, as a closed group's heading does (§7.5). The mark's form is the calculator agent's to propose.
+- **The open tab is stored**, so a reload or a reopened app comes back to it. Reset keeps it (§10). A link that carries input keys opens on Recipe (§6, rule 2).
+- **The address doesn't change between tabs.** "Share setup" shares the Recipe tab's setup, and it belongs on that tab.
+- **The concept, Reference and About drawers stay drawers** and open over whichever tab is showing.
+- **The Bake log's buttons go.** The header's and the footer's "Bake log" buttons are replaced by the tab. The Calibration panel's link and the log card's link switch to it.
+- **Layout:** nothing appears above the point of a tap, every tab is a 48 px target, and nothing scrolls sideways at 375 px.
+
+### 13.2 Topping ideas
+
+**Each idea has a name, pre-bake toppings, post-bake toppings, notes and a rating.**
+
+| Field | Kind | Rule |
+|---|---|---|
+| `id` | text | made when the idea is first saved |
+| `name` | text | required on every idea (Dave, 9 Nov 2026) |
+| `pre_bake` | Markdown | required once the idea is rated |
+| `post_bake` | Markdown | may be empty |
+| `notes` | Markdown | may be empty: critiques, recipes for toppings, ideas for next time |
+| `rating` | number or `null` | 1 to 5 in steps of 0.5; `null` is untested |
+| `created`, `updated` | ISO time | set by the app |
+
+**An idea with no rating is untested** (Dave, 9 Nov 2026), and needs only a name, so a half-formed idea can be written down (Dave, 10 Nov 2026). Rating it moves it to the tested list, and needs its pre-bake toppings: the app asks for them rather than saving a rated idea without them. Clearing the rating moves it back.
+
+**Two lists on the Toppings tab:**
+- **Tested**, the rated ideas, highest rating first; ideas with the same rating, most recently updated first.
+- **Untested**, the unrated ideas, newest first.
+
+**The three text fields are Markdown** (Dave, 10 Nov 2026), so they can carry links, rendered by the app's existing renderer. A single line break shows as a line break, as it does in Apple Notes, since Dave pastes his notes in as they are. Links open in a new tab. Raw HTML isn't rendered. The editor shows the raw text.
+
+**Add, edit and delete.** Delete asks first. The rating control works in half steps with 48 px targets on a phone; its form is the calculator agent's to propose.
+
+**There is no import screen.** Dave pastes his existing ideas in himself (10 Nov 2026).
+
+**Reset leaves the ideas alone**, and a shared link never carries them.
+
+**Rendered copy** (the calculator agent words the rest under the writing rules):
+- The tab: **Toppings**. The lists: **Tested** and **Untested**.
+- Fields: **Name**, **Pre-bake**, **Post-bake**, **Notes**, **Rating**.
+- Buttons: **Add idea**, **Save**, **Delete**, **Cancel**.
+- Delete asks: **Delete "{name}"?** with **Delete** and **Cancel**.
+- Rating an idea with no pre-bake toppings: **Add the pre-bake toppings before rating it.**
+
+### 13.3 Storage and sync
+
+**One JSON file per idea under `toppings/`**, in the bake log's private repository, with the same token and settings as the log (§2, §10). The fields are §13.2's table.
+
+**The same local-first sync as the bake log.** Each device writes its own copy first and syncs after; changed and deleted ideas are tracked; the last write to an idea wins. Without a token the ideas stay in this browser.
+
+**Kept apart from the bake log:** the ideas have their own storage key and their own changed and deleted lists, so a failed toppings sync never holds up the log, and the reverse.
+
+**No engine, formula, step content or FF changes.** Nothing in §1–§12's calculations reads an idea.

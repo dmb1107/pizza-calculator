@@ -158,3 +158,11 @@ export function formatRiseByDough(minutes: readonly number[]): string {
 export function formatTempList(degF: readonly number[]): string {
   return proseList(degF.map(formatTempF));
 }
+
+/**
+ * §13.2: a topping idea's rating, "3.5" or "4". Ratings are half steps, so
+ * this prints them as they are and nothing rounds.
+ */
+export function formatRating(rating: number): string {
+  return String(rating);
+}

@@ -92,7 +92,8 @@ function beep(): void {
  * screen (§7.5, APP-5). Each card beeped for itself until steps and groups
  * folded: a closed group unmounted its cards, so a timer in it crossed its
  * bound in silence, and reopening the group remounted the card with its
- * memory empty and beeped late. This stays mounted with the list.
+ * memory empty and beeped late. It stays mounted above the tabs (§13.1,
+ * MESSAGE-70), since on another tab the list isn't on screen at all.
  *
  * Once, when the count crosses the lower bound while the timer runs. A
  * stopped timer never beeps, and one resumed at or past its bound stays quiet,

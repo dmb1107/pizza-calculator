@@ -4,7 +4,7 @@ Derived from [`docs/WEBSITE-SPEC-biga-calculator.md`](docs/WEBSITE-SPEC-biga-cal
 Task order follows spec §12; the spec is the authority wherever this document
 is thinner.
 
-**Status:** Tasks 0–11 complete, on the bowl-aware thermal model with **per-mix
+**Status:** Tasks 0–12 complete, on the bowl-aware thermal model with **per-mix
 weights**, the ice calculation removed, and **MESSAGE-54 applied**: the bowl
 weighed at 963 g, and the day's readings moved into each mix's prep step
 (`mix-1`), with that mix's water target and water warnings under them. The
@@ -49,7 +49,11 @@ and Clear moved away. **MESSAGE-68 is applied**: finished steps and groups
 fold away (APP-5): a ticked step is one line until its row is tapped, each
 group heading closes its group (stored; Reset opens them all), and the Bake
 log opens from the header too. MESSAGE-69 (spec only: §7.5 and §10 describe
-what APP-5 built) is applied. FINDINGS-70 is the last thing sent.
+what APP-5 built) is applied. **MESSAGE-70 is applied** (APP-6, Task 12):
+the page is three tabs, Recipe, Toppings and Bake log, a bar at the bottom
+on a phone and a sticky strip from 768 px; the log's drawer and its two
+buttons are gone; and Dave's topping ideas have a tab, their own store and
+their own sync under `toppings/`. FINDINGS-71 is the last thing sent.
 
 ---
 
@@ -768,6 +772,39 @@ has the rules (§4.3 normalization, §4.8 split-batch `T_actual`, §6 Panel 3,
 - [x] **The room slope** (§10): fitted over every counted bake at a size once
       there are 8, and shown in the log drawer with its count and room range.
       Reported, never applied.
+
+---
+
+## Task 12 — Tabs and the topping ideas ✅
+
+Spec §13 and §12's build step 11 (APP-6, MESSAGE-70): the tabs first, then
+the ideas' lists and editor, then their sync.
+
+- [x] **Three tabs** (§13.1, `src/lib/tabs.ts`, `TabBar`): Recipe, Toppings,
+      Bake log. Below 768 px a bar fixed to the bottom, clear of the home
+      indicator, hidden while a field that takes typing has focus; from 768
+      px a strip under the title that stays in view. Every tab stays mounted
+      and hidden ones are hidden, so each keeps its place; the page's scroll
+      is kept per tab. A switch finishes an edit first.
+- [x] **The open tab is stored** (`Persisted.tab`, *Kept* by Reset). A link
+      whose setup differs from the stored one opens on Recipe
+      (`initialTab`); the page's own address carries its inputs, so a reload
+      is read as a reload.
+- [x] **The beep above the tabs**: `TimerBeeper` is mounted in App, and the
+      Recipe tab carries `recipeTabMark` while a timer runs on another tab.
+- [x] **The log is a tab**: `BakeLogPage`; the Calibration panel's link and
+      the log card's open it; the header's and the footer's buttons are gone.
+      "Share setup" sits on the Recipe tab.
+- [x] **Topping ideas** (§13.2, `src/lib/toppings.ts`, `Toppings.tsx`): name
+      required; rated needs pre-bake; Tested by rating then updated, Untested
+      newest first; half-step rating control, two rows of five 48 px targets;
+      delete asks. Markdown with single line breaks kept (`<Markdown
+      breaks>`, `markdownBreaks.ts`), links in a new tab, no raw HTML.
+- [x] **Their sync** (§13.3, `toppingsStore.ts`, `useToppings.ts`): one file
+      per idea under `toppings/` in the log's repository, same token, own
+      storage key and own changed and deleted lists. The log and the ideas
+      run the same sync (`repoSync.ts`); the last write to an idea wins by
+      `updated`.
 
 ---
 

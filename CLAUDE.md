@@ -11,8 +11,9 @@ length; the app returns gram weights, a target water temperature, a clock-time
 timeline, and a guided step list.
 
 Deployed to GitHub Pages. No server of its own and no build-time data
-fetching. The one runtime network call is the bake log's sync to a private
-GitHub repository, and only on a device where a token is set (§2).
+fetching. The only runtime network calls are the bake log's and the topping
+ideas' syncs to one private GitHub repository, and only on a device where a
+token is set (§2, §13.3).
 
 ## The documents
 
@@ -151,6 +152,8 @@ question:
 | `FINDINGS-69-to-recipe-agent.md` | Reply to MESSAGE-68. APP-5 built; `mix-0` opens Mix 1; a ticked step stays open after its timer stops (a double tap on Stop); the beep moved out of the card, since a closed group would have silenced it. Asks about all three and long titles |
 | `MESSAGE-69.md` | Reply to FINDINGS-69, spec only: §7.5 and §10 brought to what APP-5 built. `mix-0` opens Mix 1; a ticked step stays open after its timer stops (Dave); the mark's form and the first-due rule; stored groups from another size ignored and kept; the beep off screen; an edit finished before a fold; "Bake log" under "Share setup" (Dave) |
 | `FINDINGS-70-to-recipe-agent.md` | Reply to MESSAGE-69. All reproduced; each new sentence checked against the code; one test added for "ignored and kept". Landed on `message-69`, since `app-5-fold` had merged. Nothing open |
+| `MESSAGE-70.md` | **APP-6, spec §13**: three tabs (Recipe, Toppings, Bake log; a bottom bar on a phone, a sticky strip from 768 px), the log's drawer and its two buttons gone, and Dave's topping ideas with their own store and sync under `toppings/`. Gate 849 → 850 with their Reset copy patch |
+| `FINDINGS-71-to-recipe-agent.md` | Reply to MESSAGE-70. APP-6 built and run in the WebKit suite. A reload carries the page's own inputs, so "a link" is read as one whose setup differs from the stored one; "last write wins" read by `updated`; Save left the bar hidden in WebKit (fixed). Screenshots sent with it |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -558,6 +561,48 @@ water temperature 5 °F wrong on bake 1. Two traps:
   by `cSystem` is not, and the old `3.00 ×` shortcut is dead — don't reintroduce
   it as a fast path.
 
+**Three tabs, and every one stays mounted** (§13.1, APP-6, MESSAGE-70).
+Recipe, Toppings and Bake log (`src/lib/tabs.ts`); `TabBar` is one element
+that is a bar fixed to the bottom below 768 px (`md`) and a sticky strip
+under the title from it, decided by width. Hidden panels are `hidden`, not
+unmounted, so each keeps its in-memory state (reopened rows, a half-written
+idea), and `App` keeps the window's scroll per tab and puts it back in a
+layout effect. **A switch finishes an edit first** (`finishEdit`), as a fold
+does. **The bar hides while a field that takes typing has focus**
+(`useTypingFocus`): nothing reports the iOS keyboard, and a focused field
+removed from the page fires no blur in WebKit, so a MutationObserver watches
+for it while focus is in one (Save on an idea left the bar hidden until it
+did, found by the suite). The open tab is `Persisted.tab`, *Kept* by Reset.
+**`initialTab`**: a link opens on Recipe, and "a link" is a URL whose inputs
+differ from the stored ones, since the page writes its own inputs to the
+address bar and a reload would otherwise land on Recipe every time. The
+log's drawer is gone: `BakeLogPage` is the tab, and the Calibration panel's
+and the log card's links are its only openers. "Share setup" sits on the
+Recipe tab. The Recipe tab's mark is `recipeTabMark`, the closed group
+heading's mark over the whole list: outlined before the lower bound, filled
+from it.
+
+**The topping ideas have their own store and their own sync run** (§13.2,
+§13.3). The rules are `src/lib/toppings.ts`: a name always, pre-bake once
+rated (`ideaProblem`, `canRate`; a rating picked without it is refused in
+§13.2's words), 1–5 in half steps (`RATINGS`, `isRating`), Tested by rating
+then `updated`, Untested by `created`. The store is `toppingsStore.ts`
+(`TOPPINGS_KEY`, its own dirty and deleted lists) and the hook
+`useToppings`, apart from `useAppState`, so a failed toppings sync never
+holds up the log, and the reverse; they share only the token. **The log and
+the ideas run one sync algorithm, `src/state/repoSync.ts`**, parameterized
+by a `RecordKind` (folder, id, parser, commit messages); `githubSync.ts` and
+`bakeLogStore.ts` wrap it with their old exports, so the bake log's tests
+run unchanged against it. A kind may say `keepRemote`: the ideas keep the
+repository's copy when it was saved later (`remoteIsNewer`), which is how
+"the last write to an idea wins" is read; the log has none, so its last push
+wins as before. Reset and a shared link never touch the ideas. Their three
+text fields render through `<Markdown breaks>`, which keeps single line
+breaks (`markdownBreaks.ts`, a remark plugin over text nodes only); **only
+`Toppings.tsx` passes `breaks`**, and a test holds that, so §8 prose
+renders as standard Markdown. Links in the shared renderer open in a new
+tab with `rel="noopener noreferrer"`; raw HTML shows as text.
+
 ## Design priorities, in order
 
 1. **Correctness.** Verify against the spec §5 test vectors.
@@ -646,13 +691,16 @@ src/lib/          pure calculation — no UI imports, this is what gets unit-tes
                   constants.ts (§3), mixPhases.ts (the four mixer phases and
                   their references, read by the log and the probe),
                   bakeLog.ts (§4.3 normalization, §6's FF in use and bake 1's
-                  seed, §10's counting rules)
+                  seed, §10's counting rules), tabs.ts (§13.1), toppings.ts
+                  (§13.2), markdownBreaks.ts (§13.2's line breaks)
 src/content/      step and concept prose (steps.ts, concepts.ts)
 src/components/   React components
 src/state/        URL + browser-storage persistence (the inputs in both:
-                  storedInputs.ts holds §6's load rule); the bake log's local copy
-                  (bakeLogStore.ts), its GitHub sync (githubSync.ts) and the
-                  session as a bake (sessionBake.ts)
+                  storedInputs.ts holds §6's load rule and the opening tab);
+                  the bake log's local copy (bakeLogStore.ts), its GitHub sync
+                  (githubSync.ts) and the session as a bake (sessionBake.ts);
+                  the topping ideas' store and sync (toppingsStore.ts) and hook
+                  (useToppings.ts); the one sync both run (repoSync.ts)
 public/           icon.svg (browser tab: the pizza alone, transparent) and
                   apple-touch-icon.png (iOS home screen: on orange, 180 px,
                   full-bleed square, since iOS rounds it)
@@ -746,9 +794,10 @@ don't inline a `toFixed` somewhere else.
   stays open after that timer stops** until its row is tapped, so a double
   tap on Stop can't land on the step below. Water warnings show on a folded
   `mix-1` and under a closed heading; the log card sits outside every
-  group. **The beep is not in the card:** `TimerBeeper` stays mounted with
-  the list and decides for every live timer, since a closed group unmounts
-  its cards. Ticking, folding a row and closing a group all finish a
+  group. **The beep is not in the card:** `TimerBeeper` is mounted in
+  `App`, above the tabs (§13.1, MESSAGE-70), and decides for every live
+  timer, since a closed group unmounts its cards and another tab hides the
+  list. Ticking, folding a row and closing a group all finish a
   reading being typed first (`finishEdit`), as Reset does.
 - **Nothing may appear above the point of a tap.** Content that shows up in
   response to a tap goes at or below it: the Steps header's old Reset pushed
@@ -882,9 +931,9 @@ don't inline a `toFixed` somewhere else.
 Follow spec §12. Task list and status: [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md),
 which is kept current — check its status line first.
 
-Tasks 0–11 are done (engine, state, cards, both timeline modes, steps,
+Tasks 0–12 are done (engine, state, cards, both timeline modes, steps,
 concepts, timers, reference and About drawers, deploy and the phone check,
-and the bake log with its GitHub sync). **Pages deploys on every push to
+the bake log with its GitHub sync, and the tabs with the topping ideas). **Pages deploys on every push to
 `main`** and has since 1 September — check `gh run list` (in a cloud session,
 the GitHub MCP `actions_list`) rather than any written status. A session's
 `claude/*` branch doesn't deploy; it reaches `main` through a PR that Dave

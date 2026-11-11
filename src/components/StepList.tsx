@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Markdown } from './Markdown';
-import { StepTimer, TimerBeeper } from './StepTimer';
+import { StepTimer } from './StepTimer';
 import { WarningItem } from './cards';
 import { BakeLogCard, FinalTempCapture } from './BakeLog';
 import { MixReadings } from './MixReadings';
@@ -13,7 +13,6 @@ import {
   groupTimerMark,
   hasRunningTimer,
   lastMixGroupKey,
-  liveTimerKeys,
   prepMixesIn,
   stepFolded,
   type GroupTimerMark,
@@ -439,7 +438,6 @@ export function StepList({
   const groups = useMemo(() => groupSteps(instances, nMix), [instances, nMix]);
   const closed = closedGroupsIn(state.closedGroups, groups);
   const logAfter = lastMixGroupKey(groups);
-  const liveKeys = useMemo(() => liveTimerKeys(instances, nMix), [instances, nMix]);
   /** §7.3: a mix's water warnings, shown wherever its prep step is folded away. */
   const waterWarnings = (mixIndex: number) => state.result.mixes[mixIndex - 1]?.warnings ?? [];
 
@@ -512,8 +510,8 @@ export function StepList({
         </span>
       </div>
 
-      {/* Beeps for every live timer, whatever is folded or closed. */}
-      <TimerBeeper timers={timers} now={nowMs} liveKeys={liveKeys} />
+      {/* The beep is mounted in App, above the tabs (§13.1): it sounds for
+          every live timer, whatever is folded, closed or on another tab. */}
 
       {groups.map((group) => {
         const isClosed = closed.has(group.key);

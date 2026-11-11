@@ -19,7 +19,10 @@ import {
   type LoggedMix,
   type PhaseKey,
 } from '../lib/bakeLog';
+import { removeRecord, upsertRecord, type GitHubConfig, type RecordKind, type RecordStore } from './repoSync';
 import type { StorageLike } from './storage';
+
+export type { GitHubConfig } from './repoSync';
 
 export const LOG_KEY = 'biga-calculator:log:v1';
 export const GITHUB_KEY = 'biga-calculator:github:v1';
@@ -167,32 +170,29 @@ export function saveLog(storage: StorageLike | null, log: LocalLog): void {
 // Local edits. Each marks what the next sync has to push.
 // ---------------------------------------------------------------------------
 
-const without = (list: readonly string[], id: string) => list.filter((x) => x !== id);
-const withId = (list: readonly string[], id: string) => (list.includes(id) ? [...list] : [...list, id]);
+/** What the shared sync (`repoSync.ts`) needs to know about a bake. */
+export const BAKE_KIND: RecordKind<LoggedBake> = {
+  dir: 'bakes',
+  idOf: (b) => b.bake_id,
+  parse: parseBake,
+  putMessage: (id) => `Log bake ${id}`,
+  deleteMessage: (id) => `Delete bake ${id}`,
+  offline: 'The log is saved on this device and will sync later.',
+  noun: 'the bake',
+};
+
+/** The log as the shared sync's store, and back. */
+export const logAsStore = ({ bakes, ...rest }: LocalLog): RecordStore<LoggedBake> => ({ items: bakes, ...rest });
+export const storeAsLog = ({ items, ...rest }: RecordStore<LoggedBake>): LocalLog => ({ bakes: items, ...rest });
 
 /** Add a bake, or replace the one with its id. */
 export function upsertBake(log: LocalLog, bake: LoggedBake): LocalLog {
-  const exists = log.bakes.some((b) => b.bake_id === bake.bake_id);
-  return {
-    ...log,
-    bakes: exists ? log.bakes.map((b) => (b.bake_id === bake.bake_id ? bake : b)) : [...log.bakes, bake],
-    dirty: withId(log.dirty, bake.bake_id),
-    deleted: without(log.deleted, bake.bake_id),
-  };
+  return storeAsLog(upsertRecord(BAKE_KIND, logAsStore(log), bake));
 }
 
+/** Only a bake the repository has needs deleting there. */
 export function removeBake(log: LocalLog, bakeId: string): LocalLog {
-  const shas = { ...log.shas };
-  const wasPushed = bakeId in shas;
-  delete shas[bakeId];
-  return {
-    ...log,
-    bakes: log.bakes.filter((b) => b.bake_id !== bakeId),
-    shas,
-    dirty: without(log.dirty, bakeId),
-    // Only a bake the repository has needs deleting there.
-    deleted: wasPushed ? withId(log.deleted, bakeId) : without(log.deleted, bakeId),
-  };
+  return storeAsLog(removeRecord(BAKE_KIND, logAsStore(log), bakeId));
 }
 
 /** Dave's switch (§10). */
@@ -208,12 +208,6 @@ export function setMixExcluded(log: LocalLog, bakeId: string, mixIndex: number, 
 // ---------------------------------------------------------------------------
 // The repository and token, per device
 // ---------------------------------------------------------------------------
-
-export interface GitHubConfig {
-  owner: string;
-  repo: string;
-  token: string;
-}
 
 /** "owner/name", as GitHub prints it. */
 export function parseRepoName(text: string): { owner: string; repo: string } | null {

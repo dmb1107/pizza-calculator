@@ -1,6 +1,6 @@
 /**
- * APP-5 (MESSAGE-68): finished steps and groups fold away, and the Bake log
- * opens from the header. Run as the rest of the iPhone suite is (`phone.ts`),
+ * APP-5 (MESSAGE-68): finished steps and groups fold away. (The Bake log
+ * opened from the header too, until MESSAGE-70 made it a tab.) Run as the rest of the iPhone suite is (`phone.ts`),
  * at 375 px, the width MESSAGE-68's done-when names.
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
@@ -112,15 +112,9 @@ test.describe('APP-5: finished steps and groups fold away', () => {
     await expect(heading(page, 'Temper and bake')).toHaveAccessibleName('Temper and bake, 2 of 2 done');
     await expect(heading(page, 'Temper and bake')).toHaveAttribute('aria-expanded', 'true');
 
-    // The Bake log opens from the header and from the footer.
-    const drawer = page.getByRole('dialog', { name: 'Bake log' });
-    await page.getByRole('banner').getByRole('button', { name: 'Bake log', exact: true }).tap();
-    await expect(drawer).toBeVisible();
-    await drawer.getByRole('button', { name: 'Close' }).first().tap();
-    await expect(drawer).toBeHidden();
-    await page.getByRole('contentinfo').getByRole('button', { name: 'Bake log', exact: true }).tap();
-    await expect(drawer).toBeVisible();
-    await drawer.getByRole('button', { name: 'Close' }).first().tap();
+    // The Bake log is a tab since MESSAGE-70 (§13.1); the header and footer
+    // buttons APP-5 added are gone. tabs.spec.ts checks the tabs.
+    await expect(page.getByRole('button', { name: 'Bake log', exact: true })).toHaveCount(0);
 
     // No sideways scroll in either timeline mode, groups closed and open.
     await expectNoSidewaysScroll(page);
