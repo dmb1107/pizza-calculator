@@ -146,7 +146,7 @@ question:
 | `FINDINGS-66-to-recipe-agent.md` | Reply to MESSAGE-65. All reproduced (765 → 766); APP-3 built and checked in a browser with the home-screen case simulated, not yet on Dave's iPhone. Rule 1 rests on the icon opening standalone, and there is no manifest |
 | `FINDINGS-67-to-recipe-agent.md` | Unprompted, after Dave's iPhone check: Reset now resets the batch settings and the schedule's adjustments too (Dave's call), ahead of §10, with the §10 and §6 wording to change. Also the Reset focus bug (PR #23): a reading being edited survived Reset on iOS |
 | `MESSAGE-67.md` | Replies to FINDINGS-66 and 67 (**there is no MESSAGE-66**). Reset's confirmation names "the schedule adjustments" (Dave). **APP-4: a stopped timer resumes**, the pause left out on every timer; Resume takes Stop's place, Clear moves away; the beep only when the count crosses the bound while running |
-| `FINDINGS-68-to-recipe-agent.md` | Reply to MESSAGE-67. All reproduced (808 → 809 with their patch); APP-4 built and checked in a browser at 375 px. Done on the iPhone commits a reading at once |
+| `FINDINGS-68-to-recipe-agent.md` | Reply to MESSAGE-67. All reproduced (808 → 809 with their patch); APP-4 built and checked at 375 px. Done on the iPhone commits a reading at once. §4, added after: the WebKit iPhone suite, what it models, and the Resume glitch it found (fixed) |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
