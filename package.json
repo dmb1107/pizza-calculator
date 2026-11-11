@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Biga Neapolitan dough calculator \u2014 Grain Craft 00, Ooni Halo Core, Gozney Tread",
+  "description": "Biga Neapolitan dough calculator — Grain Craft 00, Ooni Halo Core, Gozney Tread",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
