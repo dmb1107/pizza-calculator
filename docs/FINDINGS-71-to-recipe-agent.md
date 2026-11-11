@@ -32,7 +32,7 @@ With APP-6's tests the unit suite is **893 of 893** (43 new) and the WebKit suit
 - **An untested idea needs only a name.** Without one, Save says "Give the idea a name."
 - **A rated idea needs its pre-bake toppings.** Tapping a rating while Pre-bake is empty is refused: the rating stays as it was, and §13.2's message shows under the control. If Pre-bake is emptied after rating, Save is refused with the same message, under the buttons.
 - **The lists.** Tested goes by rating, then most recently updated. Untested goes newest first, read as the most recently written down (§5.4).
-- **A card** shows the name and, if rated, the stars and the number. A tap opens it to its three fields, each rendered as Markdown under its label. Edit sits at the top of the opened card, so the editor opens at the point of the tap and below it. Delete is in the editor. It asks 'Delete "{name}"?' in place of the buttons, and its Delete sits below the one tapped. After Save the idea stays open and is scrolled into view in whichever list its rating put it.
+- **A card** shows the name with its stars under it, so the name has the card's full width and the stars line up down the list. A tap opens it to its three fields, each rendered as Markdown under its label. Once it is open, Edit sits at the right of the header (53 × 48 px), and the editor opens below the header, so it appears below the tap; the suite checks that and that the header doesn't move. Delete is in the editor. It asks 'Delete "{name}"?' in place of the buttons, and its Delete sits below the one tapped. After Save the idea stays open and is scrolled into view in whichever list its rating put it.
 - **Markdown.** The renderer takes a `breaks` prop, and only the Toppings tab passes it (a test scans every component). With it, a remark plugin turns each single line break inside a run of text into a hard one, leaving code, lists and tables alone. None of §8's 53 texts (step details, summaries, concept bodies) has a single line break inside a paragraph, so §8 would render the same either way today. Links open in a new tab, now with `rel="noopener noreferrer"` in the shared renderer (it was `noreferrer`, which implies `noopener` in current browsers, so §8's links behave as before). Raw HTML renders as text, react-markdown's default with no raw-HTML plugin. A `javascript:` link is dropped by its URL filter. The editor shows the raw text.
 - **No import screen.** Reset and a shared link leave the ideas untouched. The unit suite checks the storage key Reset writes and the link's query; the WebKit suite checks both after Reset, after a reload and from a link opened in Safari.
 
@@ -66,7 +66,7 @@ The delete question uses straight quotes, as §13.2 has them.
 
 **5.3 Two forms §13 left to us** (screenshots in §8):
 - **The Recipe tab's mark.** It shows the running time of the timer due first, by the closed heading's rule taken over the whole list. It is a pill, outlined grey before the lower bound and filled from it, green in the window and amber past it, so the shape changes as well as the colour. On the bar it sits on the icon's corner; on the strip, beside the label. No phase words show on screen, for room; screen readers get them.
-- **The rating control.** Nine buttons, 1 to 5 by halves, and Clear, in two rows of five. Each is 55 × 48 px at 375 px, so any rating is one tap. A rating shows as five stars, the half drawn as a half, with the number beside it: "3.5", and "4" with no ".0".
+- **The rating control.** Nine buttons, 1 to 5 by halves, and Clear, in two rows of five. Each is 55 × 48 px at 375 px, so any rating is one tap, and the buttons carry the numbers. In the lists a rating shows as five stars, the half drawn as a half, with no number beside it (Dave's call, 11 Nov 2026); screen readers hear "Rated 3.5 of 5".
 
 **5.4 "Newest first" for Untested** is read as most recently written down (`created`), so editing an untested idea doesn't move it. Say if you meant most recently changed.
 
@@ -87,4 +87,4 @@ Taken by the WebKit suite at an iPhone's scale, with the five ideas the suite se
 - `bar-375-timer-on-toppings.png`: the bar at 375 px, Toppings open, with "Mix by hand to chunks" (3–6 min) running on Recipe at 0:31, before the window (outlined).
 - `bar-375-timer-in-window.png`: the same timer at 3:02, in the window (filled green), with both lists closed.
 - `strip-1024-timer-on-toppings.png`: the strip at 1024 px, the mark beside "Recipe", both lists.
-- `lists-375-open.png` and `lists-375-open-dark.png`: two tested ideas opened, light and dark.
+- `lists-375-open.png` and `lists-375-open-dark.png`: two tested ideas opened, with Edit in each header, light and dark.
