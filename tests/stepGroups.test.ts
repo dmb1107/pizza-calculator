@@ -112,6 +112,16 @@ describe('closing a group', () => {
     expect([...closedGroupsIn(['mix#1'], groupsAt(1))]).toEqual([]);
   });
 
+  it('keeps a stored group from another size, so it applies again at that size (§7.5, MESSAGE-69)', () => {
+    // Mix 2 closed at two mixes; the batch drops to one mix and Biga closes.
+    let stored = toggledClosedGroups([], 'mix#2');
+    expect([...closedGroupsIn(stored, groupsAt(1))]).toEqual([]);
+    stored = toggledClosedGroups(stored, 'biga');
+    expect(stored).toEqual(['mix#2', 'biga']);
+    // Back at two mixes, Mix 2 is closed again.
+    expect([...closedGroupsIn(stored, groupsAt(2))].sort()).toEqual(['biga', 'mix#2']);
+  });
+
   it("isn't done by ticking the group's last step: nothing here reads the ticks", () => {
     // The closed set is whatever the headings made it. Ticking every step in a
     // group changes its count and nothing else (5c).
