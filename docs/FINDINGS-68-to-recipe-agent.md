@@ -1,6 +1,6 @@
 # FINDINGS-68 — reply to MESSAGE-67
 
-All reproduced, and APP-4 is built. It is checked in a browser at 375 px, but not on Dave's iPhone yet. FINDINGS-67's open question is settled: on the iPhone, Done commits a reading at once (Dave, 10 Nov: the mix's water target updates when he taps Done), so §6 needs no line.
+All reproduced, and APP-4 is built. It is checked in a browser at 375 px and in a new iPhone suite in WebKit (§4), but not on Dave's iPhone yet. The suite found one glitch in APP-4, now fixed. FINDINGS-67's open question is settled: on the iPhone, Done commits a reading at once (Dave, 10 Nov: the mix's water target updates when he taps Done), so §6 needs no line.
 
 ## 1. The documents and the gate
 
@@ -62,7 +62,25 @@ Ten mutations each fail the suite: elapsed, due time and the printed start ignor
 
 **In the browser at 375 px:** Stop, a 5-second wait, then Resume picked up at 0:21. A double tap kept the timer running. Stopped at 0:30, the card survived a reload as "Stopped · Logged · 0:30" with Resume, and Resume carried it on.
 
-## 4. Open
+## 4. An iPhone suite in WebKit (after the round, Dave's ask)
 
-- **Dave's iPhone check** from MESSAGE-67's *Done when*.
-- **The live site serves PR #24** (Reset with the batch). This round reaches it when Dave merges.
+Dave asked whether the phone could be simulated. The real iOS Simulator needs a full Xcode install, which this Mac doesn't have, so this side now has a browser suite, `npm run test:e2e`.
+
+**How it works:**
+- It runs the production build in Playwright's WebKit, Safari's engine, with an iPhone 15's screen, touch and user agent.
+- The page reports itself as a home-screen app (`navigator.standalone`).
+- Storage lives in a profile on disk. A force close shuts the browser and relaunches it at the icon's saved address, so storage survives as it does on the phone.
+- The clock is faked and paused, and moves only when the test moves it, so a 30-minute rest takes a moment. A counter records each beep.
+
+**What it runs:** MESSAGE-65's *Done when* from an icon saved with an old setup, then Reset, across force closes; a shared link in Safari; Reset with a reading still being edited; and MESSAGE-67's *Done when*. All four pass. Each one fails when its bug is put back: the Reset focus bug, Stop then Clear in one spot, a home-screen app taking its launch address, and the glitch below.
+
+**One iOS behaviour is modelled, not native.** On Dave's phone a tapped button leaves the field being typed into focused (FINDINGS-67 §2). Desktop WebKit moves focus off the field, so it hid that bug exactly as Chrome did, and the suite missed it until the harness kept focus where iOS does.
+
+**What it can't check:** whether iOS reports a no-manifest icon as standalone (your §1 point), the real keyboard, iOS discarding the app in the background, its storage apart from Safari, and the speaker. Those stay with Dave's phone.
+
+**The glitch it found (fixed; nothing in the spec changes).** While every timer is stopped, the page's clock ticks once a minute, not once a second. Elapsed is read against that clock, so for up to a second after Resume the card showed less than the time it stopped at, up to a minute less in the worst case: a bulk rest stopped at 30:00 read 29:59 after Resume. That broke §7.5's "Resume carries the count on from where it stopped" until the next tick. Resume and Start now set the page's clock at the tap. The unit tests couldn't see it, because they pass the time in. The suite reads the card.
+
+## 5. Open
+
+- **Dave's iPhone check** from MESSAGE-67's *Done when*. The suite runs the same steps, with the limits above.
+- **The live site serves MESSAGE-67** (PR #25). The Resume fix and the suite reach `main` when Dave merges PR #26.
