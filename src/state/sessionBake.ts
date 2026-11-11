@@ -16,6 +16,7 @@ import type { LocalLog } from './bakeLogStore';
 import { atMix, type CalculatorResult } from '../lib/engine';
 import { roundTo } from '../lib/format';
 import { instanceKey } from '../lib/stepInstances';
+import { timerElapsedMs } from '../lib/timers';
 import type { Inputs, RunningTimer } from './types';
 
 /** YYYY-MM-DD in local time: the baker's day, not UTC's. */
@@ -35,7 +36,8 @@ export function phaseSeconds(timers: readonly RunningTimer[], stepId: string, mi
   const key = instanceKey(stepId, mixIndex, nMix);
   const t = timers.find((x) => x.stepId === key);
   if (!t || t.stoppedAt == null) return null;
-  return (t.stoppedAt - t.startedAt) / 1000;
+  // §10: the time the timer ran, pauses left out (§7.5, APP-4).
+  return timerElapsedMs(t, t.stoppedAt) / 1000;
 }
 
 /** The phase timers still running for a mix, so the log can say which to stop. */
@@ -49,7 +51,8 @@ export function runningPhases(timers: readonly RunningTimer[], mixIndex: number,
 /**
  * When the bake's first mix started: mix 1's Phase A timer. §10 dates a bake
  * by this, so a split batch that runs past midnight stays on one day. Null
- * before Phase A's timer has started.
+ * before Phase A's timer has started. Its first start: a resume doesn't move
+ * it (§10, APP-4).
  */
 export function firstMixStartedAt(timers: readonly RunningTimer[], nMix: number): number | null {
   const phaseA = MIX_PHASES[0]!;

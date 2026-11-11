@@ -22,7 +22,7 @@ import {
 } from '../lib/bakeLog';
 import { capacityAlerts, raisedNote, splitHint } from '../lib/capacity';
 import { stepToEvenSplit } from '../lib/ballCounts';
-import { isTimerOf } from '../lib/stepInstances';
+import { timersAfterTick } from '../lib/stepInstances';
 import {
   roundToNextQuarterHour,
   socialWindows,
@@ -31,7 +31,7 @@ import {
   type ScheduleAdjustments,
   type Timeline,
 } from '../lib/timeline';
-import { timerDueAt, type RunningTimer, type TimerSpec } from '../lib/timers';
+import { resumedTimer, stoppedTimer, timerDueAt, type RunningTimer, type TimerSpec } from '../lib/timers';
 import {
   applyInput,
   clampField,
@@ -189,6 +189,8 @@ export interface AppState {
   startTimer: (stepId: string, spec: TimerSpec) => void;
   /** Freeze a running timer. A stopped mixer phase is a logged phase time (§10). */
   stopTimer: (stepId: string) => void;
+  /** §7.5 (APP-4): carry a stopped timer on; the time it was stopped doesn't count. */
+  resumeTimer: (stepId: string) => void;
   /** Remove a timer, running or stopped. */
   clearTimer: (stepId: string) => void;
   /** Step ids whose timer has passed its earliest moment since being started. */
@@ -621,12 +623,12 @@ export function useAppState(): AppState {
         else next.delete(id);
         return next;
       });
-      // Ticking a step off ends it: a running timer stops there, which is how
-      // a mixer phase's time reaches the log without a second tap.
+      // Ticking a step off ends it: every timer it carries stops there, which
+      // is how a mixer phase's time reaches the log without a second tap.
+      // Unticking resumes nothing: Resume is always a tap (§7.5, APP-4).
       if (checking) {
         const at = Date.now();
-        // Every timer the step carries: one per dough on bulk-1 to bulk-3 (§7.5).
-        setTimers((prev) => prev.map((t) => (isTimerOf(t.stepId, id) && t.stoppedAt == null ? { ...t, stoppedAt: at } : t)));
+        setTimers((prev) => timersAfterTick(prev, id, true, at));
       }
     },
     [checkedSteps],
@@ -668,7 +670,13 @@ export function useAppState(): AppState {
 
   const stopTimer = useCallback((stepId: string) => {
     const at = Date.now();
-    setTimers((prev) => prev.map((t) => (t.stepId === stepId && t.stoppedAt == null ? { ...t, stoppedAt: at } : t)));
+    setTimers((prev) => prev.map((t) => (t.stepId === stepId ? stoppedTimer(t, at) : t)));
+  }, []);
+
+  /** §7.5 (APP-4): carry a stopped timer on from where it stopped; the pause doesn't count. */
+  const resumeTimer = useCallback((stepId: string) => {
+    const at = Date.now();
+    setTimers((prev) => prev.map((t) => (t.stepId === stepId ? resumedTimer(t, at) : t)));
   }, []);
 
   const clearTimer = useCallback((stepId: string) => {
@@ -743,6 +751,7 @@ export function useAppState(): AppState {
     timers,
     startTimer,
     stopTimer,
+    resumeTimer,
     clearTimer,
     dueTimerStepIds,
     checkedSteps,

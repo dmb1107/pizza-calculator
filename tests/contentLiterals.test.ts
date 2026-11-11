@@ -1635,6 +1635,21 @@ describe('§8.1 numbers in component copy are classified too', () => {
     expect(offenders.join('\n')).toBe('');
   });
 
+  /**
+   * MESSAGE-67 (APP-4) retired two ideas: that a stopped timer can only be
+   * cleared and started again from zero, and that a timer's number is how long
+   * the step has been going (it is how long the timer has run).
+   */
+  it("repeats none of MESSAGE-67's retired timer claims in our copy", () => {
+    const RETIRED: readonly [RegExp, string][] = [
+      [/only be cleared|can'?t be (resumed|continued)|clear it and start/i, 'a stopped timer resumes'],
+      [/how long the step has been going|how long the step has run/i, "the number is how long the timer has run"],
+    ];
+    const copy = ourCopy();
+    const offenders = RETIRED.flatMap(([re, why]) => copy.filter((t) => re.test(t)).map((t) => `${why}  ←  ${t}`));
+    expect(offenders.join('\n')).toBe('');
+  });
+
   it('keeps no stale entry', () => {
     const all = componentStrings().map(({ text }) => text).join('\n');
     expect(Object.keys(COMPONENT_FIXED).filter((k) => !all.includes(k))).toEqual([]);

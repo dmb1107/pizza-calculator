@@ -257,6 +257,7 @@ export function StepList({
     timers,
     startTimer,
     stopTimer,
+    resumeTimer,
     clearTimer,
     nowMs,
   } = state;
@@ -314,6 +315,7 @@ export function StepList({
           now={nowMs}
           onStart={() => startTimer(slot.key, spec)}
           onStop={() => stopTimer(slot.key)}
+          onResume={() => resumeTimer(slot.key)}
           onClear={() => clearTimer(slot.key)}
         />
       );
