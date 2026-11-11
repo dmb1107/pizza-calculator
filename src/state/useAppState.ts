@@ -657,6 +657,8 @@ export function useAppState(): AppState {
   }, [persisted]);
 
   const startTimer = useCallback((stepId: string, spec: TimerSpec) => {
+    // As on Resume: a stale `now` would hold the new timer at 0:00 until the next tick.
+    setNow(new Date());
     setTimers((prev) => [
       ...prev.filter((t) => t.stepId !== stepId),
       {
@@ -677,6 +679,10 @@ export function useAppState(): AppState {
   const resumeTimer = useCallback((stepId: string) => {
     const at = Date.now();
     setTimers((prev) => prev.map((t) => (t.stepId === stepId ? resumedTimer(t, at) : t)));
+    // With every timer stopped the clock ticks once a minute, so `now` can be
+    // that far behind: the card would show less than the time it stopped at
+    // until the next tick. Found by the iPhone suite (e2e/).
+    setNow(new Date(at));
   }, []);
 
   const clearTimer = useCallback((stepId: string) => {

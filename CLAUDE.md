@@ -146,7 +146,7 @@ question:
 | `FINDINGS-66-to-recipe-agent.md` | Reply to MESSAGE-65. All reproduced (765 → 766); APP-3 built and checked in a browser with the home-screen case simulated, not yet on Dave's iPhone. Rule 1 rests on the icon opening standalone, and there is no manifest |
 | `FINDINGS-67-to-recipe-agent.md` | Unprompted, after Dave's iPhone check: Reset now resets the batch settings and the schedule's adjustments too (Dave's call), ahead of §10, with the §10 and §6 wording to change. Also the Reset focus bug (PR #23): a reading being edited survived Reset on iOS |
 | `MESSAGE-67.md` | Replies to FINDINGS-66 and 67 (**there is no MESSAGE-66**). Reset's confirmation names "the schedule adjustments" (Dave). **APP-4: a stopped timer resumes**, the pause left out on every timer; Resume takes Stop's place, Clear moves away; the beep only when the count crosses the bound while running |
-| `FINDINGS-68-to-recipe-agent.md` | Reply to MESSAGE-67. All reproduced (808 → 809 with their patch); APP-4 built and checked in a browser at 375 px. Done on the iPhone commits a reading at once |
+| `FINDINGS-68-to-recipe-agent.md` | Reply to MESSAGE-67. All reproduced (808 → 809 with their patch); APP-4 built and checked at 375 px. Done on the iPhone commits a reading at once. §4, added after: the WebKit iPhone suite, what it models, and the Resume glitch it found (fixed) |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -626,6 +626,7 @@ Three rules the pass itself taught:
 npm run dev        # dev server
 npm test           # vitest, single run
 npm run test:watch # vitest, watch mode
+npm run test:e2e   # the iPhone suite: WebKit as a home-screen app (e2e/)
 npm run typecheck  # tsc --noEmit
 npm run build      # typecheck + production build to dist/
 npm run preview    # serve dist/ locally
@@ -738,6 +739,20 @@ don't inline a `toFixed` somewhere else.
   and the page Reset's question takes the button's place and grows down. **Touch targets are 48 px** (`min-h-touch`);
   a small control gets a label around it, pinned with `self-start` so flex
   stretch doesn't turn a whole card edge into the target.
+- **The iPhone suite (`npm run test:e2e`, `e2e/`)** runs Dave's device checks
+  in Playwright's WebKit as an iPhone home-screen app: the production build,
+  a profile on disk so storage survives a force close (`forceClose`, then
+  relaunch at the icon's address), `navigator.standalone` true, a paused fake
+  clock, and a beep counter. It isn't in CI, and it needs `npx playwright
+  install webkit` once. **One iOS behaviour is modelled, not native:** a
+  tapped button leaves the field being typed into focused. Desktop WebKit
+  moves focus off it, which hid the Reset bug exactly as Chrome did; the
+  harness cancels `mousedown` on buttons to keep focus. Still out of reach:
+  whether iOS reports a no-manifest icon as standalone, the real keyboard,
+  iOS discarding the app, its storage apart from Safari, and the speaker.
+  Its first run found that Resume showed up to a minute less than the time
+  it stopped at, for a second, because `now` ticks once a minute while every
+  timer is stopped; Resume and Start now set `now` at the tap.
 - **Number fields commit on blur, not on keystroke.** Clamping mid-type makes a
   bounded field unusable — typing "7" on the way to "70" would snap to the
   minimum. The stepper emits a delta rather than a computed value for the same

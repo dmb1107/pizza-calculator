@@ -93,6 +93,7 @@ npm test
 | `npm run dev` | dev server |
 | `npm test` | vitest, single run |
 | `npm run test:watch` | vitest, watch mode |
+| `npm run test:e2e` | the iPhone checks in WebKit, as a home-screen app (run `npx playwright install webkit` once first) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run build` | typecheck + production build to `dist/` |
 | `npm run preview` | serve `dist/` locally |

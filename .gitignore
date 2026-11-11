@@ -19,3 +19,7 @@ npm-debug.log*
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+# Playwright (npm run test:e2e)
+test-results/
+playwright-report/
