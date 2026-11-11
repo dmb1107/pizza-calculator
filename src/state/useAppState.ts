@@ -23,6 +23,7 @@ import {
 import { capacityAlerts, raisedNote, splitHint } from '../lib/capacity';
 import { stepToEvenSplit } from '../lib/ballCounts';
 import { timersAfterTick } from '../lib/stepInstances';
+import { toggledClosedGroups } from '../lib/stepGroups';
 import {
   roundToNextQuarterHour,
   socialWindows,
@@ -199,6 +200,13 @@ export interface AppState {
   /** Step ids ticked off, persisted across reloads. */
   checkedSteps: ReadonlySet<string>;
   toggleStep: (id: string) => void;
+  /**
+   * §7.5 (APP-5): the step groups closed from their headings, as stored. Keys
+   * for groups this batch size doesn't have are in here too, and are ignored
+   * where the list is drawn (`closedGroupsIn`).
+   */
+  closedGroups: readonly string[];
+  toggleGroup: (key: string) => void;
   /** {token} bindings for step and concept prose. */
   tokens: Record<string, string>;
   /** §7.3's capacity messages: what the strip shows, in order. */
@@ -281,6 +289,7 @@ export function useAppState(): AppState {
   const [checkedSteps, setCheckedSteps] = useState<Set<string>>(
     () => new Set(initial.persisted.checkedSteps),
   );
+  const [closedGroups, setClosedGroups] = useState<string[]>(initial.persisted.closedGroups);
   const [timers, setTimers] = useState<RunningTimer[]>(initial.persisted.timers);
   const [sessionBakeId, setSessionBakeId] = useState<string>(initial.persisted.sessionBakeId);
 
@@ -324,12 +333,13 @@ export function useAppState(): AppState {
       timelineMode,
       bakeAtIso: bakeAt ? bakeAt.toISOString() : '',
       checkedSteps: [...checkedSteps],
+      closedGroups,
       timers,
       sessionBakeId,
       // §6: every change to an input writes storage and the URL together.
       inputsQuery: storedInputsOf(inputs),
     }),
-    [calibration, panels, bigaStartAt, timelineMode, bakeAt, checkedSteps, timers, sessionBakeId, inputs],
+    [calibration, panels, bigaStartAt, timelineMode, bakeAt, checkedSteps, closedGroups, timers, sessionBakeId, inputs],
   );
 
   useEffect(() => {
@@ -652,9 +662,15 @@ export function useAppState(): AppState {
     setTimelineModeRaw(next.timelineMode);
     setBakeAt(next.bakeAtIso ? new Date(next.bakeAtIso) : null);
     setCheckedSteps(new Set(next.checkedSteps));
+    setClosedGroups(next.closedGroups);
     setTimers(next.timers);
     setSessionBakeId(next.sessionBakeId);
   }, [persisted]);
+
+  /** §7.5 (APP-5): a group closes and opens only from its heading. */
+  const toggleGroup = useCallback((key: string) => {
+    setClosedGroups((prev) => toggledClosedGroups(prev, key));
+  }, []);
 
   const startTimer = useCallback((stepId: string, spec: TimerSpec) => {
     // As on Resume: a stale `now` would hold the new timer at 0:00 until the next tick.
@@ -762,6 +778,8 @@ export function useAppState(): AppState {
     dueTimerStepIds,
     checkedSteps,
     toggleStep,
+    closedGroups,
+    toggleGroup,
     tokens,
     alerts,
     ballsSplitHint,

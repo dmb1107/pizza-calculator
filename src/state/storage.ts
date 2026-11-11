@@ -151,6 +151,9 @@ export function loadPersisted(storage: StorageLike | null): Persisted {
     bigaStartAtIso: parseIsoInstant(parsed['bigaStartAtIso']),
     ...parseTimelineAnchor(parsed['timelineMode'], parsed['bakeAtIso']),
     checkedSteps: parseStringArray(parsed['checkedSteps']),
+    // §7.5 (APP-5). Kept as stored: a key for a group this batch size doesn't
+    // have is ignored where the groups are drawn (`closedGroupsIn`).
+    closedGroups: parseStringArray(parsed['closedGroups']),
     timers: parseTimers(parsed['timers']),
     // Typing times stored by an earlier build are ignored: nothing tracks
     // which values were typed (§10, Dave's call on 28 Sep).

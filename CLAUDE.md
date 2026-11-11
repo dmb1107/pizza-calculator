@@ -147,6 +147,8 @@ question:
 | `FINDINGS-67-to-recipe-agent.md` | Unprompted, after Dave's iPhone check: Reset now resets the batch settings and the schedule's adjustments too (Dave's call), ahead of §10, with the §10 and §6 wording to change. Also the Reset focus bug (PR #23): a reading being edited survived Reset on iOS |
 | `MESSAGE-67.md` | Replies to FINDINGS-66 and 67 (**there is no MESSAGE-66**). Reset's confirmation names "the schedule adjustments" (Dave). **APP-4: a stopped timer resumes**, the pause left out on every timer; Resume takes Stop's place, Clear moves away; the beep only when the count crosses the bound while running |
 | `FINDINGS-68-to-recipe-agent.md` | Reply to MESSAGE-67. All reproduced (808 → 809 with their patch); APP-4 built and checked at 375 px. Done on the iPhone commits a reading at once. §4, added after: the WebKit iPhone suite, what it models, and the Resume glitch it found (fixed) |
+| `MESSAGE-68.md` | Reply to FINDINGS-68, and **APP-5: finished steps and groups fold away** (a ticked step is one line until its row is tapped; group headings close their groups, stored, opened by Reset), and the Bake log in the header. From here Dave runs no phone checks: each round's *Done when* goes in the WebKit suite |
+| `FINDINGS-69-to-recipe-agent.md` | Reply to MESSAGE-68. APP-5 built; `mix-0` opens Mix 1; a ticked step stays open after its timer stops (a double tap on Stop); the beep moved out of the card, since a closed group would have silenced it. Asks about all three and long titles |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -731,6 +733,20 @@ don't inline a `toFixed` somewhere else.
   reason: the forward-mode date field beside "Now" pushed the page 15 px past a
   375 px phone from Task 4 until Task 9. **Check phone width in both timeline
   modes** — the Task 8 check ran in backward mode only and missed it.
+- **Steps and groups fold** (§7.5, APP-5, MESSAGE-68). The rules are in
+  `src/lib/stepGroups.ts`: the groups (`groupSteps`: four phases, or one
+  group per mix at `nMix > 1` with `mix-0` opening Mix 1), keyed `biga`,
+  `mix`, `mix#2`, `bulk`, `bake`; a stored key that names no group at this
+  size is ignored, never removed. Which groups are closed is stored
+  (`closedGroups`, *Cleared* by Reset). A ticked step folds to its title
+  row, reopened in memory only; a running timer holds it open, and **it
+  stays open after that timer stops** until its row is tapped, so a double
+  tap on Stop can't land on the step below. Water warnings show on a folded
+  `mix-1` and under a closed heading; the log card sits outside every
+  group. **The beep is not in the card:** `TimerBeeper` stays mounted with
+  the list and decides for every live timer, since a closed group unmounts
+  its cards. Ticking, folding a row and closing a group all finish a
+  reading being typed first (`finishEdit`), as Reset does.
 - **Nothing may appear above the point of a tap.** Content that shows up in
   response to a tap goes at or below it: the Steps header's old Reset pushed
   every step 28 px on the first tick, and the timer note pushed the tapped step

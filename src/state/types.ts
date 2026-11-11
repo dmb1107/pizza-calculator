@@ -127,6 +127,12 @@ export interface Persisted {
   /** Ids of steps ticked off. §7.5: "a checkbox that persists". */
   checkedSteps: string[];
   /**
+   * §7.5 (APP-5): the step groups whose headings are closed, by group key
+   * (`stepGroups.ts`). A key that names no group at this batch size is
+   * ignored. Reset clears it, so every group opens (§10).
+   */
+  closedGroups: string[];
+  /**
    * Timers the user has started, as absolute start timestamps. Persisted so a
    * reload — or a phone locking its screen mid-mix — doesn't lose one.
    */

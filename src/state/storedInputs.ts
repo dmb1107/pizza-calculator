@@ -105,6 +105,8 @@ export function persistedForNewBake(prev: Persisted): Persisted {
     bigaStartAtIso: DEFAULT_PERSISTED.bigaStartAtIso,
     bakeAtIso: DEFAULT_PERSISTED.bakeAtIso,
     checkedSteps: [],
+    // §10 (APP-5): every group opens.
+    closedGroups: [],
     timers: [],
     sessionBakeId: '',
     inputsQuery:

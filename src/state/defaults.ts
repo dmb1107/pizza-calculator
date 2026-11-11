@@ -93,6 +93,7 @@ export const DEFAULT_PERSISTED: Persisted = {
   timelineMode: 'forward',
   bakeAtIso: '',
   checkedSteps: [],
+  closedGroups: [],
   timers: [],
   sessionBakeId: '',
   inputsQuery: null,

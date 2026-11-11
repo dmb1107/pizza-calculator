@@ -60,7 +60,19 @@ export default function App() {
             Halo Core · Tread
           </p>
         </div>
-        <CopyButton text={shareUrl} label="Share setup" copiedLabel="Link copied" />
+        {/* §10 (APP-5): the log opens from the top of the page as well as the
+            footer. Stacked, not side by side: in a row the two buttons left
+            the title a third of a 375 px phone. */}
+        <div className="flex shrink-0 flex-col items-stretch gap-2">
+          <CopyButton text={shareUrl} label="Share setup" copiedLabel="Link copied" />
+          <button
+            type="button"
+            onClick={openLog}
+            className="min-h-touch rounded-lg border border-stone-300 px-3 text-sm font-medium text-stone-700 active:bg-stone-100 dark:border-stone-600 dark:text-stone-300 dark:active:bg-stone-800"
+          >
+            Bake log
+          </button>
+        </div>
       </header>
 
       {/* minmax(0, 1fr), not the implicit auto column: an auto track grows to

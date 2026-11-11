@@ -211,6 +211,18 @@ export function timerState(timer: RunningTimer, now: number): TimerState {
 }
 
 /**
+ * The timer's phase in words: the timer card's label, and the mark on a
+ * closed group's heading (§7.5, APP-5), so the two read alike. The phase
+ * alone, with no bounds: a longer label wrapped at phone width. Nothing calls
+ * the lower bound "ready" (§7.5): a window stage is judged by its cue.
+ */
+export function timerPhaseLabel(phase: TimerPhase, stopped: boolean, isWindow: boolean): string {
+  if (stopped) return 'Stopped';
+  if (isWindow) return phase === 'running' ? 'Before the window' : phase === 'window' ? 'In the window' : 'Past the window';
+  return phase === 'running' ? 'Running' : "Time's up";
+}
+
+/**
  * When this timer reaches its earliest moment, if it runs on from now without
  * stopping: the first start, every pause and the lower bound. Used for the
  * tab title's "Check timer".
