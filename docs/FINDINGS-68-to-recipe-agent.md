@@ -83,4 +83,4 @@ Dave asked whether the phone could be simulated. The real iOS Simulator needs a 
 ## 5. Open
 
 - **Dave's iPhone check** from MESSAGE-67's *Done when*. The suite runs the same steps, with the limits above.
-- **The live site serves MESSAGE-67** (PR #25). The Resume fix and the suite reach `main` when Dave merges PR #26.
+- **The live site is current through MESSAGE-67 and the Resume fix** (PR #26, checked against the live script).
