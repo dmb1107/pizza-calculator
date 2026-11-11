@@ -145,6 +145,8 @@ question:
 | `MESSAGE-65.md` | Reply to FINDINGS-65. W16's steel sentence removed (Dave's call), `schedule-architecture` retitled "How long the cold ferment runs, and why". **APP-3: the inputs are stored as well as written to the URL** (§6 *Where the inputs are kept*), with a four-case load rule; a home-screen app takes what is stored |
 | `FINDINGS-66-to-recipe-agent.md` | Reply to MESSAGE-65. All reproduced (765 → 766); APP-3 built and checked in a browser with the home-screen case simulated, not yet on Dave's iPhone. Rule 1 rests on the icon opening standalone, and there is no manifest |
 | `FINDINGS-67-to-recipe-agent.md` | Unprompted, after Dave's iPhone check: Reset now resets the batch settings and the schedule's adjustments too (Dave's call), ahead of §10, with the §10 and §6 wording to change. Also the Reset focus bug (PR #23): a reading being edited survived Reset on iOS |
+| `MESSAGE-67.md` | Replies to FINDINGS-66 and 67 (**there is no MESSAGE-66**). Reset's confirmation names "the schedule adjustments" (Dave). **APP-4: a stopped timer resumes**, the pause left out on every timer; Resume takes Stop's place, Clear moves away; the beep only when the count crosses the bound while running |
+| `FINDINGS-68-to-recipe-agent.md` | Reply to MESSAGE-67. All reproduced (808 → 809 with their patch); APP-4 built and checked in a browser at 375 px. Done on the iPhone commits a reading at once |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -497,10 +499,9 @@ input** (the batch settings, the schedule's adjustments and today's
 readings), the DDT override and the timeline's anchor go back to their
 defaults; the checkboxes, timers and session bake are cleared; the timeline
 mode, the open panels and the log stay. **The batch settings and the
-adjustments reset since Dave's call on 10 Nov 2026**, ahead of §10, which
-still lists them as kept: FINDINGS-67 asks for the change, and
-`steps.test.ts` pins the confirmation copy both ways (`AHEAD_OF_SPEC`) until
-§10 carries it. In backward mode the hook then takes
+adjustments reset since Dave's call on 10 Nov 2026** (FINDINGS-67, in §10
+since MESSAGE-67). The confirmation names "the schedule adjustments", since
+on the page they sit in the timeline card, not the Batch panel. In backward mode the hook then takes
 the bake time the reset start implies, as a mode switch does, so a reload
 doesn't drop to forward. `state.test.ts` requires every input and every
 persisted field to be classified, so a new one forces the decision, and
@@ -692,8 +693,22 @@ don't inline a `toFixed` somewhere else.
   `startedAt` against a `now` passed in, so a locked phone or a reload returns
   the right answer. Never introduce a decrementing counter. **A timer stops**
   (`stoppedAt`): Stop, or ticking its step, freezes it, and a stopped mixer
-  phase is the phase time the log records. Clear removes it. A stopped timer
-  never beeps and never counts as due. Ranges are windows
+  phase is the phase time the log records. **A stopped timer resumes** (§7.5,
+  APP-4, MESSAGE-67): Resume carries the count on, the pause left out, on
+  every timer. `startedAt` stays the first start (§10 dates a bake by it),
+  the pauses add up in `pausedMs`, and `resumedAt` marks the current run.
+  **Every elapsed reading goes through `timerElapsedMs`**: the card, the due
+  time, the Logged tag and the log's phase times. A test fails on any
+  start-and-stop subtraction outside `timers.ts`, since that forgets the
+  pauses. Unticking a step resumes nothing (`timersAfterTick`). Resume takes
+  Stop's spot, so a double tap stops and resumes; Clear sits in the card's
+  far corner, its slot held while running so the card keeps one height. Until
+  MESSAGE-67 one button read Stop then Clear in the same spot, and a double
+  tap cleared a mixer phase's logged time. A stopped timer never beeps and
+  never counts as due. **The beep comes when the count crosses the lower
+  bound during the current run** (`beepDecision`): a timer resumed at or past
+  its bound stays quiet, a reload included, because where the run began is
+  stored. Ranges are windows
   (earliest → latest), not deadlines. **The display counts up** (§7.5 since
   MESSAGE-43, Dave's ask on 27 Sep): elapsed time in every phase, floored. The
   phase is shown by tone, label and a bar with the window shaded, never by

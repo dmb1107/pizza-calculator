@@ -1,6 +1,8 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import {
+  beepDecision,
   describeSpec,
+  effectiveStartAt,
   formatElapsed,
   timerState,
   type RunningTimer,
@@ -14,15 +16,20 @@ import { formatTimeOfDay } from '../lib/timeline';
  * Reads a clock rather than counting down, so it stays correct across a screen
  * lock, a backgrounded tab or a reload. See `src/lib/timers.ts`.
  *
- * The number counts up — how long the step has been going — in every phase.
+ * The number counts up — how long the timer has run — in every phase.
  * Before, in or past the window is carried by the card's tone, the label and
  * the bar, which marks the window and stays up throughout so the card doesn't
  * change height as the phase turns.
  *
- * Stop freezes the time where it is; Clear removes the timer. A stopped mixer
- * phase is the phase time the bake log records (§10), and ticking the step
- * off stops its timer too, so the time is captured without a second tap.
- * Those four timers carry the "Logged" tag (§7.5); no other timer does.
+ * Stop freezes the time where it is. A stopped timer shows Resume in Stop's
+ * place, which carries the count on with the pause left out, and Clear in the
+ * card's far corner, which removes it (§7.5, APP-4). One spot for Stop and
+ * Resume means a double tap stops and resumes, which loses nothing; with
+ * Clear in that spot it cleared the timer and a mixer phase lost its logged
+ * time. A stopped mixer phase is the phase time the bake log records (§10),
+ * and ticking the step off stops its timer too, so the time is captured
+ * without a second tap. Those four timers carry the "Logged" tag (§7.5); no
+ * other timer does.
  */
 
 /** §7.5's tag: which timers the bake log reads. Not a control. */
@@ -86,6 +93,7 @@ export function StepTimer({
   now,
   onStart,
   onStop,
+  onResume,
   onClear,
   note,
   tag,
@@ -97,6 +105,8 @@ export function StepTimer({
   onStart: () => void;
   /** Freeze the time. */
   onStop: () => void;
+  /** Carry a stopped timer on; the pause doesn't count. */
+  onResume: () => void;
   /** Remove the timer. */
   onClear: () => void;
   /** Shown under a running timer's controls — growth below the tap point, never above it. */
@@ -107,22 +117,18 @@ export function StepTimer({
   const state = timer ? timerState(timer, now) : null;
   const phase = state?.phase;
 
-  // Beep once, on the transition out of `running`.
+  // Beep once, when the count crosses the lower bound while the timer runs
+  // (§7.5). A stopped timer never beeps, and one resumed at or past its bound
+  // stays quiet, a reload included: `beepDecision` reads that from the timer.
   const alerted = useRef<string | null>(null);
-  const stopped = state?.stopped ?? false;
   useEffect(() => {
-    // A stopped timer is finished with: it never beeps, even on a reload.
-    if (!timer || !phase || stopped) return;
-    const key = `${stepId}:${timer.startedAt}`;
-    if (phase === 'running') {
-      if (alerted.current === key) alerted.current = null;
-      return;
-    }
-    if (alerted.current !== key) {
-      alerted.current = key;
-      beep();
-    }
-  }, [stepId, timer, phase, stopped]);
+    if (!timer || !phase) return;
+    const decision = beepDecision(stepId, timer, now, alerted.current);
+    alerted.current = decision.key;
+    if (decision.beep) beep();
+    // `phase` stands in for `now`: the decision can only change when it does.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepId, timer, phase]);
 
   if (!timer || !state) {
     return (
@@ -186,12 +192,21 @@ export function StepTimer({
           <p className="text-sm font-medium text-stone-700 dark:text-stone-300">{label}</p>
           <p className="text-4xl font-bold tabular">{formatElapsed(state.elapsedMs)}</p>
         </div>
+        {/* Stop and Resume share this spot, so a double tap stops and resumes. */}
         <button
           type="button"
-          onClick={state.stopped ? onClear : onStop}
-          className="min-h-touch shrink-0 rounded-lg border border-stone-400 px-4 text-sm font-medium active:bg-stone-100 dark:border-stone-500 dark:active:bg-stone-800"
+          onClick={
+            state.stopped
+              ? () => {
+                  // As Start does: after a reload the audio waits for a tap.
+                  primeAudio();
+                  onResume();
+                }
+              : onStop
+          }
+          className="min-h-touch min-w-touch shrink-0 rounded-lg border border-stone-400 px-4 text-sm font-medium active:bg-stone-100 dark:border-stone-500 dark:active:bg-stone-800"
         >
-          {state.stopped ? 'Clear' : 'Stop'}
+          {state.stopped ? 'Resume' : 'Stop'}
         </button>
       </div>
 
@@ -214,11 +229,29 @@ export function StepTimer({
         />
       </div>
 
-      <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
-        {spec.isWindow
-          ? `${describeSpec(spec)}: anywhere in this window is on time.`
-          : `${describeSpec(spec)} from ${formatTimeOfDay(new Date(timer.startedAt))}`}
-      </p>
+      {/* Clear sits in the far corner from Resume, out of reach of a slip.
+          Its slot is held while the timer runs, so the card keeps one height
+          from running to stopped. */}
+      <div className="mt-2 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onClear}
+          disabled={!state.stopped}
+          aria-hidden={!state.stopped}
+          tabIndex={state.stopped ? 0 : -1}
+          className={`min-h-touch shrink-0 rounded-lg border border-stone-400 px-4 text-sm font-medium active:bg-stone-100 dark:border-stone-500 dark:active:bg-stone-800 ${
+            state.stopped ? '' : 'invisible'
+          }`}
+        >
+          Clear
+        </button>
+        <p className="min-w-0 text-sm text-stone-600 dark:text-stone-400">
+          {spec.isWindow
+            ? `${describeSpec(spec)}: anywhere in this window is on time.`
+            : // Moved later by any pause, so start plus duration is when it gets there.
+              `${describeSpec(spec)} from ${formatTimeOfDay(new Date(effectiveStartAt(timer)))}`}
+        </p>
+      </div>
       {note && <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">{note}</p>}
     </div>
   );

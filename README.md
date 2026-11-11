@@ -20,8 +20,9 @@ returns:
 - a timeline with real clock times, planned forward from the biga start or
   backward from the bake time; a batch that splits is planned from its last
   dough, with each earlier dough's bulk and rise end times beside it;
-- a guided step list with timers and mixer speeds drawn as the Core's lit
-  segments, where every step expands into the reasoning behind it, and longer
+- a guided step list with timers (stop and resume, the pause left out) and
+  mixer speeds drawn as the Core's lit segments, where every step expands
+  into the reasoning behind it, and longer
   background pieces open from the steps, the cold-ferment slider, the
   ingredients card and the Calibration panel;
 - a bake log that solves the mixer's friction factor from each bake's measured

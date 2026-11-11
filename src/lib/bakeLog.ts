@@ -15,7 +15,7 @@ import { C } from './constants';
 import { computeCapacity, computeFormula, computeThermal, solveFrictionFactorF } from './engine';
 import { formatBallsPerMix, formatTempF } from './format';
 import { CORRECTED_PHASE, MIX_PHASES, PHASE_KEYS, frictionRateOf, phaseForStep, type PhaseKey } from './mixPhases';
-import { formatElapsed } from './timers';
+import { formatElapsed, timerElapsedMs, type RunningTimer } from './timers';
 
 export { CORRECTED_PHASE, MIX_PHASES, PHASE_KEYS, phaseForStep, type MixPhase, type PhaseKey } from './mixPhases';
 
@@ -31,11 +31,12 @@ export { CORRECTED_PHASE, MIX_PHASES, PHASE_KEYS, phaseForStep, type MixPhase, t
  */
 export function loggedTimerTag(
   stepId: string,
-  timer: { startedAt: number; stoppedAt?: number } | undefined,
+  timer: Pick<RunningTimer, 'startedAt' | 'stoppedAt' | 'pausedMs'> | undefined,
 ): string | null {
   if (!phaseForStep(stepId)) return null;
   if (timer?.stoppedAt == null) return 'Logged';
-  return `Logged · ${formatElapsed(timer.stoppedAt - timer.startedAt)}`;
+  // The time the log records: the time the timer ran, pauses left out (APP-4).
+  return `Logged · ${formatElapsed(timerElapsedMs(timer, timer.stoppedAt))}`;
 }
 
 /**

@@ -59,7 +59,7 @@ function parseTimers(raw: unknown): RunningTimer[] {
   const out: RunningTimer[] = [];
   for (const v of raw) {
     if (!isRecord(v)) continue;
-    const { stepId, startedAt, minMinutes, maxMinutes, stoppedAt } = v;
+    const { stepId, startedAt, minMinutes, maxMinutes, stoppedAt, pausedMs, resumedAt } = v;
     if (typeof stepId !== 'string' || stepId === '') continue;
     if (![startedAt, minMinutes, maxMinutes].every((n) => typeof n === 'number' && Number.isFinite(n))) {
       continue;
@@ -73,6 +73,17 @@ function parseTimers(raw: unknown): RunningTimer[] {
       minMinutes: minMinutes as number,
       maxMinutes: maxMinutes as number,
       ...(stopped ? { stoppedAt: stoppedAt as number } : {}),
+      // §7.5 (APP-4). A timer stored before resume existed has neither and
+      // reads as never paused. A bad pause total reads as none, so the count
+      // can only come out long, never NaN; a bad resume time is dropped, which
+      // at worst lets a resumed timer beep once more.
+      ...(typeof pausedMs === 'number' && Number.isFinite(pausedMs) && pausedMs > 0 ? { pausedMs } : {}),
+      ...(typeof resumedAt === 'number' &&
+      Number.isFinite(resumedAt) &&
+      resumedAt >= (startedAt as number) &&
+      (!stopped || resumedAt <= (stoppedAt as number))
+        ? { resumedAt }
+        : {}),
     });
   }
   return out;

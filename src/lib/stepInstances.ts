@@ -10,6 +10,7 @@ import { STEPS, type DetailCondition, type ShownWhen, type Step } from '../conte
 import type { Schedule } from '../state/types';
 import type { CalculatorResult } from './engine';
 import { PLANNING_RANGE_H } from './timeline';
+import { stoppedTimer, type RunningTimer } from './timers';
 
 /**
  * §8.2's `shown only when` conditions, resolved by lookup rather than by
@@ -206,4 +207,20 @@ export function timerSlots(instanceKey: string, stepId: string, nMix: number): T
 /** Whether a timer key is one of this instance's timers: ticking a step stops them all. */
 export function isTimerOf(timerKey: string, instanceKey: string): boolean {
   return timerKey === instanceKey || timerKey.startsWith(`${instanceKey}${DOUGH_SEP}`);
+}
+
+/**
+ * §7.5: ticking a step stops every timer it carries (one per dough on `bulk-1`
+ * to `bulk-3`), which is how a mixer phase's time reaches the log without a
+ * second tap. Unticking leaves them as they are: Resume is always a tap
+ * (APP-4, Dave's call 4b).
+ */
+export function timersAfterTick<T extends RunningTimer>(
+  timers: readonly T[],
+  instanceKey: string,
+  ticked: boolean,
+  at: number,
+): T[] {
+  if (!ticked) return [...timers];
+  return timers.map((t) => (isTimerOf(t.stepId, instanceKey) ? stoppedTimer(t, at) : t));
 }

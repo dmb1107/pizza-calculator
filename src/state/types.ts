@@ -95,6 +95,10 @@ export interface RunningTimer {
   maxMinutes: number;
   /** When it was stopped, epoch ms. A stopped mixer phase is a logged phase time (§10). */
   stoppedAt?: number;
+  /** §7.5 (APP-4): the time between Stop and Resume, summed, ms. Absent is never paused. */
+  pausedMs?: number;
+  /** §7.5 (APP-4): the latest Resume, epoch ms. Absent if never resumed. */
+  resumedAt?: number;
 }
 
 /** A temperature the bake log records (§10), set through `commitReading`. */

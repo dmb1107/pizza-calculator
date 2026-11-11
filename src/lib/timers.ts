@@ -18,9 +18,15 @@
  * much slack you have.
  *
  * **The display counts up** (§7.5, Dave's ask on 27 September): the big number
- * is how long the step has been going, in every phase. Before, in or past the window is
+ * is how long the timer has run, in every phase. Before, in or past the window is
  * shown by the phase — tone, label and a bar with the window marked on it —
  * rather than by a number that runs down and then flips direction.
+ *
+ * **A stopped timer resumes** (§7.5, APP-4, MESSAGE-67): the time between Stop
+ * and Resume doesn't count, as on a stopwatch. `startedAt` stays the first
+ * start (§10 dates a bake by it), the pauses add up in `pausedMs`, and every
+ * elapsed reading goes through `timerElapsedMs`, so nothing can subtract the
+ * start from a stop on its own and forget the pauses.
  */
 
 /** A duration a step can be timed against, in minutes. */
@@ -82,6 +88,18 @@ export interface RunningTimer {
    * phase it is the phase time the bake log records (§10).
    */
   stoppedAt?: number;
+  /**
+   * §7.5 (APP-4): the time between Stop and Resume, summed over every resume,
+   * ms. Absent is never paused. A pause still open (stopped, not resumed) isn't
+   * in it: the count is frozen at `stoppedAt` meanwhile.
+   */
+  pausedMs?: number;
+  /**
+   * Epoch ms of the latest Resume; absent if never resumed. It marks where the
+   * current run began, which decides the beep (`beepDecision`), and survives a
+   * reload so a timer that was resumed past its bound stays quiet.
+   */
+  resumedAt?: number;
 }
 
 export type TimerPhase =
@@ -108,9 +126,76 @@ export interface TimerState {
 
 const MINUTE_MS = 60_000;
 
+/**
+ * §7.5: how long the timer has run, ms, pauses left out. The one elapsed
+ * reading: the card, the due time, the Logged tag and the bake log's phase
+ * times all go through it. A stopped timer reads at its stop, whatever `now` is.
+ */
+export function timerElapsedMs(
+  timer: Pick<RunningTimer, 'startedAt' | 'stoppedAt' | 'pausedMs'>,
+  now: number,
+): number {
+  return Math.max(0, (timer.stoppedAt ?? now) - timer.startedAt - (timer.pausedMs ?? 0));
+}
+
+/** Stop: the count freezes. Already stopped, unchanged. */
+export function stoppedTimer<T extends RunningTimer>(timer: T, at: number): T {
+  return timer.stoppedAt == null ? { ...timer, stoppedAt: at } : timer;
+}
+
+/**
+ * §7.5 (APP-4): Resume carries the count on from where it stopped. The pause
+ * is added to `pausedMs`, so the elapsed time picks up where it froze. Running,
+ * unchanged.
+ */
+export function resumedTimer<T extends RunningTimer>(timer: T, at: number): T {
+  if (timer.stoppedAt == null) return timer;
+  const { stoppedAt, ...rest } = timer;
+  const pause = Math.max(0, at - stoppedAt);
+  return { ...rest, pausedMs: (timer.pausedMs ?? 0) + pause, resumedAt: at } as T;
+}
+
+/**
+ * The clock time the count would have started from with no pauses: the first
+ * start moved later by every pause. An exact-duration timer prints it ("10 min
+ * from 2:15 PM"), so the printed start plus the duration is when it gets there.
+ */
+export function effectiveStartAt(timer: RunningTimer): number {
+  return timer.startedAt + (timer.pausedMs ?? 0);
+}
+
+/**
+ * §7.5: the beep comes when the count crosses the lower bound while the timer
+ * runs. Only the current run can do that: one resumed at or past the bound
+ * crossed it in an earlier run and stays quiet; one resumed before it beeps
+ * when it gets there. `lastKey` is the run already beeped for (a component's
+ * memory), and the returned key replaces it.
+ *
+ * A run is the time since the start or the latest resume. Its key carries both
+ * timestamps, so a new run is a new key and the memory needs no reset. A reload
+ * empties the memory, but the decision doesn't rest on it: a timer resumed past
+ * its bound has a run that began past it, which is stored (`resumedAt`).
+ */
+export function beepDecision(
+  stepId: string,
+  timer: RunningTimer,
+  now: number,
+  lastKey: string | null,
+): { beep: boolean; key: string | null } {
+  if (timer.stoppedAt != null) return { beep: false, key: lastKey };
+  const key = `${stepId}:${timer.startedAt}:${timer.resumedAt ?? ''}`;
+  const minMs = timer.minMinutes * MINUTE_MS;
+  // Elapsed when this run began: 0 from a start; at a resume, where it stopped.
+  const runBeganAtMs = timer.resumedAt == null ? 0 : timerElapsedMs(timer, timer.resumedAt);
+  if (runBeganAtMs >= minMs) return { beep: false, key: lastKey };
+  if (timerElapsedMs(timer, now) < minMs) return { beep: false, key: lastKey === key ? null : lastKey };
+  if (lastKey === key) return { beep: false, key };
+  return { beep: true, key };
+}
+
 export function timerState(timer: RunningTimer, now: number): TimerState {
   const stopped = timer.stoppedAt != null;
-  const elapsedMs = Math.max(0, (timer.stoppedAt ?? now) - timer.startedAt);
+  const elapsedMs = timerElapsedMs(timer, now);
   const minMs = timer.minMinutes * MINUTE_MS;
   const maxMs = timer.maxMinutes * MINUTE_MS;
 
@@ -125,9 +210,13 @@ export function timerState(timer: RunningTimer, now: number): TimerState {
   };
 }
 
-/** When this timer reaches its earliest moment. Used to schedule the alert. */
+/**
+ * When this timer reaches its earliest moment, if it runs on from now without
+ * stopping: the first start, every pause and the lower bound. Used for the
+ * tab title's "Check timer".
+ */
 export function timerDueAt(timer: RunningTimer): number {
-  return timer.startedAt + timer.minMinutes * MINUTE_MS;
+  return effectiveStartAt(timer) + timer.minMinutes * MINUTE_MS;
 }
 
 /**
