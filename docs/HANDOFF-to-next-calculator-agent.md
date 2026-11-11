@@ -9,15 +9,26 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-69 and FINDINGS-70 (10 November).
+MESSAGE-70 and FINDINGS-71 (11 November).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
-- **The correspondence is applied through MESSAGE-69, and FINDINGS-70 is the
-  last thing sent.** Nothing is open. MESSAGE-69 was spec only: §7.5 and §10
+- **The correspondence is applied through MESSAGE-70, and FINDINGS-71 is the
+  last thing sent.** MESSAGE-70 was APP-6, the fourth of Dave's queued app
+  changes and spec §13: **three tabs** (Recipe, Toppings, Bake log; a bar
+  fixed to the bottom below 768 px, a sticky strip from it), the log's
+  drawer and its header and footer buttons gone, and **Dave's topping
+  ideas** on their own tab with their own store and sync under `toppings/`
+  in the log's repository (CLAUDE.md's "Three tabs" and "The topping ideas"
+  have the rules). The log and the ideas now run one sync,
+  `src/state/repoSync.ts`. FINDINGS-71 reports three readings for the
+  counterpart to confirm or reword (what counts as "a link" when the page's
+  own address carries its inputs; "last write wins" by `updated`; the
+  mark's form) and a WebKit bug the suite found (Save left the bar hidden).
+  Screenshots went with it for Dave's approval of the look. MESSAGE-69 was spec only: §7.5 and §10
   now describe APP-5 as built, with all four of FINDINGS-69's answers
   accepted (two of them Dave's calls). MESSAGE-68 was APP-5, the third of Dave's queued app
   changes: **finished steps and groups fold away** and the Bake log opens
@@ -372,6 +383,10 @@ true and what they need to change.
 | `e2e/iphone.spec.ts` (`npm run test:e2e`) | Dave's device checks in WebKit as an iPhone home-screen app: MESSAGE-65's done-when from a stale icon, then Reset, across force closes; a shared link in Safari; Reset with a reading still being edited; MESSAGE-67's done-when (Phase C 4:00 on the log card, bulk rest from 30:00, beeps, a double tap on Stop, reload and force close). Not in CI | Chrome and desktop WebKit both hid the Reset focus bug, so the harness models iOS keeping focus on a field when a button is tapped. Each scenario confirmed by putting its bug back: the focus bug, Stop then Clear in one spot, a home-screen app taking its launch address, and Resume's stale `now` (found by the suite's first run) |
 | `stepGroups.test.ts` | §7.5 *Finished steps and groups fold away* (APP-5): the groups at one, two and three mixes on both tracks (`mix-0` opens Mix 1; every instance in one group, in order), each group's count, closing and reopening, stored keys from another size ignored, the fold rule, the closed heading's timer mark at both bounds (the timer due first; per-dough timers; nothing from a stopped timer or another group), the log card after the last mix group | MESSAGE-68. Each rule confirmed by mutation (six breaks, each failing) |
 | `e2e/fold.spec.ts` | MESSAGE-68's *Done when* at 375 px, a split batch's groups, a running timer in a closed group (mark, beep, no second beep on reopening, a ticked step held open), and a reading being typed when its step folds or its group closes | The beep lived in the card: a closed group would have unmounted it. Each scenario confirmed by putting its bug back. **Can't see** whether iOS keeps a field focused through a checkbox tap (the harness models buttons only) |
+| `tabs.test.ts` | §13.1: the three tabs in the spec's order and words; the stored tab and a bad one; Reset keeps it; `initialTab` across §6's four load cases, a reload of the page's own address, a reordered link and one reading different; the Recipe tab's mark (none on Recipe, the turn at the lower bound, a stored timer from another size ignored); no Bake log button in `App`, the log's two openers, and `TimerBeeper` mounted once, above the tab panels | MESSAGE-70. Each rule confirmed by mutation |
+| `toppings.test.ts` | §13.2 and §13.3: the ratings (1–5 by halves, read from §13.2's table), a name-only idea, a rating refused without pre-bake, created kept and updated stamped, the two lists' order (Untested by `created`, with data where `updated` would sort otherwise), rated and cleared; storage (3.5 stays 3.5, its own key, malformed ideas dropped), Reset and a link untouched; sync against one fake repository holding both folders (push under `toppings/`, one browser to another, the last write by `updated` both ways, deletions both ways, each folder failing alone, offline, an unparseable file, an edit during a sync); §13.2's rendered copy read from the spec and found in `Toppings.tsx` | MESSAGE-70. Twelve breaks, each failing, among them the sort keys, `keepRemote`, a shared storage key and reworded copy |
+| `markdown.test.tsx` | §13.2's Markdown: single line breaks kept with `breaks` and not without, lists and code untouched, links `_blank` with `noopener noreferrer`, a `javascript:` link dropped, raw HTML as text; only `Toppings.tsx` passes `breaks`. None of §8's 53 texts has a single line break inside a paragraph, so the pass would change nothing there today | MESSAGE-70 |
+| `e2e/tabs.spec.ts` | MESSAGE-70's *Done when* at 375 px and 1024: the bar's place and the page clearing it, hidden while typing; the strip under the title and sticky; a tab switch keeping Recipe's scroll and readings, and recording one still focused on the strip; a beep and the mark with Toppings open; a name-only idea rated 3.5 through a reload and a force close, a link opening a new page, Delete asking; Reset and a shared link leaving the ideas; the log's two openers; two profiles and one stubbed repository, and each folder failing alone. Writes FINDINGS' screenshots when `APP6_SHOTS` is set | Its first run found Save leaving the bar hidden (WebKit fires no blur for a removed field). Each scenario confirmed by putting its bug back (eight) |
 | `fieldCommit.test.ts` | §6's rule for leaving a number field (MESSAGE-58): an edited reading commits even at the value shown, through to `bowl_prefilled: false` and a counted mix; no edit commits nothing; other fields keep the old rule | A bowl read at its prefill and a final on DDT were dropped as unchanged. The edit tracking itself is in `NumberField` and only a browser check reaches it |
 | `recipeText.test.ts` | Copy-as-text, and the dough total rounded once (2501.9 at 9 × 272 g, never the 2501.7 its rounded parts sum to) | The gate doesn't read `recipeText.ts` |
 | `timers.test.ts` | Timer state derived from an absolute start and `now`, windows as earliest → latest. Every step's timer, resolved per schedule and bound with the real token table, parses as a duration. The generator's `timerMinutes` and the runtime parser agree on every fixed label (seconds included) | `biga-4` said "per schedule" and had no timer for the longest stage in the recipe. Seconds are where two parsers of one label could part |

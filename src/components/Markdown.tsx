@@ -1,5 +1,6 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { remarkLineBreaks } from '../lib/markdownBreaks';
 
 /**
  * Markdown renderer for step details and concept bodies.
@@ -10,19 +11,26 @@ import remarkGfm from 'remark-gfm';
  *
  * Tables scroll inside their own container rather than widening the page —
  * `bulk-3` and `bake-2` both carry tables that do not fit a 375 px screen.
+ *
+ * Links open in a new tab. Raw HTML is never rendered: react-markdown shows
+ * it as text unless a plugin is added to parse it, and none is. The topping
+ * ideas (§13.2) pass `breaks`, so a single line break shows as one.
  */
 export function Markdown({
   children,
   className = 'text-stone-700 dark:text-stone-300',
+  breaks = false,
 }: {
   children: string;
   /** The wrapper's classes. A warning passes its own so the text keeps the warning's tone. */
   className?: string;
+  /** §13.2: keep single line breaks, as pasted from Apple Notes. Off for §8's prose. */
+  breaks?: boolean;
 }) {
   return (
     <div className={className}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={breaks ? [remarkGfm, remarkLineBreaks] : [remarkGfm]}
         components={{
           p: ({ children }) => <p className="my-3 leading-relaxed first:mt-0 last:mb-0">{children}</p>,
           strong: ({ children }) => (
@@ -54,7 +62,7 @@ export function Markdown({
             <a
               href={href}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="underline underline-offset-2"
             >
               {children}

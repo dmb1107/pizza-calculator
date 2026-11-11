@@ -16,6 +16,7 @@
  */
 
 import { DEFAULT_CALIBRATION, DEFAULT_PANELS, DEFAULT_PERSISTED, clampField } from './defaults';
+import { parseTab } from '../lib/tabs';
 import type { PanelPrefs, Persisted, RunningTimer } from './types';
 
 export const STORAGE_KEY = 'biga-calculator:v1';
@@ -159,6 +160,8 @@ export function loadPersisted(storage: StorageLike | null): Persisted {
     // which values were typed (§10, Dave's call on 28 Sep).
     sessionBakeId: typeof parsed['sessionBakeId'] === 'string' ? parsed['sessionBakeId'] : '',
     inputsQuery: parseInputsQuery(parsed),
+    // §13.1: a tab this build doesn't know opens Recipe.
+    tab: parseTab(parsed['tab']),
   };
 }
 

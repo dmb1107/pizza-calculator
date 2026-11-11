@@ -45,7 +45,8 @@ export async function openPhone(
         'mousedown',
         (e) => {
           const onButton = e.target instanceof Element && e.target.closest('button');
-          if (onButton && document.activeElement instanceof HTMLInputElement) e.preventDefault();
+          const typing = document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement;
+          if (onButton && typing) e.preventDefault();
         },
         true,
       );
@@ -67,7 +68,8 @@ export async function openPhone(
   await page.clock.install({ time: time - 1_000 });
   await page.clock.pauseAt(time);
   await page.goto(path);
-  await expect(page.getByRole('button', { name: 'Reset' })).toBeVisible();
+  // The tabs are on every tab (§13.1); Reset only on Recipe.
+  await expect(page.getByRole('tab', { name: /^Recipe/ })).toBeAttached();
   return { context, page };
 }
 
@@ -116,3 +118,7 @@ export async function typeInto(page: Page, field: Locator, value: string): Promi
 
 /** The keypad's Done: the field loses focus (Dave, 10 Nov: Done commits a reading). */
 export const done = (field: Locator) => field.blur();
+
+/** §13.1: a tab by its label. The Recipe tab's name grows a timer's phase while marked. */
+export const tab = (page: Page, label: 'Recipe' | 'Toppings' | 'Bake log') =>
+  page.getByRole('tab', { name: label === 'Recipe' ? /^Recipe/ : label, exact: label !== 'Recipe' });

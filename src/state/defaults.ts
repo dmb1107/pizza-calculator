@@ -2,6 +2,7 @@
 
 import { C } from '../lib/constants';
 import { BALLS_MAX, BALLS_MIN, roundUpToEvenSplit } from '../lib/ballCounts';
+import { DEFAULT_TAB } from '../lib/tabs';
 import type { Calibration, Inputs, PanelPrefs, Persisted, Schedule } from './types';
 
 /**
@@ -97,6 +98,7 @@ export const DEFAULT_PERSISTED: Persisted = {
   timers: [],
   sessionBakeId: '',
   inputsQuery: null,
+  tab: DEFAULT_TAB,
 };
 
 /**

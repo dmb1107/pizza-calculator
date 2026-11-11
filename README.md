@@ -32,21 +32,32 @@ returns:
   temperatures, water targets and phase times, and sets the friction factor
   the next water target uses. The four mixer-phase timers it reads are tagged **Logged**, and
   the bake is saved from the card after the last mix, once the final dough
-  temperature is in.
+  temperature is in;
+- a place for topping ideas: a name, pre-bake and post-bake toppings, notes
+  and a rating in half stars, all in Markdown so they can carry links. Rated
+  ideas list best first, and untested ones in a list of their own.
 
-The setup and the day's readings survive a refresh and a closed app, home-screen
-app included, and **Share setup** copies them as a link.
-**Reset**, above the panels, starts a new bake: it puts the batch settings
-and today's readings back to their defaults, clears any DDT override, the
-timeline's start or target time, the step checkboxes and the timers, opens
-every step group, and keeps the log. The bake log opens from the top of the
-page and the bottom; reference tables and the recipe's sources open in drawers
-at the bottom.
+The page has three tabs, **Recipe**, **Toppings** and **Bake log**: on a
+phone a bar fixed to the bottom of the screen, and from 768 px wide a strip
+at the top of the page that stays in view. Each tab keeps its place, and a
+timer started on Recipe runs, beeps and marks the Recipe tab while another
+tab is open.
 
-The bake log stays in the browser unless you give it a private GitHub
-repository and a token that can reach only that repository; then each device
-syncs one JSON file per bake through GitHub's API. A shared link carries the
-setup, never the log or the token.
+The setup, the day's readings and the open tab survive a refresh and a
+closed app, home-screen app included, and **Share setup**, on the Recipe
+tab, copies the setup as a link. **Reset**, above the panels, starts a new
+bake: it puts the batch settings and today's readings back to their
+defaults, clears any DDT override, the timeline's start or target time, the
+step checkboxes and the timers, opens every step group, and keeps the log,
+the topping ideas and the tab. Reference tables and the recipe's sources
+open in drawers at the bottom of every tab.
+
+The bake log and the topping ideas stay in the browser unless you give them
+a private GitHub repository and a token that can reach only that
+repository; then each device syncs one JSON file per bake under `bakes/`
+and one per idea under `toppings/` through GitHub's API. The two sync
+separately, so one failing never holds up the other. A shared link carries
+the setup, never the log, the ideas or the token.
 
 Built to be read on a phone propped against a mixer, by someone with flour on
 their hands.
@@ -61,8 +72,9 @@ mix of a split batch runs on its own clock, with its own rise and timers.
 MESSAGE-64 checked the recipe against food and baking science, and the papers
 it rests on are in spec §11 and the About drawer. Since MESSAGE-65 the inputs
 are stored in the browser as well as the URL, so a home-screen app reopens
-where it was. Since MESSAGE-67 a stopped timer resumes, and since MESSAGE-68
-finished steps and groups fold away. See
+where it was. Since MESSAGE-67 a stopped timer resumes, since MESSAGE-68
+finished steps and groups fold away, and since MESSAGE-70 the page is three
+tabs, one of them for topping ideas. See
 [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
 ## Home screen icon

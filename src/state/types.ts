@@ -1,5 +1,7 @@
 /** Application state shapes — WEBSITE-SPEC-biga-calculator.md §6. */
 
+import type { Tab } from '../lib/tabs';
+
 /**
  * §4.7. `retarded` is 2 h at room temperature then ~19 h in the fridge — the
  * retarded schedule, and the answer for a kitchen that won't hold a band. `classic` is 12–18 h at 61–65 °F;
@@ -154,4 +156,10 @@ export interface Persisted {
    * on iOS reopens the address its icon was saved with.
    */
   inputsQuery: string | null;
+  /**
+   * §13.1 (APP-6): the open tab, so a reload or a reopened app comes back to
+   * it. Reset keeps it (§10). A link whose setup differs from the stored one
+   * opens on Recipe (`initialTab`).
+   */
+  tab: Tab;
 }

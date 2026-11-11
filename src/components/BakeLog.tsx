@@ -1,5 +1,4 @@
 import { useState, type ReactNode } from 'react';
-import { Drawer } from './Drawer';
 import { Badge, NumberField, ToggleField } from './fields';
 import {
   MIX_PHASES,
@@ -24,7 +23,9 @@ import { BOUNDS } from '../state/defaults';
 import { parseRepoName } from '../state/bakeLogStore';
 import { runningPhases } from '../state/sessionBake';
 import { STEPS } from '../content/steps';
-import type { AppState } from '../state/useAppState';
+import type { AppState, SyncState } from '../state/useAppState';
+import type { GitHubConfig } from '../state/repoSync';
+import type { ToppingsState } from '../state/useToppings';
 
 /**
  * The bake log — WEBSITE-SPEC-biga-calculator.md §10, with §6 Panel 2's rule
@@ -32,8 +33,9 @@ import type { AppState } from '../state/useAppState';
  *
  * Captures sit in the steps where each reading is taken: the poured water in
  * Phase A, the final temperature at the end of each mix. The card after the
- * last mix shows what the log will record and saves it. The drawer holds the
- * history, Dave's switch for each mix, and this device's sync settings.
+ * last mix shows what the log will record and saves it. The Bake log tab
+ * (§13.1) holds the history, Dave's switch for each mix, and this device's
+ * sync settings, which the topping ideas share (§13.3).
  */
 
 const REASON: Record<NotCountedReason, string> = {
@@ -285,19 +287,36 @@ function MixOutcome({ status }: { status: ReturnType<typeof mixStatus> }) {
 }
 
 // ---------------------------------------------------------------------------
-// The drawer
+// The Bake log tab
 // ---------------------------------------------------------------------------
 
-export function BakeLogDrawer({ open, onClose, state }: { open: boolean; onClose: () => void; state: AppState }) {
+/** §10, §13.1: the log is the Bake log tab. */
+export function BakeLogPage({ state, toppings }: { state: AppState; toppings: ToppingsState }) {
   return (
-    <Drawer open={open} title="Bake log" onClose={onClose}>
-      <div className="grid gap-6">
-        <SizesSection state={state} />
-        <BakesSection state={state} />
-        <SyncSection state={state} />
-      </div>
-    </Drawer>
+    <div className="grid min-w-0 gap-6">
+      <SizesSection state={state} />
+      <BakesSection state={state} />
+      <SyncSection state={state} toppings={toppings} />
+    </div>
   );
+}
+
+/**
+ * Where one store's sync stands, in a sentence: the log's or the topping
+ * ideas' (§13.3), each named, since they sync apart and either can fail alone.
+ */
+export function syncStatusText(
+  github: GitHubConfig,
+  sync: SyncState,
+  waiting: number,
+  lastSyncedAt: string,
+  what: string,
+): string {
+  const repo = `${github.owner}/${github.repo}`;
+  if (sync.state === 'syncing') return `Syncing ${what} with ${repo}…`;
+  if (sync.state === 'error') return `Couldn't sync ${what} with ${repo}. ${sync.message}`;
+  if (waiting > 0) return `${waiting} ${waiting === 1 ? 'change' : 'changes'} to ${what} waiting to sync with ${repo}.`;
+  return `Synced ${what} with ${repo}${lastSyncedAt ? ` at ${formatTimeOfDay(new Date(lastSyncedAt))}` : ''}.`;
 }
 
 function SizesSection({ state }: { state: AppState }) {
@@ -421,7 +440,7 @@ function MixItem({ bake, mix, state }: { bake: LoggedBake; mix: LoggedMix; state
   );
 }
 
-function SyncSection({ state }: { state: AppState }) {
+function SyncSection({ state, toppings }: { state: AppState; toppings: ToppingsState }) {
   const { github, setGitHub, sync, syncNow, log } = state;
   const [repoText, setRepoText] = useState(github ? `${github.owner}/${github.repo}` : '');
   const [token, setToken] = useState('');
@@ -434,16 +453,21 @@ function SyncSection({ state }: { state: AppState }) {
       {github ? (
         <>
           <p className="text-stone-700 dark:text-stone-300">
-            {sync.state === 'syncing'
-              ? `Syncing with ${github.owner}/${github.repo}…`
-              : sync.state === 'error'
-                ? `Couldn't sync with ${github.owner}/${github.repo}. ${sync.message}`
-                : waiting > 0
-                  ? `${waiting} ${waiting === 1 ? 'change' : 'changes'} waiting to sync with ${github.owner}/${github.repo}.`
-                  : `Synced with ${github.owner}/${github.repo}${log.lastSyncedAt ? ` at ${formatTimeOfDay(new Date(log.lastSyncedAt))}` : ''}.`}
+            {syncStatusText(github, sync, waiting, log.lastSyncedAt, 'the log')}
+          </p>
+          {/* §13.3: the ideas sync on their own, so their state is their own line. */}
+          <p className="mt-1 text-stone-700 dark:text-stone-300">
+            {syncStatusText(github, toppings.sync, toppings.waiting, toppings.store.lastSyncedAt, 'the topping ideas')}
           </p>
           <div className="mt-2 flex flex-wrap gap-3">
-            <button type="button" onClick={syncNow} className={buttonClass}>
+            <button
+              type="button"
+              onClick={() => {
+                syncNow();
+                toppings.syncNow();
+              }}
+              className={buttonClass}
+            >
               Sync now
             </button>
             <button type="button" onClick={() => setGitHub(null)} className={buttonClass}>
@@ -463,9 +487,9 @@ function SyncSection({ state }: { state: AppState }) {
           }}
         >
           <p className="text-sm text-stone-600 dark:text-stone-400">
-            The log is in this browser only. To share it with your other devices, make a private GitHub repository
-            and a fine-grained token that can reach only that repository, with Contents set to read and write. Paste
-            both here on each device. The token stays in this browser’s storage.
+            The log and the topping ideas are in this browser only. To share them with your other devices, make a
+            private GitHub repository and a fine-grained token that can reach only that repository, with Contents set
+            to read and write. Paste both here on each device. The token stays in this browser’s storage.
           </p>
           <label className="grid gap-1.5 text-sm font-medium text-stone-700 dark:text-stone-300">
             Repository

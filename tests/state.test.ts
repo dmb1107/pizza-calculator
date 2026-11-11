@@ -244,6 +244,7 @@ describe('localStorage persistence', () => {
       ],
       sessionBakeId: '2026-09-28-193000',
       inputsQuery: 'balls=12&cold=36&room=66.5',
+      tab: 'toppings' as const,
     };
     savePersisted(s, value);
     expect(loadPersisted(s)).toEqual(value);
@@ -325,6 +326,7 @@ describe('§10 Reset starts a new bake', () => {
     timers: [{ stepId: 'mix-3#1', startedAt: 1_000, minMinutes: 3, maxMinutes: 4, stoppedAt: 200_000 }],
     sessionBakeId: 'bake-2026-09-28-1',
     inputsQuery: encodeInputs(CUSTOM),
+    tab: 'log',
   };
 
   it('puts the DDT override and the timeline anchor back to their defaults, and clears the bake in progress', () => {
@@ -345,11 +347,13 @@ describe('§10 Reset starts a new bake', () => {
     // timeline is held. The anchor is the held time, not the mode.
     expect(next.panels).toEqual(MID_BAKE.panels);
     expect(next.timelineMode).toBe(MID_BAKE.timelineMode);
+    // Kept (§10, §13.1, MESSAGE-70): which tab is open.
+    expect(next.tab).toBe('log');
     // Nothing else: every persisted field is in one of the three lists, and
     // the calibration holds the override alone.
     const resetToDefault = ['calibration', 'bigaStartAtIso', 'bakeAtIso'];
     const cleared = ['checkedSteps', 'closedGroups', 'timers', 'sessionBakeId'];
-    const kept = ['panels', 'timelineMode'];
+    const kept = ['panels', 'timelineMode', 'tab'];
     // The stored inputs (MESSAGE-65) follow `inputsForNewBake`: every input
     // at its default, which is '' (not null, nothing stored).
     const followsInputs = ['inputsQuery'];

@@ -28,11 +28,13 @@ export function NewBakeReset({ onReset }: { onReset: () => void }) {
   }
 
   return (
-    <div role="alertdialog" aria-labelledby="new-bake-title" className="rounded-xl border border-amber-400 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-950/40">
+    // basis-full: beside "Share setup" (§13.1) the question takes the whole
+    // row, and the button wraps below it.
+    <div role="alertdialog" aria-labelledby="new-bake-title" className="basis-full rounded-xl border border-amber-400 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-950/40">
       <p className="text-amber-950 dark:text-amber-100">
         <strong id="new-bake-title">Start a new bake?</strong> This puts the batch settings, the schedule adjustments
         and today&apos;s readings back to their defaults, and clears any DDT override, the timeline&apos;s start or target time, the step
-        checkboxes and the timers. Your saved bakes stay.
+        checkboxes and the timers. Your saved bakes and topping ideas stay.
       </p>
       <div className="mt-3 flex flex-wrap gap-3">
         <button
