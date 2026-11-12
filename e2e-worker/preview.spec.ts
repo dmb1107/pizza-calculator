@@ -80,7 +80,10 @@ test('the preview: a passkey, a sign-in, bakes, an idea and a photo through the 
     for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
     return btoa(s);
   });
-  const [chooser] = await Promise.all([a.page.waitForEvent('filechooser'), form.getByRole('button', { name: 'Add photo', exact: true }).click()]);
+  // In the middle of the screen, clear of the tab bar that comes back as focus leaves the name (#64).
+  const addPhoto = form.getByRole('button', { name: 'Add photo', exact: true });
+  await addPhoto.evaluate((e) => e.scrollIntoView({ block: 'center' }));
+  const [chooser] = await Promise.all([a.page.waitForEvent('filechooser'), addPhoto.click()]);
   await chooser.setFiles({ name: 'preview.jpg', mimeType: 'image/jpeg', buffer: Buffer.from(jpeg, 'base64') });
   await form.getByRole('button', { name: 'Save', exact: true }).click();
   await openTab(a.page, 'Bake log');

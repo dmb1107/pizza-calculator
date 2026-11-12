@@ -32,6 +32,7 @@ function idea(id: string, overrides: Partial<ToppingIdea> = {}): ToppingIdea {
     comments: '',
     rating: null,
     photo: null,
+    dessert: false,
     created: '2026-11-01T18:00:00.000Z',
     updated: '2026-11-01T18:00:00.000Z',
     ...overrides,

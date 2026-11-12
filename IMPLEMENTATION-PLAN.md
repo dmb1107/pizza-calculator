@@ -61,7 +61,8 @@ applied** (APP-8): a photo on each idea, shown square, synced under
 built** (APP-10, spec §14, Task 13 below): the app is served by a Cloudflare
 Worker at `pizza.dave-becker.com`, the GitHub token lives in the Worker, and
 devices sign in with a passkey. **Live since 12 Nov 2026**: the switchover is
-done and GitHub Pages is off.
+done and GitHub Pages is off. **APP-14 is built** (Task 14, #36): the
+Toppings tab redesign.
 FINDINGS-76 is the last thing sent.
 
 ---
@@ -859,6 +860,22 @@ the ideas' lists and editor, then their sync.
 - [x] Found on the preview: a sync rerun started before the first sync's
       result rendered, so it fetched every record again and marked each
       pulled one changed. Fixed in both hooks (`rerun`), with a WebKit test.
+
+---
+
+## Task 14 — The Toppings tab redesign (APP-14, #36)
+
+- [x] `dessert` on each idea, a toggle under the name; older ideas are pizzas.
+- [x] The order: rated Pizzas, rated Dessert pizzas, Untested at the bottom
+      (split by kind only when both have some).
+- [x] Expand all / Collapse all removed everywhere (Dave).
+- [x] Add idea floats at the bottom right, above the phone's tab bar.
+- [x] From 1024 px a photo gallery (4 or 5 to a row), an idea in a panel at
+      the right with Edit and Close; the page widens on that tab.
+- [x] The four fields format as typed (TipTap, lazy-loaded), stored as
+      Markdown with `*` bullets; Tab/Shift-Tab, Cmd-B, Cmd-K; a phone
+      toolbar; the name capitalizes words.
+- [x] Spec §13.2; unit tests; `e2e/toppings.spec.ts` at 375 px and 1280 px.
 
 ---
 

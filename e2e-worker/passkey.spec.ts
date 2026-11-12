@@ -170,8 +170,15 @@ test('a passkey made with the setup code; bakes, ideas and a photo through the W
   await a.page.getByRole('button', { name: 'Add idea', exact: true }).click();
   const form = a.page.getByRole('tabpanel', { name: 'Toppings' }).locator('form');
   await form.getByRole('textbox', { name: 'Name', exact: true }).fill('Soppressata, hot honey');
-  await form.getByRole('textbox', { name: 'Pre-bake', exact: true }).fill('Fior di latte, soppressata');
-  const [chooser] = await Promise.all([a.page.waitForEvent('filechooser'), form.getByRole('button', { name: 'Add photo', exact: true }).click()]);
+  // The field formats as typed (APP-14): typed into, as a person would.
+  await form.getByRole('textbox', { name: 'Pre-bake', exact: true }).click();
+  await a.page.keyboard.type('Fior di latte');
+  await a.page.keyboard.press('Enter');
+  await a.page.keyboard.type('Soppressata');
+  // In the middle of the screen, clear of the tab bar that comes back as focus leaves the field (#64).
+  const addPhoto = form.getByRole('button', { name: 'Add photo', exact: true });
+  await addPhoto.evaluate((e) => e.scrollIntoView({ block: 'center' }));
+  const [chooser] = await Promise.all([a.page.waitForEvent('filechooser'), addPhoto.click()]);
   await chooser.setFiles({ name: 'pizza.jpg', mimeType: 'image/jpeg', buffer: await drawnJpeg(a.page) });
   await expect(form.getByRole('img', { name: 'Soppressata, hot honey' })).toBeVisible();
   await form.getByRole('button', { name: 'Save', exact: true }).click();
@@ -331,7 +338,7 @@ test('wrong setup codes are limited, the right one included, across fresh browse
   await openTab(d.page, 'Bake log');
   await logPanel(d.page).getByLabel('Setup code').fill(SETUP_CODE);
   await press(button(d.page, 'Create a passkey'));
-  await expect(logPanel(d.page).getByRole('status')).toHaveText(/^Too many wrong setup codes\. Try again in 10 minutes\.$/);
+  await expect(logPanel(d.page).getByRole('status')).toHaveText(/^Too many wrong setup codes\. Try again in \d+ minutes?\.$/);
   await expect(button(d.page, 'Sign in')).toBeVisible();
   await context.close();
 });

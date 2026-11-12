@@ -170,7 +170,7 @@ export function TabBar({
       <div
         role="tablist"
         aria-label="Sections"
-        className="mx-auto flex max-w-2xl pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] md:gap-1 md:p-0"
+        className="mx-auto flex max-w-2xl pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] md:max-w-none md:gap-1 md:p-0"
       >
         {TABS.map(({ key, label }, index) => {
           const selected = key === tab;

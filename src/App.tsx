@@ -110,7 +110,11 @@ export default function App() {
   return (
     // The bottom padding keeps the end of every tab clear of the phone's tab
     // bar and the home indicator under it (§13.1).
-    <div className="mx-auto max-w-2xl px-4 pt-8 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:px-6 md:pb-8">
+    // From desktop width the Toppings tab is a photo gallery, so the page
+    // widens for it (§13.2, APP-14).
+    <div
+      className={`mx-auto max-w-2xl px-4 pt-8 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:px-6 md:pb-8 ${tab === 'toppings' ? 'lg:max-w-6xl' : ''}`}
+    >
       <header className="mb-6 md:mb-4">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Biga Neapolitan Dough</h1>
         <p className="mt-1 text-stone-600 dark:text-stone-400">
