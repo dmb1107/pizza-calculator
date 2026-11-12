@@ -158,6 +158,8 @@ question:
 | `FINDINGS-72-to-recipe-agent.md` | Reply to MESSAGE-71. Applied, 893 → 894. Our §13.3 wording was half true: between a deletion and an edit the device syncing last wins, so an edit synced after an unseen deletion brings the idea back (pinned by a test). Two §13.1 wording notes |
 | `MESSAGE-72.md` | FINDINGS-72's three corrections taken (Dave's 72a: no tombstones). **APP-7:** a `comments` field (how it tasted; `notes` is recipes and advice) below Notes, and one Expand all / Collapse all control above both lists, not stored, an open editor kept |
 | `FINDINGS-73-to-recipe-agent.md` | Reply to MESSAGE-72. APP-7 built, 897 unit and 19 WebKit tests. Unknown keys kept through a read and a save; reload every device after the deploy. Collapse all holds the page's height so the control stays under the finger. Screenshots sent with it |
+| `MESSAGE-73.md` | **APP-8: a photo on each idea** (`photo`, a safe name that changes with each photo; JPEGs under `toppings/images/`, shrunk on the device, IndexedDB without a token; a photo follows its idea). 73a: the held space after Collapse all goes once off screen |
+| `FINDINGS-74-to-recipe-agent.md` | Reply to MESSAGE-73. APP-8 built; 912 unit, 24 WebKit. Photos fetched by the git blobs API; a local thumbnail; photos shown square (Dave, mid-round); 73a read as "its going moves nothing". Screenshots sent with it |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -622,7 +624,32 @@ an older bundle; the APP-6 bundle had no such rule and drops `comments`.
 open through Collapse all (`shown = open || editing`). Collapse all holds
 the page at its old height (`heldHeight`, released by Expand all and Add
 idea), so a page scrolled into the lists can't clamp and slide the control
-from under the finger; the WebKit suite fails without it.
+from under the finger; the WebKit suite fails without it. It goes as soon
+as its going moves nothing (73a): the page without it still reaches the
+bottom of the screen.
+
+**Each idea may have a photo** (§13.2, §13.3, APP-8, MESSAGE-73). `photo`
+is `photoName(id, sha256)`, the id and 12 hex of the JPEG's hash, so a new
+photo is a new name and a copy of an idea always names the file it was
+saved with ("a photo follows its idea"); `parseIdea` refuses an unsafe one.
+The picked file is decoded through an `<img>` (EXIF orientation applied,
+HEIC where the system decodes it) and drawn to a canvas at 1600 px on the
+long side, JPEG 0.82 (`photoImage.ts`; the pure sizes in `src/lib/photos.ts`).
+**This device's photos live in IndexedDB** (`photoStore.ts`, keyed by name,
+with writes held in memory until they land), token or not; the closed card's
+112 px thumbnail is made from the photo and kept there under `~thumb`,
+never synced. **Photos aren't a `RecordKind`:** the ideas' sync drives them
+through two optional hooks in `repoSync.ts`. `beforePut` uploads an idea's
+photo just before the idea is written (only once the sync has decided to
+write it, so a copy that loses to `keepRemote` uploads nothing);
+`afterSync` deletes the queued old photos (`deletedPhotos`, queued by
+`upsertIdea` and `removeIdea`) unless an idea still names one, then fetches
+every named photo this device lacks through the **git blobs API**, which
+answers JSON at any size where the contents API stops filling `content` at
+1 MB. The bake log passes neither hook. A change in the editor waits for
+Save; Remove doesn't ask. **Photos show square** (Dave, 11 Nov, mid-round:
+a pizza is round), `object-cover` in a square box, on the card and in the
+editor; the stored JPEG keeps its frame.
 
 ## Design priorities, in order
 
@@ -713,7 +740,8 @@ src/lib/          pure calculation — no UI imports, this is what gets unit-tes
                   their references, read by the log and the probe),
                   bakeLog.ts (§4.3 normalization, §6's FF in use and bake 1's
                   seed, §10's counting rules), tabs.ts (§13.1), toppings.ts
-                  (§13.2), markdownBreaks.ts (§13.2's line breaks)
+                  (§13.2), markdownBreaks.ts (§13.2's line breaks),
+                  photos.ts (§13.3's photo sizes and names)
 src/content/      step and concept prose (steps.ts, concepts.ts)
 src/components/   React components
 src/state/        URL + browser-storage persistence (the inputs in both:
@@ -721,7 +749,9 @@ src/state/        URL + browser-storage persistence (the inputs in both:
                   the bake log's local copy (bakeLogStore.ts), its GitHub sync
                   (githubSync.ts) and the session as a bake (sessionBake.ts);
                   the topping ideas' store and sync (toppingsStore.ts) and hook
-                  (useToppings.ts); the one sync both run (repoSync.ts)
+                  (useToppings.ts); the one sync both run (repoSync.ts);
+                  the photos' local store (photoStore.ts) and shrink
+                  (photoImage.ts)
 public/           icon.svg (browser tab: the pizza alone, transparent) and
                   apple-touch-icon.png (iOS home screen: on orange, 180 px,
                   full-bleed square, since iOS rounds it)

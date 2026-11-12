@@ -61,6 +61,7 @@ function idea(id: string, overrides: Partial<ToppingIdea> = {}): ToppingIdea {
     notes: '',
     comments: '',
     rating: null,
+    photo: null,
     created: '2026-11-01T18:00:00.000Z',
     updated: '2026-11-01T18:00:00.000Z',
     ...overrides,
@@ -193,19 +194,19 @@ describe('§13.3 the local copy', () => {
   });
 
   it('keeps a key this build does not know through a read and a save', () => {
-    const photo = { path: 'toppings/a.jpg', width: 1200 };
-    const later = { ...idea('a'), photo };
+    const video = { path: 'toppings/videos/a.mp4', seconds: 12 };
+    const later = { ...idea('a'), video };
     const read = parseIdea(later)!;
     const saved = savedIdea({ ...draftOf(read), name: 'Renamed' }, read, 'unused', at('2026-11-11T20:00:00Z'));
     const file = JSON.parse(serializeRecord(saved));
-    expect(file.photo).toEqual(photo);
+    expect(file.video).toEqual(video);
     expect(file.name).toBe('Renamed');
     // A known key is never taken from the unknown ones: the draft decides.
     expect(savedIdea({ ...draftOf(read), comments: 'new' }, read, 'x', at('2026-11-11T20:00:00Z')).comments).toBe('new');
     // Local storage keeps it too.
     const s = fakeStorage();
     saveToppings(s, upsertIdea(EMPTY_TOPPINGS, read));
-    expect((loadToppings(s).items[0] as unknown as { photo: unknown }).photo).toEqual(photo);
+    expect((loadToppings(s).items[0] as unknown as { video: unknown }).video).toEqual(video);
   });
 
   it('degrades to no ideas on garbage', () => {
@@ -496,6 +497,10 @@ describe("§13.2's rendered copy is the app's", () => {
       'Delete',
       'Cancel',
       'Add the pre-bake toppings before rating it.',
+      'Add photo',
+      'Replace photo',
+      'Remove photo',
+      "That file couldn't be opened as a photo.",
     ]);
   });
 

@@ -9,7 +9,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { newIdeaId, savedIdea, type IdeaDraft, type ToppingIdea } from '../lib/toppings';
+import { newIdeaId, photoName, savedIdea, type IdeaDraft, type ToppingIdea } from '../lib/toppings';
+import { browserPhotoStore, photoOfKey, thumbKey, type PhotoStore } from './photoStore';
 import type { FetchLike, GitHubConfig, SyncState } from './repoSync';
 import { browserStorage } from './storage';
 import {
@@ -25,13 +26,26 @@ import {
 export interface ToppingsState {
   ideas: readonly ToppingIdea[];
   store: ToppingStore;
-  /** Save a valid draft as a new idea (`id` null) or over the idea with that id. Returns it. */
-  saveIdea: (draft: IdeaDraft, id: string | null) => ToppingIdea;
+  /**
+   * Save a valid draft as a new idea (`id` null) or over the idea with that
+   * id. A new photo picked in the editor comes as `newPhoto` and is named
+   * here, since a new idea has no id until now. Returns the idea.
+   */
+  saveIdea: (draft: IdeaDraft, id: string | null, newPhoto?: NewPhoto | null) => ToppingIdea;
+  /** This device's photos (§13.3, APP-8). */
+  photos: PhotoStore;
   deleteIdea: (id: string) => void;
   sync: SyncState;
   syncNow: () => void;
   /** Ideas changed or deleted here and not yet pushed. */
   waiting: number;
+}
+
+/** A photo picked and shrunk in the editor, not yet saved. */
+export interface NewPhoto {
+  blob: Blob;
+  /** Hex SHA-256 of the JPEG. */
+  sha256: string;
 }
 
 /** Four characters that keep two devices' ideas apart when saved in the same second. */
@@ -43,6 +57,10 @@ function randomSuffix(): string {
 
 export function useToppings(github: GitHubConfig | null): ToppingsState {
   const storage = useMemo(() => browserStorage(), []);
+  const photos = useMemo(() => browserPhotoStore(), []);
+  // Photos saved this session, which a cleanup mustn't take before the
+  // store that names them has rendered.
+  const keepPhotos = useRef(new Set<string>());
   const [store, setStore] = useState<ToppingStore>(() => loadToppings(storage));
   const [sync, setSync] = useState<SyncState>(() => (github ? { state: 'idle' } : { state: 'off' }));
 
@@ -53,17 +71,43 @@ export function useToppings(github: GitHubConfig | null): ToppingsState {
   const storeRef = useRef(store);
   storeRef.current = store;
 
-  const saveIdea = useCallback((draft: IdeaDraft, id: string | null) => {
-    const at = new Date();
-    const previous = id === null ? null : (storeRef.current.items.find((i) => i.id === id) ?? null);
-    const idea = savedIdea(draft, previous, id ?? newIdeaId(at, randomSuffix()), at);
-    setStore((prev) => upsertIdea(prev, idea));
-    return idea;
-  }, []);
+  /** This device's copy of a photo no idea here names any more. */
+  const dropLocalPhoto = useCallback(
+    (name: string | null) => {
+      if (name === null) return;
+      void photos.delete(name);
+      void photos.delete(thumbKey(name));
+    },
+    [photos],
+  );
 
-  const deleteIdea = useCallback((id: string) => {
-    setStore((prev) => removeIdea(prev, id));
-  }, []);
+  const saveIdea = useCallback(
+    (draft: IdeaDraft, id: string | null, newPhoto?: NewPhoto | null) => {
+      const at = new Date();
+      const previous = id === null ? null : (storeRef.current.items.find((i) => i.id === id) ?? null);
+      const ideaId = id ?? newIdeaId(at, randomSuffix());
+      let photo = draft.photo;
+      if (newPhoto) {
+        photo = photoName(ideaId, newPhoto.sha256);
+        keepPhotos.current.add(photo);
+        // The file before the idea that names it, here as in the repository.
+        void photos.put(photo, newPhoto.blob);
+      }
+      const idea = savedIdea({ ...draft, photo }, previous, ideaId, at);
+      if (previous && previous.photo !== idea.photo) dropLocalPhoto(previous.photo);
+      setStore((prev) => upsertIdea(prev, idea));
+      return idea;
+    },
+    [photos, dropLocalPhoto],
+  );
+
+  const deleteIdea = useCallback(
+    (id: string) => {
+      dropLocalPhoto(storeRef.current.items.find((i) => i.id === id)?.photo ?? null);
+      setStore((prev) => removeIdea(prev, id));
+    },
+    [dropLocalPhoto],
+  );
 
   // --- §13.3 sync: the log's loop, run on this store alone ---------------------
 
@@ -83,8 +127,21 @@ export function useToppings(github: GitHubConfig | null): ToppingsState {
     setSync({ state: 'syncing' });
     const started = storeRef.current;
     const fetchFn: FetchLike = (url, init) => globalThis.fetch(url, init);
-    const { store: synced, error } = await syncToppings(cfg, started, fetchFn);
+    const { store: synced, error } = await syncToppings(cfg, started, fetchFn, photos);
     setStore((current) => mergeToppingsAfterSync(current, started, synced));
+    // A photo another device replaced or removed: this device's copy goes too.
+    void (async () => {
+      const keys = await photos.keys();
+      // What the sync ended on and what the page now holds: either may not
+      // have reached the other yet.
+      const named = new Set(
+        [...synced.items, ...storeRef.current.items].flatMap((i) => (i.photo === null ? [] : [i.photo])),
+      );
+      for (const key of keys) {
+        const name = photoOfKey(key);
+        if (!named.has(name) && !keepPhotos.current.has(name)) void photos.delete(key);
+      }
+    })();
     setSync(githubRef.current ? (error ? { state: 'error', message: error.message } : { state: 'idle' }) : { state: 'off' });
     syncing.current = false;
     if (syncAgain.current) {
@@ -124,6 +181,7 @@ export function useToppings(github: GitHubConfig | null): ToppingsState {
     store,
     saveIdea,
     deleteIdea,
+    photos,
     sync,
     syncNow: () => void syncNow(),
     waiting,

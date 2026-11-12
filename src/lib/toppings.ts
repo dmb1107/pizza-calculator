@@ -27,15 +27,28 @@ export interface ToppingIdea {
   comments: string;
   /** 1 to 5 in steps of 0.5; null is untested. */
   rating: number | null;
+  /**
+   * Names the idea's photo file under `toppings/images/` (§13.3), and changes
+   * with each new photo (APP-8): `photoName`. Null is no photo.
+   */
+  photo: string | null;
   /** ISO instants, set by the app. */
   created: string;
   updated: string;
 }
 
 /** What the editor holds before Save. */
-export type IdeaDraft = Pick<ToppingIdea, 'name' | 'pre_bake' | 'post_bake' | 'notes' | 'comments' | 'rating'>;
+export type IdeaDraft = Pick<ToppingIdea, 'name' | 'pre_bake' | 'post_bake' | 'notes' | 'comments' | 'rating' | 'photo'>;
 
-export const EMPTY_DRAFT: IdeaDraft = { name: '', pre_bake: '', post_bake: '', notes: '', comments: '', rating: null };
+export const EMPTY_DRAFT: IdeaDraft = {
+  name: '',
+  pre_bake: '',
+  post_bake: '',
+  notes: '',
+  comments: '',
+  rating: null,
+  photo: null,
+};
 
 /** §13.2: 1 to 5 in steps of 0.5. */
 export const RATING_MIN = 1;
@@ -90,6 +103,7 @@ export function savedIdea(draft: IdeaDraft, previous: ToppingIdea | null, id: st
     notes: draft.notes.trim(),
     comments: draft.comments.trim(),
     rating: draft.rating,
+    photo: draft.photo,
     created: previous?.created ?? iso,
     updated: iso,
   };
@@ -97,8 +111,22 @@ export function savedIdea(draft: IdeaDraft, previous: ToppingIdea | null, id: st
 
 /** The editor's draft for a saved idea. */
 export function draftOf(idea: ToppingIdea): IdeaDraft {
-  const { name, pre_bake, post_bake, notes, comments, rating } = idea;
-  return { name, pre_bake, post_bake, notes, comments, rating };
+  const { name, pre_bake, post_bake, notes, comments, rating, photo } = idea;
+  return { name, pre_bake, post_bake, notes, comments, rating, photo };
+}
+
+/** A photo name: file-name safe, as an id is. */
+export function isPhotoName(v: unknown): v is string {
+  return typeof v === 'string' && /^[\w-]{1,120}$/.test(v);
+}
+
+/**
+ * §13.2 `photo`: the idea's id and the first 12 hex characters of the JPEG's
+ * SHA-256, so a new photo is a new name, and a copy of an idea always names
+ * the file it was saved with (§13.3, "a photo follows its idea").
+ */
+export function photoName(ideaId: string, sha256Hex: string): string {
+  return `${ideaId}-${sha256Hex.slice(0, 12)}`;
 }
 
 /**
