@@ -60,8 +60,8 @@ applied** (APP-8): a photo on each idea, shown square, synced under
 `toppings/images/`. MESSAGE-74 (spec only) is applied. **MESSAGE-75 is
 built** (APP-10, spec §14, Task 13 below): the app is served by a Cloudflare
 Worker at `pizza.dave-becker.com`, the GitHub token lives in the Worker, and
-devices sign in with a passkey. It goes live once Dave sets the Worker's two
-secrets and connects Workers Builds (FINDINGS-76's switchover checklist).
+devices sign in with a passkey. **Live since 12 Nov 2026**: the switchover is
+done and GitHub Pages is off.
 FINDINGS-76 is the last thing sent.
 
 ---
@@ -852,8 +852,13 @@ the ideas' lists and editor, then their sync.
       preview deploy.
 - [x] Deploy: `deploy.yml` (Pages) replaced by `ci.yml` (tests only); Workers
       Builds deploys `main`.
-- [ ] Dave: the preview deploy and its check, the secrets, Workers Builds,
-      the switchover on each device, Pages off (FINDINGS-76).
+- [x] The preview deploy passed `npm run test:preview` on Cloudflare and was
+      deleted; PR #61 merged; Workers Builds deploys `main`; both secrets
+      set; Dave's devices moved and signed in, everything back; Pages off
+      (12 Nov 2026).
+- [x] Found on the preview: a sync rerun started before the first sync's
+      result rendered, so it fetched every record again and marked each
+      pulled one changed. Fixed in both hooks (`rerun`), with a WebKit test.
 
 ---
 

@@ -609,7 +609,12 @@ by a `RecordKind` (folder, id, parser, commit messages); `githubSync.ts` and
 run unchanged against it. A kind may say `keepRemote`: the ideas keep the
 repository's copy when it was saved later (`remoteIsNewer`), which is how
 §13.3's "the copy saved last wins" is built; the log has none, so its last push
-wins as before. **Between a deletion and an edit the device syncing last
+wins as before. **A sync's rerun waits for its result to render** (`rerun`,
+in both `useAppState` and `useToppings`): a change made mid-sync asks for
+another, which runs from an effect once the merged store is in `logRef` or
+`storeRef`. Calling `syncNow` straight away read the store from before the
+merge, fetched every record again and marked each pulled one as changed
+here (found on the preview, a WebKit test pins it). **Between a deletion and an edit the device syncing last
 wins**: a deletion removes edits it hasn't seen, and an edit synced after a
 deletion it hasn't seen writes the idea back (FINDINGS-72, pinned in
 `toppings.test.ts`). Reset and a shared link never touch the ideas. A card's header is

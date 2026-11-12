@@ -22,11 +22,15 @@ Don't trust any status here that you can check instead (§7).
   `https://pizza.dave-becker.com`; the GitHub token moves off the devices
   into the Worker; devices sign in with a passkey. CLAUDE.md's "The Worker
   is the one place a mistake exposes the repository" has the rules, and
-  FINDINGS-76 lists every route with what it checks. **It is live only
-  once Dave has done FINDINGS-76's switchover**: the preview and its check
-  (`npm run test:preview`), the two secrets, Workers Builds, each device
-  synced and moved, Pages off. Until then the old Pages site keeps serving
-  the last build from before this round, token sync and all. Three test
+  FINDINGS-76 lists every route with what it checks. **Live since 12 Nov
+  2026**: the preview passed its check on Cloudflare and was deleted, PR #61
+  merged, Workers Builds deploys `main`, both secrets are set, Dave's
+  devices moved with every bake, idea and photo back, and GitHub Pages is
+  off (the old address is 404). Dave revokes the old token himself. The
+  Worker's token is a new one, not the existing one §14.2 names (FINDINGS-76
+  §13). **For FINDINGS-77:** the sync-rerun bug FINDINGS-76 §13 reported is
+  fixed (both hooks, a WebKit test); it was worse than reported, since the
+  rerun also marked every pulled record as changed here. Three test
   layers: `tests/worker.test.ts` (the routes, with real WebAuthn
   signatures), `e2e/signin.spec.ts` (WebKit, a stub Worker and a fake
   passkey), and `npm run test:worker` (the real Worker in workerd, a fake
