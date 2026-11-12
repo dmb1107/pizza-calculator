@@ -185,7 +185,7 @@ export function removeRecord<T>(kind: Pick<RecordKind<T>, 'idOf'>, store: Record
 export function syncErrorFor(status: number): SyncError {
   if (status === 401) return new SyncError('signedOut', 'This device is signed out. Sign in to sync.', status);
   if (status === 502) {
-    return new SyncError('auth', "GitHub refused the app's token, or didn't answer. The token in the Worker may need replacing.", status);
+    return new SyncError('auth', "GitHub refused the app's token, or didn't answer. The token on the app's server may need replacing.", status);
   }
   if (status === 503) return new SyncError('auth', "The app's server has no GitHub token set.", status);
   if (status === 403) return new SyncError('other', 'The app\'s server refused the request.', status);

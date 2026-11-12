@@ -17,6 +17,23 @@ Don't trust any status here that you can check instead (§7).
 
 ## 1. Where it stands
 
+- **How work comes in changed on 12 Nov 2026** (Dave, after FINDINGS-76).
+  App features now come from Dave directly, as GitHub issues labelled
+  `backlog`; the queue and its rules are issue #60, and each item's
+  decisions are in its own issue. We own how they're built and the spec's
+  app sections (§13, §14, new feature sections), and we bring Dave the
+  decisions and on-screen text to approve. The recipe agent keeps the
+  recipe, its science, the step prose and §3–§9's formulas and numbers;
+  a round needing both runs as one PR on its branch. CLAUDE.md's "How work
+  comes in" has the rules. **Next is APP-14, the Toppings tab redesign
+  (#36): desktop design directions and the on-screen text first, for Dave
+  to approve.** Then APP-11, APP-9, APP-12.
+- **FINDINGS-76 is accepted.** APP-10 is done and #35 closed. Its four
+  §14 sentences are in the spec, the setup code's limit stays at five
+  wrong tries in ten minutes, and two pieces of copy changed ("The token on
+  the app's server may need replacing."; the log card's "sync it with your
+  other devices"). Apostrophes in our copy are straight, as in the spec and
+  the step prose. The Chromium bottom-edge tap is #64, low priority.
 - **APP-10 (MESSAGE-75, spec §14) is built, and FINDINGS-76 is the last
   thing sent.** The app moves from GitHub Pages to one Cloudflare Worker at
   `https://pizza.dave-becker.com`; the GitHub token moves off the devices
@@ -187,7 +204,8 @@ Don't trust any status here that you can check instead (§7).
     help center.
   - MESSAGE-35 and 36: every rendered paragraph, theirs and ours, rewritten
     to the humanizer patterns. **The writing rules live in CLAUDE.md
-    ("Writing anything the site shows") and apply to every string this side
+    ("Writing anything someone reads": the humanizer's 26 patterns since
+    12 Nov 2026) and apply to every string this side
     adds.**
   - MESSAGE-37: the recipe's phrasing pass; `mix-2`'s unsourced
     motor-protection advice deleted. `mix-1`'s "trip the motor protection"
@@ -300,6 +318,13 @@ identical (the gate and `timeline.test.ts` will tell you).
 ---
 
 ## 3. How a round works
+
+**For an app feature from Dave** (from 12 Nov 2026): read its issue and
+#60, bring Dave the decisions and on-screen text before building, build,
+run its *Done when* in the WebKit suite, bring the spec's app sections up
+to what was built, then comment on the issue with the date and the result
+and close it. The steps below are for a round that comes from the recipe
+agent.
 
 The user attaches a bundle. On the desktop it comes from `~/Downloads/files N`;
 in a cloud session (claude.ai/code) the files land under

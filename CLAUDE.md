@@ -166,8 +166,35 @@ question:
 | `MESSAGE-74.md` | Spec only: §13 brought to what APP-8 built (photos square, the held space goes once its going moves nothing, Photo and Preparing the photo… in the rendered copy, the local small copy). Gate patch for the phrase list |
 | `FINDINGS-75-to-recipe-agent.md` | Reply to MESSAGE-74. All reproduced, 912 of 912; nothing open |
 | `MESSAGE-75.md` | **APP-10, spec §14**: the app moves to Cloudflare at `pizza.dave-becker.com`; the GitHub token moves into a Worker; devices sign in with a passkey (90 days, renewed on use), a setup code guards creating one; Pages off once the new address works |
-| `FINDINGS-76-to-recipe-agent.md` | Reply to MESSAGE-75. APP-10 built: the Worker's routes and what each checks, the switchover checklist, the secrets and deploy steps. Writes pass only `message`, `content`, `sha`; `download_url`s stripped. Screenshots sent with it |
+| `FINDINGS-76-to-recipe-agent.md` | Accepted (Dave, 12 Nov; APP-10 done, #35 closed). Reply to MESSAGE-75. APP-10 built: the Worker's routes and what each checks, the switchover checklist, the secrets and deploy steps. Writes pass only `message`, `content`, `sha`; `download_url`s stripped. Screenshots sent with it |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
+
+## How work comes in (Dave, 12 Nov 2026)
+
+From FINDINGS-76 on, the work is split by kind, so that two agents don't
+pass every app feature back and forth through Dave.
+
+- **App features come from Dave directly**, as GitHub issues labelled
+  `backlog` and `app` (APP-14, then APP-11, APP-9 and APP-12). The queue's
+  order and the working rules are in issue **#60**; each item's decisions,
+  with Dave's dates, are in its own issue's body. When an item is done,
+  comment on it with the date and the result (the PRs, what passed), then
+  close it.
+- **We own how features are built, and the spec's app sections:** §13, §14
+  and any new feature section. Keep them in step with what is built, worded
+  as behaviour, not implementation.
+- **Bring Dave the decisions and the on-screen text to approve**, worded
+  under the writing rules below. Ask him only about what he'd see.
+- **The recipe agent still owns the recipe, its science, the step prose, and
+  the spec's formulas and numbers (§3–§9).** Don't change those without it.
+  When a round needs both, it pushes the spec change and a MESSAGE to a
+  branch, we build on that branch and commit FINDINGS there, and Dave merges
+  one PR.
+- **Phone checks:** each round's *Done when* runs in the WebKit suite. Ask
+  Dave to check on his iPhone only what the suite can't reach and that
+  really matters, and say which parts those are.
+- **Effort:** Dave picks `low`, `medium` or `high` per round, and `extra`
+  only for the hardest cases.
 
 ## Rules that matter more than usual here
 
@@ -721,47 +748,75 @@ passkeys (iCloud, Bitwarden) send 0, which isn't checked.
 4. **Shareable/resumable state.** Settings and the day's readings survive a
    refresh and a closed app, and send as a link.
 
-## Writing anything the site shows
+## Writing anything someone reads
 
-Dave's rules since MESSAGE-35, from the humanizer's 25 patterns
-(https://github.com/blader/humanizer#the-25-patterns). **They apply to every
-string the site renders that this side writes**: component copy, hints,
-labels and buttons, the engine's warnings (`engine.ts`), timeline stage text
-(`timeline.ts`), copy-as-text (`recipeText.ts`), and any wording we propose
-for the spec. §8 prose itself is the recipe agent's to word: if it breaks a
-rule, say so in the FINDINGS rather than editing generated files.
+**Always follow the humanizer's 26 patterns** (Dave, 12 Nov 2026;
+https://github.com/blader/humanizer#the-26-patterns). Before that it was the
+same list at 25, from MESSAGE-35. **They apply to all text a person reads
+that this side writes**:
+- on the site: component copy, hints, labels and buttons, the engine's
+  warnings (`engine.ts`), timeline stage text (`timeline.ts`), copy-as-text
+  (`recipeText.ts`), and any wording we propose for the spec;
+- for Dave: chat replies, FINDINGS, issue and PR text, and the spec's app
+  sections.
+
+§8 prose itself is the recipe agent's to word. If it breaks a rule, say so
+in the FINDINGS rather than editing generated files.
 
 **The goal is clarity, directness and concision, without going casual.**
 
-Dave's priorities. Never ship these:
-- **One-line closers and dramatic fragments** that repeat the point.
-- **Sayings that sound deep.** "This bites hardest exactly where it matters
-  most" became the specific claim.
-- **Arguing with no one.** "You are not aiming at the final temperature when
-  you probe" and "the floor is not worth overruling" raised objections nobody
-  made. State the fact instead: "After the probe, Phases C and D still add
-  about X °F."
-- **Overused AI words:** delve, testament, landscape, showcase, crucial,
-  robust, genuinely, leverage.
-- **Sales language.** "A far more powerful lever" and "the highest-leverage
-  input" were both cut.
-- **Writing about the previous version** ("an earlier version…", "was changed
-  to", "no longer"). Describe what it does now. History belongs in `docs/`,
-  never on the page.
+The 26, in the humanizer's groups. Those marked *weak alone* count only
+when several tells share a passage.
 
-Avoid the rest of the patterns too:
-- "not X but Y" framing, and a run-up before the point;
-- forced threes, and repeated sentence openings;
-- stacked qualifiers, and hyphenated pairs that grammar doesn't need;
-- passive voice that hides who acts (name the baker or the app);
-- inflated significance, vague "associated with", and "-ing" riders;
-- borrowed authority (name the source and what it said, as §11 does);
-- "serves as" or "features" where "is" or "has" will do;
-- bold as decoration, Title Case or emoji headings;
-- chatbot residue, hedging disclaimers, and a heading repeated in the first
-  sentence.
+A. Staging instead of stating
+1. **Not X but Y.** State the point; don't set it against something it isn't.
+2. **One-line closers and dramatic fragments** that repeat the point.
+3. **Sayings that sound deep.** "This bites hardest exactly where it matters
+   most" became the specific claim.
+4. **A run-up before the point** ("Let's dive in", "Honestly?").
+5. **Arguing with no one.** "You are not aiming at the final temperature when
+   you probe" raised an objection nobody made. State the fact: "After the
+   probe, Phases C and D still add about X °F."
 
-**Em dashes are fine.** Dashes are the one pattern not applied.
+B. Rhythm by rule
+6. **Forced threes.** List as many items as there are.
+7. **Repeated sentence openings.**
+8. **Dashes as the universal connector** (*weak alone*). Em dashes stay
+   allowed (Dave, MESSAGE-35), just not as the default joiner.
+9. **Stacked qualifiers** (*weak alone*).
+10. **Hyphenated pairs grammar doesn't need** (*weak alone*).
+11. **Passive voice that hides who acts** (*weak alone*). Name the baker or
+    the app.
+
+C. Inflation and borrowed authority
+12. **Overused AI words:** delve, testament, landscape, showcase, crucial,
+    robust, genuinely, leverage.
+13. **Inflated significance.**
+14. **Vague connections** ("associated with", "in connection with").
+15. **Shallow -ing phrases** tacked on ("…, reflecting the…").
+16. **Sales language.** "A far more powerful lever" and "the highest-leverage
+    input" were both cut.
+17. **Borrowed authority.** Name the source and what it said, as §11 does.
+18. **"Serves as", "features" or "boasts"** where "is" or "has" will do.
+
+D. Formatting by rule
+19. **Bold as decoration.**
+20. **Decorative headings:** Title Case, emoji, or headings for effect.
+21. **Curly quotation marks** (*weak alone*). Our copy, the spec and the
+    step prose use straight quotes and apostrophes (Dave, 12 Nov 2026).
+
+E. Leftovers from the chat and the draft
+22. **Chatbot residue** ("Great question!", "I hope this helps!").
+23. **Knowledge-limit disclaimers and hedged guesses.** Check, then state.
+24. **A heading repeated in the first sentence.**
+25. **Writing about the document instead of its subject.** On the page this
+    includes writing about the previous version ("an earlier version…",
+    "was changed to", "no longer"): describe what it does now. History
+    belongs in `docs/`, never on the page.
+
+F. Writing for the wrong reader
+26. **Re-explaining what the reader knows.** Go to the decision or the
+    result; don't walk Dave back through context he already has.
 
 Three rules the pass itself taught:
 - **A reworded sentence must still be true, so check the claim, not only the
