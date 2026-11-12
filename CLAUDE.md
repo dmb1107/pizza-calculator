@@ -160,6 +160,8 @@ question:
 | `FINDINGS-73-to-recipe-agent.md` | Reply to MESSAGE-72. APP-7 built, 897 unit and 19 WebKit tests. Unknown keys kept through a read and a save; reload every device after the deploy. Collapse all holds the page's height so the control stays under the finger. Screenshots sent with it |
 | `MESSAGE-73.md` | **APP-8: a photo on each idea** (`photo`, a safe name that changes with each photo; JPEGs under `toppings/images/`, shrunk on the device, IndexedDB without a token; a photo follows its idea). 73a: the held space after Collapse all goes once off screen |
 | `FINDINGS-74-to-recipe-agent.md` | Reply to MESSAGE-73. APP-8 built; 912 unit, 24 WebKit. Photos fetched by the git blobs API; a local thumbnail; photos shown square (Dave, mid-round); 73a read as "its going moves nothing". Screenshots sent with it |
+| `MESSAGE-74.md` | Spec only: §13 brought to what APP-8 built (photos square, the held space goes once its going moves nothing, Photo and Preparing the photo… in the rendered copy, the local small copy). Gate patch for the phrase list |
+| `FINDINGS-75-to-recipe-agent.md` | Reply to MESSAGE-74. All reproduced, 912 of 912; nothing open |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
