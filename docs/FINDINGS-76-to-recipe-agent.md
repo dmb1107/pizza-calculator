@@ -2,7 +2,13 @@
 
 APP-10 is built and tested on this machine. The unit suite is **954 of 954** (the gate's 912 and 42 new). The WebKit suite is **29 of 29** as a home-screen app at 375 px, served from the root path. The real Worker passes **3 of 3** in `wrangler dev`, which runs it in workerd, the Workers runtime. All thirteen spec edits are applied and reproduced.
 
-**Not done yet: the preview deploy.** It needs Dave's Cloudflare login and the two secrets, which only Dave sets. So §7's first two *Done when* items are scripted but not yet run against Cloudflare. `npm run test:preview` runs both against the preview once it exists. It passes against the local Worker. §9 has the steps.
+**The preview deploy passes §7's first two *Done when* items on Cloudflare** (12 Nov, `npm run test:preview`, 1.3 minutes). Against `pizza-calculator-preview.pizza-calculator.workers.dev`, with Dave's secrets and the real bake-log repository:
+- a passkey was made with the setup code, and the two real bakes came down;
+- an idea with a photo went up and was read back, photo included, by a second browser holding the same passkey;
+- every out-of-scope request was refused, and one with no sign-in got 401;
+- the idea and its photo were deleted, and Sign out ended the sign-in.
+
+The repository is as it was: 41 ideas and 34 photos. §9 has the steps and §13 what the runs found.
 
 Four things need words from you:
 - the passkey's relying party is the request's own address (§4.1);
@@ -230,3 +236,14 @@ The page's inputs, ticks, timers, open tab and closed groups don't carry over (�
 - **`wrangler dev` rewrites the request's address to the production route**, here `http://pizza.dave-becker.com`, which the Worker refuses as plain http. `--local-upstream localhost:<port>` keeps the local address. `npm run worker:dev` and the Worker suite pass it.
 - **A button at the bottom edge of a 375 px screen, tapped while a field has focus, loses the click in Chromium.** The tap moves focus off the field, the tab bar comes back, and the release lands on it. iOS keeps focus in the field (FINDINGS-67), so Dave's phone and the WebKit suite don't see it, and Mac Safari doesn't move focus to a clicked button either. This dates from APP-6's hidden bar, not from this round. The Worker suite scrolls a button to the middle before tapping. Raise it if Android or a narrow Chrome window matters.
 - **The Worker uploads 709 KiB (131 KiB gzipped)**, mostly the passkey library's certificate parsers. That is inside the free plan's 3 MB.
+
+## 13. What the preview runs found
+
+- **A new token, not the existing one.** Dave made a new fine-grained token for the Worker: `pizza-bake-log` only, Contents read and write, one year. §14.2 says "the existing fine-grained token" (10g). Once every device has moved, the old token can be revoked, so a copy left in Safari's storage at the old address stops working. That is stronger than clearing the copies. Suggested wording for §14.2's second sentence:
+
+  > It is a fine-grained token made for the Worker, which reaches only the bake-log repository (Dave, 12 Nov 2026); the devices' old token is revoked once every device has moved.
+
+- **A wrong token shows as it should.** The first run had the wrong token in the preview. Every sync came back 502, and the page said "GitHub refused the app's token, or didn't answer. The token in the Worker may need replacing." The device stayed signed in. Replacing the secret fixed it with no redeploy.
+- **A new device's first sync takes about half a minute.** With 41 ideas and 35 photos, a new browser makes 92 requests through the Worker, one at a time at 0.2–0.6 s each, about 12 MB in all. Every request succeeded, photos up to 824 KB included. The check now waits for that sync before it adds its idea.
+- **A sync rerun fetches every idea again.** This is ours, and older than this round. When an idea is saved while a sync runs, the follow-up sync starts from the store as it was before the first one finished, so it fetches every idea again. Nothing is lost, and the next sync is normal. It doubles a new device's first sync if Dave adds an idea during it. A fix belongs in `useToppings` and `useAppState`, with a test; it can come after the switchover.
+- **The account's workers.dev subdomain** is now `pizza-calculator.workers.dev`. The account had none, and `wrangler deploy` registered it. It serves only the preview, since the production Worker has its workers.dev address off.

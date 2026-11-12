@@ -45,7 +45,10 @@ async function press(target: Locator) {
 }
 
 test('the preview: a passkey, a sign-in, bakes, an idea and a photo through the Worker, Sign out, and the refusals', async ({ browser }) => {
-  test.setTimeout(120_000);
+  // A new browser fetches every idea and photo one request at a time: with
+  // Dave's 41 ideas and 35 photos that is about half a minute per browser.
+  test.setTimeout(360_000);
+  const FIRST_SYNC = { timeout: 150_000 };
   const base = URL_.replace(/\/?$/, '/');
   const contextA = await browser.newContext({ baseURL: base });
   const a = await device(contextA);
@@ -54,7 +57,8 @@ test('the preview: a passkey, a sign-in, bakes, an idea and a photo through the 
   await logPanel(a.page).getByLabel('Setup code').fill(CODE);
   await press(button(a.page, 'Create a passkey'));
   await expect(button(a.page, 'Sign out')).toBeVisible({ timeout: 20_000 });
-  await expect(logPanel(a.page)).toContainText('Synced the log', { timeout: 20_000 });
+  await expect(logPanel(a.page)).toContainText('Synced the log', FIRST_SYNC);
+  await expect(logPanel(a.page)).toContainText('Synced the topping ideas', FIRST_SYNC);
   // The bakes already in the repository came down.
   await expect(logPanel(a.page).getByText(/ · \d+ × \d+ g · /).first()).toBeVisible();
 
@@ -80,8 +84,9 @@ test('the preview: a passkey, a sign-in, bakes, an idea and a photo through the 
   await chooser.setFiles({ name: 'preview.jpg', mimeType: 'image/jpeg', buffer: Buffer.from(jpeg, 'base64') });
   await form.getByRole('button', { name: 'Save', exact: true }).click();
   await openTab(a.page, 'Bake log');
-  await expect(logPanel(a.page)).toContainText('Synced the topping ideas', { timeout: 30_000 });
-  await expect(logPanel(a.page)).not.toContainText('waiting to sync', { timeout: 30_000 });
+  await expect(logPanel(a.page)).not.toContainText('waiting to sync', FIRST_SYNC);
+  await expect(logPanel(a.page)).not.toContainText('Syncing', FIRST_SYNC);
+  await expect(logPanel(a.page)).toContainText('Synced the topping ideas', FIRST_SYNC);
 
   // A second browser with the same passkey reads it back, photo included.
   const synced = await a.cdp.send('WebAuthn.getCredentials', { authenticatorId: a.authenticatorId });
@@ -94,7 +99,7 @@ test('the preview: a passkey, a sign-in, bakes, an idea and a photo through the 
   await expect(button(b.page, 'Sign out')).toBeVisible({ timeout: 20_000 });
   await openTab(b.page, 'Toppings');
   const card = b.page.locator('li').filter({ has: b.page.getByRole('button', { name: new RegExp(`^${PREVIEW_IDEA.replace(/[()]/g, '\\$&')}`) }) });
-  await expect(card.getByRole('button').first().locator('img')).toBeVisible({ timeout: 30_000 });
+  await expect(card.getByRole('button').first().locator('img')).toBeVisible(FIRST_SYNC);
 
   // The refusals, signed in, from the page itself.
   const refused = await b.page.evaluate(async () => {
@@ -118,18 +123,24 @@ test('the preview: a passkey, a sign-in, bakes, an idea and a photo through the 
   await anon.goto('/');
   expect(await anon.evaluate(async () => (await fetch('/api/github/contents/bakes')).status)).toBe(401);
 
-  // Clean up: delete the idea (and with it its photo) from the first browser.
+  // Clean up: delete every idea of that name (an earlier run's too), and
+  // with each its photo, from the first browser.
   await openTab(a.page, 'Toppings');
-  const own = a.page.locator('li').filter({ has: a.page.getByRole('button', { name: new RegExp(`^${PREVIEW_IDEA.replace(/[()]/g, '\\$&')}`) }) });
-  const edit = own.getByRole('button', { name: 'Edit', exact: true });
-  // A card just saved may already be open.
-  if (!(await edit.isVisible())) await own.getByRole('button').first().click();
-  await edit.click();
-  await own.getByRole('button', { name: 'Delete', exact: true }).click();
-  await own.getByRole('alertdialog').getByRole('button', { name: 'Delete', exact: true }).click();
+  const named = () =>
+    a.page.locator('li').filter({ has: a.page.getByRole('button', { name: new RegExp(`^${PREVIEW_IDEA.replace(/[()]/g, '\\$&')}`) }) });
+  while ((await named().count()) > 0) {
+    const own = named().first();
+    const edit = own.getByRole('button', { name: 'Edit', exact: true });
+    // A card just saved may already be open.
+    if (!(await edit.isVisible())) await own.getByRole('button').first().click();
+    await edit.click();
+    await own.getByRole('button', { name: 'Delete', exact: true }).click();
+    await own.getByRole('alertdialog').getByRole('button', { name: 'Delete', exact: true }).click();
+  }
   await openTab(a.page, 'Bake log');
   await button(a.page, 'Sync now').click();
-  await expect(logPanel(a.page)).not.toContainText('waiting to sync', { timeout: 30_000 });
+  await expect(logPanel(a.page)).not.toContainText('waiting to sync', FIRST_SYNC);
+  await expect(logPanel(a.page)).not.toContainText('Syncing', FIRST_SYNC);
 
   // Sign out.
   await button(a.page, 'Sign out').click();
