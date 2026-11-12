@@ -65,3 +65,15 @@ input[type='range'] {
     accent-color: var(--color-amber-500);
   }
 }
+
+/* §13.2 (APP-14, 14c): the topping fields' formatting while typing.
+   Preflight takes list markers away; these put them back inside the editor. */
+.rich-field ul { list-style: disc; padding-left: 1.4em; margin: 0.15em 0; }
+.rich-field ul ul { list-style: circle; }
+.rich-field ul ul ul { list-style: square; }
+.rich-field ol { list-style: decimal; padding-left: 1.6em; margin: 0.15em 0; }
+.rich-field li > p { margin: 0; }
+.rich-field p { margin: 0.2em 0; min-height: 1.5em; }
+.rich-field a { color: var(--color-amber-800); text-decoration: underline; }
+.rich-field strong { font-weight: 700; }
+@media (prefers-color-scheme: dark) { .rich-field a { color: var(--color-amber-400); } }

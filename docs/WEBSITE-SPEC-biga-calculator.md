@@ -1775,7 +1775,7 @@ APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in A
 
 ### 13.2 Topping ideas
 
-**Each idea has a name, pre-bake toppings, post-bake toppings, notes, comments, a rating and a photo.**
+**Each idea has a name, pre-bake toppings, post-bake toppings, notes, comments, a rating, a photo, and whether it's a dessert pizza.**
 
 | Field | Kind | Rule |
 |---|---|---|
@@ -1787,21 +1787,31 @@ APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in A
 | `comments` | Markdown | may be empty: how the pizza tasted (APP-7, Dave, 11 Nov 2026); an idea saved without it has none |
 | `rating` | number or `null` | 1 to 5 in steps of 0.5; `null` is untested |
 | `photo` | text or `null` | names the idea's photo file (§13.3) and changes with each new photo (APP-8, Dave, 11 Nov 2026); `null` or missing is no photo |
+| `dessert` | true or false | true lists the idea under Dessert pizzas (APP-14, Dave, 12 Nov 2026); false or missing is a pizza, so every idea saved before APP-14 is a pizza |
 | `created`, `updated` | ISO time | set by the app |
 
-**An idea with no rating is untested** (Dave, 9 Nov 2026), and needs only a name, so a half-formed idea can be written down (Dave, 10 Nov 2026). Rating it moves it to the tested list, and needs its pre-bake toppings: the app asks for them rather than saving a rated idea without them. Clearing the rating moves it back.
+**An idea with no rating is untested** (Dave, 9 Nov 2026), and needs only a name, so a half-formed idea can be written down (Dave, 10 Nov 2026). Rating it moves it up into its section, and needs its pre-bake toppings: the app asks for them rather than saving a rated idea without them. Clearing the rating moves it back down.
 
-**Two lists on the Toppings tab:**
-- **Tested**, the rated ideas, highest rating first; ideas with the same rating, most recently updated first.
-- **Untested**, the unrated ideas, newest first by when each was first written down (`created`), so editing one doesn't move it.
+**Three sections on the Toppings tab, top to bottom** (APP-14, Dave, 12 Nov 2026):
+- **Pizzas**, the rated ideas that aren't dessert pizzas;
+- **Dessert pizzas**, the rated dessert pizzas;
+- **Untested**, every unrated idea. When both kinds have untested ideas, they split under two small headings, **Pizzas** and **Dessert pizzas**.
 
-**One control above both lists opens or closes every card at once** (Dave, 11 Nov 2026). It reads **Expand all** while any card is closed and **Collapse all** once every card is open, and it acts on Tested and Untested together. It isn't stored, as a card's own open state isn't. A card being edited counts as open, and its editor stays open through Collapse all, so text being typed is never lost; every other card closes. With no ideas the control isn't shown. After Collapse all the page keeps its height, so the control stays under the finger, and the empty space at its foot goes as soon as removing it moves nothing on screen (Dave, 11 Nov 2026).
+The rated sections list the highest rating first, and ideas with the same rating most recently updated first. Untested lists the newest first by when each was first written down (`created`), so editing one doesn't move it. A section with nothing rated says **Nothing rated yet.**; Dessert pizzas says **No dessert pizzas yet.** until an idea is one; an empty Untested says **Nothing waiting to be tried.**
 
-**The four text fields are Markdown** (Dave, 10 Nov 2026), so they can carry links, rendered by the app's existing renderer. A single line break shows as a line break, as it does in Apple Notes, since Dave pastes his notes in as they are. Links open in a new tab. Raw HTML isn't rendered. The editor shows the raw text.
+**Dessert pizza is a toggle on each idea**, under the name in the editor, off for a new idea (Dave, 12 Nov 2026). Any style of pizza can be a dessert one; the style is a choice that comes later (APP-12).
+
+**Add idea is a button that floats at the bottom right of the screen** and stays in view as the page scrolls; on a phone it sits above the tab bar (Dave, 12 Nov 2026). It hides while an editor is open. On a phone the new idea's editor opens at the top of the tab, and the page goes to it. Every card opens and closes on its own; there is no control that opens or closes them all (Dave, 12 Nov 2026).
+
+**From desktop width (1024 px) the ideas are a photo gallery** (Dave, 12 Nov 2026), four to a row, five from 1280 px. Each tile is the photo, square, with the name and the stars under it; an idea without a photo shows its pre-bake toppings in the photo's place, or "Only a name so far." An idea opens in a panel at the right, with **Edit** and **Close**, and its editor and a new idea's open in the same panel. Escape closes it. Below that width the ideas are cards, as on a phone.
+
+**The four text fields are Markdown** (Dave, 10 Nov 2026), so they can carry links, rendered by the app's existing renderer. A single line break shows as a line break, as it does in Apple Notes, since Dave pastes his notes in as they are. Links open in a new tab. Raw HTML isn't rendered.
+
+**The editor formats the four fields as they're typed** (APP-14, Dave, 12 Nov 2026): bullets show as bullets, bold as bold, links as links, and what is stored stays Markdown, so the sync, the files and the cards are unchanged. In a list, Enter starts the next bullet, and Enter on an empty one ends the list. Pre-bake and Post-bake start with one bullet; Notes and Comments start empty, and a field left at its first empty bullet saves as empty. On a keyboard, Tab nests a bullet and Shift-Tab brings it back out, Cmd-B (Ctrl-B) is bold and Cmd-K (Ctrl-K) a link. On a phone, a toolbar under the field being typed in gives **Bullet**, **Indent**, **Outdent**, **Bold** and **Link**, and pressing one keeps the keyboard up. Link opens a row under the toolbar: **Link address**, with **Add link** and **Cancel**. Bullets are stored as `*`, nested four spaces a level. A field the editor never changes is saved exactly as it was. **The name capitalizes each word** as it's typed on a phone.
 
 **Comments sit below Notes**, in the editor and on an open card (Dave, 11 Nov 2026), and the card leaves out an empty one.
 
-**A photo of the pizza** (APP-8, Dave, 11 Nov 2026): one per idea, and an idea may have none. The closed card shows it as a thumbnail beside the name; the open card shows it at full width. Both show it square, filled and centred, since a pizza is round (Dave, 11 Nov 2026); the stored photo keeps its whole frame. In the editor it can be added, replaced or removed, and like every other field a change takes effect on Save, so Cancel undoes it and Remove doesn't ask. Screen readers hear the idea's name for it. A file that can't be opened as a photo leaves the idea as it was, and the editor says so under the button.
+**A photo of the pizza** (APP-8, Dave, 11 Nov 2026): one per idea, and an idea may have none. On a phone the closed card shows it as a thumbnail beside the name and the open card at full width; from desktop width it is the gallery's tile and the top of the panel. Both show it square, filled and centred, since a pizza is round (Dave, 11 Nov 2026); the stored photo keeps its whole frame. In the editor it can be added, replaced or removed, and like every other field a change takes effect on Save, so Cancel undoes it and Remove doesn't ask. Screen readers hear the idea's name for it. A file that can't be opened as a photo leaves the idea as it was, and the editor says so under the button.
 
 **Add, edit and delete.** Delete asks first. The rating control is nine buttons, 1 to 5 by halves, and Clear, each a 48 px target on a phone. In the lists a rating shows as five stars, the half drawn as a half, with no number beside it (Dave's call, 11 Nov 2026); screen readers hear "Rated 3.5 of 5".
 
@@ -1810,9 +1820,11 @@ APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in A
 **Reset leaves the ideas alone**, and a shared link never carries them.
 
 **Rendered copy** (the calculator agent words the rest under the writing rules):
-- The tab: **Toppings**. The lists: **Tested** and **Untested**.
+- The tab: **Toppings**. The sections: **Pizzas**, **Dessert pizzas** and **Untested**.
 - Fields: **Name**, **Pre-bake**, **Post-bake**, **Notes**, **Comments**, **Photo**, **Rating**.
-- Buttons: **Add idea**, **Save**, **Delete**, **Cancel**; above the lists, **Expand all** or **Collapse all**.
+- The toggle: **Dessert pizza**, with **Lists it under Dessert pizzas.** under it. An empty Dessert pizzas: **No dessert pizzas yet.**
+- Buttons: **Add idea**, **Save**, **Delete**, **Cancel**; in the panel, **Edit** and **Close**.
+- The toolbar's buttons, read aloud: **Bullet**, **Indent**, **Outdent**, **Bold**, **Link**. The link row: **Link address**, **Add link**, **Cancel**.
 - Delete asks: **Delete "{name}"?** with **Delete** and **Cancel**.
 - Rating an idea with no pre-bake toppings: **Add the pre-bake toppings before rating it.**
 - The photo: **Add photo**, or **Replace photo** and **Remove photo** once there is one. A file that can't be read: **That file couldn't be opened as a photo.** While a photo shrinks: **Preparing the photo…**

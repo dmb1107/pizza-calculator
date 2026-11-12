@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Biga Neapolitan dough calculator \u2014 Grain Craft 00, Ooni Halo Core, Gozney Tread",
+  "description": "Biga Neapolitan dough calculator — Grain Craft 00, Ooni Halo Core, Gozney Tread",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && tsc -p worker --noEmit && vite build",
@@ -20,6 +20,10 @@
   "dependencies": {
     "@simplewebauthn/browser": "14.0.0",
     "@simplewebauthn/server": "14.0.3",
+    "@tiptap/markdown": "3.32.1",
+    "@tiptap/pm": "3.32.1",
+    "@tiptap/react": "3.32.1",
+    "@tiptap/starter-kit": "3.32.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-markdown": "^10.1.0",

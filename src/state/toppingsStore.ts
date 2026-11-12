@@ -72,7 +72,7 @@ const isInstant = (v: unknown): v is string => typeof v === 'string' && !Number.
  */
 export function parseIdea(raw: unknown): ToppingIdea | null {
   if (!isRecord(raw)) return null;
-  const { id, name, rating, created, updated, photo } = raw;
+  const { id, name, rating, created, updated, photo, dessert } = raw;
   // The id is a file name in the repository.
   if (typeof id !== 'string' || !/^[\w-]+$/.test(id)) return null;
   if (typeof name !== 'string' || name.trim() === '') return null;
@@ -89,6 +89,8 @@ export function parseIdea(raw: unknown): ToppingIdea | null {
   if (!isInstant(created) || !isInstant(updated)) return null;
   // §13.2: missing or null is no photo; anything else must be a safe file name.
   if (!(photo === undefined || photo === null || isPhotoName(photo))) return null;
+  // APP-14: missing or null is a pizza; anything but a boolean is malformed.
+  if (!(dessert === undefined || dessert === null || typeof dessert === 'boolean')) return null;
   const unknown = Object.fromEntries(Object.entries(raw).filter(([key]) => !IDEA_KEYS.has(key)));
   return {
     ...unknown,
@@ -100,6 +102,7 @@ export function parseIdea(raw: unknown): ToppingIdea | null {
     comments,
     rating: rating ?? null,
     photo: photo ?? null,
+    dessert: dessert ?? false,
     created,
     updated,
   };
@@ -115,6 +118,7 @@ const IDEA_KEYS: ReadonlySet<string> = new Set([
   'comments',
   'rating',
   'photo',
+  'dessert',
   'created',
   'updated',
 ]);

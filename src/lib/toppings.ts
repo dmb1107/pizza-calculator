@@ -28,6 +28,11 @@ export interface ToppingIdea {
   /** 1 to 5 in steps of 0.5; null is untested. */
   rating: number | null;
   /**
+   * Listed under Dessert pizzas (APP-14, 14a). Off by default; an idea saved
+   * before APP-14 has none, and reads as off.
+   */
+  dessert: boolean;
+  /**
    * Names the idea's photo file under `toppings/images/` (§13.3), and changes
    * with each new photo (APP-8): `photoName`. Null is no photo.
    */
@@ -38,7 +43,10 @@ export interface ToppingIdea {
 }
 
 /** What the editor holds before Save. */
-export type IdeaDraft = Pick<ToppingIdea, 'name' | 'pre_bake' | 'post_bake' | 'notes' | 'comments' | 'rating' | 'photo'>;
+export type IdeaDraft = Pick<
+  ToppingIdea,
+  'name' | 'pre_bake' | 'post_bake' | 'notes' | 'comments' | 'rating' | 'photo' | 'dessert'
+>;
 
 export const EMPTY_DRAFT: IdeaDraft = {
   name: '',
@@ -48,6 +56,7 @@ export const EMPTY_DRAFT: IdeaDraft = {
   comments: '',
   rating: null,
   photo: null,
+  dessert: false,
 };
 
 /** §13.2: 1 to 5 in steps of 0.5. */
@@ -104,6 +113,7 @@ export function savedIdea(draft: IdeaDraft, previous: ToppingIdea | null, id: st
     comments: draft.comments.trim(),
     rating: draft.rating,
     photo: draft.photo,
+    dessert: draft.dessert,
     created: previous?.created ?? iso,
     updated: iso,
   };
@@ -111,8 +121,8 @@ export function savedIdea(draft: IdeaDraft, previous: ToppingIdea | null, id: st
 
 /** The editor's draft for a saved idea. */
 export function draftOf(idea: ToppingIdea): IdeaDraft {
-  const { name, pre_bake, post_bake, notes, comments, rating, photo } = idea;
-  return { name, pre_bake, post_bake, notes, comments, rating, photo };
+  const { name, pre_bake, post_bake, notes, comments, rating, photo, dessert } = idea;
+  return { name, pre_bake, post_bake, notes, comments, rating, photo, dessert };
 }
 
 /** A photo name: file-name safe, as an id is. */
@@ -153,6 +163,28 @@ export function untestedIdeas(ideas: readonly ToppingIdea[]): ToppingIdea[] {
   return ideas
     .filter((i) => i.rating === null)
     .sort((a, b) => time(b.created) - time(a.created) || (a.id < b.id ? 1 : -1));
+}
+
+/**
+ * §13.2 (APP-14, 14a and 14f): the tab's order, top to bottom. The rated
+ * Pizzas, the rated Dessert pizzas, then everything untested, split by kind.
+ * The page shows Untested's two kinds under their own small headings only
+ * when both have ideas.
+ */
+export interface ToppingSections {
+  pizzas: ToppingIdea[];
+  desserts: ToppingIdea[];
+  untested: { pizzas: ToppingIdea[]; desserts: ToppingIdea[] };
+}
+
+export function toppingSections(ideas: readonly ToppingIdea[]): ToppingSections {
+  const pizzas = ideas.filter((i) => !i.dessert);
+  const desserts = ideas.filter((i) => i.dessert);
+  return {
+    pizzas: testedIdeas(pizzas),
+    desserts: testedIdeas(desserts),
+    untested: { pizzas: untestedIdeas(pizzas), desserts: untestedIdeas(desserts) },
+  };
 }
 
 /**

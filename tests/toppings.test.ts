@@ -18,6 +18,7 @@ import {
   savedIdea,
   starParts,
   testedIdeas,
+  toppingSections,
   untestedIdeas,
   type ToppingIdea,
 } from '../src/lib/toppings';
@@ -62,6 +63,7 @@ function idea(id: string, overrides: Partial<ToppingIdea> = {}): ToppingIdea {
     comments: '',
     rating: null,
     photo: null,
+    dessert: false,
     created: '2026-11-01T18:00:00.000Z',
     updated: '2026-11-01T18:00:00.000Z',
     ...overrides,
@@ -479,7 +481,8 @@ describe("§13.2's rendered copy is the app's", () => {
   it('reads every phrase §13.2 words', () => {
     expect(phrases).toEqual([
       'Toppings',
-      'Tested',
+      'Pizzas',
+      'Dessert pizzas',
       'Untested',
       'Name',
       'Pre-bake',
@@ -488,12 +491,23 @@ describe("§13.2's rendered copy is the app's", () => {
       'Comments',
       'Photo',
       'Rating',
+      'Dessert pizza',
+      'Lists it under Dessert pizzas.',
+      'No dessert pizzas yet.',
       'Add idea',
       'Save',
       'Delete',
       'Cancel',
-      'Expand all',
-      'Collapse all',
+      'Edit',
+      'Close',
+      'Bullet',
+      'Indent',
+      'Outdent',
+      'Bold',
+      'Link',
+      'Link address',
+      'Add link',
+      'Cancel',
       'Delete "{name}"?',
       'Delete',
       'Cancel',
@@ -508,7 +522,8 @@ describe("§13.2's rendered copy is the app's", () => {
 
   it('puts each one on the page in those words', async () => {
     const { TABS } = await import('../src/lib/tabs');
-    const copy = copyIn('src/components/Toppings.tsx');
+    // The editor's formatting field (APP-14) carries the toolbar and the link row.
+    const copy = new Set([...copyIn('src/components/Toppings.tsx'), ...copyIn('src/components/RichField.tsx')]);
     for (const p of phrases) {
       if (p === 'Toppings') {
         expect(TABS.map((t) => t.label)).toContain(p);
@@ -516,5 +531,51 @@ describe("§13.2's rendered copy is the app's", () => {
       }
       expect(copy.has(p.replace('{name}', '{}')), p).toBe(true);
     }
+  });
+});
+
+describe('§13.2 APP-14: dessert pizzas, and untested at the bottom', () => {
+  it('reads a missing or null dessert as a pizza, keeps true, and refuses anything else', () => {
+    const raw = { ...idea('a') } as Record<string, unknown>;
+    delete raw['dessert'];
+    expect(parseIdea(raw)?.dessert).toBe(false);
+    expect(parseIdea({ ...raw, dessert: null })?.dessert).toBe(false);
+    expect(parseIdea({ ...raw, dessert: true })?.dessert).toBe(true);
+    expect(parseIdea({ ...raw, dessert: 'yes' })).toBeNull();
+    expect(parseIdea({ ...raw, dessert: 1 })).toBeNull();
+  });
+
+  it('saves the toggle, and a new idea starts as a pizza', () => {
+    expect(EMPTY_DRAFT.dessert).toBe(false);
+    const at = new Date('2026-11-12T20:00:00Z');
+    const saved = savedIdea({ ...EMPTY_DRAFT, name: 'Nutella pizza', dessert: true }, null, 'n', at);
+    expect(saved.dessert).toBe(true);
+    expect(draftOf(saved).dessert).toBe(true);
+    expect(savedIdea({ ...draftOf(saved), dessert: false }, saved, 'n', at).dessert).toBe(false);
+  });
+
+  it('orders the tab: rated pizzas, rated dessert pizzas, then untested by kind', () => {
+    const ideas = [
+      idea('p1', { rating: 4 }),
+      idea('p2', { rating: 5 }),
+      idea('d1', { rating: 3, dessert: true }),
+      idea('u1', { created: '2026-11-02T18:00:00.000Z' }),
+      idea('u2', { created: '2026-11-03T18:00:00.000Z' }),
+      idea('ud', { dessert: true }),
+    ];
+    const s = toppingSections(ideas);
+    expect(s.pizzas.map((i) => i.id)).toEqual(['p2', 'p1']);
+    expect(s.desserts.map((i) => i.id)).toEqual(['d1']);
+    // Untested stays newest first, as before.
+    expect(s.untested.pizzas.map((i) => i.id)).toEqual(['u2', 'u1']);
+    expect(s.untested.desserts.map((i) => i.id)).toEqual(['ud']);
+    // Every idea is in exactly one place.
+    const all = [...s.pizzas, ...s.desserts, ...s.untested.pizzas, ...s.untested.desserts].map((i) => i.id).sort();
+    expect(all).toEqual(ideas.map((i) => i.id).sort());
+  });
+
+  it('keeps every idea saved so far under Pizzas', () => {
+    const old = parseIdea({ id: 'o', name: 'Old', rating: 4, pre_bake: 'x', created: '2026-11-01T18:00:00.000Z', updated: '2026-11-01T18:00:00.000Z' })!;
+    expect(toppingSections([old]).pizzas.map((i) => i.id)).toEqual(['o']);
   });
 });

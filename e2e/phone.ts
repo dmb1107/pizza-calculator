@@ -45,7 +45,11 @@ export async function openPhone(
         'mousedown',
         (e) => {
           const onButton = e.target instanceof Element && e.target.closest('button');
-          const typing = document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement;
+          const active = document.activeElement;
+          const typing =
+            active instanceof HTMLInputElement ||
+            active instanceof HTMLTextAreaElement ||
+            (active instanceof HTMLElement && active.isContentEditable);
           if (onButton && typing) e.preventDefault();
         },
         true,

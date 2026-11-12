@@ -34,10 +34,13 @@ returns:
   the bake is saved from the card after the last mix, once the final dough
   temperature is in;
 - a place for topping ideas: a name, pre-bake and post-bake toppings, notes,
-  comments on how the pizza tasted, and a rating in half stars, all in
-  Markdown so they can carry links, and a photo of the pizza, shrunk on the
-  phone before it is saved. Rated ideas list best first, and untested ones
-  in a list of their own; one button opens or closes every idea.
+  comments on how the pizza tasted, a rating in half stars, a photo of the
+  pizza (shrunk on the phone before it is saved), and a switch for dessert
+  pizzas. The text fields format as you type (bullets, nested bullets, bold
+  and links) and are stored as Markdown. Rated pizzas list best first, then
+  rated dessert pizzas, with the untested ideas at the bottom. Add idea
+  floats at the bottom right; from desktop width the ideas are a photo
+  gallery, and one opens in a panel at the right.
 
 The page has three tabs, **Recipe**, **Toppings** and **Bake log**: on a
 phone a bar fixed to the bottom of the screen, and from 768 px wide a strip
@@ -82,7 +85,9 @@ where it was. Since MESSAGE-67 a stopped timer resumes, since MESSAGE-68
 finished steps and groups fold away, and since MESSAGE-70 the page is three
 tabs, one of them for topping ideas. Since MESSAGE-75 (APP-10) the app is
 served from Cloudflare at its own address, and devices sign in with a
-passkey instead of holding a GitHub token. See
+passkey instead of holding a GitHub token. APP-14 redesigned the Toppings
+tab: dessert pizzas, untested ideas at the bottom, a floating Add idea, a
+photo gallery from desktop width, and fields that format as you type. See
 [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
 ## Home screen icon

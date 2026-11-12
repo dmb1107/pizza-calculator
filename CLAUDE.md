@@ -658,14 +658,38 @@ on the card, left out when empty; `notes` holds the recipes and advice.
 **`parseIdea` keeps keys it doesn't know** and `savedIdea` spreads the
 previous copy first, so a later field (APP-8's photo) survives an edit on
 an older bundle; the APP-6 bundle had no such rule and drops `comments`.
-**Expand all / Collapse all** sits above both lists (`openIds` in
-`ToppingsPage`, not stored). A card being edited counts as open and stays
-open through Collapse all (`shown = open || editing`). Collapse all holds
-the page at its old height (`heldHeight`, released by Expand all and Add
-idea), so a page scrolled into the lists can't clamp and slide the control
-from under the finger; the WebKit suite fails without it. It goes as soon
-as its going moves nothing (73a): the page without it still reaches the
-bottom of the screen.
+**APP-14 (#36, Dave's decisions of 12 Nov 2026) laid the tab out again.**
+`toppingSections` is the order: rated Pizzas, rated Dessert pizzas, then
+Untested at the bottom, split into Pizzas and Dessert pizzas only when
+both have untested ideas. `dessert` is a boolean on each idea (missing is
+false, so every older idea is a pizza), set by the editor's toggle. **There
+is no Expand all / Collapse all** (Dave removed it on every device), and
+with it went `heldHeight` and 73a. **Add idea is a floating button**,
+bottom right, above the phone's tab bar, hidden while an editor or the
+panel is open; on a phone the new editor opens at the top of the tab and
+the page goes to it. **From 1024 px (`GALLERY_QUERY`) the ideas are a photo
+gallery** (`GalleryTile`, four to a row, five from 1280), the page widening
+to `max-w-6xl` on that tab only; an idea opens in `IdeaPanel`, fixed at the
+right, with Edit and Close, Escape closing it, and its editor and a new
+idea's open there too. Below 1024 px the cards are as before.
+**The four text fields format as typed** (`RichField`, TipTap with
+`@tiptap/markdown`, lazy-loaded so the main bundle doesn't carry it). What
+is stored stays Markdown: `storedMarkdown` (`src/lib/richText.ts`) writes
+bullets as `*`, nested four spaces, and a field left at its first empty
+bullet as empty. **Only an edit writes a field**, so an idea opened and
+saved untouched keeps its text byte for byte; run through the editor, 108
+of the 109 texts in Dave's 41 ideas rendered identically (the one
+difference was a loose list made tight). Pre-bake and Post-bake start with
+one bullet (TipTap's `trailingNode` is off, or a tap below the bullet
+lands outside the list). Tab/Shift-Tab nest, Cmd-B bold, Cmd-K the link
+row (`linkHref`: http, https or mailto). On a phone (`max-width: 767px` or
+a coarse pointer) a toolbar under the focused field gives Bullet, Indent,
+Outdent, Bold, Link; **it hides only after the tap that took focus away
+has landed**, or the content under it would move up between press and
+release and the tap would miss. The link row's Enter must not reach the
+text: the selection moves after the link and focus returns on the next
+tick, through ProseMirror's own `view.focus()`, since TipTap's waits a
+frame on a phone. The name has `autoCapitalize="words"`.
 
 **Each idea may have a photo** (§13.2, §13.3, APP-8, MESSAGE-73). `photo`
 is `photoName(id, sha256)`, the id and 12 hex of the JPEG's hash, so a new
@@ -861,7 +885,8 @@ src/lib/          pure calculation — no UI imports, this is what gets unit-tes
                   bakeLog.ts (§4.3 normalization, §6's FF in use and bake 1's
                   seed, §10's counting rules), tabs.ts (§13.1), toppings.ts
                   (§13.2), markdownBreaks.ts (§13.2's line breaks),
-                  photos.ts (§13.3's photo sizes and names)
+                  photos.ts (§13.3's photo sizes and names), richText.ts
+                  (§13.2's stored Markdown and link addresses)
 src/content/      step and concept prose (steps.ts, concepts.ts)
 src/components/   React components
 src/state/        URL + browser-storage persistence (the inputs in both:
@@ -1001,7 +1026,13 @@ don't inline a `toFixed` somewhere else.
   iOS discarding the app, its storage apart from Safari, and the speaker.
   Its first run found that Resume showed up to a minute less than the time
   it stopped at, for a second, because `now` ticks once a minute while every
-  timer is stopped; Resume and Start now set `now` at the tap.
+  timer is stopped; Resume and Start now set `now` at the tap. **The paused
+  clock also holds every timer and animation frame in the page**: React's
+  Suspense shows a lazily loaded component on a timer, and the editor gives
+  focus back on one, so a test that opens an idea editor or adds a link
+  moves the clock on (`page.clock.runFor`). The harness keeps focus in a
+  contenteditable field through a button tap too, as iOS does; Playwright's
+  `fill` hangs on one, so type into it.
 - **Number fields commit on blur, not on keystroke.** Clamping mid-type makes a
   bounded field unusable — typing "7" on the way to "70" would snap to the
   minimum. The stepper emits a delta rather than a computed value for the same

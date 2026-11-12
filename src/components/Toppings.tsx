@@ -1,4 +1,8 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useMediaQuery } from './useMediaQuery';
+
+// §13.2 (14c): the formatting editor loads only when an editor opens.
+const RichField = lazy(() => import('./RichField'));
 import { Markdown } from './Markdown';
 import { usePhotoThumb, usePhotoUrl } from './usePhoto';
 import { NotAPhotoError, shrinkPhoto } from '../state/photoImage';
@@ -13,8 +17,7 @@ import {
   draftOf,
   ideaProblem,
   starParts,
-  testedIdeas,
-  untestedIdeas,
+  toppingSections,
   type IdeaDraft,
   type IdeaProblem,
   type ToppingIdea,
@@ -86,26 +89,10 @@ function RatingShown({ rating }: { rating: number }) {
 // The editor
 // ---------------------------------------------------------------------------
 
-/** Rows enough for what is there, so a pasted note shows whole, within reason. */
-const rowsFor = (text: string) => Math.min(14, Math.max(3, text.split('\n').length + 1));
 
 const labelClass = 'grid gap-1.5 text-sm font-medium text-stone-700 dark:text-stone-300';
 const inputClass =
   'rounded-lg border border-stone-300 bg-white px-3 text-base text-stone-900 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100';
-
-function TextArea({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
-  return (
-    <label className={labelClass}>
-      {label}
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        rows={rowsFor(value)}
-        className={`${inputClass} py-2 leading-relaxed`}
-      />
-    </label>
-  );
-}
 
 /**
  * §13.2: half steps from 1 to 5, every one a 48 px target, one tap to any
@@ -347,13 +334,18 @@ function IdeaEditor({
           value={draft.name}
           onChange={(e) => set('name', e.target.value)}
           autoComplete="off"
+          // 14e: each word capitalized as it's typed on a phone.
+          autoCapitalize="words"
           className={`${inputClass} min-h-touch`}
         />
       </label>
-      <TextArea label="Pre-bake" value={draft.pre_bake} onChange={(v) => set('pre_bake', v)} />
-      <TextArea label="Post-bake" value={draft.post_bake} onChange={(v) => set('post_bake', v)} />
-      <TextArea label="Notes" value={draft.notes} onChange={(v) => set('notes', v)} />
-      <TextArea label="Comments" value={draft.comments} onChange={(v) => set('comments', v)} />
+      <DessertToggle on={draft.dessert} onChange={(v) => set('dessert', v)} />
+      <Suspense fallback={<FieldsLoading />}>
+        <RichField label="Pre-bake" value={draft.pre_bake} onChange={(v) => set('pre_bake', v)} startWithBullet />
+        <RichField label="Post-bake" value={draft.post_bake} onChange={(v) => set('post_bake', v)} startWithBullet />
+        <RichField label="Notes" value={draft.notes} onChange={(v) => set('notes', v)} startWithBullet={false} />
+        <RichField label="Comments" value={draft.comments} onChange={(v) => set('comments', v)} startWithBullet={false} />
+      </Suspense>
       <PhotoControl
         photos={toppings.photos}
         saved={draft.photo}
@@ -416,6 +408,44 @@ function IdeaEditor({
         </p>
       )}
     </form>
+  );
+}
+
+/** §13.2 (14a): off for a new idea; on, the idea is listed under Dessert pizzas. */
+function DessertToggle({ on, onChange }: { on: boolean; onChange: (on: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={() => onChange(!on)}
+      className="flex min-h-touch items-center justify-between gap-4 rounded-lg text-left"
+    >
+      <span>
+        <span className="block font-medium">Dessert pizza</span>
+        <span className="block text-sm text-stone-600 dark:text-stone-400">Lists it under Dessert pizzas.</span>
+      </span>
+      <span
+        aria-hidden="true"
+        className={`relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors ${on ? 'bg-amber-700 dark:bg-amber-600' : 'bg-stone-300 dark:bg-stone-600'}`}
+      >
+        <span className={`absolute top-[2px] size-[27px] rounded-full bg-white shadow transition-[left] ${on ? 'left-[22px]' : 'left-[2px]'}`} />
+      </span>
+    </button>
+  );
+}
+
+/** The four fields' space while the editor loads, so nothing below them jumps. */
+function FieldsLoading() {
+  return (
+    <div aria-hidden="true" className="grid gap-4">
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="grid gap-1.5">
+          <span className="h-5 w-24 rounded bg-stone-200 dark:bg-stone-800" />
+          <span className="h-[5.5rem] rounded-lg border border-stone-300 dark:border-stone-600" />
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -520,68 +550,152 @@ function IdeaCard({
   );
 }
 
+/** §13.2 (APP-14, 14b): from this width the ideas are a photo gallery with a panel at the right. */
+export const GALLERY_QUERY = '(min-width: 1024px)';
+
+const plusIcon = (
+  <svg aria-hidden="true" viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);
+
+/** The pre-bake toppings as plain items, for a tile with no photo. */
+function preBakeItems(text: string): string[] {
+  return text
+    .split('\n')
+    .map((l) => l.replace(/^\s*([*+-]|\d+[.)])\s+/, '').replace(/[*_`]/g, '').trim())
+    .filter(Boolean);
+}
+
+/** §13.2 (14b): a gallery tile. The photo, square, or the pre-bake toppings in its place. */
+function GalleryTile({
+  idea,
+  selected,
+  photos,
+  onOpen,
+}: {
+  idea: ToppingIdea;
+  selected: boolean;
+  photos: PhotoStore;
+  onOpen: () => void;
+}) {
+  const items = preBakeItems(idea.pre_bake);
+  return (
+    <li id={`idea-${idea.id}`} className="min-w-0 scroll-mt-20">
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-pressed={selected}
+        className="group grid w-full gap-2 text-left"
+      >
+        <span
+          className={`block aspect-square w-full overflow-hidden rounded-xl border bg-white dark:bg-stone-900 ${
+            selected ? 'border-amber-600 ring-3 ring-amber-600 dark:border-amber-500 dark:ring-amber-500' : 'border-stone-200 dark:border-stone-800'
+          }`}
+        >
+          {idea.photo !== null ? (
+            <TilePhoto photos={photos} name={idea.photo} />
+          ) : (
+            <span className="block p-3 text-sm text-stone-600 dark:text-stone-400">
+              {items.length ? items.map((t, i) => <span key={i} className="block">{t}</span>) : 'Only a name so far.'}
+            </span>
+          )}
+        </span>
+        <span className="font-semibold leading-snug [overflow-wrap:anywhere] group-hover:underline">{idea.name}</span>
+        {idea.rating !== null && <RatingShown rating={idea.rating} />}
+      </button>
+    </li>
+  );
+}
+
+function TilePhoto({ photos, name }: { photos: PhotoStore; name: string }) {
+  const url = usePhotoUrl(photos, name);
+  return url ? <img src={url} alt="" loading="lazy" decoding="async" className="block size-full object-cover" /> : null;
+}
+
+/** §13.2 (14b): the open idea, at the right of the gallery. */
+function IdeaPanel({
+  idea,
+  editing,
+  toppings,
+  onEdit,
+  onClose,
+  onDone,
+}: {
+  idea: ToppingIdea | null;
+  editing: boolean;
+  toppings: ToppingsState;
+  onEdit: () => void;
+  onClose: () => void;
+  onDone: (savedId: string | null) => void;
+}) {
+  const label = idea ? idea.name : 'Add idea';
+  return (
+    <aside
+      aria-label={label}
+      className="fixed top-0 right-0 bottom-0 z-50 w-[min(440px,100vw)] overflow-y-auto border-l border-stone-300 bg-white p-5 shadow-2xl dark:border-stone-700 dark:bg-stone-900"
+    >
+      {editing ? (
+        <IdeaEditor key={idea?.id ?? 'new'} idea={idea} toppings={toppings} onDone={onDone} />
+      ) : idea ? (
+        <div className="grid gap-4">
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-xl font-semibold [overflow-wrap:anywhere]">{idea.name}</h3>
+              {idea.rating !== null && (
+                <span className="mt-1 flex">
+                  <RatingShown rating={idea.rating} />
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={onEdit}
+              className="min-h-touch min-w-touch shrink-0 rounded-lg px-3 font-semibold text-amber-800 active:bg-amber-50 dark:text-amber-400 dark:active:bg-stone-800"
+            >
+              Edit
+            </button>
+            <button type="button" onClick={onClose} className={`${buttonClass} shrink-0`}>
+              Close
+            </button>
+          </div>
+          {idea.photo !== null && <FullPhoto photos={toppings.photos} name={idea.photo} alt={idea.name} />}
+          {idea.photo === null && [idea.pre_bake, idea.post_bake, idea.notes, idea.comments].every((t) => t.trim() === '') ? (
+            <p className="text-sm text-stone-600 dark:text-stone-400">Only a name so far.</p>
+          ) : (
+            <>
+              <Field label="Pre-bake" text={idea.pre_bake} />
+              <Field label="Post-bake" text={idea.post_bake} />
+              <Field label="Notes" text={idea.notes} />
+              <Field label="Comments" text={idea.comments} />
+            </>
+          )}
+        </div>
+      ) : null}
+    </aside>
+  );
+}
+
+const sectionHeadClass = 'mb-3 border-b border-stone-300 pb-1.5 text-xl font-semibold dark:border-stone-700';
+const subHeadClass = 'mb-2 text-sm font-medium uppercase tracking-wide text-stone-500 dark:text-stone-400';
+const emptyClass = 'text-sm text-stone-600 dark:text-stone-400';
+
 export function ToppingsPage({ toppings, signedIn }: { toppings: ToppingsState; signedIn: boolean }) {
+  const gallery = useMediaQuery(GALLERY_QUERY);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  // The phone's open cards, and the gallery's open idea (14b).
   const [openIds, setOpenIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [panelId, setPanelId] = useState<string | null>(null);
   const [justSaved, setJustSaved] = useState<string | null>(null);
+  const addRef = useRef<HTMLDivElement>(null);
 
-  const tested = testedIdeas(toppings.ideas);
-  const untested = untestedIdeas(toppings.ideas);
-
-  // §13.2: one control above both lists. A card being edited counts as open,
-  // since its editor shows whatever the control does.
-  const allOpen = toppings.ideas.every((i) => openIds.has(i.id) || editingId === i.id);
-  const pageRef = useRef<HTMLDivElement>(null);
-  const controlRef = useRef<HTMLButtonElement>(null);
-  const controlTop = useRef<number | null>(null);
-  // Collapse all shortens the page under the control. Held at its old height,
-  // a page scrolled into the lists can't clamp, so the control stays under
-  // the finger and nothing above it slides in. Released by Expand all and Add
-  // idea, and (73a, Dave) as soon as its going moves nothing on screen: once
-  // it is below the bottom of the screen, or the page without it is still
-  // tall enough to stay where it is scrolled.
-  const [heldHeight, setHeldHeight] = useState<number | null>(null);
-  const endRef = useRef<HTMLParagraphElement>(null);
+  const sections = toppingSections(toppings.ideas);
+  const panelIdea = panelId === null ? null : (toppings.ideas.find((i) => i.id === panelId) ?? null);
+  // An idea deleted, here or by a sync, closes its panel.
   useEffect(() => {
-    if (heldHeight === null) return;
-    const check = () => {
-      const page = pageRef.current?.getBoundingClientRect();
-      const end = endRef.current?.getBoundingClientRect();
-      // Another tab is open: this one has no size to judge by.
-      if (!page || !end || page.height === 0) return;
-      // The held space runs from the end of the page's own content to the page's foot.
-      const held = page.bottom - end.bottom;
-      const offScreen = end.bottom >= window.innerHeight;
-      const fitsWithout = document.documentElement.scrollHeight - held >= window.scrollY + window.innerHeight;
-      if (offScreen || fitsWithout) setHeldHeight(null);
-    };
-    check();
-    window.addEventListener('scroll', check, { passive: true });
-    window.addEventListener('resize', check);
-    return () => {
-      window.removeEventListener('scroll', check);
-      window.removeEventListener('resize', check);
-    };
-  }, [heldHeight]);
-
-  const expandAll = () => {
-    setHeldHeight(null);
-    setOpenIds(new Set(toppings.ideas.map((i) => i.id)));
-  };
-  const collapseAll = () => {
-    controlTop.current = controlRef.current?.getBoundingClientRect().top ?? null;
-    const height = pageRef.current?.getBoundingClientRect().height;
-    if (height !== undefined) setHeldHeight((held) => Math.max(held ?? 0, height));
-    // An open editor stays open: `shown` is `open || editing`.
-    setOpenIds(new Set());
-  };
-  useLayoutEffect(() => {
-    const before = controlTop.current;
-    controlTop.current = null;
-    const after = controlRef.current?.getBoundingClientRect().top;
-    if (before !== null && after !== undefined && after !== before) window.scrollBy(0, after - before);
-  }, [openIds]);
+    if (panelId !== null && panelIdea === null && !adding) setPanelId(null);
+  }, [panelId, panelIdea, adding]);
 
   const toggle = (id: string) =>
     setOpenIds((prev) => {
@@ -593,8 +707,11 @@ export function ToppingsPage({ toppings, signedIn }: { toppings: ToppingsState; 
 
   /** After Save the idea stays open, and comes into view wherever its rating put it. */
   const done = (savedId: string | null) => {
+    setAdding(false);
+    setEditingId(null);
     if (savedId === null) return;
     setOpenIds((prev) => new Set(prev).add(savedId));
+    setPanelId(savedId);
     setJustSaved(savedId);
   };
   useEffect(() => {
@@ -603,7 +720,33 @@ export function ToppingsPage({ toppings, signedIn }: { toppings: ToppingsState; 
     setJustSaved(null);
   }, [justSaved]);
 
-  const list = (ideas: ToppingIdea[]) => (
+  // 14g: the floating button. On a phone the editor opens at the top of the
+  // tab, and the page goes to it; in the gallery it opens in the panel.
+  const add = () => {
+    setEditingId(null);
+    setPanelId(null);
+    setAdding(true);
+  };
+  useEffect(() => {
+    if (adding && !gallery) addRef.current?.scrollIntoView({ block: 'start' });
+  }, [adding, gallery]);
+
+  const closePanel = () => {
+    setPanelId(null);
+    setEditingId(null);
+    setAdding(false);
+  };
+  const panelOpen = gallery && (adding || panelIdea !== null);
+  useEffect(() => {
+    if (!panelOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !(document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement || (document.activeElement as HTMLElement | null)?.isContentEditable)) closePanel();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [panelOpen]);
+
+  const cards = (ideas: ToppingIdea[]) => (
     <ul className="grid gap-2">
       {ideas.map((idea) => (
         <IdeaCard
@@ -614,79 +757,114 @@ export function ToppingsPage({ toppings, signedIn }: { toppings: ToppingsState; 
           onToggle={() => toggle(idea.id)}
           onEdit={() => setEditingId(idea.id)}
           toppings={toppings}
-          onDone={(savedId) => {
+          onDone={done}
+        />
+      ))}
+    </ul>
+  );
+  const tiles = (ideas: ToppingIdea[]) => (
+    <ul className="grid grid-cols-4 gap-4 xl:grid-cols-5">
+      {ideas.map((idea) => (
+        <GalleryTile
+          key={idea.id}
+          idea={idea}
+          selected={panelOpen && panelId === idea.id}
+          photos={toppings.photos}
+          onOpen={() => {
+            setAdding(false);
             setEditingId(null);
-            done(savedId);
+            setPanelId(idea.id);
           }}
         />
       ))}
     </ul>
   );
+  const list = gallery ? tiles : cards;
+
+  const anyDessert = toppings.ideas.some((i) => i.dessert);
+  const { untested } = sections;
+  const untestedCount = untested.pizzas.length + untested.desserts.length;
+  const bothUntested = untested.pizzas.length > 0 && untested.desserts.length > 0;
+  const editorOpen = adding || editingId !== null;
 
   return (
-    <div
-      ref={pageRef}
-      className="grid min-w-0 content-start gap-6"
-      style={heldHeight === null ? undefined : { minHeight: heldHeight }}
-    >
-      {adding ? (
-        <div className={`${cardClass} p-4`}>
-          <IdeaEditor
-            idea={null}
-            toppings={toppings}
-            onDone={(savedId) => {
-              setAdding(false);
-              done(savedId);
-            }}
-          />
+    // The padding at the foot keeps the last idea clear of the floating button.
+    <div className="grid min-w-0 content-start gap-8 pb-20">
+      {adding && !gallery && (
+        <div ref={addRef} className={`${cardClass} scroll-mt-4 p-4`}>
+          <IdeaEditor idea={null} toppings={toppings} onDone={done} />
         </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => {
-            setHeldHeight(null);
-            setAdding(true);
-          }}
-          className={`${primaryClass} justify-self-start`}
-        >
-          Add idea
-        </button>
       )}
 
-      {toppings.ideas.length > 0 && (
-        <button
-          ref={controlRef}
-          type="button"
-          onClick={allOpen ? collapseAll : expandAll}
-          className={`${buttonClass} justify-self-start`}
-        >
-          {allOpen ? 'Collapse all' : 'Expand all'}
-        </button>
-      )}
+      <section className="min-w-0" aria-labelledby="toppings-pizzas">
+        <h2 id="toppings-pizzas" className={sectionHeadClass}>
+          Pizzas
+        </h2>
+        {sections.pizzas.length ? list(sections.pizzas) : <p className={emptyClass}>Nothing rated yet.</p>}
+      </section>
 
-      <section className="min-w-0">
-        <h2 className="mb-2 text-sm font-medium uppercase tracking-wide text-stone-500 dark:text-stone-400">Tested</h2>
-        {tested.length === 0 ? (
-          <p className="text-sm text-stone-600 dark:text-stone-400">Nothing rated yet.</p>
+      <section className="min-w-0" aria-labelledby="toppings-desserts">
+        <h2 id="toppings-desserts" className={sectionHeadClass}>
+          Dessert pizzas
+        </h2>
+        {sections.desserts.length ? (
+          list(sections.desserts)
         ) : (
-          list(tested)
+          <p className={emptyClass}>{anyDessert ? 'Nothing rated yet.' : 'No dessert pizzas yet.'}</p>
         )}
       </section>
 
-      <section className="min-w-0">
-        <h2 className="mb-2 text-sm font-medium uppercase tracking-wide text-stone-500 dark:text-stone-400">Untested</h2>
-        {untested.length === 0 ? (
-          <p className="text-sm text-stone-600 dark:text-stone-400">Nothing waiting to be tried.</p>
+      <section className="min-w-0" aria-labelledby="toppings-untested">
+        <h2 id="toppings-untested" className={sectionHeadClass}>
+          Untested
+        </h2>
+        {untestedCount === 0 ? (
+          <p className={emptyClass}>Nothing waiting to be tried.</p>
+        ) : bothUntested ? (
+          <div className="grid gap-6">
+            <div className="min-w-0">
+              <h3 className={subHeadClass}>Pizzas</h3>
+              {list(untested.pizzas)}
+            </div>
+            <div className="min-w-0">
+              <h3 className={subHeadClass}>Dessert pizzas</h3>
+              {list(untested.desserts)}
+            </div>
+          </div>
         ) : (
-          list(untested)
+          list(untested.pizzas.length ? untested.pizzas : untested.desserts)
         )}
       </section>
 
-      <p ref={endRef} className="text-sm text-stone-600 dark:text-stone-400">
+      <p className="text-sm text-stone-600 dark:text-stone-400">
         {signedIn
           ? syncStatusText(toppings.sync, toppings.waiting, toppings.store.lastSyncedAt, 'the ideas')
           : 'Saved in this browser. Sign in on the Bake log tab to sync the ideas with your other devices.'}
       </p>
+
+      {panelOpen && (
+        <IdeaPanel
+          idea={adding ? null : panelIdea}
+          editing={adding || (panelIdea !== null && editingId === panelIdea.id)}
+          toppings={toppings}
+          onEdit={() => panelIdea && setEditingId(panelIdea.id)}
+          onClose={closePanel}
+          onDone={done}
+        />
+      )}
+
+      {/* 14g: always in view; above the tab bar on a phone. Hidden while an
+          editor or the panel is open, since each has its own way out. */}
+      {!editorOpen && !panelOpen && (
+        <button
+          type="button"
+          onClick={add}
+          className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 inline-flex min-h-14 items-center gap-2 rounded-full bg-amber-700 pr-6 pl-4 text-lg font-semibold text-white shadow-lg shadow-amber-900/30 active:bg-amber-800 md:bottom-6 lg:right-8 dark:bg-amber-600"
+        >
+          {plusIcon}
+          Add idea
+        </button>
+      )}
     </div>
   );
 }
