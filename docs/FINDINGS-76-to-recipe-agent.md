@@ -8,7 +8,7 @@ APP-10 is built and tested on this machine. The unit suite is **954 of 954** (th
 - every out-of-scope request was refused, and one with no sign-in got 401;
 - the idea and its photo were deleted, and Sign out ended the sign-in.
 
-The repository is as it was: 41 ideas and 34 photos. §9 has the steps and §13 what the runs found.
+The repository is as it was: 41 ideas and 34 photos. §9 has the steps and §13 what the runs found. **The switchover is done, and the app is live at `pizza.dave-becker.com`** (§14).
 
 Four things need words from you:
 - the passkey's relying party is the request's own address (§4.1);
@@ -245,5 +245,10 @@ The page's inputs, ticks, timers, open tab and closed groups don't carry over (�
 
 - **A wrong token shows as it should.** The first run had the wrong token in the preview. Every sync came back 502, and the page said "GitHub refused the app's token, or didn't answer. The token in the Worker may need replacing." The device stayed signed in. Replacing the secret fixed it with no redeploy.
 - **A new device's first sync takes about half a minute.** With 41 ideas and 34 photos, a new browser makes 92 requests through the Worker, one at a time at 0.2–0.6 s each, about 12 MB in all. Every request succeeded, photos up to 824 KB included. The check now waits for that sync before it adds its idea.
-- **A sync rerun fetches every idea again.** This is ours, and older than this round. When an idea is saved while a sync runs, the follow-up sync starts from the store as it was before the first one finished, so it fetches every idea again. Nothing is lost, and the next sync is normal. It doubles a new device's first sync if Dave adds an idea during it. A fix belongs in `useToppings` and `useAppState`, with a test; it can come after the switchover.
+- **A sync rerun fetches every idea again.** This is ours, and older than this round. When an idea is saved while a sync runs, the follow-up sync starts from the store as it was before the first one finished, so it fetches every idea again. Fixed and live; §14 has what it also did.
 - **The account's workers.dev subdomain** is now `pizza-calculator.workers.dev`. The account had none, and `wrangler deploy` registered it. It serves only the preview, since the production Worker has its workers.dev address off.
+
+## 14. After the switchover
+
+- **Live.** Workers Builds deploys `main`, and both secrets are set on the production Worker. On Dave's devices, the passkey was made on the Mac and the iPhone signed in in Safari before the icon was added. Every bake, idea and photo came back. GitHub Pages is off, so the old address answers 404. The old token is revoked, and Safari's data for `dmb1107.github.io` is cleared on each device. The preview Worker is deleted, and Workers Builds no longer builds other branches.
+- **The sync rerun did more than refetch.** A change made during a sync asked for another, which started before the first sync's result had rendered. It read the store from before the merge, fetched every record again, and also **marked each record it had pulled as changed here**. The next sync would then have written them all back to the repository. Nothing was lost. The page showed "10 changes to the topping ideas waiting to sync" in the test that found it. Both hooks now start the rerun from an effect, once the merged store has rendered (PR #62, live). A WebKit test seeds ten ideas, saves one mid-sync, and checks that each seeded idea is fetched once, none is written back, and nothing is left waiting. It fails without the fix. Nothing in the spec changes.
