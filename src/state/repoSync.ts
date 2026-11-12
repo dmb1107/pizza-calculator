@@ -86,6 +86,39 @@ export interface RecordKind<T> {
    * repository's, false pushes this device's. Absent, the push wins.
    */
   keepRemote?(remote: T, local: T): boolean;
+  /**
+   * Run just before this device writes a record, once the sync has decided
+   * to write it. The ideas upload a record's photo here, so the file is in
+   * the repository before the record that names it (§13.3, APP-8).
+   */
+  beforePut?(item: T, files: RepoFiles): Promise<void>;
+  /**
+   * Run once the records have synced, with the store as it now stands. The
+   * ideas fetch the photos they name and delete the ones nothing names.
+   */
+  afterSync?(store: RecordStore<T>, files: RepoFiles): Promise<RecordStore<T>>;
+}
+
+/**
+ * Plain files in the repository, beside the records: what the ideas' photos
+ * need. Paths are from the repository's root.
+ */
+export interface RepoFiles {
+  /** Every file in a folder, file name to blob sha. An absent folder is empty. */
+  listFiles(dir: string): Promise<Map<string, string>>;
+  /**
+   * Create a file from base64 content, returning its blob sha. A file already
+   * at that path is left as it is, and the answer is null.
+   */
+  createFile(path: string, base64: string, message: string): Promise<string | null>;
+  /** Delete a file. One already gone is not an error. */
+  removeFile(path: string, sha: string, message: string): Promise<void>;
+  /**
+   * A file's content as base64, by its blob sha. The git blobs API answers
+   * JSON at any size up to 100 MB, where the contents API fills `content`
+   * only up to 1 MB.
+   */
+  blob(sha: string): Promise<string>;
 }
 
 /** UTF-8 safe base64, as the contents API wants it. */
@@ -146,7 +179,7 @@ export function removeRecord<T>(kind: Pick<RecordKind<T>, 'idOf'>, store: Record
 
 const idFromName = (name: string) => (name.endsWith('.json') ? name.slice(0, -'.json'.length) : null);
 
-class Client<T> {
+class Client<T> implements RepoFiles {
   constructor(
     private readonly cfg: GitHubConfig,
     private readonly kind: RecordKind<T>,
@@ -253,6 +286,48 @@ class Client<T> {
     return newSha;
   }
 
+  // --- RepoFiles --------------------------------------------------------------
+
+  async listFiles(dir: string): Promise<Map<string, string>> {
+    const res = await this.request('GET', `/contents/${dir}`);
+    if (res.status === 404) return new Map();
+    if (!res.ok) this.fail(res.status);
+    const body = await res.json();
+    const out = new Map<string, string>();
+    if (!Array.isArray(body)) return out;
+    for (const entry of body) {
+      if (typeof entry !== 'object' || entry === null) continue;
+      const { name, sha, type } = entry as Record<string, unknown>;
+      if (type === 'file' && typeof name === 'string' && typeof sha === 'string') out.set(name, sha);
+    }
+    return out;
+  }
+
+  async createFile(path: string, base64: string, message: string): Promise<string | null> {
+    const res = await this.request('PUT', `/contents/${path}`, { message, content: base64 });
+    // 422: a file is already there. Its name is its content's hash, so it is this file.
+    if (res.status === 422) return null;
+    if (!res.ok) this.fail(res.status);
+    const body = (await res.json()) as { content?: { sha?: unknown } };
+    return typeof body.content?.sha === 'string' ? body.content.sha : null;
+  }
+
+  async removeFile(path: string, sha: string, message: string): Promise<void> {
+    const res = await this.request('DELETE', `/contents/${path}`, { message, sha });
+    if (res.status === 404) return;
+    if (!res.ok) this.fail(res.status);
+  }
+
+  async blob(sha: string): Promise<string> {
+    const res = await this.request('GET', `/git/blobs/${encodeURIComponent(sha)}`);
+    if (!res.ok) this.fail(res.status);
+    const body = (await res.json()) as Record<string, unknown>;
+    if (typeof body['content'] !== 'string' || body['encoding'] !== 'base64') {
+      throw new SyncError('other', 'GitHub returned a photo in a form the app can\'t read.');
+    }
+    return body['content'];
+  }
+
   async remove(id: string, sha: string): Promise<void> {
     const res = await this.request('DELETE', `/contents/${this.pathFor(id)}`, {
       message: this.kind.deleteMessage(id),
@@ -319,6 +394,7 @@ export async function syncRecords<T>(
           continue;
         }
       }
+      await kind.beforePut?.(item, client);
       const sha = await client.put(item, remoteSha);
       remote.set(id, sha);
       settle(id, sha);
@@ -347,6 +423,7 @@ export async function syncRecords<T>(
       store = { ...store, items: store.items.filter((x) => !gone.includes(x)), shas };
     }
 
+    if (kind.afterSync) store = await kind.afterSync(store, client);
     return { store: { ...store, lastSyncedAt: now.toISOString() } };
   } catch (e) {
     const error = e instanceof SyncError ? e : new SyncError('other', e instanceof Error ? e.message : String(e));

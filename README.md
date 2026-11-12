@@ -35,8 +35,9 @@ returns:
   temperature is in;
 - a place for topping ideas: a name, pre-bake and post-bake toppings, notes,
   comments on how the pizza tasted, and a rating in half stars, all in
-  Markdown so they can carry links. Rated ideas list best first, and untested
-  ones in a list of their own; one button opens or closes every idea.
+  Markdown so they can carry links, and a photo of the pizza, shrunk on the
+  phone before it is saved. Rated ideas list best first, and untested ones
+  in a list of their own; one button opens or closes every idea.
 
 The page has three tabs, **Recipe**, **Toppings** and **Bake log**: on a
 phone a bar fixed to the bottom of the screen, and from 768 px wide a strip

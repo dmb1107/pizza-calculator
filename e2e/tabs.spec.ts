@@ -72,19 +72,32 @@ async function stubGitHub(context: BrowserContext, repo: FakeRepo) {
     if (!url.pathname.startsWith(base)) return json(404);
     const path = url.pathname.slice(base.length);
     if (path === '') return json(200, { full_name: 'dave/pizza-bake-log' });
+    // The git blobs API, which the photos are fetched through (APP-8).
+    const blob = /^\/git\/blobs\/(.+)$/.exec(path)?.[1];
+    if (blob) {
+      const f = [...repo.files.values()].find((x) => x.sha === decodeURIComponent(blob));
+      return f ? json(200, { sha: f.sha, content: f.content, encoding: 'base64' }) : json(404);
+    }
     const dir = /^\/contents\/(\w+)/.exec(path)?.[1];
     if (dir && repo.failing.has(dir)) return json(500);
-    if (path === `/contents/${dir}`) {
-      const entries = [...repo.files.keys()]
-        .filter((p) => p.startsWith(`${dir}/`))
-        .map((p) => ({ type: 'file', name: p.slice(dir!.length + 1), sha: repo.files.get(p)!.sha }));
-      return entries.length ? json(200, entries) : json(404);
-    }
     const file = path.replace('/contents/', '');
     const body = (req.postDataJSON() ?? {}) as { content?: string; sha?: string };
-    if (method === 'GET') return repo.files.has(file) ? json(200, repo.files.get(file)) : json(404);
+    if (method === 'GET' && !repo.files.has(file)) {
+      // A folder: its files, and its subfolders as GitHub lists them.
+      const entries = new Map<string, { type: string; name: string; sha: string }>();
+      for (const [p, f] of repo.files) {
+        if (!p.startsWith(`${file}/`)) continue;
+        const rest = p.slice(file.length + 1);
+        const slash = rest.indexOf('/');
+        if (slash === -1) entries.set(rest, { type: 'file', name: rest, sha: f.sha });
+        else entries.set(rest.slice(0, slash), { type: 'dir', name: rest.slice(0, slash), sha: 'tree' });
+      }
+      return entries.size ? json(200, [...entries.values()]) : json(404);
+    }
+    if (method === 'GET') return json(200, repo.files.get(file));
     if (method === 'PUT') {
       const current = repo.files.get(file);
+      if (current && !body.sha) return json(422);
       if (current && body.sha !== current.sha) return json(409);
       const sha = `sha${++n}`;
       repo.files.set(file, { content: body.content!, sha });
@@ -107,7 +120,8 @@ async function connect(page: Page) {
   await log.getByRole('button', { name: 'Save and sync' }).tap();
 }
 
-const ideaFiles = (repo: FakeRepo) => [...repo.files.keys()].filter((p) => p.startsWith('toppings/'));
+const ideaFiles = (repo: FakeRepo) => [...repo.files.keys()].filter((p) => /^toppings\/[^/]+\.json$/.test(p));
+const photoFiles = (repo: FakeRepo) => [...repo.files.keys()].filter((p) => p.startsWith('toppings/images/'));
 
 // ---------------------------------------------------------------------------
 
@@ -659,6 +673,397 @@ test.describe('APP-7: comments, and expand or collapse every idea', () => {
     await expect(card.locator('h4:text-is("Comments") + *')).toHaveText('Too sweet with the honey.');
     await forceClose(phoneA);
     await forceClose(phoneB);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// APP-8 (MESSAGE-73): a photo on each idea
+// ---------------------------------------------------------------------------
+
+const SHOTS8 = process.env['APP8_SHOTS'];
+
+/**
+ * A test photo drawn in the page: a gradient, discs and grain, so it
+ * compresses roughly as a photo does. Returned as JPEG bytes.
+ */
+async function drawnJpeg(page: Page, width: number, height: number, hue: number): Promise<Buffer> {
+  const b64 = await page.evaluate(
+    async ({ width, height, hue }) => {
+      const c = document.createElement('canvas');
+      c.width = width;
+      c.height = height;
+      const ctx = c.getContext('2d')!;
+      const g = ctx.createLinearGradient(0, 0, width, height);
+      g.addColorStop(0, `hsl(${hue} 70% 40%)`);
+      g.addColorStop(1, `hsl(${hue + 40} 60% 75%)`);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, width, height);
+      let seed = hue + 1;
+      const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+      for (let i = 0; i < 80; i++) {
+        ctx.fillStyle = `hsl(${(hue + i * 37) % 360} 65% ${25 + (i % 50)}%)`;
+        ctx.beginPath();
+        ctx.arc(rnd() * width, rnd() * height, width / 40 + (rnd() * width) / 25, 0, 7);
+        ctx.fill();
+      }
+      const img = ctx.getImageData(0, 0, width, height);
+      for (let i = 0; i < img.data.length; i += 4) {
+        const n = (rnd() - 0.5) * 24;
+        img.data[i]! += n;
+        img.data[i + 1]! += n;
+        img.data[i + 2]! += n;
+      }
+      ctx.putImageData(img, 0, 0);
+      const blob: Blob = await new Promise((r) => c.toBlob((b) => r(b!), 'image/jpeg', 0.92));
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      let s = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      return btoa(s);
+    },
+    { width, height, hue },
+  );
+  return Buffer.from(b64, 'base64');
+}
+
+/** The same JPEG with an EXIF Orientation tag, as an iPhone writes for a portrait photo. */
+function withOrientation(jpeg: Buffer, orientation: number): Buffer {
+  const tiff = Buffer.from([0x4d, 0x4d, 0, 0x2a, 0, 0, 0, 8, 0, 1, 0x01, 0x12, 0, 3, 0, 0, 0, 1, 0, orientation, 0, 0, 0, 0, 0, 0]);
+  const payload = Buffer.concat([Buffer.from('Exif\0\0', 'latin1'), tiff]);
+  const len = payload.length + 2;
+  return Buffer.concat([jpeg.subarray(0, 2), Buffer.from([0xff, 0xe1, len >> 8, len & 0xff]), payload, jpeg.subarray(2)]);
+}
+
+/** Tap a photo button and choose a file in the picker it opens. */
+async function choosePhoto(page: Page, button: Locator, file: { name: string; mimeType: string; buffer: Buffer }) {
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), button.tap()]);
+  await chooser.setFiles(file);
+}
+
+const natural = (img: Locator) => img.evaluate((i: HTMLImageElement) => [i.naturalWidth, i.naturalHeight]);
+const thumbOf = (card: Locator) => header(card).locator('img');
+const fullOf = (card: Locator, name: string) => card.getByRole('img', { name, exact: true });
+/** This device's stored photo for an idea, in bytes, read from IndexedDB. */
+const storedPhotoBytes = (page: Page, ideaName: string) =>
+  page.evaluate(async (ideaName) => {
+    const store = JSON.parse(localStorage.getItem('biga-calculator:toppings:v1')!) as { items: { name: string; photo: string | null }[] };
+    const photo = store.items.find((i) => i.name === ideaName)?.photo;
+    if (!photo) return null;
+    const db: IDBDatabase = await new Promise((r, j) => {
+      const req = indexedDB.open('biga-calculator-photos');
+      req.onsuccess = () => r(req.result);
+      req.onerror = () => j(req.error);
+    });
+    const blob: Blob | undefined = await new Promise((r) => {
+      const req = db.transaction('photos').objectStore('photos').get(photo);
+      req.onsuccess = () => r(req.result as Blob | undefined);
+    });
+    return blob ? blob.size : null;
+  }, ideaName);
+
+test.describe('APP-8: a photo on each idea', () => {
+  test('added, shown as a thumbnail and at full width, through a reload, a force close and Reset', async ({ baseURL }, info) => {
+    const profile = info.outputPath('profile');
+    let phone = await openPhone(profile, { time: T0 }, baseURL!);
+    let { page } = phone;
+    await phoneWidth(page);
+    await seedIdeas(page, app7Ideas());
+
+    // A 12-megapixel photo, as an iPhone takes one.
+    const big = await drawnJpeg(page, 4032, 3024, 20);
+    const card = ideaCard(page, 'Mushroom and taleggio');
+    await header(card).tap();
+    await card.getByRole('button', { name: 'Edit', exact: true }).tap();
+    const form = card.locator('form');
+    await expect(form.getByRole('button', { name: 'Replace photo' })).toHaveCount(0);
+    await choosePhoto(page, form.getByRole('button', { name: 'Add photo', exact: true }), {
+      name: 'IMG_0412.jpg',
+      mimeType: 'image/jpeg',
+      buffer: big,
+    });
+    const preview = form.getByRole('img', { name: 'Mushroom and taleggio', exact: true });
+    await expect(preview).toBeVisible();
+    expect(await natural(preview)).toEqual([1600, 1200]);
+    await expect(form.getByRole('button', { name: 'Replace photo', exact: true })).toBeVisible();
+    await expect(form.getByRole('button', { name: 'Remove photo', exact: true })).toBeVisible();
+    if (SHOTS8) {
+      await page.setViewportSize({ width: 375, height: 1900 });
+      await card.screenshot({ path: `${SHOTS8}/editor-375-with-photo.png`, animations: 'disabled' });
+      await phoneWidth(page);
+    }
+    await form.getByRole('button', { name: 'Save', exact: true }).tap();
+    await expect(form).toHaveCount(0);
+
+    // Open: the photo at the card's full width, named for screen readers.
+    const full = fullOf(ideaCard(page, 'Mushroom and taleggio'), 'Mushroom and taleggio');
+    await expect(full).toBeVisible();
+    const cardBox = (await ideaCard(page, 'Mushroom and taleggio').boundingBox())!;
+    const fullBox = (await full.boundingBox())!;
+    expect(fullBox.width).toBeGreaterThan(cardBox.width - 40);
+    // Square, as a round pizza is shown whole (Dave, 11 Nov 2026).
+    expect(Math.round(fullBox.height)).toBe(Math.round(fullBox.width));
+    const bytes = await storedPhotoBytes(page, 'Mushroom and taleggio');
+    expect(bytes).toBeGreaterThan(20_000);
+    expect(bytes).toBeLessThan(1_000_000);
+    info.annotations.push({ type: 'photo bytes, 4032 × 3024 drawn sample', description: String(bytes) });
+
+    // Closed: a thumbnail beside the name, small, in a fixed box.
+    await header(ideaCard(page, 'Mushroom and taleggio')).tap();
+    const thumb = thumbOf(ideaCard(page, 'Mushroom and taleggio'));
+    await expect(thumb).toBeVisible();
+    expect(Math.max(...(await natural(thumb)))).toBe(112);
+    const box = (await thumb.boundingBox())!;
+    expect([Math.round(box.width), Math.round(box.height)]).toEqual([56, 56]);
+    await expect(thumbOf(ideaCard(page, 'Potato, rosemary, pecorino'))).toHaveCount(0);
+
+    const check = async (p: Page) => {
+      await expect(thumbOf(ideaCard(p, 'Mushroom and taleggio'))).toBeVisible();
+      await header(ideaCard(p, 'Mushroom and taleggio')).tap();
+      await expect(fullOf(ideaCard(p, 'Mushroom and taleggio'), 'Mushroom and taleggio')).toBeVisible();
+      await header(ideaCard(p, 'Mushroom and taleggio')).tap();
+    };
+    await page.reload();
+    await phoneWidth(page);
+    await check(page);
+    await forceClose(phone);
+    phone = await openPhone(profile, { time: T0 + 10 * MIN }, baseURL!);
+    page = phone.page;
+    await phoneWidth(page);
+    await check(page);
+
+    // Reset leaves the photos alone.
+    await tab(page, 'Recipe').tap();
+    await page.getByRole('button', { name: 'Reset', exact: true }).tap();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Reset', exact: true }).tap();
+    await tab(page, 'Toppings').tap();
+    await check(page);
+
+    if (SHOTS8) {
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.screenshot({ path: `${SHOTS8}/lists-375-with-photos.png`, animations: 'disabled' });
+    }
+    // Every card open: nothing scrolls sideways.
+    await control(page).tap();
+    await expect(control(page)).toHaveText('Collapse all');
+    await expectNoSidewaysScroll(page);
+    if (SHOTS8) {
+      await page.setViewportSize({ width: 375, height: 1900 });
+      await ideaCard(page, 'Mushroom and taleggio').screenshot({ path: `${SHOTS8}/card-375-open-with-photo.png`, animations: 'disabled' });
+      await phoneWidth(page);
+    }
+    await forceClose(phone);
+  });
+
+  test('Replace and Remove work, Cancel undoes either, and a file that is not a photo changes nothing', async ({ baseURL }, info) => {
+    const phone = await openPhone(info.outputPath('profile'), { time: T0 }, baseURL!);
+    const { page } = phone;
+    await phoneWidth(page);
+    await seedIdeas(page, app7Ideas());
+    const first = await drawnJpeg(page, 2000, 1500, 200);
+    const second = await drawnJpeg(page, 2000, 1500, 90);
+    const name = 'Potato, rosemary, pecorino';
+    const card = () => ideaCard(page, name);
+    const form = () => card().locator('form');
+    const photoSrc = async () => {
+      const bytes = await storedPhotoBytes(page, name);
+      const stored = (JSON.parse((await page.evaluate(() => localStorage.getItem('biga-calculator:toppings:v1')))!) as {
+        items: { name: string; photo: string | null }[];
+      }).items.find((i) => i.name === name)!.photo;
+      return { bytes, stored };
+    };
+    const edit = async () => {
+      if ((await header(card()).getAttribute('aria-expanded')) !== 'true') await header(card()).tap();
+      await card().getByRole('button', { name: 'Edit', exact: true }).tap();
+    };
+
+    await edit();
+    await choosePhoto(page, form().getByRole('button', { name: 'Add photo', exact: true }), { name: 'a.jpg', mimeType: 'image/jpeg', buffer: first });
+    await expect(form().getByRole('img', { name })).toBeVisible();
+    await form().getByRole('button', { name: 'Save', exact: true }).tap();
+    const one = await photoSrc();
+    expect(one.stored).toMatch(/^2026-10-11-180000-b2c3-[0-9a-f]{12}$/);
+
+    // Replace, then Cancel: the photo it had.
+    await edit();
+    await choosePhoto(page, form().getByRole('button', { name: 'Replace photo', exact: true }), { name: 'b.jpg', mimeType: 'image/jpeg', buffer: second });
+    await expect(form().getByRole('button', { name: 'Remove photo' })).toBeVisible();
+    await form().getByRole('button', { name: 'Cancel', exact: true }).tap();
+    expect(await photoSrc()).toEqual(one);
+
+    // Remove, then Cancel: still there. Remove doesn't ask.
+    await edit();
+    await form().getByRole('button', { name: 'Remove photo', exact: true }).tap();
+    await expect(form().getByRole('img', { name })).toHaveCount(0);
+    await expect(form().getByRole('button', { name: 'Add photo', exact: true })).toBeVisible();
+    await expect(page.getByRole('alertdialog')).toHaveCount(0);
+    await form().getByRole('button', { name: 'Cancel', exact: true }).tap();
+    expect(await photoSrc()).toEqual(one);
+    await expect(fullOf(card(), name)).toBeVisible();
+
+    // A file that isn't a photo: §13.2's message under the button, and the photo as it was.
+    await edit();
+    await choosePhoto(page, form().getByRole('button', { name: 'Replace photo', exact: true }), {
+      name: 'notes.txt',
+      mimeType: 'text/plain',
+      buffer: Buffer.from('San Marzano, fior di latte'),
+    });
+    const alert = form().getByRole('alert');
+    await expect(alert).toHaveText("That file couldn't be opened as a photo.");
+    const buttonsBottom = await form().getByRole('button', { name: 'Remove photo' }).evaluate((b) => b.getBoundingClientRect().bottom);
+    expect((await alert.boundingBox())!.y).toBeGreaterThanOrEqual(buttonsBottom);
+    await expect(form().getByRole('img', { name })).toBeVisible();
+    await form().getByRole('button', { name: 'Save', exact: true }).tap();
+    expect((await photoSrc()).stored).toBe(one.stored);
+
+    // Replace, then Save: a new name and new bytes.
+    await edit();
+    await choosePhoto(page, form().getByRole('button', { name: 'Replace photo', exact: true }), { name: 'b.jpg', mimeType: 'image/jpeg', buffer: second });
+    await expect(form().getByRole('button', { name: 'Remove photo' })).toBeVisible();
+    await form().getByRole('button', { name: 'Save', exact: true }).tap();
+    const two = await photoSrc();
+    expect(two.stored).not.toBe(one.stored);
+    expect(two.bytes).toBeGreaterThan(0);
+
+    // Remove, then Save: no photo, on the card or in the store.
+    await edit();
+    await form().getByRole('button', { name: 'Remove photo', exact: true }).tap();
+    await form().getByRole('button', { name: 'Save', exact: true }).tap();
+    expect(await photoSrc()).toEqual({ bytes: null, stored: null });
+    await expect(fullOf(card(), name)).toHaveCount(0);
+    await forceClose(phone);
+  });
+
+  test('a portrait photo with EXIF rotation saves portrait', async ({ baseURL }, info) => {
+    const phone = await openPhone(info.outputPath('profile'), { time: T0 }, baseURL!);
+    const { page } = phone;
+    await phoneWidth(page);
+    await seedIdeas(page, app7Ideas());
+    // Landscape pixels, tagged "rotate 90° clockwise": an iPhone's portrait photo.
+    const tagged = withOrientation(await drawnJpeg(page, 2400, 1800, 300), 6);
+    const card = ideaCard(page, 'Clams, garlic, parsley');
+    await header(card).tap();
+    await card.getByRole('button', { name: 'Edit', exact: true }).tap();
+    await choosePhoto(page, card.locator('form').getByRole('button', { name: 'Add photo', exact: true }), {
+      name: 'IMG_0413.jpg',
+      mimeType: 'image/jpeg',
+      buffer: tagged,
+    });
+    const preview = card.locator('form').getByRole('img', { name: 'Clams, garlic, parsley' });
+    await expect(preview).toBeVisible();
+    expect(await natural(preview)).toEqual([1200, 1600]);
+    await card.locator('form').getByRole('button', { name: 'Save', exact: true }).tap();
+    const full = fullOf(ideaCard(page, 'Clams, garlic, parsley'), 'Clams, garlic, parsley');
+    await expect(full).toBeVisible();
+    expect(await natural(full)).toEqual([1200, 1600]);
+    const box = (await full.boundingBox())!;
+    expect(Math.round(box.height)).toBe(Math.round(box.width));
+    await forceClose(phone);
+  });
+
+  test('a photo added in one profile appears in another after a sync, and one saved without a token uploads later', async ({ baseURL }, info) => {
+    const repo = newRepo();
+    const phoneA = await openPhone(info.outputPath('a'), { time: T0 }, baseURL!);
+    await stubGitHub(phoneA.context, repo);
+    const a = phoneA.page;
+    await phoneWidth(a);
+
+    // No token yet: the photo stays in this browser, through a force close.
+    await tab(a, 'Toppings').tap();
+    await a.getByRole('button', { name: 'Add idea', exact: true }).tap();
+    const form = panel(a, 'Toppings').locator('form');
+    await form.getByRole('textbox', { name: 'Name', exact: true }).fill('Margherita, extra basil');
+    await choosePhoto(a, form.getByRole('button', { name: 'Add photo', exact: true }), {
+      name: 'IMG_0420.jpg',
+      mimeType: 'image/jpeg',
+      buffer: await drawnJpeg(a, 2000, 1500, 0),
+    });
+    await expect(form.getByRole('img', { name: 'Margherita, extra basil' })).toBeVisible();
+    await form.getByRole('button', { name: 'Save', exact: true }).tap();
+    await a.clock.runFor(5 * S);
+    expect(repo.requests).toEqual([]);
+    await forceClose(phoneA);
+    const phoneA2 = await openPhone(info.outputPath('a'), { time: T0 + MIN }, baseURL!);
+    await stubGitHub(phoneA2.context, repo);
+    const a2 = phoneA2.page;
+    await phoneWidth(a2);
+    await expect(thumbOf(ideaCard(a2, 'Margherita, extra basil'))).toBeVisible();
+
+    // A token: the photo goes up before the idea that names it.
+    await connect(a2);
+    await expect(panel(a2, 'Bake log')).toContainText('Synced the topping ideas with dave/pizza-bake-log');
+    expect(photoFiles(repo)).toHaveLength(1);
+    const puts = repo.requests.filter((r) => r.startsWith('PUT') && r.includes('/toppings/'));
+    expect(puts[0]).toContain('/toppings/images/');
+    expect(puts[1]).toMatch(/\/toppings\/[^/]+\.json$/);
+
+    const phoneB = await openPhone(info.outputPath('b'), { time: T0 + 2 * MIN }, baseURL!);
+    await stubGitHub(phoneB.context, repo);
+    const b = phoneB.page;
+    await phoneWidth(b);
+    await connect(b);
+    await tab(b, 'Toppings').tap();
+    const card = ideaCard(b, 'Margherita, extra basil');
+    await expect(thumbOf(card)).toBeVisible();
+    await header(card).tap();
+    await expect(fullOf(card, 'Margherita, extra basil')).toBeVisible();
+    const blobs = repo.requests.filter((r) => r.includes('/git/blobs/')).length;
+    expect(blobs).toBe(1);
+
+    // Fetched once: another sync doesn't fetch it again.
+    await tab(b, 'Bake log').tap();
+    await panel(b, 'Bake log').getByRole('button', { name: 'Sync now' }).tap();
+    await expect(panel(b, 'Bake log')).toContainText('Synced the topping ideas');
+    expect(repo.requests.filter((r) => r.includes('/git/blobs/')).length).toBe(blobs);
+
+    // Deleting the idea deletes its photo.
+    await tab(a2, 'Toppings').tap();
+    const own = ideaCard(a2, 'Margherita, extra basil');
+    await header(own).tap();
+    await own.getByRole('button', { name: 'Edit', exact: true }).tap();
+    await own.getByRole('button', { name: 'Delete', exact: true }).tap();
+    await own.getByRole('alertdialog').getByRole('button', { name: 'Delete', exact: true }).tap();
+    await a2.clock.runFor(2 * S);
+    await expect.poll(() => photoFiles(repo).length).toBe(0);
+    expect(ideaFiles(repo)).toHaveLength(0);
+    await forceClose(phoneA2);
+    await forceClose(phoneB);
+  });
+
+  test('73a: the space held after Collapse all goes once it is off screen, with nothing on screen moving', async ({ baseURL }, info) => {
+    const phone = await openPhone(info.outputPath('profile'), { time: T0 }, baseURL!);
+    const { page } = phone;
+    await phoneWidth(page);
+    await seedIdeas(page, app7Ideas());
+    const held = () => page.evaluate(() => (document.getElementById('panel-toppings')?.firstElementChild as HTMLElement | null)?.style.minHeight ?? '');
+
+    await control(page).tap();
+    await expect(control(page)).toHaveText('Collapse all');
+    await page.evaluate(() => window.scrollBy(0, 200));
+    const before = (await control(page).boundingBox())!.y;
+    expect(before).toBeGreaterThan(0);
+    await control(page).tap();
+    await expect(control(page)).toHaveText('Expand all');
+    expect((await control(page).boundingBox())!.y).toBe(before);
+    expect(await held()).not.toBe('');
+
+    // Scroll up in steps. The space goes as soon as its going moves nothing
+    // (here, once the page without it is tall enough for where it is
+    // scrolled), and nothing on screen moves when it does.
+    let released = false;
+    for (let i = 0; i < 20 && !released; i++) {
+      await page.evaluate(() => window.scrollBy(0, -30));
+      await page.waitForTimeout(50);
+      const y = (await control(page).boundingBox())!.y;
+      const scrollY = await page.evaluate(() => window.scrollY);
+      released = (await held()) === '';
+      if (released) {
+        // Measured after the release: the page didn't jump.
+        await page.waitForTimeout(50);
+        expect((await control(page).boundingBox())!.y).toBe(y);
+        expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
+      }
+    }
+    expect(released).toBe(true);
+    await forceClose(phone);
   });
 });
 

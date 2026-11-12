@@ -55,8 +55,9 @@ on a phone and a sticky strip from 768 px; the log's drawer and its two
 buttons are gone; and Dave's topping ideas have a tab, their own store and
 their own sync under `toppings/`. MESSAGE-71 (spec only) is applied.
 **MESSAGE-72 is applied** (APP-7): each idea has a Comments field below
-Notes, and Expand all / Collapse all above the lists. FINDINGS-73 is the
-last thing sent.
+Notes, and Expand all / Collapse all above the lists. **MESSAGE-73 is
+applied** (APP-8): a photo on each idea, shown square, synced under
+`toppings/images/`. FINDINGS-74 is the last thing sent.
 
 ---
 
@@ -812,6 +813,11 @@ the ideas' lists and editor, then their sync.
       left off the card when empty; an idea saved before it reads as having
       none. Keys a build doesn't know survive a read and a save. Expand all /
       Collapse all above both lists, not stored; an open editor stays open.
+- [x] **APP-8** (§13.2, §13.3, MESSAGE-73): one photo per idea, shrunk on
+      the device to 1600 px JPEG, kept in IndexedDB, synced under
+      `toppings/images/` by the ideas' sync (`beforePut`, `afterSync`);
+      shown square (Dave). The held space after Collapse all goes as soon
+      as its going moves nothing (73a).
 
 ---
 
