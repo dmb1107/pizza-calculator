@@ -28,7 +28,6 @@ import {
   syncRecords,
   upsertRecord,
   type FetchLike,
-  type GitHubConfig,
   type RecordKind,
   type RecordStore,
   type RecordSyncResult,
@@ -253,14 +252,13 @@ function photoHooks(photos: PhotoStore): Pick<RecordKind<ToppingIdea>, 'beforePu
 }
 
 export async function syncToppings(
-  cfg: GitHubConfig,
   start: ToppingStore,
   fetchFn: FetchLike,
   photos: PhotoStore = memoryPhotoStore(),
   now: Date = new Date(),
 ): Promise<{ store: ToppingStore; error?: RecordSyncResult<ToppingIdea>['error'] }> {
   const kind: RecordKind<ToppingIdea> = { ...TOPPING_KIND, ...photoHooks(photos) };
-  const { store, error } = await syncRecords(cfg, kind, start, fetchFn, now);
+  const { store, error } = await syncRecords(kind, start, fetchFn, now);
   // The record sync carries every field of the store it was given, deletedPhotos included.
   return { store: store as ToppingStore, ...(error ? { error } : {}) };
 }

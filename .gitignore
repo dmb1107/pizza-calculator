@@ -23,3 +23,8 @@ npm-debug.log*
 # Playwright (npm run test:e2e)
 test-results/
 playwright-report/
+
+# Wrangler: local Durable Object state, and local secrets (spec §14)
+.wrangler/
+.dev.vars
+.dev.vars.*

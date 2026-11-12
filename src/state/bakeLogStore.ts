@@ -2,7 +2,7 @@
  * The bake log's local copy — WEBSITE-SPEC-biga-calculator.md §2 and §10.
  *
  * "Each device writes its own copy first and syncs after, so a mix never waits
- * on the network. Without a token the log stays in browser storage." This is
+ * on the network. **Signed out**, the log stays in browser storage" (§14.3). This is
  * that copy, plus the bookkeeping `githubSync.ts` needs: the blob each bake
  * was last synced at, and what changed here since.
  *
@@ -19,13 +19,11 @@ import {
   type LoggedMix,
   type PhaseKey,
 } from '../lib/bakeLog';
-import { removeRecord, upsertRecord, type GitHubConfig, type RecordKind, type RecordStore } from './repoSync';
+import { removeRecord, upsertRecord, type RecordKind, type RecordStore } from './repoSync';
 import type { StorageLike } from './storage';
 
-export type { GitHubConfig } from './repoSync';
 
 export const LOG_KEY = 'biga-calculator:log:v1';
-export const GITHUB_KEY = 'biga-calculator:github:v1';
 
 export interface LocalLog {
   bakes: LoggedBake[];
@@ -203,41 +201,4 @@ export function setMixExcluded(log: LocalLog, bakeId: string, mixIndex: number, 
     ...bake,
     mixes: bake.mixes.map((m) => (m.mix_index === mixIndex ? { ...m, excluded } : m)),
   });
-}
-
-// ---------------------------------------------------------------------------
-// The repository and token, per device
-// ---------------------------------------------------------------------------
-
-/** "owner/name", as GitHub prints it. */
-export function parseRepoName(text: string): { owner: string; repo: string } | null {
-  const m = /^\s*(?:https?:\/\/github\.com\/)?([\w.-]+)\/([\w.-]+?)(?:\.git)?\/?\s*$/.exec(text);
-  return m ? { owner: m[1]!, repo: m[2]! } : null;
-}
-
-export function loadGitHubConfig(storage: StorageLike | null): GitHubConfig | null {
-  if (!storage) return null;
-  try {
-    const raw = storage.getItem(GITHUB_KEY);
-    if (raw === null) return null;
-    const v: unknown = JSON.parse(raw);
-    if (!isRecord(v)) return null;
-    const { owner, repo, token } = v;
-    if (typeof owner !== 'string' || typeof repo !== 'string' || typeof token !== 'string') return null;
-    if (!owner || !repo || !token) return null;
-    return { owner, repo, token };
-  } catch {
-    return null;
-  }
-}
-
-/** Save, or with null forget, this device's repository and token. */
-export function saveGitHubConfig(storage: StorageLike | null, config: GitHubConfig | null): void {
-  if (!storage) return;
-  try {
-    if (config) storage.setItem(GITHUB_KEY, JSON.stringify(config));
-    else storage.removeItem?.(GITHUB_KEY);
-  } catch {
-    // Nothing to do: the config just won't survive a reload.
-  }
 }

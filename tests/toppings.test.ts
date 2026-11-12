@@ -23,7 +23,7 @@ import {
 } from '../src/lib/toppings';
 import { EMPTY_LOG, upsertBake } from '../src/state/bakeLogStore';
 import { syncLog } from '../src/state/githubSync';
-import { API, fromBase64, serializeRecord, toBase64, type FetchLike, type GitHubConfig } from '../src/state/repoSync';
+import { API, fromBase64, serializeRecord, toBase64, type FetchLike } from '../src/state/repoSync';
 import { DEFAULT_PERSISTED, inputsForNewBake } from '../src/state/defaults';
 import { STORAGE_KEY, savePersisted, type StorageLike } from '../src/state/storage';
 import { persistedForNewBake } from '../src/state/storedInputs';
@@ -245,17 +245,17 @@ describe('§13.3 the local copy', () => {
 // Sync, against a fake repository holding both folders
 // ---------------------------------------------------------------------------
 
-const CFG: GitHubConfig = { owner: 'dave', repo: 'bake-log', token: 'good' };
-
 function fakeGitHub(options: { failing?: 'toppings' | 'bakes' } = {}) {
   const files = new Map<string, { content: string; sha: string }>();
   let n = 0;
-  const base = `${API}/repos/dave/bake-log`;
+  // The Worker's pass through: the page names no repository (§14.2).
+  const base = API;
   const reply = (status: number, body: unknown = {}) =>
     Promise.resolve({ ok: status >= 200 && status < 300, status, json: () => Promise.resolve(body) });
   const fetchFn: FetchLike = (url, init = {}) => {
     const method = init.method ?? 'GET';
-    if (init.headers?.['Authorization'] !== 'Bearer good') return reply(401);
+    // The page holds no token, so it never sends one (§14.2).
+    if (init.headers && 'Authorization' in init.headers) return reply(400);
     if (!url.startsWith(base)) return reply(404);
     const path = url.slice(base.length);
     if (path === '') return reply(200, { full_name: 'dave/bake-log' });
@@ -320,7 +320,7 @@ describe('§13.3 sync through the bake log repository', () => {
   it('pushes an idea as one indented JSON file under toppings/', async () => {
     const gh = fakeGitHub();
     const a = idea('2026-11-10-210405-a1f0', { rating: 3.5 });
-    const { store, error } = await syncToppings(CFG, upsertIdea(EMPTY_TOPPINGS, a), gh.fetchFn);
+    const { store, error } = await syncToppings(upsertIdea(EMPTY_TOPPINGS, a), gh.fetchFn);
     expect(error).toBeUndefined();
     expect([...gh.files.keys()]).toEqual([`toppings/${a.id}.json`]);
     expect(gh.read(`toppings/${a.id}.json`)).toEqual(a);
@@ -331,8 +331,8 @@ describe('§13.3 sync through the bake log repository', () => {
   it('brings an idea added in one browser to another', async () => {
     const gh = fakeGitHub();
     const phone = upsertIdea(EMPTY_TOPPINGS, idea('p', { name: 'Hot honey' }));
-    await syncToppings(CFG, phone, gh.fetchFn);
-    const { store: laptop } = await syncToppings(CFG, EMPTY_TOPPINGS, gh.fetchFn);
+    await syncToppings(phone, gh.fetchFn);
+    const { store: laptop } = await syncToppings(EMPTY_TOPPINGS, gh.fetchFn);
     expect(laptop.items.map((i) => i.name)).toEqual(['Hot honey']);
     expect(laptop.dirty).toEqual([]);
   });
@@ -340,9 +340,9 @@ describe('§13.3 sync through the bake log repository', () => {
   it('carries an idea\'s comments to another browser', async () => {
     const gh = fakeGitHub();
     const phone = upsertIdea(EMPTY_TOPPINGS, idea('p', { notes: 'Honey after the bake.', comments: 'Sweet, **good** heat.' }));
-    await syncToppings(CFG, phone, gh.fetchFn);
+    await syncToppings(phone, gh.fetchFn);
     expect(gh.read('toppings/p.json').comments).toBe('Sweet, **good** heat.');
-    const { store: laptop } = await syncToppings(CFG, EMPTY_TOPPINGS, gh.fetchFn);
+    const { store: laptop } = await syncToppings(EMPTY_TOPPINGS, gh.fetchFn);
     expect(laptop.items[0]!.comments).toBe('Sweet, **good** heat.');
     expect(laptop.items[0]!.notes).toBe('Honey after the bake.');
   });
@@ -350,12 +350,12 @@ describe('§13.3 sync through the bake log repository', () => {
   it('keeps the last write to an idea, by when it was saved, whichever device syncs last', async () => {
     const gh = fakeGitHub();
     const a = idea('a', { notes: 'first' });
-    const { store: synced } = await syncToppings(CFG, upsertIdea(EMPTY_TOPPINGS, a), gh.fetchFn);
+    const { store: synced } = await syncToppings(upsertIdea(EMPTY_TOPPINGS, a), gh.fetchFn);
     // The laptop saves a later edit and syncs it.
     gh.put({ ...a, notes: 'laptop, later', updated: '2026-11-03T00:00:00.000Z' });
     // The phone saved an earlier edit offline, and syncs after.
     const phone = upsertIdea(synced, { ...a, notes: 'phone, earlier', updated: '2026-11-02T00:00:00.000Z' });
-    const { store, error } = await syncToppings(CFG, phone, gh.fetchFn);
+    const { store, error } = await syncToppings(phone, gh.fetchFn);
     expect(error).toBeUndefined();
     expect(gh.read('toppings/a.json').notes).toBe('laptop, later');
     expect(store.items[0]!.notes).toBe('laptop, later');
@@ -364,19 +364,19 @@ describe('§13.3 sync through the bake log repository', () => {
     // The other way round: the phone's edit is the later one, so it is pushed.
     gh.put({ ...a, notes: 'laptop, earlier', updated: '2026-11-04T00:00:00.000Z' });
     const later = upsertIdea(store, { ...a, notes: 'phone, later', updated: '2026-11-05T00:00:00.000Z' });
-    const second = await syncToppings(CFG, later, gh.fetchFn);
+    const second = await syncToppings(later, gh.fetchFn);
     expect(gh.read('toppings/a.json').notes).toBe('phone, later');
     expect(second.store.items[0]!.notes).toBe('phone, later');
   });
 
   it('removes a deleted idea from the repository, and applies a deletion made elsewhere', async () => {
     const gh = fakeGitHub();
-    let { store } = await syncToppings(CFG, upsertIdea(upsertIdea(EMPTY_TOPPINGS, idea('a')), idea('b')), gh.fetchFn);
-    store = (await syncToppings(CFG, removeIdea(store, 'a'), gh.fetchFn)).store;
+    let { store } = await syncToppings(upsertIdea(upsertIdea(EMPTY_TOPPINGS, idea('a')), idea('b')), gh.fetchFn);
+    store = (await syncToppings(removeIdea(store, 'a'), gh.fetchFn)).store;
     expect([...gh.files.keys()]).toEqual(['toppings/b.json']);
     expect(store.deleted).toEqual([]);
     gh.files.delete('toppings/b.json');
-    store = (await syncToppings(CFG, store, gh.fetchFn)).store;
+    store = (await syncToppings(store, gh.fetchFn)).store;
     expect(store.items).toEqual([]);
   });
 
@@ -388,17 +388,17 @@ describe('§13.3 sync through the bake log repository', () => {
 
     // Laptop edits and pushes; phone deletes without having pulled it.
     const gh1 = fakeGitHub();
-    const { store: base1 } = await syncToppings(CFG, upsertIdea(EMPTY_TOPPINGS, a), gh1.fetchFn);
+    const { store: base1 } = await syncToppings(upsertIdea(EMPTY_TOPPINGS, a), gh1.fetchFn);
     gh1.put({ ...a, notes: 'laptop edit', updated: '2026-11-05T00:00:00.000Z' });
-    await syncToppings(CFG, removeIdea(base1, 'a'), gh1.fetchFn);
+    await syncToppings(removeIdea(base1, 'a'), gh1.fetchFn);
     expect(gh1.files.size).toBe(0);
 
     // Phone deletes and pushes; laptop, holding an unpushed edit, syncs after.
     const gh2 = fakeGitHub();
-    const { store: base2 } = await syncToppings(CFG, upsertIdea(EMPTY_TOPPINGS, a), gh2.fetchFn);
-    await syncToppings(CFG, removeIdea(base2, 'a'), gh2.fetchFn);
+    const { store: base2 } = await syncToppings(upsertIdea(EMPTY_TOPPINGS, a), gh2.fetchFn);
+    await syncToppings(removeIdea(base2, 'a'), gh2.fetchFn);
     const laptop = upsertIdea(base2, { ...a, notes: 'laptop edit', updated: '2026-11-05T00:00:00.000Z' });
-    const { store } = await syncToppings(CFG, laptop, gh2.fetchFn);
+    const { store } = await syncToppings(laptop, gh2.fetchFn);
     expect(gh2.read('toppings/a.json').notes).toBe('laptop edit');
     expect(store.items.map((i) => i.notes)).toEqual(['laptop edit']);
   });
@@ -408,34 +408,34 @@ describe('§13.3 sync through the bake log repository', () => {
     const log = upsertBake(EMPTY_LOG, bake('2026-11-10-190000'));
 
     const toppingsDown = fakeGitHub({ failing: 'toppings' });
-    const t1 = await syncToppings(CFG, ideas, toppingsDown.fetchFn);
-    const l1 = await syncLog(CFG, log, toppingsDown.fetchFn);
+    const t1 = await syncToppings(ideas, toppingsDown.fetchFn);
+    const l1 = await syncLog(log, toppingsDown.fetchFn);
     expect(t1.error?.kind).toBe('other');
     expect(t1.store.dirty).toEqual(['a']);
     expect(l1.error).toBeUndefined();
     expect([...toppingsDown.files.keys()]).toEqual(['bakes/2026-11-10-190000.json']);
 
     const bakesDown = fakeGitHub({ failing: 'bakes' });
-    const l2 = await syncLog(CFG, log, bakesDown.fetchFn);
-    const t2 = await syncToppings(CFG, ideas, bakesDown.fetchFn);
+    const l2 = await syncLog(log, bakesDown.fetchFn);
+    const t2 = await syncToppings(ideas, bakesDown.fetchFn);
     expect(l2.error?.kind).toBe('other');
     expect(l2.log.dirty).toEqual(['2026-11-10-190000']);
     expect(t2.error).toBeUndefined();
     expect([...bakesDown.files.keys()]).toEqual(['toppings/a.json']);
   });
 
-  it('says the ideas are safe on this device when GitHub is out of reach', async () => {
+  it("says the ideas are safe on this device when the app's server is out of reach", async () => {
     const offline: FetchLike = () => Promise.reject(new TypeError('Failed to fetch'));
-    const { store, error } = await syncToppings(CFG, upsertIdea(EMPTY_TOPPINGS, idea('a')), offline);
+    const { store, error } = await syncToppings(upsertIdea(EMPTY_TOPPINGS, idea('a')), offline);
     expect(error?.kind).toBe('network');
-    expect(error?.message).toBe("Couldn't reach GitHub. The ideas are saved on this device and will sync later.");
+    expect(error?.message).toBe("Couldn't reach the app's server. The ideas are saved on this device and will sync later.");
     expect(store.dirty).toEqual(['a']);
   });
 
   it('leaves a file that does not parse in the repository', async () => {
     const gh = fakeGitHub();
     gh.files.set('toppings/x.json', { content: toBase64('{"name": ""}'), sha: 'x' });
-    const { store, error } = await syncToppings(CFG, EMPTY_TOPPINGS, gh.fetchFn);
+    const { store, error } = await syncToppings(EMPTY_TOPPINGS, gh.fetchFn);
     expect(error).toBeUndefined();
     expect(store.items).toEqual([]);
     expect(gh.files.size).toBe(1);

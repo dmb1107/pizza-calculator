@@ -9,13 +9,30 @@ carries what it doesn't:** where things stand, what's open, how a round works,
 what each test exists to catch, and the mistakes that keep coming back.
 
 Written 23 September 2026, after MESSAGE-24, and kept current through
-MESSAGE-70 and FINDINGS-71 (11 November).
+MESSAGE-70 and FINDINGS-71 (11 November); §1's first bullet, §7 and §8
+brought current for APP-10 (MESSAGE-75, 12 November).
 Don't trust any status here that you can check instead (§7).
 
 ---
 
 ## 1. Where it stands
 
+- **APP-10 (MESSAGE-75, spec §14) is built, and FINDINGS-76 is the last
+  thing sent.** The app moves from GitHub Pages to one Cloudflare Worker at
+  `https://pizza.dave-becker.com`; the GitHub token moves off the devices
+  into the Worker; devices sign in with a passkey. CLAUDE.md's "The Worker
+  is the one place a mistake exposes the repository" has the rules, and
+  FINDINGS-76 lists every route with what it checks. **It is live only
+  once Dave has done FINDINGS-76's switchover**: the preview and its check
+  (`npm run test:preview`), the two secrets, Workers Builds, each device
+  synced and moved, Pages off. Until then the old Pages site keeps serving
+  the last build from before this round, token sync and all. Three test
+  layers: `tests/worker.test.ts` (the routes, with real WebAuthn
+  signatures), `e2e/signin.spec.ts` (WebKit, a stub Worker and a fake
+  passkey), and `npm run test:worker` (the real Worker in workerd, a fake
+  GitHub, Chromium's virtual passkey). What none can reach: a passkey in
+  Safari, in the icon, and through Bitwarden; iOS copying Safari's cookie
+  to an icon.
 - **The correspondence is applied through MESSAGE-70, and FINDINGS-71 is the
   last thing sent.** MESSAGE-70 was APP-6, the fourth of Dave's queued app
   changes and spec §13: **three tabs** (Recipe, Toppings, Bake log; a bar
@@ -218,7 +235,9 @@ Don't trust any status here that you can check instead (§7).
   - Task 11 — the bake log. Its `ff_measured` is `solveFrictionFactorF`, never
     `final − predicted_mix` (§10); file it under the bake's balls per mix;
     one row per mix on a split batch (§10, MESSAGE-28).
-- **Every push to `main` deploys** to https://dmb1107.github.io/pizza-calculator/.
+- **Every push to `main` deploys** to https://pizza.dave-becker.com through
+  Workers Builds, once Dave has connected it (§7). Before APP-10 it went to
+  https://dmb1107.github.io/pizza-calculator/.
 
 ---
 
@@ -517,26 +536,26 @@ The long form is the errors table in their `HANDOFF-new-context.md`. The shapes:
 
 ## 7. The deploy
 
-It works, and has since 1 September. **Check it rather than believe it:**
+**From APP-10 (MESSAGE-75):** Cloudflare's Git integration (Workers Builds)
+builds and deploys every push to `main`: `npm test && npm run build`, then
+`npx wrangler deploy`. GitHub Actions only runs the tests (`ci.yml`, "Tests")
+and deploys nothing. Check the deploy rather than believe it: the Worker's
+**Builds** tab in the Cloudflare dashboard, and the `assets/index-*.js` name
+in `https://pizza.dave-becker.com/` against the one `npm run build` prints.
 
 ```bash
 gh run list --limit 3
 ```
 
-In a cloud session there is no `gh`: use the GitHub MCP `actions_list`
-(`list_workflow_runs`) and `list_workflow_jobs` on the run for the merge
-commit's SHA. The workflow is "Deploy to GitHub Pages" and has a build job and
-a deploy job; both must succeed.
+shows the tests. In a cloud session there is no `gh`: use the GitHub MCP
+`actions_list`. The Worker's secrets (`GITHUB_TOKEN`, `SETUP_CODE`) are
+Dave's; never set or read them. `wrangler.jsonc`'s `env.preview` is a
+second Worker, `pizza-calculator-preview`, on workers.dev, deployed by hand
+(`npm run deploy:preview`) and deleted after the switchover.
 
-To confirm the site itself, compare the `assets/index-*.js` name in the live
-`index.html` with the one `npm run build` prints. **The container can't reach
-github.io**, so from a cloud session the successful run is the evidence. The
-MESSAGE-38 tree builds `index-Bf1mQ8-C.js`.
-
-Don't change the workflow or the Pages source; both are right. Two runner
-notices need nothing yet: `deploy-pages@v4` is forced onto Node 24, and
-`ubuntu-latest` moves to Ubuntu 26 from 19 October 2026. Look at those first if
-a deploy fails after that date.
+**Before APP-10** the site was GitHub Pages, deployed by the "Deploy to
+GitHub Pages" workflow, with `base` `/pizza-calculator/`. The workflow is
+gone; Pages keeps serving its last build until Dave switches it off.
 
 ---
 
@@ -575,8 +594,9 @@ a deploy fails after that date.
 **The browser pane**
 
 - **Start the dev server** as `biga-calculator` from `.claude/launch.json`. The
-  app is under `/pizza-calculator/`. If the port moves, `preview_logs` gives the
-  real URL.
+  app is at the root (`/`) since APP-10. If the port moves, `preview_logs`
+  gives the real URL. The dev server has no Worker, so the page is signed
+  out; `npm run worker:dev` after a build runs both.
 - **Read text rather than screenshots:** `javascript_tool` reading `innerText`
   is reliable.
 - **Number fields commit on blur:** triple-click, type, then Tab. Get refs with
@@ -598,8 +618,9 @@ a deploy fails after that date.
   it again.
 - **Phone size:** `resize_window` with the `mobile` preset (375 × 812), and
   `colorScheme: 'dark'` for dark mode. Reset to `desktop` when done.
-- **The live site is `https://dmb1107.github.io/pizza-calculator/`**; audit
-  it, not only the dev server, when the question is what Dave will see.
+- **The live site is `https://pizza.dave-becker.com`** (from APP-10's
+  switchover; before it, `https://dmb1107.github.io/pizza-calculator/`);
+  audit it, not only the dev server, when the question is what Dave will see.
 
 ---
 

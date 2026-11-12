@@ -19,7 +19,6 @@ import {
   type IdeaProblem,
   type ToppingIdea,
 } from '../lib/toppings';
-import type { GitHubConfig } from '../state/repoSync';
 import type { NewPhoto, ToppingsState } from '../state/useToppings';
 
 /**
@@ -521,7 +520,7 @@ function IdeaCard({
   );
 }
 
-export function ToppingsPage({ toppings, github }: { toppings: ToppingsState; github: GitHubConfig | null }) {
+export function ToppingsPage({ toppings, signedIn }: { toppings: ToppingsState; signedIn: boolean }) {
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [openIds, setOpenIds] = useState<ReadonlySet<string>>(() => new Set());
@@ -684,9 +683,9 @@ export function ToppingsPage({ toppings, github }: { toppings: ToppingsState; gi
       </section>
 
       <p ref={endRef} className="text-sm text-stone-600 dark:text-stone-400">
-        {github
-          ? syncStatusText(github, toppings.sync, toppings.waiting, toppings.store.lastSyncedAt, 'the ideas')
-          : 'Saved in this browser. Add a repository in the bake log to sync the ideas with your other devices.'}
+        {signedIn
+          ? syncStatusText(toppings.sync, toppings.waiting, toppings.store.lastSyncedAt, 'the ideas')
+          : 'Saved in this browser. Sign in on the Bake log tab to sync the ideas with your other devices.'}
       </p>
     </div>
   );

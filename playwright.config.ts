@@ -17,12 +17,12 @@ export default defineConfig({
   reporter: [['list']],
   timeout: 60_000,
   use: {
-    baseURL: `http://localhost:${PORT}/pizza-calculator/`,
+    baseURL: `http://localhost:${PORT}/`,
     trace: 'retain-on-failure',
   },
   webServer: {
     command: `npm run build && npx vite preview --port ${PORT} --strictPort`,
-    url: `http://localhost:${PORT}/pizza-calculator/`,
+    url: `http://localhost:${PORT}/`,
     reuseExistingServer: false,
     timeout: 120_000,
   },

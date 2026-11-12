@@ -2,11 +2,11 @@
 
 # Biga Neapolitan Dough Calculator
 
-A static, client-side dough calculator tuned to one specific setup: **Grain
+A client-side dough calculator tuned to one specific setup: **Grain
 Craft Neapolitan 00 flour, an Ooni Halo Core spiral mixer, a Gozney Tread oven,
 and a 65% biga.**
 
-Live at **https://dmb1107.github.io/pizza-calculator/**
+Live at **https://pizza.dave-becker.com**
 
 Enter the batch size and how long you want the cold ferment, then the
 temperatures you measure on the day, in the steps where you take them. The app
@@ -54,19 +54,23 @@ step checkboxes and the timers, opens every step group, and keeps the log,
 the topping ideas and the tab. Reference tables and the recipe's sources
 open in drawers at the bottom of every tab.
 
-The bake log and the topping ideas stay in the browser unless you give them
-a private GitHub repository and a token that can reach only that
-repository; then each device syncs one JSON file per bake under `bakes/`
-and one per idea under `toppings/` through GitHub's API. The two sync
-separately, so one failing never holds up the other. A shared link carries
-the setup, never the log, the ideas or the token.
+The bake log and the topping ideas stay in the browser until the device
+signs in, with a passkey (Face ID, Touch ID, or a password manager such as
+Bitwarden). Signed in, each device syncs one JSON file per bake under
+`bakes/` and one per idea under `toppings/` in a private GitHub repository,
+through the app's own Cloudflare Worker, which holds the only GitHub token;
+no device holds one. A sign-in lasts 90 days from its last use. Creating a
+passkey asks for a setup code set in the Worker, so a stranger who finds the
+address can't add one. The log and the ideas sync separately, so one failing
+never holds up the other. A shared link carries the setup, never the log,
+the ideas or the sign-in.
 
 Built to be read on a phone propped against a mixer, by someone with flour on
 their hands.
 
 ## Status
 
-Tasks 0–11 are done and the site is live. The bake log (Task 11) was built
+Tasks 0–12 are done and the site is live. The bake log (Task 11) was built
 across MESSAGE-45 to MESSAGE-50; MESSAGE-51 to 53 were Dave's recipe review,
 MESSAGE-54 moved the day's readings into the steps, and bakes 2 and 3
 (MESSAGE-59 and 60) are the first the log counts. Since MESSAGE-61 each
@@ -76,12 +80,18 @@ it rests on are in spec §11 and the About drawer. Since MESSAGE-65 the inputs
 are stored in the browser as well as the URL, so a home-screen app reopens
 where it was. Since MESSAGE-67 a stopped timer resumes, since MESSAGE-68
 finished steps and groups fold away, and since MESSAGE-70 the page is three
-tabs, one of them for topping ideas. See
+tabs, one of them for topping ideas. Since MESSAGE-75 (APP-10) the app is
+served from Cloudflare at its own address, and devices sign in with a
+passkey instead of holding a GitHub token. See
 [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
 ## Home screen icon
 
-On an iPhone, open the site in Safari, tap Share, then **Add to Home Screen**.
+On an iPhone, open the site in Safari, **sign in on the Bake log tab first**,
+then tap Share, then **Add to Home Screen**. iOS copies Safari's sign-in to
+the home-screen app once, when it is added; if the app's sign-in ever lapses
+and its passkey prompt doesn't work, sign in in Safari again and add the icon
+again.
 The icon files live in `public/`:
 
 | File | Used by | Shape |
@@ -112,19 +122,40 @@ npm test
 | `npm test` | vitest, single run |
 | `npm run test:watch` | vitest, watch mode |
 | `npm run test:e2e` | the iPhone checks in WebKit, as a home-screen app (run `npx playwright install webkit` once first) |
-| `npm run typecheck` | `tsc --noEmit` |
+| `npm run test:worker` | the real Worker in `wrangler dev`, a fake GitHub, and a virtual passkey in Chromium (`npx playwright install chromium` once) |
+| `npm run test:preview` | the same checks against the preview deploy; needs `PREVIEW_URL` and `PREVIEW_SETUP_CODE` |
+| `npm run typecheck` | `tsc --noEmit`, the page and the Worker |
 | `npm run build` | typecheck + production build to `dist/` |
-| `npm run preview` | serve `dist/` locally |
+| `npm run preview` | serve `dist/` locally, without the Worker (signed out) |
+| `npm run worker:dev` | the page and the Worker together on port 8787, after `npm run build` |
+| `npm run deploy:preview` | build and deploy the preview Worker to workers.dev |
 
 ## Deploy
 
-Every push to `main` runs the tests, builds, and publishes to GitHub Pages via
-`.github/workflows/deploy.yml`. Other branches don't deploy; work reaches
-`main` through a pull request.
+One Cloudflare Worker serves the app at `https://pizza.dave-becker.com`
+(`wrangler.jsonc`): the built page from `dist/` as static assets, and
+`worker/` for everything under `/api/`, the passkey sign-in and the pass
+through to GitHub. A Durable Object holds the passkeys and sign-ins.
 
-`vite.config.ts` sets `base: '/pizza-calculator/'`. Pages serves from a subpath
-and asset links break silently without it — if the repo is renamed, change it
-there too.
+Cloudflare's Git integration (Workers Builds) deploys every push to `main`:
+it runs `npm test` and `npm run build`, then `npx wrangler deploy`. GitHub
+Actions runs the same tests on every push and pull request
+(`.github/workflows/ci.yml`) and deploys nothing. Other branches don't
+deploy; work reaches `main` through a pull request.
+
+The Worker's two secrets are set in Cloudflare, never in the repository:
+
+```bash
+npx wrangler secret put GITHUB_TOKEN
+```
+
+```bash
+npx wrangler secret put SETUP_CODE
+```
+
+`GITHUB_TOKEN` is a fine-grained token that reaches only the bake-log
+repository, with Contents set to read and write. The page is served from
+the domain's root, so `base` in `vite.config.ts` is `'/'`.
 
 ## Documents
 
@@ -147,4 +178,4 @@ About drawer.
 
 The formulas are the product. A wrong number ruins 50 hours of work, so the
 spec's test vectors are encoded as acceptance criteria in
-[`tests/vectors.ts`](tests/vectors.ts) and CI will not deploy a red suite.
+[`tests/vectors.ts`](tests/vectors.ts) and a red suite never deploys.

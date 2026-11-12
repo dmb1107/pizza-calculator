@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 import { PHOTO_MAX_EDGE, base64ToBytes, bytesToBase64, fitWithin, photoPath, sha256Hex } from '../src/lib/photos';
 import { draftOf, isPhotoName, photoName, savedIdea, type ToppingIdea } from '../src/lib/toppings';
 import { memoryPhotoStore, type PhotoStore } from '../src/state/photoStore';
-import { API, fromBase64, serializeRecord, toBase64, type FetchLike, type GitHubConfig } from '../src/state/repoSync';
+import { API, fromBase64, serializeRecord, toBase64, type FetchLike } from '../src/state/repoSync';
 import {
   EMPTY_TOPPINGS,
   loadToppings,
@@ -21,8 +21,6 @@ import {
   upsertIdea,
   type ToppingStore,
 } from '../src/state/toppingsStore';
-
-const CFG: GitHubConfig = { owner: 'dave', repo: 'bake-log', token: 'good' };
 
 function idea(id: string, overrides: Partial<ToppingIdea> = {}): ToppingIdea {
   return {
@@ -48,12 +46,14 @@ function fakeRepo() {
   const files = new Map<string, { content: string; sha: string }>();
   const log: string[] = [];
   let n = 0;
-  const base = `${API}/repos/dave/bake-log`;
+  // The Worker's pass through: the page names no repository (§14.2).
+  const base = API;
   const reply = (status: number, body: unknown = {}) =>
     Promise.resolve({ ok: status >= 200 && status < 300, status, json: () => Promise.resolve(body) });
   const fetchFn: FetchLike = (url, init = {}) => {
     const method = init.method ?? 'GET';
-    if (init.headers?.['Authorization'] !== 'Bearer good') return reply(401);
+    // The page holds no token, so it never sends one (§14.2).
+    if (init.headers && 'Authorization' in init.headers) return reply(400);
     const path = url.slice(base.length);
     log.push(`${method} ${path}`);
     if (path === '') return reply(200, { full_name: 'dave/bake-log' });
@@ -169,7 +169,7 @@ describe('§13.3 photos in the sync', () => {
     const repo = fakeRepo();
     const photos = memoryPhotoStore();
     const { store, name } = await withPhoto(EMPTY_TOPPINGS, photos, idea('a'), 'first', '2026-11-11T19:00:00Z');
-    const { error } = await syncToppings(CFG, store, repo.fetchFn, photos);
+    const { error } = await syncToppings(store, repo.fetchFn, photos);
     expect(error).toBeUndefined();
     expect(repo.writes()).toEqual([`PUT /contents/${photoPath(name)}`, 'PUT /contents/toppings/a.json']);
     expect(repo.photo(name)).toBe('JPEG first');
@@ -180,10 +180,10 @@ describe('§13.3 photos in the sync', () => {
     const repo = fakeRepo();
     const photos = memoryPhotoStore();
     const first = await withPhoto(EMPTY_TOPPINGS, photos, idea('a'), 'first', '2026-11-11T19:00:00Z');
-    let { store } = await syncToppings(CFG, first.store, repo.fetchFn, photos);
+    let { store } = await syncToppings(first.store, repo.fetchFn, photos);
     repo.log.length = 0;
     const second = await withPhoto(store, photos, store.items[0]!, 'second', '2026-11-11T19:10:00Z');
-    ({ store } = await syncToppings(CFG, second.store, repo.fetchFn, photos));
+    ({ store } = await syncToppings(second.store, repo.fetchFn, photos));
     expect(repo.writes()).toEqual([
       `PUT /contents/${photoPath(second.name)}`,
       'PUT /contents/toppings/a.json',
@@ -195,7 +195,7 @@ describe('§13.3 photos in the sync', () => {
     // Remove: the idea first, then its file.
     repo.log.length = 0;
     store = upsertIdea(store, savedIdea({ ...draftOf(store.items[0]!), photo: null }, store.items[0]!, 'a', new Date('2026-11-11T19:20:00Z')));
-    ({ store } = await syncToppings(CFG, store, repo.fetchFn, photos));
+    ({ store } = await syncToppings(store, repo.fetchFn, photos));
     expect(repo.writes()).toEqual(['PUT /contents/toppings/a.json', `DELETE /contents/${photoPath(second.name)}`]);
     expect(repo.read('a').photo).toBeNull();
     expect([...repo.files.keys()]).toEqual(['toppings/a.json']);
@@ -205,8 +205,8 @@ describe('§13.3 photos in the sync', () => {
     const repo = fakeRepo();
     const photos = memoryPhotoStore();
     const first = await withPhoto(EMPTY_TOPPINGS, photos, idea('a'), 'first', '2026-11-11T19:00:00Z');
-    let { store } = await syncToppings(CFG, first.store, repo.fetchFn, photos);
-    ({ store } = await syncToppings(CFG, removeIdea(store, 'a'), repo.fetchFn, photos));
+    let { store } = await syncToppings(first.store, repo.fetchFn, photos);
+    ({ store } = await syncToppings(removeIdea(store, 'a'), repo.fetchFn, photos));
     expect([...repo.files.keys()]).toEqual([]);
     expect(store.deletedPhotos).toEqual([]);
   });
@@ -215,21 +215,21 @@ describe('§13.3 photos in the sync', () => {
     const repo = fakeRepo();
     const phone = memoryPhotoStore();
     const first = await withPhoto(EMPTY_TOPPINGS, phone, idea('a'), 'first', '2026-11-11T19:00:00Z');
-    let { store: phoneStore } = await syncToppings(CFG, first.store, repo.fetchFn, phone);
+    let { store: phoneStore } = await syncToppings(first.store, repo.fetchFn, phone);
 
     const laptop = memoryPhotoStore();
-    let { store: laptopStore } = await syncToppings(CFG, EMPTY_TOPPINGS, repo.fetchFn, laptop);
+    let { store: laptopStore } = await syncToppings(EMPTY_TOPPINGS, repo.fetchFn, laptop);
     expect(laptopStore.items[0]!.photo).toBe(first.name);
     expect(await text(await laptop.get(first.name))).toBe('JPEG first');
     const blobs = () => repo.log.filter((l) => l.startsWith('GET /git/blobs/')).length;
     expect(blobs()).toBe(1);
 
-    ({ store: laptopStore } = await syncToppings(CFG, laptopStore, repo.fetchFn, laptop));
+    ({ store: laptopStore } = await syncToppings(laptopStore, repo.fetchFn, laptop));
     expect(blobs()).toBe(1);
 
     const second = await withPhoto(phoneStore, phone, phoneStore.items[0]!, 'second', '2026-11-11T19:10:00Z');
-    ({ store: phoneStore } = await syncToppings(CFG, second.store, repo.fetchFn, phone));
-    ({ store: laptopStore } = await syncToppings(CFG, laptopStore, repo.fetchFn, laptop));
+    ({ store: phoneStore } = await syncToppings(second.store, repo.fetchFn, phone));
+    ({ store: laptopStore } = await syncToppings(laptopStore, repo.fetchFn, laptop));
     expect(blobs()).toBe(2);
     expect(await text(await laptop.get(second.name))).toBe('JPEG second');
   });
@@ -239,14 +239,14 @@ describe('§13.3 photos in the sync', () => {
     const a = memoryPhotoStore();
     const b = memoryPhotoStore();
     const start = await withPhoto(EMPTY_TOPPINGS, a, idea('x'), 'start', '2026-11-11T18:00:00Z');
-    let { store: storeA } = await syncToppings(CFG, start.store, repo.fetchFn, a);
-    let { store: storeB } = await syncToppings(CFG, EMPTY_TOPPINGS, repo.fetchFn, b);
+    let { store: storeA } = await syncToppings(start.store, repo.fetchFn, a);
+    let { store: storeB } = await syncToppings(EMPTY_TOPPINGS, repo.fetchFn, b);
 
     // A replaces it at 19:00 and is offline; B replaces it at 19:30 and syncs first.
     const fromA = await withPhoto(storeA, a, storeA.items[0]!, 'from A', '2026-11-11T19:00:00Z');
     const fromB = await withPhoto(storeB, b, storeB.items[0]!, 'from B', '2026-11-11T19:30:00Z');
-    ({ store: storeB } = await syncToppings(CFG, fromB.store, repo.fetchFn, b));
-    ({ store: storeA } = await syncToppings(CFG, fromA.store, repo.fetchFn, a));
+    ({ store: storeB } = await syncToppings(fromB.store, repo.fetchFn, b));
+    ({ store: storeA } = await syncToppings(fromA.store, repo.fetchFn, a));
 
     // B's copy is later, so A keeps it and never uploads its own photo.
     expect(storeA.items[0]!.photo).toBe(fromB.name);
@@ -262,13 +262,13 @@ describe('§13.3 photos in the sync', () => {
     const repo = fakeRepo();
     const a = memoryPhotoStore();
     const start = await withPhoto(EMPTY_TOPPINGS, a, idea('x'), 'start', '2026-11-11T18:00:00Z');
-    let { store } = await syncToppings(CFG, start.store, repo.fetchFn, a);
+    let { store } = await syncToppings(start.store, repo.fetchFn, a);
     // Another device edits the text at 19:30, keeping the photo.
     repo.put({ ...store.items[0]!, notes: 'later', updated: '2026-11-11T19:30:00.000Z' });
     // This one removed the photo at 19:00, offline.
     store = upsertIdea(store, savedIdea({ ...draftOf(store.items[0]!), photo: null }, store.items[0]!, 'x', new Date('2026-11-11T19:00:00Z')));
     expect(store.deletedPhotos).toEqual([start.name]);
-    ({ store } = await syncToppings(CFG, store, repo.fetchFn, a));
+    ({ store } = await syncToppings(store, repo.fetchFn, a));
     expect(store.items[0]!.photo).toBe(start.name);
     expect(repo.photo(start.name)).toBe('JPEG start');
     expect(store.deletedPhotos).toEqual([]);
@@ -281,7 +281,7 @@ describe('§13.3 photos in the sync', () => {
     const s = { getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => void data.set(k, v), removeItem: () => {} };
     saveToppings(s, store);
     const repo = fakeRepo();
-    const { error } = await syncToppings(CFG, loadToppings(s), repo.fetchFn, photos);
+    const { error } = await syncToppings(loadToppings(s), repo.fetchFn, photos);
     expect(error).toBeUndefined();
     expect(repo.photo(name)).toBe('JPEG offline');
   });
@@ -290,7 +290,7 @@ describe('§13.3 photos in the sync', () => {
     const repo = fakeRepo();
     const photos = memoryPhotoStore();
     const store = upsertIdea(EMPTY_TOPPINGS, idea('a', { photo: 'a-0123456789ab' }));
-    const result = await syncToppings(CFG, store, repo.fetchFn, photos);
+    const result = await syncToppings(store, repo.fetchFn, photos);
     expect(result.error).toBeUndefined();
     expect(repo.read('a').photo).toBe('a-0123456789ab');
     expect(await photos.get('a-0123456789ab')).toBeNull();
@@ -308,7 +308,7 @@ describe('§13.3 photos in the sync', () => {
 
   it('makes no photo requests while no idea has a photo', async () => {
     const repo = fakeRepo();
-    await syncToppings(CFG, upsertIdea(EMPTY_TOPPINGS, idea('a')), repo.fetchFn, memoryPhotoStore());
+    await syncToppings(upsertIdea(EMPTY_TOPPINGS, idea('a')), repo.fetchFn, memoryPhotoStore());
     expect(repo.log.some((l) => l.includes('images'))).toBe(false);
   });
 });

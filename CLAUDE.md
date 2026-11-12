@@ -10,10 +10,13 @@ Neapolitan 00 flour, an Ooni Halo Core spiral mixer, a Gozney Tread oven, and a
 length; the app returns gram weights, a target water temperature, a clock-time
 timeline, and a guided step list.
 
-Deployed to GitHub Pages. No server of its own and no build-time data
-fetching. The only runtime network calls are the bake log's and the topping
-ideas' syncs to one private GitHub repository, and only on a device where a
-token is set (§2, §13.3).
+Served at **https://pizza.dave-becker.com** by one Cloudflare Worker (§14,
+APP-10, MESSAGE-75): the built page as static assets, and the Worker's own
+`/api/` routes for the passkey sign-in and the sync. No build-time data
+fetching. The page's only runtime network calls are to its own `/api/`: the
+sign-in, and the bake log's and the topping ideas' syncs, which the Worker
+passes to one private GitHub repository with the token it holds. A device
+signs in with a passkey and holds no token (§2, §13.3, §14).
 
 ## The documents
 
@@ -162,6 +165,8 @@ question:
 | `FINDINGS-74-to-recipe-agent.md` | Reply to MESSAGE-73. APP-8 built; 912 unit, 24 WebKit. Photos fetched by the git blobs API; a local thumbnail; photos shown square (Dave, mid-round); 73a read as "its going moves nothing". Screenshots sent with it |
 | `MESSAGE-74.md` | Spec only: §13 brought to what APP-8 built (photos square, the held space goes once its going moves nothing, Photo and Preparing the photo… in the rendered copy, the local small copy). Gate patch for the phrase list |
 | `FINDINGS-75-to-recipe-agent.md` | Reply to MESSAGE-74. All reproduced, 912 of 912; nothing open |
+| `MESSAGE-75.md` | **APP-10, spec §14**: the app moves to Cloudflare at `pizza.dave-becker.com`; the GitHub token moves into a Worker; devices sign in with a passkey (90 days, renewed on use), a setup code guards creating one; Pages off once the new address works |
+| `FINDINGS-76-to-recipe-agent.md` | Reply to MESSAGE-75. APP-10 built: the Worker's routes and what each checks, the switchover checklist, the secrets and deploy steps. Writes pass only `message`, `content`, `sha`; `download_url`s stripped. Screenshots sent with it |
 | `HANDOFF-to-next-calculator-agent.md` | **Start here on a fresh session.** Where things stand, what's open, how a round works, what each test catches |
 
 ## Rules that matter more than usual here
@@ -597,7 +602,7 @@ rated (`ideaProblem`, `canRate`; a rating picked without it is refused in
 then `updated`, Untested by `created`. The store is `toppingsStore.ts`
 (`TOPPINGS_KEY`, its own dirty and deleted lists) and the hook
 `useToppings`, apart from `useAppState`, so a failed toppings sync never
-holds up the log, and the reverse; they share only the token. **The log and
+holds up the log, and the reverse; they share only the sign-in. **The log and
 the ideas run one sync algorithm, `src/state/repoSync.ts`**, parameterized
 by a `RecordKind` (folder, id, parser, commit messages); `githubSync.ts` and
 `bakeLogStore.ts` wrap it with their old exports, so the bake log's tests
@@ -652,6 +657,53 @@ answers JSON at any size where the contents API stops filling `content` at
 Save; Remove doesn't ask. **Photos show square** (Dave, 11 Nov, mid-round:
 a pizza is round), `object-cover` in a square box, on the card and in the
 editor; the stored JPEG keeps its frame.
+
+**The Worker is the one place a mistake exposes the repository** (§14,
+APP-10, MESSAGE-75). `worker/app.ts` is every `/api/` route, written
+against web-standard APIs only, with its storage, clock and GitHub `fetch`
+passed in, so `tests/worker.test.ts` runs it in Node with real WebAuthn
+signatures (`tests/fakeAuthenticator.ts`). `worker/index.ts` wires it to
+one Durable Object (`AuthStore`, SQLite-backed), which holds the passkeys,
+the sessions (keyed by a SHA-256 of the cookie, never the cookie) and the
+setup code's wrong tries, and handles one request at a time, so a challenge
+can't be used twice. The Worker entry buffers each body before the object
+sees it. **The pass through is an allow-list, relative to one repository
+fixed in `wrangler.jsonc`'s `vars`**: `GET` the repository, `GET` a listing
+of `bakes`, `toppings` or `toppings/images`, `GET`/`PUT`/`DELETE` a
+`.json` in the first two or a `.jpg` in the third, `GET` a git blob.
+Anything else is refused before the token is attached: another path,
+another method, a query, `..`, a backslash or **any percent escape**
+(refused, never decoded). Writes pass only `message`, `content` and `sha`
+(`allowedWriteBody`), so no `branch`, `committer` or `author` reaches
+GitHub. Answers lose `download_url` (a private repository's carries a
+short-lived read token). **GitHub refusing the token comes back as 502,
+never 401**: a 401 means only that this device's sign-in lapsed, and the
+page turns to signed out on it (`SyncErrorKind` `signedOut`), keeping its
+local copies. The page's sync sends to `API = '/api/github'` with no
+`Authorization` header; `tests/auth.test.ts` fails on `api.github.com`,
+`Authorization`, `/repos/` or the repository's name anywhere in `src/`.
+**The cookie** is `__Host-pizza-session`: HttpOnly, Secure,
+SameSite=Strict, Path=/, 90 days from the last use, re-sent at most once a
+day. Every write must carry this address's `Origin`. **The RP ID is the
+request's own host** (`pizza.dave-becker.com` in production), so a passkey
+made on the preview works only there. **The setup code** is compared over
+SHA-256 digests in constant time; five wrong tries in ten minutes, over all
+addresses, refuse every try, the right one included, until the oldest
+leaves the window. At most 20 challenges are held (the oldest goes), since
+asking for one needs no sign-in. **The secrets `GITHUB_TOKEN` and
+`SETUP_CODE` are Dave's**, set with `wrangler secret put`, never in the
+repository or a test; the test values in `playwright.worker.config.ts` are
+for the local run only. The page keeps one flag of its own
+(`SIGNED_IN_KEY`), replaced by `/api/session`'s answer whenever there is
+one, and §10's *Kept* list keeps it through Reset.
+
+**`wrangler dev` rewrites the host to the production route** (`http://
+pizza.dave-becker.com`), which the Worker refuses as plain http; pass
+`--local-upstream localhost:<port>`, as `npm run worker:dev` and the
+Worker suite do. **Chromium's virtual passkey counts its signatures**, and
+the Worker refuses a count that goes backwards, so a test that copies one
+to a second device copies it after the first device's last use. Synced
+passkeys (iCloud, Bitwarden) send 0, which isn't checked.
 
 ## Design priorities, in order
 
@@ -726,9 +778,15 @@ npm run dev        # dev server
 npm test           # vitest, single run
 npm run test:watch # vitest, watch mode
 npm run test:e2e   # the iPhone suite: WebKit as a home-screen app (e2e/)
-npm run typecheck  # tsc --noEmit
+npm run test:worker  # the real Worker in workerd, a fake GitHub, Chromium's
+                     # virtual passkey (e2e-worker/)
+npm run test:preview # the same Done-when against the preview deploy; needs
+                     # PREVIEW_URL and PREVIEW_SETUP_CODE, skips without
+npm run typecheck  # tsc --noEmit, the page and the Worker
 npm run build      # typecheck + production build to dist/
-npm run preview    # serve dist/ locally
+npm run preview    # serve dist/ locally (no Worker: the page is signed out)
+npm run worker:dev # the page and the Worker together, after a build
+npm run deploy:preview  # build, then deploy the preview Worker (Dave's login)
 ```
 
 ## Layout
@@ -753,11 +811,17 @@ src/state/        URL + browser-storage persistence (the inputs in both:
                   the topping ideas' store and sync (toppingsStore.ts) and hook
                   (useToppings.ts); the one sync both run (repoSync.ts);
                   the photos' local store (photoStore.ts) and shrink
-                  (photoImage.ts)
+                  (photoImage.ts); this device's sign-in (auth.ts)
 public/           icon.svg (browser tab: the pizza alone, transparent) and
                   apple-touch-icon.png (iOS home screen: on orange, 180 px,
-                  full-bleed square, since iOS rounds it)
+                  full-bleed square, since iOS rounds it); _headers, the
+                  page's Content-Security-Policy, served by Cloudflare
+worker/           the Cloudflare Worker (§14): app.ts every /api/ route,
+                  index.ts the entry and the Durable Object; its own tsconfig
+wrangler.jsonc    the Worker: assets from dist/, the object, the repository,
+                  the custom domain; env.preview for the workers.dev preview
 tests/            vitest suites; vectors.ts holds the spec §5 acceptance data
+e2e/, e2e-worker/ the WebKit iPhone suite; the real Worker in Chromium
 docs/             the spec, its source recipe, and the correspondence
                   that settled the revisions
 ```
@@ -772,12 +836,16 @@ don't inline a `toFixed` somewhere else.
 
 ## Gotchas
 
-- **`base` in `vite.config.ts`** is `/pizza-calculator/`. GitHub Pages serves
-  from a subpath and asset links break silently without it. If the repo is
-  renamed, change it there.
-- **No router.** Concepts render as a drawer rather than routes, which avoids
-  the Pages basename problem entirely. Adding a router later means a hash
-  router or a configured basename.
+- **`base` in `vite.config.ts`** is `'/'`: the Worker serves the page from
+  the root of `pizza.dave-becker.com` (§2, §14). Until MESSAGE-75 it was
+  `/pizza-calculator/` on GitHub Pages; the WebKit suite runs at the root
+  and fails on any asset under the old path.
+- **No router.** Concepts render as a drawer rather than routes. `/api/*`
+  belongs to the Worker (`run_worker_first`), so a route there would never
+  reach the page.
+- **The page's Content-Security-Policy** is `public/_headers`: everything
+  from this address only, images also from `blob:` and `data:`, no frames.
+  A script or style from anywhere else needs a line there.
 - **Tailwind v4** — configured via the `@tailwindcss/vite` plugin and an
   `@theme` block in `src/index.css`. There is no `tailwind.config.js`.
 - **Test tolerances.** Spec §5 quotes ±0.1 g / ±0.1 °F, but its table values are
@@ -975,9 +1043,9 @@ don't inline a `toFixed` somewhere else.
   no `DEFAULT_FF`); the first counted bake at any size retires the seed (a size without its own bakes
   borrows by interpolation, or the nearest size held flat). A stored
   `frictionFactors` map from before is ignored. **Keyed on balls per mix** as
-  the `(balls, nMix)` pair: 12 balls in two mixes reads 6. **The token goes
-  nowhere but api.github.com**, and a shared link never carries the log or the
-  token.
+  the `(balls, nMix)` pair: 12 balls in two mixes reads 6. **The page holds
+  no token** (§14.2): the Worker adds it, and a shared link never carries the
+  log or the sign-in.
 
 ## Build order
 
@@ -986,11 +1054,15 @@ which is kept current — check its status line first.
 
 Tasks 0–12 are done (engine, state, cards, both timeline modes, steps,
 concepts, timers, reference and About drawers, deploy and the phone check,
-the bake log with its GitHub sync, and the tabs with the topping ideas). **Pages deploys on every push to
-`main`** and has since 1 September — check `gh run list` (in a cloud session,
-the GitHub MCP `actions_list`) rather than any written status. A session's
-`claude/*` branch doesn't deploy; it reaches `main` through a PR that Dave
-asks for, merged with a merge commit, never squashed.
+the bake log with its GitHub sync, and the tabs with the topping ideas).
+**From APP-10 the app deploys from Cloudflare's Git integration** (Workers
+Builds) on every push to `main`, which runs `npm test` and the build before
+`wrangler deploy`; GitHub Actions only runs the tests (`ci.yml`). Check the
+deploy in the Cloudflare dashboard's Builds tab, or compare the
+`assets/index-*.js` name on https://pizza.dave-becker.com with the build's,
+rather than any written status. A session's branch doesn't deploy; it
+reaches `main` through a PR that Dave asks for, merged with a merge commit,
+never squashed.
 
 **Bring `README.md` current before opening a PR.** Read it against the
 branch's changes and fix whatever they make stale: the status line, the list

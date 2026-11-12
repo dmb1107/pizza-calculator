@@ -41,18 +41,26 @@ import {
 } from './defaults';
 import { browserStorage, loadPersisted, savePersisted } from './storage';
 import {
-  loadGitHubConfig,
   loadLog,
   removeBake,
-  saveGitHubConfig,
   saveLog,
   setMixExcluded as setLogMixExcluded,
   upsertBake,
-  type GitHubConfig,
   type LocalLog,
 } from './bakeLogStore';
 import { mergeAfterSync, syncLog, type FetchLike } from './githubSync';
 import type { SyncState } from './repoSync';
+import {
+  checkSession,
+  createPasskey as createPasskeyAt,
+  loadSignedIn,
+  saveSignedIn,
+  signInWithPasskey,
+  signOutOfWorker,
+  type AuthFetch,
+  type AuthOutcome,
+  type WebAuthnCalls,
+} from './auth';
 import { newBakeId, saveConflict, sessionBake } from './sessionBake';
 import { encodeInputs } from './url';
 import { initialTab, isStandalone, persistedForNewBake, resolveInitialInputs, storedInputsOf } from './storedInputs';
@@ -168,9 +176,16 @@ export interface AppState {
   /** §10: Dave's switch. */
   setMixExcluded: (bakeId: string, mixIndex: number, excluded: boolean) => void;
   deleteBake: (bakeId: string) => void;
-  /** This device's repository and token, or null for browser storage only. */
-  github: GitHubConfig | null;
-  setGitHub: (config: GitHubConfig | null) => void;
+  /**
+   * §14.3: whether this device is signed in to the Worker. Signed out, the
+   * log and the ideas stay in this browser and nothing syncs.
+   */
+  signedIn: boolean;
+  /** A sync answered 401: the sign-in lapsed or ended elsewhere. Local copies stay. */
+  markSignedOut: () => void;
+  signIn: () => Promise<AuthOutcome>;
+  createPasskey: (setupCode: string) => Promise<AuthOutcome>;
+  signOut: () => Promise<AuthOutcome>;
   sync: SyncState;
   syncNow: () => void;
   /** The DDT actually in use, whether overridden or automatic. */
@@ -302,8 +317,9 @@ export function useAppState(): AppState {
 
   // §2 / §10: the log's local copy, written first; the repository follows.
   const [log, setLog] = useState<LocalLog>(() => loadLog(storage));
-  const [github, setGitHubState] = useState<GitHubConfig | null>(() => loadGitHubConfig(storage));
-  const [sync, setSync] = useState<SyncState>(() => (github ? { state: 'idle' } : { state: 'off' }));
+  // §14.3: the sign-in is the Worker's cookie; this is the page's note of it.
+  const [signedIn, setSignedInState] = useState<boolean>(() => loadSignedIn(storage));
+  const [sync, setSync] = useState<SyncState>(() => (signedIn ? { state: 'idle' } : { state: 'signedOut' }));
 
   /**
    * The clock everything time-based reads from.
@@ -509,14 +525,25 @@ export function useAppState(): AppState {
 
   const logRef = useRef(log);
   logRef.current = log;
-  const githubRef = useRef(github);
-  githubRef.current = github;
+  const signedInRef = useRef(signedIn);
+  signedInRef.current = signedIn;
   const syncing = useRef(false);
   const syncAgain = useRef(false);
 
+  const setSignedIn = useCallback(
+    (value: boolean) => {
+      saveSignedIn(storage, value);
+      signedInRef.current = value;
+      setSignedInState(value);
+      if (!value) setSync({ state: 'signedOut' });
+      else if (!syncing.current) setSync({ state: 'idle' });
+    },
+    [storage],
+  );
+  const markSignedOut = useCallback(() => setSignedIn(false), [setSignedIn]);
+
   const syncNow = useCallback(async () => {
-    const cfg = githubRef.current;
-    if (!cfg) return;
+    if (!signedInRef.current) return;
     if (syncing.current) {
       syncAgain.current = true;
       return;
@@ -525,49 +552,86 @@ export function useAppState(): AppState {
     setSync({ state: 'syncing' });
     const started = logRef.current;
     const fetchFn: FetchLike = (url, init) => globalThis.fetch(url, init);
-    const { log: synced, error } = await syncLog(cfg, started, fetchFn);
-    // A token forgotten mid-sync keeps whatever the sync fetched, and stops.
+    const { log: synced, error } = await syncLog(started, fetchFn);
+    // Whatever the sync fetched is kept, even when it stopped partway.
     setLog((current) => mergeAfterSync(current, started, synced));
-    setSync(githubRef.current ? (error ? { state: 'error', message: error.message } : { state: 'idle' }) : { state: 'off' });
     syncing.current = false;
+    // §14.3: a 401 is a lapsed sign-in. The local copies stay and sync after
+    // the next sign-in.
+    if (error?.kind === 'signedOut') setSignedIn(false);
+    else setSync(signedInRef.current ? (error ? { state: 'error', message: error.message } : { state: 'idle' }) : { state: 'signedOut' });
     if (syncAgain.current) {
       syncAgain.current = false;
       void syncNow();
     }
-  }, []);
+  }, [setSignedIn]);
 
-  const setGitHub = useCallback(
-    (config: GitHubConfig | null) => {
-      saveGitHubConfig(storage, config);
-      setGitHubState(config);
-      githubRef.current = config;
-      setSync(config ? { state: 'idle' } : { state: 'off' });
-      if (config) void syncNow();
+  // The Worker's answer replaces the page's note of the sign-in, on load and
+  // whenever the page comes back into view. No answer (offline, or no Worker
+  // under `npm run dev`) leaves the note as it is.
+  useEffect(() => {
+    const fetchFn: AuthFetch = (url, init) => globalThis.fetch(url, init);
+    const check = async () => {
+      const answer = await checkSession(fetchFn);
+      if (answer !== null && answer !== signedInRef.current) setSignedIn(answer);
+    };
+    void check();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void check();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [setSignedIn]);
+
+  const webauthn = useMemo<WebAuthnCalls>(
+    () => ({
+      startRegistration: async (args) => (await import('@simplewebauthn/browser')).startRegistration(args),
+      startAuthentication: async (args) => (await import('@simplewebauthn/browser')).startAuthentication(args),
+    }),
+    [],
+  );
+  const authFetch = useCallback<AuthFetch>((url, init) => globalThis.fetch(url, init), []);
+
+  const signIn = useCallback(async () => {
+    const outcome = await signInWithPasskey(authFetch, webauthn);
+    if (outcome.ok) setSignedIn(true);
+    return outcome;
+  }, [authFetch, webauthn, setSignedIn]);
+
+  const createPasskey = useCallback(
+    async (setupCode: string) => {
+      const outcome = await createPasskeyAt(authFetch, webauthn, setupCode);
+      if (outcome.ok) setSignedIn(true);
+      return outcome;
     },
-    [storage, syncNow],
+    [authFetch, webauthn, setSignedIn],
   );
 
-  // Pull on load, and whenever the page comes back into view: the other
+  const signOut = useCallback(async () => {
+    const outcome = await signOutOfWorker(authFetch);
+    if (outcome.ok) setSignedIn(false);
+    return outcome;
+  }, [authFetch, setSignedIn]);
+
+  // Pull on signing in, and whenever the page comes back into view: the other
   // device may have logged a bake since.
   useEffect(() => {
-    if (!github) return;
+    if (!signedIn) return;
     void syncNow();
     const onVisible = () => {
       if (document.visibilityState === 'visible') void syncNow();
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-    // Once per token; syncNow is stable.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [github?.token, github?.owner, github?.repo]);
+  }, [signedIn, syncNow]);
 
   // Push local changes shortly after they happen, so a burst of edits is one sync.
   const pending = log.dirty.length + log.deleted.length;
   useEffect(() => {
-    if (!github || pending === 0) return;
+    if (!signedIn || pending === 0) return;
     const id = setTimeout(() => void syncNow(), 1500);
     return () => clearTimeout(id);
-  }, [github, pending, log, syncNow]);
+  }, [signedIn, pending, log, syncNow]);
 
   const adjustments = useMemo<ScheduleAdjustments>(
     () => ({
@@ -773,8 +837,11 @@ export function useAppState(): AppState {
     saveSessionBake,
     setMixExcluded,
     deleteBake,
-    github,
-    setGitHub,
+    signedIn,
+    markSignedOut,
+    signIn,
+    createPasskey,
+    signOut,
     sync,
     syncNow: () => void syncNow(),
     ddtF: result.ddtF,
