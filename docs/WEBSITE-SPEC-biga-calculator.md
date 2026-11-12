@@ -1794,13 +1794,13 @@ APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in A
 - **Tested**, the rated ideas, highest rating first; ideas with the same rating, most recently updated first.
 - **Untested**, the unrated ideas, newest first by when each was first written down (`created`), so editing one doesn't move it.
 
-**One control above both lists opens or closes every card at once** (Dave, 11 Nov 2026). It reads **Expand all** while any card is closed and **Collapse all** once every card is open, and it acts on Tested and Untested together. It isn't stored, as a card's own open state isn't. A card being edited counts as open, and its editor stays open through Collapse all, so text being typed is never lost; every other card closes. With no ideas the control isn't shown. After Collapse all the page keeps its height, so the control stays under the finger, and the empty space at its foot goes once it is off screen (Dave, 11 Nov 2026).
+**One control above both lists opens or closes every card at once** (Dave, 11 Nov 2026). It reads **Expand all** while any card is closed and **Collapse all** once every card is open, and it acts on Tested and Untested together. It isn't stored, as a card's own open state isn't. A card being edited counts as open, and its editor stays open through Collapse all, so text being typed is never lost; every other card closes. With no ideas the control isn't shown. After Collapse all the page keeps its height, so the control stays under the finger, and the empty space at its foot goes as soon as removing it moves nothing on screen (Dave, 11 Nov 2026).
 
 **The four text fields are Markdown** (Dave, 10 Nov 2026), so they can carry links, rendered by the app's existing renderer. A single line break shows as a line break, as it does in Apple Notes, since Dave pastes his notes in as they are. Links open in a new tab. Raw HTML isn't rendered. The editor shows the raw text.
 
 **Comments sit below Notes**, in the editor and on an open card (Dave, 11 Nov 2026), and the card leaves out an empty one.
 
-**A photo of the pizza** (APP-8, Dave, 11 Nov 2026): one per idea, and an idea may have none. The closed card shows it as a thumbnail beside the name; the open card shows it at full width. In the editor it can be added, replaced or removed, and like every other field a change takes effect on Save, so Cancel undoes it and Remove doesn't ask. Screen readers hear the idea's name for it. A file that can't be opened as a photo leaves the idea as it was, and the editor says so under the button.
+**A photo of the pizza** (APP-8, Dave, 11 Nov 2026): one per idea, and an idea may have none. The closed card shows it as a thumbnail beside the name; the open card shows it at full width. Both show it square, filled and centred, since a pizza is round (Dave, 11 Nov 2026); the stored photo keeps its whole frame. In the editor it can be added, replaced or removed, and like every other field a change takes effect on Save, so Cancel undoes it and Remove doesn't ask. Screen readers hear the idea's name for it. A file that can't be opened as a photo leaves the idea as it was, and the editor says so under the button.
 
 **Add, edit and delete.** Delete asks first. The rating control is nine buttons, 1 to 5 by halves, and Clear, each a 48 px target on a phone. In the lists a rating shows as five stars, the half drawn as a half, with no number beside it (Dave's call, 11 Nov 2026); screen readers hear "Rated 3.5 of 5".
 
@@ -1810,17 +1810,17 @@ APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in A
 
 **Rendered copy** (the calculator agent words the rest under the writing rules):
 - The tab: **Toppings**. The lists: **Tested** and **Untested**.
-- Fields: **Name**, **Pre-bake**, **Post-bake**, **Notes**, **Comments**, **Rating**.
+- Fields: **Name**, **Pre-bake**, **Post-bake**, **Notes**, **Comments**, **Photo**, **Rating**.
 - Buttons: **Add idea**, **Save**, **Delete**, **Cancel**; above the lists, **Expand all** or **Collapse all**.
 - Delete asks: **Delete "{name}"?** with **Delete** and **Cancel**.
 - Rating an idea with no pre-bake toppings: **Add the pre-bake toppings before rating it.**
-- The photo: **Add photo**, or **Replace photo** and **Remove photo** once there is one. A file that can't be read: **That file couldn't be opened as a photo.**
+- The photo: **Add photo**, or **Replace photo** and **Remove photo** once there is one. A file that can't be read: **That file couldn't be opened as a photo.** While a photo shrinks: **Preparing the photo…**
 
 ### 13.3 Storage and sync
 
 **One JSON file per idea under `toppings/`**, in the bake log's private repository, with the same token and settings as the log (§2, §10). The fields are §13.2's table.
 
-**Each photo is a JPEG under `toppings/images/`**, named by its idea's `photo` field. The app shrinks it on the device before saving it, to about 1600 px on its long side, a few hundred KB where an iPhone original is several MB; the original never leaves the device. Each device keeps the photos it has fetched and fetches one again only when an idea's `photo` changes. Without a token the photos stay in this browser, in IndexedDB, since localStorage holds about 5 MB. Deleting an idea deletes its photo, and removing or replacing a photo deletes the old file.
+**Each photo is a JPEG under `toppings/images/`**, named by its idea's `photo` field. The app shrinks it on the device before saving it, to about 1600 px on its long side, a few hundred KB where an iPhone original is several MB; the original never leaves the device. Each device keeps the photos it has fetched, and a small copy of each for the closed card, which isn't synced; it fetches a photo again only when an idea's `photo` changes. Without a token the photos stay in this browser, in IndexedDB, since localStorage holds about 5 MB. Deleting an idea deletes its photo, and removing or replacing a photo deletes the old file.
 
 **The same local-first sync as the bake log.** Each device writes its own copy first and syncs after; changed and deleted ideas are tracked; the copy saved last wins, by `updated`, and on a tie the device syncing keeps its own. A deletion carries no time to compare, so between a deletion and an edit the device that syncs last wins: a deletion removes edits it hasn't seen, and an edit synced after a deletion it hasn't seen brings the idea back. The bake log's own rule (the device pushing last wins) is unchanged. Without a token the ideas stay in this browser.
 

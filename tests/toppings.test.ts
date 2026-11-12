@@ -486,6 +486,7 @@ describe("§13.2's rendered copy is the app's", () => {
       'Post-bake',
       'Notes',
       'Comments',
+      'Photo',
       'Rating',
       'Add idea',
       'Save',
@@ -501,6 +502,7 @@ describe("§13.2's rendered copy is the app's", () => {
       'Replace photo',
       'Remove photo',
       "That file couldn't be opened as a photo.",
+      'Preparing the photo…',
     ]);
   });
 
