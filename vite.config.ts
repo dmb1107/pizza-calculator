@@ -2,13 +2,9 @@ import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
-// GitHub Pages serves this repo from https://<user>.github.io/pizza-calculator/.
-// Without `base`, every asset URL resolves to the domain root and the page
-// silently loads nothing. If the repo is ever renamed, change this too.
-const REPO_NAME = 'pizza-calculator';
-
 export default defineConfig({
-  base: `/${REPO_NAME}/`,
+  // Served from the root of pizza.dave-becker.com by the Worker (spec §2, §14).
+  base: '/',
   plugins: [react(), tailwindcss()],
   test: {
     environment: 'node',

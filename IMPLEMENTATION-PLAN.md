@@ -57,7 +57,12 @@ their own sync under `toppings/`. MESSAGE-71 (spec only) is applied.
 **MESSAGE-72 is applied** (APP-7): each idea has a Comments field below
 Notes, and Expand all / Collapse all above the lists. **MESSAGE-73 is
 applied** (APP-8): a photo on each idea, shown square, synced under
-`toppings/images/`. FINDINGS-74 is the last thing sent.
+`toppings/images/`. MESSAGE-74 (spec only) is applied. **MESSAGE-75 is
+built** (APP-10, spec §14, Task 13 below): the app is served by a Cloudflare
+Worker at `pizza.dave-becker.com`, the GitHub token lives in the Worker, and
+devices sign in with a passkey. It goes live once Dave sets the Worker's two
+secrets and connects Workers Builds (FINDINGS-76's switchover checklist).
+FINDINGS-76 is the last thing sent.
 
 ---
 
@@ -818,6 +823,37 @@ the ideas' lists and editor, then their sync.
       `toppings/images/` by the ideas' sync (`beforePut`, `afterSync`);
       shown square (Dave). The held space after Collapse all goes as soon
       as its going moves nothing (73a).
+
+---
+
+## Task 13 — The move to Cloudflare and the passkey sign-in (§14, APP-10)
+
+- [x] One Worker (`wrangler.jsonc`, `worker/`): `dist/` as static assets,
+      `/api/*` to a Durable Object holding passkeys, sessions and the setup
+      code's wrong tries. `base` is `'/'`.
+- [x] Passkeys through `@simplewebauthn/server` (runs in workerd), user
+      verification required, single-use five-minute challenges, the RP ID
+      the request's own host.
+- [x] The setup code: constant-time, five wrong tries in ten minutes over
+      all addresses, the right code refused too while over.
+- [x] A 90-day `__Host-` cookie (HttpOnly, Secure, SameSite=Strict), renewed
+      at most once a day as used; Sign out ends it on the Worker; `Origin`
+      checked on every write.
+- [x] The pass through: an allow-list of the sync's paths and methods in one
+      repository; `..`, any percent escape and a query refused; writes pass
+      only `message`, `content`, `sha`; `download_url`s stripped; GitHub's
+      refusal comes back as 502, never 401.
+- [x] The page: no token or repository fields; Sign in, Create a passkey
+      with Setup code, Sign out; a 401 turns it to signed out and keeps the
+      local copies, which sync after the next sign-in.
+- [x] Tests: `worker.test.ts` and `auth.test.ts` (unit), `e2e/signin.spec.ts`
+      (WebKit at 375 px from the root), `e2e-worker/` (the real Worker in
+      workerd with Chromium's virtual passkey), `test:preview` for the
+      preview deploy.
+- [x] Deploy: `deploy.yml` (Pages) replaced by `ci.yml` (tests only); Workers
+      Builds deploys `main`.
+- [ ] Dave: the preview deploy and its check, the secrets, Workers Builds,
+      the switchover on each device, Pages off (FINDINGS-76).
 
 ---
 

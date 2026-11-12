@@ -11,6 +11,7 @@
  */
 import { expect, test, type BrowserContext, type Locator, type Page } from '@playwright/test';
 import { beeps, done, forceClose, openPhone, step, tab, timer, typeInto, wait } from './phone';
+import { fakePasskeys, newRepo, stubWorker, type FakeRepo } from './worker';
 
 const T0 = new Date('2026-11-12T18:00:00-05:00').getTime();
 const S = 1_000;
@@ -46,78 +47,20 @@ async function addIdea(page: Page, name: string, fields: { pre?: string; notes?:
 }
 
 // ---------------------------------------------------------------------------
-// A fake GitHub: one repository shared by every profile in a test
+// The Worker: one repository shared by every profile in a test (e2e/worker.ts)
 // ---------------------------------------------------------------------------
 
-interface FakeRepo {
-  files: Map<string, { content: string; sha: string }>;
-  requests: string[];
-  /** Folders that answer 500. */
-  failing: Set<string>;
+/** One profile's stand-in Worker and passkey. Its name keeps its sign-in apart. */
+async function stubGitHub(context: BrowserContext, repo: FakeRepo, device: string) {
+  await fakePasskeys(context);
+  await stubWorker(context, repo, device);
 }
 
-const newRepo = (): FakeRepo => ({ files: new Map(), requests: [], failing: new Set() });
-
-async function stubGitHub(context: BrowserContext, repo: FakeRepo) {
-  let n = 0;
-  await context.route('https://api.github.com/**', async (route) => {
-    const req = route.request();
-    const url = new URL(req.url());
-    const method = req.method();
-    repo.requests.push(`${method} ${url.pathname}`);
-    const json = (status: number, body: unknown = {}) =>
-      route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
-    if (req.headers()['authorization'] !== 'Bearer test-token') return json(401);
-    const base = '/repos/dave/pizza-bake-log';
-    if (!url.pathname.startsWith(base)) return json(404);
-    const path = url.pathname.slice(base.length);
-    if (path === '') return json(200, { full_name: 'dave/pizza-bake-log' });
-    // The git blobs API, which the photos are fetched through (APP-8).
-    const blob = /^\/git\/blobs\/(.+)$/.exec(path)?.[1];
-    if (blob) {
-      const f = [...repo.files.values()].find((x) => x.sha === decodeURIComponent(blob));
-      return f ? json(200, { sha: f.sha, content: f.content, encoding: 'base64' }) : json(404);
-    }
-    const dir = /^\/contents\/(\w+)/.exec(path)?.[1];
-    if (dir && repo.failing.has(dir)) return json(500);
-    const file = path.replace('/contents/', '');
-    const body = (req.postDataJSON() ?? {}) as { content?: string; sha?: string };
-    if (method === 'GET' && !repo.files.has(file)) {
-      // A folder: its files, and its subfolders as GitHub lists them.
-      const entries = new Map<string, { type: string; name: string; sha: string }>();
-      for (const [p, f] of repo.files) {
-        if (!p.startsWith(`${file}/`)) continue;
-        const rest = p.slice(file.length + 1);
-        const slash = rest.indexOf('/');
-        if (slash === -1) entries.set(rest, { type: 'file', name: rest, sha: f.sha });
-        else entries.set(rest.slice(0, slash), { type: 'dir', name: rest.slice(0, slash), sha: 'tree' });
-      }
-      return entries.size ? json(200, [...entries.values()]) : json(404);
-    }
-    if (method === 'GET') return json(200, repo.files.get(file));
-    if (method === 'PUT') {
-      const current = repo.files.get(file);
-      if (current && !body.sha) return json(422);
-      if (current && body.sha !== current.sha) return json(409);
-      const sha = `sha${++n}`;
-      repo.files.set(file, { content: body.content!, sha });
-      return json(201, { content: { sha } });
-    }
-    if (method === 'DELETE') {
-      repo.files.delete(file);
-      return json(200);
-    }
-    return json(405);
-  });
-}
-
-/** This device's repository and token, on the Bake log tab. A test token, for the stub only. */
+/** §14.3: this device signs in on the Bake log tab, with its passkey and nothing else. */
 async function connect(page: Page) {
   await tab(page, 'Bake log').tap();
-  const log = panel(page, 'Bake log');
-  await log.getByRole('textbox', { name: 'Repository' }).fill('dave/pizza-bake-log');
-  await log.getByLabel('Token').fill('test-token');
-  await log.getByRole('button', { name: 'Save and sync' }).tap();
+  await panel(page, 'Bake log').getByRole('button', { name: 'Sign in', exact: true }).tap();
+  await expect(panel(page, 'Bake log').getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
 }
 
 const ideaFiles = (repo: FakeRepo) => [...repo.files.keys()].filter((p) => /^toppings\/[^/]+\.json$/.test(p));
@@ -334,7 +277,8 @@ test.describe('APP-6: three tabs, and the topping ideas', () => {
     await phone.context.route('https://honey.example/**', (r) => r.fulfill({ body: 'honey', contentType: 'text/plain' }));
     const [opened] = await Promise.all([phone.context.waitForEvent('page'), link.tap()]);
     await expect(opened).toHaveURL('https://honey.example/');
-    expect(page.url()).toContain('/pizza-calculator/');
+    // The page itself stays where it was (§14.1: the root of its own address).
+    expect(new URL(page.url()).origin).toBe(new URL(baseURL!).origin);
     await opened.close();
 
     // A reload comes back to the Toppings tab, at 3.5.
@@ -435,20 +379,20 @@ test.describe('APP-6: three tabs, and the topping ideas', () => {
   test('an idea added in one profile appears in another after a sync', async ({ baseURL }, info) => {
     const repo = newRepo();
     const phoneA = await openPhone(info.outputPath('a'), { time: T0 }, baseURL!);
-    await stubGitHub(phoneA.context, repo);
+    await stubGitHub(phoneA.context, repo, 'a');
     const a = phoneA.page;
     await phoneWidth(a);
 
-    // Without a token the ideas stay in this browser: no request at all.
+    // Signed out, the ideas stay in this browser: no request reaches the repository.
     await addIdea(a, 'Clams, garlic, parsley', { pre: 'Garlic oil, clams' });
     await a.clock.runFor(5 * S);
     expect(repo.requests).toEqual([]);
     await expect(panel(a, 'Toppings')).toContainText('Saved in this browser.');
 
-    // With the log's token and repository, they sync under toppings/.
+    // Signed in, they sync under toppings/.
     await connect(a);
-    await expect(panel(a, 'Bake log')).toContainText('Synced the topping ideas with dave/pizza-bake-log');
-    await expect(panel(a, 'Bake log')).toContainText('Synced the log with dave/pizza-bake-log');
+    await expect(panel(a, 'Bake log')).toContainText('Synced the topping ideas');
+    await expect(panel(a, 'Bake log')).toContainText('Synced the log');
     expect(ideaFiles(repo)).toHaveLength(1);
 
     // An idea added after connecting goes up shortly after it is saved.
@@ -457,27 +401,27 @@ test.describe('APP-6: three tabs, and the topping ideas', () => {
     await expect.poll(() => ideaFiles(repo).length).toBe(2);
 
     const phoneB = await openPhone(info.outputPath('b'), { time: T0 + MIN }, baseURL!);
-    await stubGitHub(phoneB.context, repo);
+    await stubGitHub(phoneB.context, repo, 'b');
     const b = phoneB.page;
     await phoneWidth(b);
     await connect(b);
     await tab(b, 'Toppings').tap();
     await expect(list(b, 'Untested')).toContainText('Clams, garlic, parsley');
     await expect(list(b, 'Untested')).toContainText('Nduja and stracciatella');
-    await expect(panel(b, 'Toppings')).toContainText('Synced the ideas with dave/pizza-bake-log');
+    await expect(panel(b, 'Toppings')).toContainText('Synced the ideas');
 
     // A failing toppings sync leaves the log syncing.
     repo.failing.add('toppings');
     await tab(b, 'Bake log').tap();
     await panel(b, 'Bake log').getByRole('button', { name: 'Sync now' }).tap();
-    await expect(panel(b, 'Bake log')).toContainText("Couldn't sync the topping ideas with dave/pizza-bake-log. GitHub answered 500.");
-    await expect(panel(b, 'Bake log')).toContainText('Synced the log with dave/pizza-bake-log');
+    await expect(panel(b, 'Bake log')).toContainText("Couldn't sync the topping ideas. GitHub answered 500.");
+    await expect(panel(b, 'Bake log')).toContainText('Synced the log');
     // And the reverse.
     repo.failing.clear();
     repo.failing.add('bakes');
     await panel(b, 'Bake log').getByRole('button', { name: 'Sync now' }).tap();
-    await expect(panel(b, 'Bake log')).toContainText("Couldn't sync the log with dave/pizza-bake-log. GitHub answered 500.");
-    await expect(panel(b, 'Bake log')).toContainText('Synced the topping ideas with dave/pizza-bake-log');
+    await expect(panel(b, 'Bake log')).toContainText("Couldn't sync the log. GitHub answered 500.");
+    await expect(panel(b, 'Bake log')).toContainText('Synced the topping ideas');
     await forceClose(phoneA);
     await forceClose(phoneB);
   });
@@ -648,7 +592,7 @@ test.describe('APP-7: comments, and expand or collapse every idea', () => {
   test('an idea added with a comment in one profile appears with it in another after a sync', async ({ baseURL }, info) => {
     const repo = newRepo();
     const phoneA = await openPhone(info.outputPath('a'), { time: T0 }, baseURL!);
-    await stubGitHub(phoneA.context, repo);
+    await stubGitHub(phoneA.context, repo, 'a');
     const a = phoneA.page;
     await phoneWidth(a);
     await connect(a);
@@ -663,7 +607,7 @@ test.describe('APP-7: comments, and expand or collapse every idea', () => {
     await expect.poll(() => ideaFiles(repo).length).toBe(1);
 
     const phoneB = await openPhone(info.outputPath('b'), { time: T0 + MIN }, baseURL!);
-    await stubGitHub(phoneB.context, repo);
+    await stubGitHub(phoneB.context, repo, 'b');
     const b = phoneB.page;
     await phoneWidth(b);
     await connect(b);
@@ -959,14 +903,14 @@ test.describe('APP-8: a photo on each idea', () => {
     await forceClose(phone);
   });
 
-  test('a photo added in one profile appears in another after a sync, and one saved without a token uploads later', async ({ baseURL }, info) => {
+  test('a photo added in one profile appears in another after a sync, and one saved signed out uploads later', async ({ baseURL }, info) => {
     const repo = newRepo();
     const phoneA = await openPhone(info.outputPath('a'), { time: T0 }, baseURL!);
-    await stubGitHub(phoneA.context, repo);
+    await stubGitHub(phoneA.context, repo, 'a');
     const a = phoneA.page;
     await phoneWidth(a);
 
-    // No token yet: the photo stays in this browser, through a force close.
+    // Signed out: the photo stays in this browser, through a force close.
     await tab(a, 'Toppings').tap();
     await a.getByRole('button', { name: 'Add idea', exact: true }).tap();
     const form = panel(a, 'Toppings').locator('form');
@@ -982,21 +926,21 @@ test.describe('APP-8: a photo on each idea', () => {
     expect(repo.requests).toEqual([]);
     await forceClose(phoneA);
     const phoneA2 = await openPhone(info.outputPath('a'), { time: T0 + MIN }, baseURL!);
-    await stubGitHub(phoneA2.context, repo);
+    await stubGitHub(phoneA2.context, repo, 'a');
     const a2 = phoneA2.page;
     await phoneWidth(a2);
     await expect(thumbOf(ideaCard(a2, 'Margherita, extra basil'))).toBeVisible();
 
-    // A token: the photo goes up before the idea that names it.
+    // Signed in: the photo goes up before the idea that names it.
     await connect(a2);
-    await expect(panel(a2, 'Bake log')).toContainText('Synced the topping ideas with dave/pizza-bake-log');
+    await expect(panel(a2, 'Bake log')).toContainText('Synced the topping ideas');
     expect(photoFiles(repo)).toHaveLength(1);
     const puts = repo.requests.filter((r) => r.startsWith('PUT') && r.includes('/toppings/'));
     expect(puts[0]).toContain('/toppings/images/');
     expect(puts[1]).toMatch(/\/toppings\/[^/]+\.json$/);
 
     const phoneB = await openPhone(info.outputPath('b'), { time: T0 + 2 * MIN }, baseURL!);
-    await stubGitHub(phoneB.context, repo);
+    await stubGitHub(phoneB.context, repo, 'b');
     const b = phoneB.page;
     await phoneWidth(b);
     await connect(b);

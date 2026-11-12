@@ -45,7 +45,7 @@ function finishEdit(): void {
 export default function App() {
   const state = useAppState();
   const { result, shareUrl, tab, setTab, timers, nowMs } = state;
-  const toppings = useToppings(state.github);
+  const toppings = useToppings(state.signedIn, state.markSignedOut);
   const [concept, setConcept] = useState<string | null>(null);
   const [sheet, setSheet] = useState<'reference' | 'about' | null>(null);
 
@@ -153,7 +153,7 @@ export default function App() {
       </div>
 
       <div {...panelProps('toppings')}>
-        <ToppingsPage toppings={toppings} github={state.github} />
+        <ToppingsPage toppings={toppings} signedIn={state.signedIn} />
       </div>
 
       <div {...panelProps('log')}>

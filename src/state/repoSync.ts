@@ -5,8 +5,10 @@
  * The bake log (`bakes/`) and the topping ideas (`toppings/`, MESSAGE-70) run
  * the same sync on their own stores: each device writes its own copy first
  * and syncs after; changed and deleted records are tracked; one JSON file per
- * record, read and written through GitHub's contents API with a token that
- * can reach only that repository. Separate stores, separate runs, so a
+ * record, read and written through GitHub's contents API by way of the
+ * Worker at this address (§14.2), which holds the one token that can reach
+ * that repository and adds it. The page sends no token and names no
+ * repository: the Worker fixes both. Separate stores, separate runs, so a
  * failure in one never holds up the other (§13.3).
  *
  * `fetch` is passed in, so the whole exchange is testable in Node against a
@@ -19,19 +21,17 @@
  * repository's when it says so.
  */
 
-export const API = 'https://api.github.com';
-
-/** The repository and token, per device. */
-export interface GitHubConfig {
-  owner: string;
-  repo: string;
-  token: string;
-}
+/**
+ * The Worker's pass through to the repository (§14.2): `${API}` is the
+ * repository itself, `${API}/contents/bakes` a folder, and so on. Same
+ * address as the page, so the sign-in's cookie goes with every request.
+ */
+export const API = '/api/github';
 
 /** Where a store's sync stands, for the page. */
 export type SyncState =
-  /** No token on this device: the store stays in browser storage. */
-  | { state: 'off' }
+  /** This device isn't signed in: the store stays in browser storage (§14.3). */
+  | { state: 'signedOut' }
   | { state: 'idle' }
   | { state: 'syncing' }
   | { state: 'error'; message: string };
@@ -42,7 +42,11 @@ export type FetchLike = (
   init?: { method?: string; headers?: Record<string, string>; body?: string; cache?: 'no-store' },
 ) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
 
-export type SyncErrorKind = 'auth' | 'repo' | 'network' | 'other';
+/**
+ * `signedOut`: the Worker answered 401, so this device's sign-in has lapsed
+ * or ended. The page turns to signed out and keeps its local copies (§14.3).
+ */
+export type SyncErrorKind = 'signedOut' | 'auth' | 'repo' | 'network' | 'other';
 
 export class SyncError extends Error {
   constructor(
@@ -177,17 +181,27 @@ export function removeRecord<T>(kind: Pick<RecordKind<T>, 'idOf'>, store: Record
 // The repository
 // ---------------------------------------------------------------------------
 
+/** What each answer the Worker can give means for the baker (§14.2, §14.3). */
+export function syncErrorFor(status: number): SyncError {
+  if (status === 401) return new SyncError('signedOut', 'This device is signed out. Sign in to sync.', status);
+  if (status === 502) {
+    return new SyncError('auth', "GitHub refused the app's token, or didn't answer. The token in the Worker may need replacing.", status);
+  }
+  if (status === 503) return new SyncError('auth', "The app's server has no GitHub token set.", status);
+  if (status === 403) return new SyncError('other', 'The app\'s server refused the request.', status);
+  return new SyncError('other', `GitHub answered ${status}.`, status);
+}
+
 const idFromName = (name: string) => (name.endsWith('.json') ? name.slice(0, -'.json'.length) : null);
 
 class Client<T> implements RepoFiles {
   constructor(
-    private readonly cfg: GitHubConfig,
     private readonly kind: RecordKind<T>,
     private readonly fetchFn: FetchLike,
   ) {}
 
   private url(path: string) {
-    return `${API}/repos/${encodeURIComponent(this.cfg.owner)}/${encodeURIComponent(this.cfg.repo)}${path}`;
+    return `${API}${path}`;
   }
 
   private pathFor(id: string) {
@@ -201,32 +215,32 @@ class Client<T> implements RepoFiles {
         method,
         cache: 'no-store',
         headers: {
-          Accept: 'application/vnd.github+json',
-          Authorization: `Bearer ${this.cfg.token}`,
-          'X-GitHub-Api-Version': '2022-11-28',
+          Accept: 'application/json',
           ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
         },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       });
     } catch {
-      throw new SyncError('network', `Couldn't reach GitHub. ${this.kind.offline}`);
+      throw new SyncError('network', `Couldn't reach the app's server. ${this.kind.offline}`);
     }
     return res;
   }
 
-  /** Throws a SyncError naming what the baker can do about it. */
+  /**
+   * Throws a SyncError naming what the baker can do about it. A 401 comes
+   * only from the Worker, for a sign-in that has lapsed or ended; GitHub
+   * refusing the Worker's own token comes back as a 502 (§14.2).
+   */
   fail(status: number): never {
-    if (status === 401) throw new SyncError('auth', 'GitHub refused the token. It may have expired or been revoked.', status);
-    if (status === 403) {
-      throw new SyncError('auth', "The token can't write to this repository. It needs Contents: read and write.", status);
-    }
-    if (status === 404) throw new SyncError('repo', "The token can't see that repository. Check its name and the token's access.", status);
-    throw new SyncError('other', `GitHub answered ${status}.`, status);
+    throw syncErrorFor(status);
   }
 
   /** Checks the repository is reachable, so a missing folder can be read as empty. */
   async checkRepo(): Promise<void> {
     const res = await this.request('GET', '');
+    if (res.status === 404) {
+      throw new SyncError('repo', "GitHub can't find the bake-log repository with the app's token.", 404);
+    }
     if (!res.ok) this.fail(res.status);
   }
 
@@ -349,13 +363,12 @@ export interface RecordSyncResult<T> {
  * this device hasn't seen. Deletions made on another device are applied here.
  */
 export async function syncRecords<T>(
-  cfg: GitHubConfig,
   kind: RecordKind<T>,
   start: RecordStore<T>,
   fetchFn: FetchLike,
   now: Date = new Date(),
 ): Promise<RecordSyncResult<T>> {
-  const client = new Client(cfg, kind, fetchFn);
+  const client = new Client(kind, fetchFn);
   let store: RecordStore<T> = {
     ...start,
     shas: { ...start.shas },

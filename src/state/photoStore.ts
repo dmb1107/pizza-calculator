@@ -1,6 +1,6 @@
 /**
  * §13.3 (APP-8, MESSAGE-73): this device's copy of the ideas' photos, keyed
- * by an idea's `photo` name. IndexedDB, on every device, token or not: a
+ * by an idea's `photo` name. IndexedDB, on every device, signed in or not: a
  * photo is a few hundred KB and localStorage holds about 5 MB in all.
  *
  * Two kinds of entry: the photo itself under its name, and the closed card's

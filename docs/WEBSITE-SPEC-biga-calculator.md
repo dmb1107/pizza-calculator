@@ -1,6 +1,6 @@
 # Build Spec — Biga Neapolitan Dough Calculator
 
-**For a Claude Code session.** Build a static, client-side web app that presents this dough recipe as a live calculator plus a step-by-step guide. Hosted on GitHub Pages.
+**For a Claude Code session.** Build a static, client-side web app that presents this dough recipe as a live calculator plus a step-by-step guide. Hosted on Cloudflare at `pizza.dave-becker.com` (§14).
 
 Every formula, constant, and piece of step content you need is in this document. **Do not invent dough science.** If something isn't specified here, ask rather than guessing — the numbers are load-bearing and were derived carefully.
 
@@ -23,12 +23,12 @@ The user enters batch size, their measured temperatures, and how long they want 
 
 ## 2. Tech constraints
 
-- **Static only.** GitHub Pages — no server of its own and no build-time data fetching. The bake log's sync to GitHub (below) is the one network call the app makes.
+- **Static, with one small Worker.** The page is static assets served by a Cloudflare Worker, with no build-time data fetching. The Worker signs a device in and passes the sync's requests to GitHub (§14); the sync is the one network call the page makes.
 - **Recommended stack:** Vite + React + TypeScript + Tailwind. Use something else if you have a strong reason, but it must build to static assets.
-- ⚠️ **Set `base: '/<repo-name>/'` in `vite.config.ts`.** GitHub Pages serves from a subpath and asset links break silently without this. Same for the router — use a hash router or configure the basename.
-- Include a GitHub Actions workflow that builds and deploys to Pages on push to `main`.
+- **The page is served from the domain's root**, so `base` in `vite.config.ts` is `'/'`. ⚠️ Until MESSAGE-75 it was on GitHub Pages under `/pizza-calculator/`.
+- A push to `main` builds the page and deploys it with the Worker (§14).
 - **State:** every input is kept in browser storage and written to the URL's query string. Storage brings a session back and the URL shares it (§6, *Where the inputs are kept*). Preferences persist to browser storage.
-- **The bake log (§10)** lives in a private GitHub repository, one JSON file per bake, read and written from the browser through GitHub's API with a token that can reach only that repository, pasted once on each device. Each device writes its own copy first and syncs after, so a mix never waits on the network. **Without a token** the log stays in browser storage, so anyone opening a shared link gets a working calculator that saves nothing outside their own browser. The topping ideas (§13) sync the same way, one file per idea under `toppings/` in the same repository, and their photos under `toppings/images/`.
+- **The bake log (§10)** lives in a private GitHub repository, one JSON file per bake, read and written through GitHub's API by way of the Worker, which holds the one token that can reach that repository; a device signs in with a passkey and holds no token (§14). Each device writes its own copy first and syncs after, so a mix never waits on the network. **Signed out**, the log stays in browser storage, so anyone opening a shared link gets a working calculator that saves nothing outside their own browser. The topping ideas (§13) sync the same way, one file per idea under `toppings/` in the same repository, and their photos under `toppings/images/`.
 - **The calibration isn't stored.** The FF in use is computed from the log each time (§6, Panel 2). ⚠️ An earlier version persisted it to `localStorage` as a map of typed values.
 - No analytics, no external fonts that block render, no CDN dependencies that can disappear.
 
@@ -763,7 +763,7 @@ Group into two panels: **Batch** open by default, **Calibration** collapsed with
 
 **Stored inputs are read by the same rules as a link's:** the even-split ball rule (Panel 1), the cold ferment's range for its track (§4.7), the temper's range, and the keys that are ignored (`bowlst`, `water`, a bowl mass). Storing what the URL codec writes and reading it back through the codec gives all of that with nothing restated. A stored value that doesn't parse takes its default and never blocks the page.
 
-**What stays as it is:** the URL codec and its keys; "Share setup"; a shared link carries no log, no token, no topping ideas and none of the session's ticks, timers or saved-bake id; the DDT override, the timeline's mode and anchor and the open panels, which were stored already; and the three Reset lists (§10).
+**What stays as it is:** the URL codec and its keys; "Share setup"; a shared link carries no log, no sign-in, no topping ideas and none of the session's ticks, timers or saved-bake id; the DDT override, the timeline's mode and anchor and the open panels, which were stored already; and the three Reset lists (§10).
 
 ### Panel 2 — Calibration
 | Field | Type | Default | Note |
@@ -1597,7 +1597,7 @@ Blend fridge-cold water with tap water to within 1 °F of the target. Fridge wat
 
 ## 10. Bake log
 
-The log holds the readings that solve FF, and it is the only source of the FF in use (§6, Panel 2). Dave logs FF inputs only; the rest of the recipe's bake diary (biga rise, fridge, oven, stone, crumb) stays out of the app. **Storage** is in §2: a private GitHub repository with one JSON file per bake when a token is set, browser storage when it isn't. The files are plain JSON, so they are the export. The log is the Bake log tab (§13.1), and the Calibration panel and the log card after the last mix open it. ⚠️ Until MESSAGE-70 it was a drawer, opened from buttons in the header and the footer.
+The log holds the readings that solve FF, and it is the only source of the FF in use (§6, Panel 2). Dave logs FF inputs only; the rest of the recipe's bake diary (biga rise, fridge, oven, stone, crumb) stays out of the app. **Storage** is in §2: a private GitHub repository with one JSON file per bake when this device is signed in, browser storage when it isn't. The files are plain JSON, so they are the export. The log is the Bake log tab (§13.1), and the Calibration panel and the log card after the last mix open it. ⚠️ Until MESSAGE-70 it was a drawer, opened from buttons in the header and the footer.
 
 Auto-populate each bake from the session's inputs so only the measured values need typing.
 
@@ -1643,7 +1643,7 @@ Pauses aren't normalized. The rest has a fixed timer, and nothing measures what 
 - **Reset starts a new bake.** A **Reset** button near the top of the page asks first. The baker presses it when starting a new bake, and it is the page's only reset: ⚠️ the Steps header's own Reset, which cleared the checkboxes alone, is removed, so no two controls share the label. Every input is classified, and a test keeps it that way:
   - **Reset to defaults:** balls, ball weight, schedule and cold ferment, the schedule's adjustments (fridge hours, the classic biga's room hours, temper), the readings in the prep steps (room, flour and its "Same as room" switch, each mix's biga and bowl), each mix's final reading, the DDT override (back to auto) and the timeline's anchor. The last two are per-bake choices: a stale override silently moves the water target and the rise, and a stale anchor puts every stage in the past.
   - **Cleared:** the step checkboxes, the timers, and the link to the saved bake, so the next save is a new bake; and which step groups are closed, so every group opens (APP-5).
-  - **Kept:** which end of the timeline is held, which panels are open, which tab is open (§13.1), this device's sync settings, saved bakes, and the topping ideas (§13). The anchor is the held time, not the mode: a Reset in either mode starts the schedule now. Since MESSAGE-65 the inputs are stored as well as written to the URL (§6, *Where the inputs are kept*), so all three lists hold when the app is closed and reopened. ⚠️ Until Dave's call on 10 Nov 2026 (FINDINGS-67) the batch settings and the schedule's adjustments were kept.
+  - **Kept:** which end of the timeline is held, which panels are open, which tab is open (§13.1), this device's sign-in (§14), saved bakes, and the topping ideas (§13). The anchor is the held time, not the mode: a Reset in either mode starts the schedule now. Since MESSAGE-65 the inputs are stored as well as written to the URL (§6, *Where the inputs are kept*), so all three lists hold when the app is closed and reopened. ⚠️ Until Dave's call on 10 Nov 2026 (FINDINGS-67) the batch settings and the schedule's adjustments were kept.
 
   Copy (rendered):
 
@@ -1737,6 +1737,7 @@ Link these from an About page. The recipe draws on these published sources.
 9. GitHub Actions deploy.
 10. Bake log.
 11. The tabs (§13.1), then the topping ideas: their lists and editor first, the sync second (§13.2, §13.3).
+12. The move to Cloudflare and the passkey sign-in (§14).
 
 **Ask before deviating on any number.** The formulas were derived and cross-checked; a plausible-looking simplification will produce a wrong answer that won't be obvious until 50 hours later.
 
@@ -1818,11 +1819,11 @@ APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in A
 
 ### 13.3 Storage and sync
 
-**One JSON file per idea under `toppings/`**, in the bake log's private repository, with the same token and settings as the log (§2, §10). The fields are §13.2's table.
+**One JSON file per idea under `toppings/`**, in the bake log's private repository, through the same Worker and sign-in as the log (§2, §14). The fields are §13.2's table.
 
-**Each photo is a JPEG under `toppings/images/`**, named by its idea's `photo` field. The app shrinks it on the device before saving it, to about 1600 px on its long side, a few hundred KB where an iPhone original is several MB; the original never leaves the device. Each device keeps the photos it has fetched, and a small copy of each for the closed card, which isn't synced; it fetches a photo again only when an idea's `photo` changes. Without a token the photos stay in this browser, in IndexedDB, since localStorage holds about 5 MB. Deleting an idea deletes its photo, and removing or replacing a photo deletes the old file.
+**Each photo is a JPEG under `toppings/images/`**, named by its idea's `photo` field. The app shrinks it on the device before saving it, to about 1600 px on its long side, a few hundred KB where an iPhone original is several MB; the original never leaves the device. Each device keeps the photos it has fetched, and a small copy of each for the closed card, which isn't synced; it fetches a photo again only when an idea's `photo` changes. Signed out, the photos stay in this browser, in IndexedDB, since localStorage holds about 5 MB. Deleting an idea deletes its photo, and removing or replacing a photo deletes the old file.
 
-**The same local-first sync as the bake log.** Each device writes its own copy first and syncs after; changed and deleted ideas are tracked; the copy saved last wins, by `updated`, and on a tie the device syncing keeps its own. A deletion carries no time to compare, so between a deletion and an edit the device that syncs last wins: a deletion removes edits it hasn't seen, and an edit synced after a deletion it hasn't seen brings the idea back. The bake log's own rule (the device pushing last wins) is unchanged. Without a token the ideas stay in this browser.
+**The same local-first sync as the bake log.** Each device writes its own copy first and syncs after; changed and deleted ideas are tracked; the copy saved last wins, by `updated`, and on a tie the device syncing keeps its own. A deletion carries no time to compare, so between a deletion and an edit the device that syncs last wins: a deletion removes edits it hasn't seen, and an edit synced after a deletion it hasn't seen brings the idea back. The bake log's own rule (the device pushing last wins) is unchanged. Signed out, the ideas stay in this browser.
 
 **A photo follows its idea** (Dave, 11 Nov 2026): whichever copy of an idea wins, every device shows the photo that copy names.
 
@@ -1831,3 +1832,41 @@ APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in A
 **A field the app doesn't know is kept** through an edit and a sync, so a device a version behind doesn't drop what a newer one added (FINDINGS-73).
 
 **No engine, formula, step content or FF changes.** Nothing in §1–§12's calculations reads an idea.
+
+---
+
+## 14. Hosting and sign-in
+
+APP-10 (Dave's calls, 11 and 12 Nov 2026). The app moves from GitHub Pages to Cloudflare, and the GitHub token moves off the devices into a Cloudflare Worker that each device signs in to with a passkey.
+
+### 14.1 Where the app lives
+
+**At `https://pizza.dave-becker.com`**, served by one Cloudflare Worker: the built page as static assets, and the Worker's own routes for the sign-in and the sync (Dave, 11 Nov 2026). The domain's DNS has been on Cloudflare since 11 Nov 2026, and the Worker's custom domain creates the `pizza` record.
+
+**GitHub Pages is switched off** once the new address works (Dave, 12 Nov 2026). Nothing redirects the old address, so a link shared from it stops working.
+
+**The move costs each device what it stored at the old address:** the inputs, the ticks and timers, the open tab and the closed groups. Bakes and topping ideas come back from GitHub after signing in. Anything not synced at the old address stays there, so each device syncs before the move. The home-screen icon is added again from the new address.
+
+### 14.2 The token
+
+**The Worker holds the GitHub token as a secret** (Dave, 11 Nov 2026). It is the existing fine-grained token, which reaches only the bake-log repository (Dave, 12 Nov 2026). The page never sees it: the sync sends its requests to the Worker, which checks the sign-in and passes them to GitHub with the token. The Worker passes only what the sync uses, in the bake-log repository and no other: the repository itself, the contents of `bakes/`, `toppings/` and `toppings/images/`, and git blobs. The page's token and repository fields go.
+
+Once the move works, Dave deletes the old home-screen icon and clears Safari's website data for `dmb1107.github.io` on each device, so no device keeps a copy of the token.
+
+### 14.3 Signing in
+
+**With a passkey** (Dave, 11 Nov 2026): Face ID, Touch ID, or a password manager that holds passkeys, such as Bitwarden, which Dave uses. Signing in asks for the passkey and nothing else.
+
+**A setup code guards creating a passkey** (Dave, 12 Nov 2026). Dave sets it as a second secret in the Worker. Creating a passkey asks for it, so someone who finds the address can't add one of their own; signing in never asks for it. The Worker limits how often a wrong code can be tried.
+
+**A sign-in lasts 90 days and renews each time the app is used** (Dave, 11 Nov 2026). It is a cookie the page's script can't read, sent only to this address. **Sign out** ends it on this device.
+
+**On an iPhone, sign in in Safari first, then add the icon** (Dave, 12 Nov 2026). A home-screen app keeps its own storage, apart from Safari's, and iOS copies Safari's cookies to it once, when it is added. If a passkey works inside the icon as well, either order does. If the icon's sign-in ever lapses and its passkey prompt doesn't work, sign in in Safari again and re-add the icon.
+
+**Signed out, everything stays on this device:** the whole calculator works, and the bake log and the ideas are kept in this browser only. Friends opening a shared link are signed out.
+
+**Rendered copy** (the calculator agent words the rest under the writing rules):
+- Buttons: **Sign in**, **Sign out**, **Create a passkey**.
+- The field that asks for the setup code: **Setup code**.
+
+**No engine, formula, step content or FF changes.** Nothing in §1–§13's calculations reads the sign-in.

@@ -4,14 +4,14 @@
  * Kept apart from `useAppState` and the bake log on purpose: the ideas have
  * their own store, their own sync run and their own sync state, so a failed
  * toppings sync never holds up the log, and the reverse (§13.3). They share
- * only this device's repository and token. Reset never reaches them, and a
+ * only this device's sign-in. Reset never reaches them, and a
  * shared link never carries them.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { newIdeaId, photoName, savedIdea, type IdeaDraft, type ToppingIdea } from '../lib/toppings';
 import { browserPhotoStore, photoOfKey, thumbKey, type PhotoStore } from './photoStore';
-import type { FetchLike, GitHubConfig, SyncState } from './repoSync';
+import type { FetchLike, SyncState } from './repoSync';
 import { browserStorage } from './storage';
 import {
   loadToppings,
@@ -55,14 +55,18 @@ function randomSuffix(): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-export function useToppings(github: GitHubConfig | null): ToppingsState {
+/**
+ * `signedIn` is this device's sign-in (§14.3), held by `useAppState`;
+ * `onSignedOut` tells it when this store's sync was answered 401.
+ */
+export function useToppings(signedIn: boolean, onSignedOut: () => void): ToppingsState {
   const storage = useMemo(() => browserStorage(), []);
   const photos = useMemo(() => browserPhotoStore(), []);
   // Photos saved this session, which a cleanup mustn't take before the
   // store that names them has rendered.
   const keepPhotos = useRef(new Set<string>());
   const [store, setStore] = useState<ToppingStore>(() => loadToppings(storage));
-  const [sync, setSync] = useState<SyncState>(() => (github ? { state: 'idle' } : { state: 'off' }));
+  const [sync, setSync] = useState<SyncState>(() => (signedIn ? { state: 'idle' } : { state: 'signedOut' }));
 
   useEffect(() => {
     saveToppings(storage, store);
@@ -111,14 +115,15 @@ export function useToppings(github: GitHubConfig | null): ToppingsState {
 
   // --- §13.3 sync: the log's loop, run on this store alone ---------------------
 
-  const githubRef = useRef(github);
-  githubRef.current = github;
+  const signedInRef = useRef(signedIn);
+  signedInRef.current = signedIn;
+  const onSignedOutRef = useRef(onSignedOut);
+  onSignedOutRef.current = onSignedOut;
   const syncing = useRef(false);
   const syncAgain = useRef(false);
 
   const syncNow = useCallback(async () => {
-    const cfg = githubRef.current;
-    if (!cfg) return;
+    if (!signedInRef.current) return;
     if (syncing.current) {
       syncAgain.current = true;
       return;
@@ -127,7 +132,7 @@ export function useToppings(github: GitHubConfig | null): ToppingsState {
     setSync({ state: 'syncing' });
     const started = storeRef.current;
     const fetchFn: FetchLike = (url, init) => globalThis.fetch(url, init);
-    const { store: synced, error } = await syncToppings(cfg, started, fetchFn, photos);
+    const { store: synced, error } = await syncToppings(started, fetchFn, photos);
     setStore((current) => mergeToppingsAfterSync(current, started, synced));
     // A photo another device replaced or removed: this device's copy goes too.
     void (async () => {
@@ -142,19 +147,25 @@ export function useToppings(github: GitHubConfig | null): ToppingsState {
         if (!named.has(name) && !keepPhotos.current.has(name)) void photos.delete(key);
       }
     })();
-    setSync(githubRef.current ? (error ? { state: 'error', message: error.message } : { state: 'idle' }) : { state: 'off' });
     syncing.current = false;
+    // §14.3: a lapsed sign-in turns the page to signed out; the ideas stay here.
+    if (error?.kind === 'signedOut') {
+      setSync({ state: 'signedOut' });
+      onSignedOutRef.current();
+    } else {
+      setSync(signedInRef.current ? (error ? { state: 'error', message: error.message } : { state: 'idle' }) : { state: 'signedOut' });
+    }
     if (syncAgain.current) {
       syncAgain.current = false;
       void syncNow();
     }
   }, []);
 
-  // A token saved or forgotten on the Bake log tab: pull now, or stop.
-  // Then pull whenever the page comes back into view.
+  // Signing in or out: pull now, or stop. Then pull whenever the page comes
+  // back into view.
   useEffect(() => {
-    if (!github) {
-      setSync({ state: 'off' });
+    if (!signedIn) {
+      setSync({ state: 'signedOut' });
       return;
     }
     if (!syncing.current) setSync({ state: 'idle' });
@@ -164,17 +175,17 @@ export function useToppings(github: GitHubConfig | null): ToppingsState {
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-    // Once per token; syncNow is stable.
+    // Once per sign-in; syncNow is stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [github?.token, github?.owner, github?.repo]);
+  }, [signedIn]);
 
   // Push local changes shortly after they happen, so a burst of edits is one sync.
   const waiting = store.dirty.length + store.deleted.length;
   useEffect(() => {
-    if (!github || waiting === 0) return;
+    if (!signedIn || waiting === 0) return;
     const id = setTimeout(() => void syncNow(), 1500);
     return () => clearTimeout(id);
-  }, [github, waiting, store, syncNow]);
+  }, [signedIn, waiting, store, syncNow]);
 
   return {
     ideas: store.items,

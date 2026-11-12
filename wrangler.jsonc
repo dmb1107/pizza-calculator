@@ -1,0 +1,39 @@
+// The Cloudflare Worker that serves the app at pizza.dave-becker.com (spec §14).
+// The built page (dist/) is served as static assets; only /api/* runs the
+// Worker (worker/index.ts). Secrets GITHUB_TOKEN and SETUP_CODE are set with
+// `wrangler secret put`, never written here.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pizza-calculator",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-10-20",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "AUTH", "class_name": "AuthStore" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["AuthStore"] }],
+  "vars": { "GITHUB_OWNER": "dmb1107", "GITHUB_REPO": "pizza-bake-log" },
+  // The app's one address. Its workers.dev address stays off, so a passkey is
+  // only ever made here (§14.3).
+  "routes": [{ "pattern": "pizza.dave-becker.com", "custom_domain": true }],
+  "workers_dev": false,
+  "observability": { "enabled": true },
+  "env": {
+    // The preview, before the custom domain (MESSAGE-75 §5): its own Worker,
+    // pizza-calculator-preview, on workers.dev, with its own passkeys,
+    // sessions and secrets. `npx wrangler deploy --env preview`; delete it
+    // once the real address works.
+    "preview": {
+      "durable_objects": {
+        "bindings": [{ "name": "AUTH", "class_name": "AuthStore" }]
+      },
+      "vars": { "GITHUB_OWNER": "dmb1107", "GITHUB_REPO": "pizza-bake-log" },
+      "routes": [],
+      "workers_dev": true
+    }
+  }
+}

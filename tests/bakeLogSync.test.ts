@@ -4,18 +4,13 @@ import { calculate } from '../src/lib/engine';
 import { formatTempF, roundTo } from '../src/lib/format';
 import {
   EMPTY_LOG,
-  GITHUB_KEY,
   LOG_KEY,
-  loadGitHubConfig,
   loadLog,
   parseBake,
-  parseRepoName,
   removeBake,
-  saveGitHubConfig,
   saveLog,
   setMixExcluded,
   upsertBake,
-  type GitHubConfig,
   type LocalLog,
 } from '../src/state/bakeLogStore';
 import { API, fromBase64, mergeAfterSync, serializeBake, syncLog, toBase64, type FetchLike } from '../src/state/githubSync';
@@ -147,42 +142,24 @@ describe('the local log', () => {
   });
 });
 
-describe('the repository and token', () => {
-  it('reads a repository name as GitHub prints it, or its URL', () => {
-    expect(parseRepoName('dave/bake-log')).toEqual({ owner: 'dave', repo: 'bake-log' });
-    expect(parseRepoName(' https://github.com/dave/bake-log.git ')).toEqual({ owner: 'dave', repo: 'bake-log' });
-    expect(parseRepoName('bake-log')).toBeNull();
-    expect(parseRepoName('dave/bake log')).toBeNull();
-  });
-
-  it('keeps the token per device, and forgets it', () => {
-    const s = fakeStorage();
-    expect(loadGitHubConfig(s)).toBeNull();
-    saveGitHubConfig(s, { owner: 'dave', repo: 'log', token: 't' });
-    expect(loadGitHubConfig(s)).toEqual({ owner: 'dave', repo: 'log', token: 't' });
-    saveGitHubConfig(s, null);
-    expect(s.data.has(GITHUB_KEY)).toBe(false);
-  });
-});
-
 // ---------------------------------------------------------------------------
 // Sync, against a fake repository
 // ---------------------------------------------------------------------------
-
-const CFG: GitHubConfig = { owner: 'dave', repo: 'bake-log', token: 'good' };
 
 function fakeGitHub() {
   const files = new Map<string, { content: string; sha: string }>();
   let n = 0;
   const calls: string[] = [];
-  const base = `${API}/repos/dave/bake-log`;
+  // The Worker's pass through: the page names no repository (§14.2).
+  const base = API;
   const reply = (status: number, body: unknown = {}) =>
     Promise.resolve({ ok: status >= 200 && status < 300, status, json: () => Promise.resolve(body) });
 
   const fetchFn: FetchLike = (url, init = {}) => {
     const method = init.method ?? 'GET';
     calls.push(`${method} ${url.replace(base, '')}`);
-    if (init.headers?.['Authorization'] !== 'Bearer good') return reply(401);
+    // The page holds no token, so it never sends one (§14.2).
+    if (init.headers && 'Authorization' in init.headers) return reply(400);
     if (!url.startsWith(base)) return reply(404);
     const path = url.slice(base.length);
     if (path === '') return reply(200, { full_name: 'dave/bake-log' });
@@ -216,7 +193,7 @@ describe('sync with a private repository', () => {
   it('pushes a new bake as one indented JSON file under bakes/', async () => {
     const gh = fakeGitHub();
     const b = bake('2026-09-28-120000');
-    const { log, error } = await syncLog(CFG, upsertBake(EMPTY_LOG, b), gh.fetchFn);
+    const { log, error } = await syncLog(upsertBake(EMPTY_LOG, b), gh.fetchFn);
     expect(error).toBeUndefined();
     const file = gh.files.get('bakes/2026-09-28-120000.json')!;
     expect(JSON.parse(fromBase64(file.content))).toEqual(b);
@@ -229,7 +206,7 @@ describe('sync with a private repository', () => {
     const gh = fakeGitHub();
     const other = bake('2026-09-27-090000');
     gh.put(other);
-    const { log } = await syncLog(CFG, EMPTY_LOG, gh.fetchFn);
+    const { log } = await syncLog(EMPTY_LOG, gh.fetchFn);
     expect(log.bakes).toEqual([other]);
     expect(log.dirty).toEqual([]);
   });
@@ -242,11 +219,11 @@ describe('sync with a private repository', () => {
   it('writes an edit over the version it last saw, and a stale one over the current', async () => {
     const gh = fakeGitHub();
     const b = bake('2026-09-28-120000');
-    let { log } = await syncLog(CFG, upsertBake(EMPTY_LOG, b), gh.fetchFn);
+    let { log } = await syncLog(upsertBake(EMPTY_LOG, b), gh.fetchFn);
     // The other device edits it meanwhile, so our sha is stale.
     gh.put(setMixExcluded(log, b.bake_id, 1, true).bakes[0]!);
     log = setMixExcluded({ ...log, shas: { ...log.shas } }, b.bake_id, 1, false);
-    const result = await syncLog(CFG, log, gh.fetchFn);
+    const result = await syncLog(log, gh.fetchFn);
     expect(result.error).toBeUndefined();
     const saved = JSON.parse(fromBase64(gh.files.get(`bakes/${b.bake_id}.json`)!.content)) as LoggedBake;
     // The device pushing last wins.
@@ -257,35 +234,65 @@ describe('sync with a private repository', () => {
     const gh = fakeGitHub();
     const a = bake('2026-09-28-120000');
     const b = bake('2026-09-29-120000');
-    let { log } = await syncLog(CFG, upsertBake(upsertBake(EMPTY_LOG, a), b), gh.fetchFn);
-    log = (await syncLog(CFG, removeBake(log, a.bake_id), gh.fetchFn)).log;
+    let { log } = await syncLog(upsertBake(upsertBake(EMPTY_LOG, a), b), gh.fetchFn);
+    log = (await syncLog(removeBake(log, a.bake_id), gh.fetchFn)).log;
     expect([...gh.files.keys()]).toEqual([`bakes/${b.bake_id}.json`]);
     expect(log.deleted).toEqual([]);
     // Deleted on the other device.
     gh.files.clear();
-    log = (await syncLog(CFG, log, gh.fetchFn)).log;
+    log = (await syncLog(log, gh.fetchFn)).log;
     expect(log.bakes).toEqual([]);
   });
 
-  it('leaves the log intact and says what to fix when the token is refused', async () => {
+  it('reads a 401 as a lapsed sign-in, and keeps the log and its changes (§14.3)', async () => {
     const gh = fakeGitHub();
     const start = upsertBake(EMPTY_LOG, bake('2026-09-28-120000'));
-    const { log, error } = await syncLog({ ...CFG, token: 'bad' }, start, gh.fetchFn);
-    expect(error?.kind).toBe('auth');
+    const signedOut: FetchLike = () => Promise.resolve({ ok: false, status: 401, json: () => Promise.resolve({ error: 'signed_out' }) });
+    const { log, error } = await syncLog(start, signedOut);
+    expect(error?.kind).toBe('signedOut');
     expect(log.bakes).toEqual(start.bakes);
     expect(log.dirty).toEqual(start.dirty);
+    // Signed in again, the same changes go up.
+    const again = await syncLog(log, gh.fetchFn);
+    expect(again.error).toBeUndefined();
+    expect([...gh.files.keys()]).toEqual(['bakes/2026-09-28-120000.json']);
+  });
+
+  it("reads GitHub refusing the Worker's token as the token's fault, not a sign-out", async () => {
+    const start = upsertBake(EMPTY_LOG, bake('2026-09-28-120000'));
+    for (const status of [502, 503]) {
+      const refused: FetchLike = () => Promise.resolve({ ok: false, status, json: () => Promise.resolve({ error: 'github_refused' }) });
+      const { log, error } = await syncLog(start, refused);
+      expect(error?.kind).toBe('auth');
+      expect(log.dirty).toEqual(start.dirty);
+    }
   });
 
   it('treats an unreachable repository as a repository error, not an empty log', async () => {
-    const gh = fakeGitHub();
-    const { error } = await syncLog({ ...CFG, repo: 'other' }, EMPTY_LOG, gh.fetchFn);
+    const missing: FetchLike = () => Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve({}) });
+    const { error } = await syncLog(EMPTY_LOG, missing);
     expect(error?.kind).toBe('repo');
+  });
+
+  it("sends every request to the Worker's pass through, and never a token", async () => {
+    const seen: { url: string; headers: Record<string, string> }[] = [];
+    const gh = fakeGitHub();
+    const spy: FetchLike = (url, init = {}) => {
+      seen.push({ url, headers: init.headers ?? {} });
+      return gh.fetchFn(url, init);
+    };
+    await syncLog(upsertBake(EMPTY_LOG, bake('2026-09-28-120000')), spy);
+    expect(seen.length).toBeGreaterThan(0);
+    for (const { url, headers } of seen) {
+      expect(url.startsWith('/api/github')).toBe(true);
+      expect(Object.keys(headers).map((k) => k.toLowerCase())).not.toContain('authorization');
+    }
   });
 
   it('keeps working offline: a failed request leaves every change marked', async () => {
     const offline: FetchLike = () => Promise.reject(new TypeError('Failed to fetch'));
     const start = upsertBake(EMPTY_LOG, bake('2026-09-28-120000'));
-    const { log, error } = await syncLog(CFG, start, offline);
+    const { log, error } = await syncLog(start, offline);
     expect(error?.kind).toBe('network');
     expect(log.dirty).toEqual(['2026-09-28-120000']);
   });
@@ -293,7 +300,7 @@ describe('sync with a private repository', () => {
   it('skips a file that does not parse, and leaves it in the repository', async () => {
     const gh = fakeGitHub();
     gh.files.set('bakes/2026-09-28-120000.json', { content: toBase64('{"not": "a bake"}'), sha: 'x' });
-    const { log, error } = await syncLog(CFG, EMPTY_LOG, gh.fetchFn);
+    const { log, error } = await syncLog(EMPTY_LOG, gh.fetchFn);
     expect(error).toBeUndefined();
     expect(log.bakes).toEqual([]);
     expect(gh.files.size).toBe(1);

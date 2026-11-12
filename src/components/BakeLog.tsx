@@ -20,11 +20,9 @@ import { formatBallsPerMix, formatCoefficient, formatTempF, formatWholeMinutes }
 import { describeSpec, formatElapsed } from '../lib/timers';
 import { formatTimeOfDay } from '../lib/timeline';
 import { BOUNDS } from '../state/defaults';
-import { parseRepoName } from '../state/bakeLogStore';
 import { runningPhases } from '../state/sessionBake';
 import { STEPS } from '../content/steps';
 import type { AppState, SyncState } from '../state/useAppState';
-import type { GitHubConfig } from '../state/repoSync';
 import type { ToppingsState } from '../state/useToppings';
 
 /**
@@ -35,7 +33,7 @@ import type { ToppingsState } from '../state/useToppings';
  * Phase A, the final temperature at the end of each mix. The card after the
  * last mix shows what the log will record and saves it. The Bake log tab
  * (§13.1) holds the history, Dave's switch for each mix, and this device's
- * sync settings, which the topping ideas share (§13.3).
+ * sign-in (§14.3), which the topping ideas' sync shares (§13.3).
  */
 
 const REASON: Record<NotCountedReason, string> = {
@@ -170,7 +168,7 @@ function PhaseRow({ phase, seconds, running }: { phase: MixPhase; seconds: numbe
 
 /** What the log will record, and the button that saves it (§10). */
 export function BakeLogCard({ state, onOpenLog }: { state: AppState; onOpenLog: () => void }) {
-  const { sessionDraft: draft, sessionBakeId, saveConflict: conflict, saveSessionBake, log, timers, sync, github } =
+  const { sessionDraft: draft, sessionBakeId, saveConflict: conflict, saveSessionBake, log, timers, sync, signedIn } =
     state;
   const saved = !conflict && log.bakes.some((b) => b.bake_id === sessionBakeId);
   const nMix = draft.n_mix;
@@ -263,11 +261,11 @@ export function BakeLogCard({ state, onOpenLog }: { state: AppState; onOpenLog: 
       )}
       {saved && (
         <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
-          {github
+          {signedIn
             ? sync.state === 'error'
               ? `Saved on this device. The sync failed: ${sync.message}`
-              : 'Saved. It syncs to your repository in the background.'
-            : 'Saved in this browser. Add a repository in the bake log to share it with your other devices.'}
+              : 'Saved. It syncs to your other devices in the background.'
+            : 'Saved in this browser. Sign in on the Bake log tab to share it with your other devices.'}
         </p>
       )}
     </div>
@@ -305,18 +303,11 @@ export function BakeLogPage({ state, toppings }: { state: AppState; toppings: To
  * Where one store's sync stands, in a sentence: the log's or the topping
  * ideas' (§13.3), each named, since they sync apart and either can fail alone.
  */
-export function syncStatusText(
-  github: GitHubConfig,
-  sync: SyncState,
-  waiting: number,
-  lastSyncedAt: string,
-  what: string,
-): string {
-  const repo = `${github.owner}/${github.repo}`;
-  if (sync.state === 'syncing') return `Syncing ${what} with ${repo}…`;
-  if (sync.state === 'error') return `Couldn't sync ${what} with ${repo}. ${sync.message}`;
-  if (waiting > 0) return `${waiting} ${waiting === 1 ? 'change' : 'changes'} to ${what} waiting to sync with ${repo}.`;
-  return `Synced ${what} with ${repo}${lastSyncedAt ? ` at ${formatTimeOfDay(new Date(lastSyncedAt))}` : ''}.`;
+export function syncStatusText(sync: SyncState, waiting: number, lastSyncedAt: string, what: string): string {
+  if (sync.state === 'syncing') return `Syncing ${what}…`;
+  if (sync.state === 'error') return `Couldn't sync ${what}. ${sync.message}`;
+  if (waiting > 0) return `${waiting} ${waiting === 1 ? 'change' : 'changes'} to ${what} waiting to sync.`;
+  return `Synced ${what}${lastSyncedAt ? ` at ${formatTimeOfDay(new Date(lastSyncedAt))}` : ''}.`;
 }
 
 function SizesSection({ state }: { state: AppState }) {
@@ -390,7 +381,7 @@ function BakeItem({ bake, state }: { bake: LoggedBake; state: AppState }) {
       </p>
       <p className="text-sm text-stone-600 dark:text-stone-400">
         {ff == null ? 'No mix counts.' : `Friction factor ${formatTempF(ff)} °F.`}
-        {pending && state.github ? ' Waiting to sync.' : ''}
+        {pending && state.signedIn ? ' Waiting to sync.' : ''}
       </p>
       <ul className="mt-2 grid gap-2">
         {bake.mixes.map((mix) => (
@@ -440,24 +431,38 @@ function MixItem({ bake, mix, state }: { bake: LoggedBake; mix: LoggedMix; state
   );
 }
 
+/**
+ * §14.3: this device's sign-in, where the log and the ideas sync from.
+ * Signed out, both stay in this browser. Signing in asks for the passkey and
+ * nothing else; creating one asks for the setup code first.
+ */
 function SyncSection({ state, toppings }: { state: AppState; toppings: ToppingsState }) {
-  const { github, setGitHub, sync, syncNow, log } = state;
-  const [repoText, setRepoText] = useState(github ? `${github.owner}/${github.repo}` : '');
-  const [token, setToken] = useState('');
-  const repo = parseRepoName(repoText);
+  const { signedIn, signIn, createPasskey, signOut, sync, syncNow, log } = state;
+  const [setupCode, setSetupCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
   const waiting = log.dirty.length + log.deleted.length;
+
+  const run = async (action: () => Promise<{ ok: true } | { ok: false; message: string }>, after?: () => void) => {
+    setBusy(true);
+    setMessage('');
+    const outcome = await action();
+    setBusy(false);
+    if (outcome.ok) after?.();
+    else setMessage(outcome.message);
+  };
 
   return (
     <section className="min-w-0">
       <h3 className="mb-2 text-lg font-semibold">Sync between devices</h3>
-      {github ? (
+      {signedIn ? (
         <>
           <p className="text-stone-700 dark:text-stone-300">
-            {syncStatusText(github, sync, waiting, log.lastSyncedAt, 'the log')}
+            {syncStatusText(sync, waiting, log.lastSyncedAt, 'the log')}
           </p>
           {/* §13.3: the ideas sync on their own, so their state is their own line. */}
           <p className="mt-1 text-stone-700 dark:text-stone-300">
-            {syncStatusText(github, toppings.sync, toppings.waiting, toppings.store.lastSyncedAt, 'the topping ideas')}
+            {syncStatusText(toppings.sync, toppings.waiting, toppings.store.lastSyncedAt, 'the topping ideas')}
           </p>
           <div className="mt-2 flex flex-wrap gap-3">
             <button
@@ -470,54 +475,63 @@ function SyncSection({ state, toppings }: { state: AppState; toppings: ToppingsS
             >
               Sync now
             </button>
-            <button type="button" onClick={() => setGitHub(null)} className={buttonClass}>
-              Forget the token on this device
+            <button type="button" disabled={busy} onClick={() => void run(signOut)} className={`${buttonClass} disabled:opacity-50`}>
+              Sign out
             </button>
           </div>
         </>
       ) : (
-        <form
-          className="grid gap-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (repo && token.trim()) {
-              setGitHub({ ...repo, token: token.trim() });
-              setToken('');
-            }
-          }}
-        >
-          <p className="text-sm text-stone-600 dark:text-stone-400">
-            The log and the topping ideas are in this browser only. To share them with your other devices, make a
-            private GitHub repository and a fine-grained token that can reach only that repository, with Contents set
-            to read and write. Paste both here on each device. The token stays in this browser’s storage.
+        <div className="grid gap-3">
+          <p className="text-stone-700 dark:text-stone-300">
+            This device is signed out, so the log and the topping ideas are kept in this browser only. Sign in with
+            your passkey to sync them with your other devices.
           </p>
-          <label className="grid gap-1.5 text-sm font-medium text-stone-700 dark:text-stone-300">
-            Repository
-            <input
-              value={repoText}
-              onChange={(e) => setRepoText(e.target.value)}
-              placeholder="owner/name"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              className="min-h-touch rounded-lg border border-stone-300 bg-white px-3 text-base text-stone-900 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
-            />
-          </label>
-          <label className="grid gap-1.5 text-sm font-medium text-stone-700 dark:text-stone-300">
-            Token
-            <input
-              type="password"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              autoComplete="off"
-              className="min-h-touch rounded-lg border border-stone-300 bg-white px-3 text-base text-stone-900 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
-            />
-          </label>
-          <button type="submit" disabled={!repo || !token.trim()} className={`${buttonClass} disabled:opacity-50`}>
-            Save and sync
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void run(signIn)}
+            className={`${buttonClass} justify-self-start disabled:opacity-50`}
+          >
+            Sign in
           </button>
-        </form>
+          <form
+            className="grid gap-3 border-t border-stone-200 pt-3 dark:border-stone-800"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const code = setupCode;
+              void run(() => createPasskey(code), () => setSetupCode(''));
+            }}
+          >
+            <p className="text-sm text-stone-600 dark:text-stone-400">
+              No passkey for this app yet? Creating one takes the setup code set in the app’s server.
+            </p>
+            <label className="grid gap-1.5 text-sm font-medium text-stone-700 dark:text-stone-300">
+              Setup code
+              <input
+                type="password"
+                value={setupCode}
+                onChange={(e) => setSetupCode(e.target.value)}
+                autoComplete="off"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                className="min-h-touch rounded-lg border border-stone-300 bg-white px-3 text-base text-stone-900 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={busy || setupCode === ''}
+              className={`${buttonClass} justify-self-start disabled:opacity-50`}
+            >
+              Create a passkey
+            </button>
+          </form>
+        </div>
       )}
+      {/* Below the buttons, so nothing moves above the tap. */}
+      <p role="status" className="mt-2 min-h-6 text-sm text-stone-700 dark:text-stone-300">
+        {busy ? 'Waiting for the passkey…' : message}
+      </p>
     </section>
   );
 }
