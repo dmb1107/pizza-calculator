@@ -1849,17 +1849,17 @@ APP-10 (Dave's calls, 11 and 12 Nov 2026). The app moves from GitHub Pages to Cl
 
 ### 14.2 The token
 
-**The Worker holds the GitHub token as a secret** (Dave, 11 Nov 2026). It is the existing fine-grained token, which reaches only the bake-log repository (Dave, 12 Nov 2026). The page never sees it: the sync sends its requests to the Worker, which checks the sign-in and passes them to GitHub with the token. The Worker passes only what the sync uses, in the bake-log repository and no other: the repository itself, the contents of `bakes/`, `toppings/` and `toppings/images/`, and git blobs. The page's token and repository fields go.
+**The Worker holds the GitHub token as a secret** (Dave, 11 Nov 2026). It is a fine-grained token made for the Worker, which reaches only the bake-log repository (Dave, 12 Nov 2026); the devices' old token is revoked once every device has moved. The page never sees it: the sync sends its requests to the Worker, which checks the sign-in and passes them to GitHub with the token. The Worker passes only what the sync uses, in the bake-log repository and no other: the repository itself, the contents of `bakes/`, `toppings/` and `toppings/images/`, and git blobs. A write carries only its message, content and version, and the Worker removes the download links from GitHub's answers, since each holds a read token. The page's token and repository fields go.
 
 Once the move works, Dave deletes the old home-screen icon and clears Safari's website data for `dmb1107.github.io` on each device, so no device keeps a copy of the token.
 
 ### 14.3 Signing in
 
-**With a passkey** (Dave, 11 Nov 2026): Face ID, Touch ID, or a password manager that holds passkeys, such as Bitwarden, which Dave uses. Signing in asks for the passkey and nothing else.
+**With a passkey** (Dave, 11 Nov 2026): Face ID, Touch ID, or a password manager that holds passkeys, such as Bitwarden, which Dave uses. Signing in asks for the passkey and nothing else. A passkey belongs to the address it was made at: one made on a preview doesn't sign in at `pizza.dave-becker.com`.
 
-**A setup code guards creating a passkey** (Dave, 12 Nov 2026). Dave sets it as a second secret in the Worker. Creating a passkey asks for it, so someone who finds the address can't add one of their own; signing in never asks for it. The Worker limits how often a wrong code can be tried.
+**A setup code guards creating a passkey** (Dave, 12 Nov 2026). Dave sets it as a second secret in the Worker. Creating a passkey asks for it, so someone who finds the address can't add one of their own; signing in never asks for it. The Worker allows five wrong codes in any ten minutes, counted over every address; past that it refuses every code, the right one included, until the oldest wrong one is ten minutes old (Dave, 12 Nov 2026).
 
-**A sign-in lasts 90 days and renews each time the app is used** (Dave, 11 Nov 2026). It is a cookie the page's script can't read, sent only to this address. **Sign out** ends it on this device.
+**A sign-in lasts 90 days and renews each time the app is used** (Dave, 11 Nov 2026). It is a cookie the page's script can't read, sent only to this address. **Sign out** ends it on this device. Without an answer from the Worker, the device stays signed in and says so.
 
 **On an iPhone, sign in in Safari first, then add the icon** (Dave, 12 Nov 2026). A home-screen app keeps its own storage, apart from Safari's, and iOS copies Safari's cookies to it once, when it is added. If a passkey works inside the icon as well, either order does. If the icon's sign-in ever lapses and its passkey prompt doesn't work, sign in in Safari again and re-add the icon.
 

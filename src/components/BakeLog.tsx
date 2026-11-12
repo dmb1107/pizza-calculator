@@ -230,7 +230,7 @@ export function BakeLogCard({ state, onOpenLog }: { state: AppState; onOpenLog: 
         // in place of the button, so nothing appears above a tap.
         <div className="mt-3 rounded-lg border border-amber-400 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-950/40">
           <p className="text-sm text-amber-900 dark:text-amber-200">
-            {`The bake from ${conflict.date} is saved already, and the page hasn’t been reset since. Save this one as a new bake, or replace that one?`}
+            {`The bake from ${conflict.date} is saved already, and the page hasn't been reset since. Save this one as a new bake, or replace that one?`}
           </p>
           <div className="mt-2 flex flex-wrap gap-3">
             <button
@@ -265,7 +265,7 @@ export function BakeLogCard({ state, onOpenLog }: { state: AppState; onOpenLog: 
             ? sync.state === 'error'
               ? `Saved on this device. The sync failed: ${sync.message}`
               : 'Saved. It syncs to your other devices in the background.'
-            : 'Saved in this browser. Sign in on the Bake log tab to share it with your other devices.'}
+            : 'Saved in this browser. Sign in on the Bake log tab to sync it with your other devices.'}
         </p>
       )}
     </div>
@@ -322,7 +322,7 @@ function SizesSection({ state }: { state: AppState }) {
       </p>
       {histories.length === 0 ? (
         <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
-          No counted bakes yet. Until the first, the calculator uses bake 1’s figure at every mix size, corrected for
+          No counted bakes yet. Until the first, the calculator uses bake 1's figure at every mix size, corrected for
           its long Phase C.
         </p>
       ) : (
@@ -503,7 +503,7 @@ function SyncSection({ state, toppings }: { state: AppState; toppings: ToppingsS
             }}
           >
             <p className="text-sm text-stone-600 dark:text-stone-400">
-              No passkey for this app yet? Creating one takes the setup code set in the app’s server.
+              No passkey for this app yet? Creating one takes the setup code set in the app's server.
             </p>
             <label className="grid gap-1.5 text-sm font-medium text-stone-700 dark:text-stone-300">
               Setup code

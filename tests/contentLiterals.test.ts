@@ -1417,7 +1417,7 @@ describe('§8.1 numbers in component copy are classified too', () => {
     '61–65 °F': 'the published fermentation band — procedure, in the biga card and the schedule radio',
     'between midnight and 6 a.m.': 'the definition `isUnsocialHour` implements — §4.7 "between midnight and 6 AM"',
     '750 °F, full flame, 60–90 s, turning every 15–20 s.': 'bake-2 procedure, the same figures FIXED under bake-2.summary',
-    'bake 1’s figure': 'names bake 1 — an index, not a quantity',
+    "bake 1's figure": 'names bake 1 — an index, not a quantity',
     'Grain Craft 00': 'the flour grade in the product name',
     'within 1 °F of it': "§7.2's blending tolerance, Dave's call (MESSAGE-56), as reference:water-temperature has it",
   };
