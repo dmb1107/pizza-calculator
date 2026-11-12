@@ -46,7 +46,7 @@ async function press(target: Locator) {
 
 test('the preview: a passkey, a sign-in, bakes, an idea and a photo through the Worker, Sign out, and the refusals', async ({ browser }) => {
   // A new browser fetches every idea and photo one request at a time: with
-  // Dave's 41 ideas and 35 photos that is about half a minute per browser.
+  // Dave's 41 ideas and 34 photos that is about half a minute per browser.
   test.setTimeout(360_000);
   const FIRST_SYNC = { timeout: 150_000 };
   const base = URL_.replace(/\/?$/, '/');
