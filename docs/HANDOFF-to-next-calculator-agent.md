@@ -28,9 +28,8 @@ Don't trust any status here that you can check instead (§7).
   devices moved with every bake, idea and photo back, and GitHub Pages is
   off (the old address is 404). Dave revokes the old token himself. The
   Worker's token is a new one, not the existing one §14.2 names (FINDINGS-76
-  §13). **For FINDINGS-77:** the sync-rerun bug FINDINGS-76 §13 reported is
-  fixed (both hooks, a WebKit test); it was worse than reported, since the
-  rerun also marked every pulled record as changed here. Three test
+  §13). The sync-rerun bug found on the preview is fixed and live (PR #62),
+  and FINDINGS-76 §14 tells the counterpart, with the switchover. Three test
   layers: `tests/worker.test.ts` (the routes, with real WebAuthn
   signatures), `e2e/signin.spec.ts` (WebKit, a stub Worker and a fake
   passkey), and `npm run test:worker` (the real Worker in workerd, a fake
