@@ -190,4 +190,47 @@ test.describe('APP-10: the app on its own address, with a passkey sign-in', () =
     await expect(button(again.page, 'Sign in')).toBeVisible();
     await forceClose(again);
   });
+
+  test('an idea saved during the first sync makes the next sync fetch nothing twice', async ({ baseURL }, info) => {
+    // Ten ideas already in the repository, as another device left them.
+    const repo = newRepo();
+    const ids = Array.from({ length: 10 }, (_, i) => `2026-11-0${i % 9}-10000${i}-ab1${i}`);
+    for (const id of ids) {
+      const idea = {
+        id,
+        name: `Seeded ${id}`,
+        pre_bake: 'San Marzano, fior di latte',
+        post_bake: '',
+        notes: '',
+        comments: '',
+        rating: null,
+        photo: null,
+        created: '2026-11-01T18:00:00.000Z',
+        updated: '2026-11-01T18:00:00.000Z',
+      };
+      repo.files.set(`toppings/${id}.json`, { content: Buffer.from(JSON.stringify(idea)).toString('base64'), sha: `seed-${id}` });
+    }
+    // Slow enough that the first sync is still running when the idea is saved.
+    repo.delayMs = 150;
+    const phone = await phoneAt(info.outputPath('a'), repo, 'a', T0, baseURL!);
+    const { page } = phone;
+    await tab(page, 'Bake log').tap();
+    await button(page, 'Sign in').tap();
+    await expect(logTab(page)).toContainText('Syncing the topping ideas');
+
+    await addIdea(page, 'Saved mid-sync');
+    await page.clock.runFor(2 * S);
+    await tab(page, 'Bake log').tap();
+    await expect.poll(() => ideaFiles(repo).length, { timeout: 20_000 }).toBe(11);
+    await expect(logTab(page)).toContainText('Synced the topping ideas', { timeout: 20_000 });
+
+    // Each seeded idea was fetched once: the rerun started from what the first sync brought.
+    for (const id of ids) {
+      expect(repo.requests.filter((r) => r === `GET /api/github/contents/toppings/${id}.json`), id).toHaveLength(1);
+      // And none was written back as if changed here.
+      expect(repo.requests.filter((r) => r === `PUT /api/github/contents/toppings/${id}.json`), id).toHaveLength(0);
+    }
+    await expect(logTab(page)).not.toContainText('waiting to sync');
+    await forceClose(phone);
+  });
 });

@@ -29,6 +29,8 @@ export interface FakeRepo {
   sessions: Set<string>;
   /** Any request that carried a token, which the page must never send. */
   tokensSeen: string[];
+  /** Milliseconds each repository answer waits, so a sync can be caught mid-run. */
+  delayMs: number;
 }
 
 export const newRepo = (): FakeRepo => ({
@@ -38,6 +40,7 @@ export const newRepo = (): FakeRepo => ({
   failing: new Set(),
   sessions: new Set(),
   tokensSeen: [],
+  delayMs: 0,
 });
 
 /** The setup code the stub accepts. A test value, for the stub only. */
@@ -87,6 +90,7 @@ export async function stubWorker(context: BrowserContext, repo: FakeRepo, device
 
     if (!repo.sessions.has(device)) return json(401, { error: 'signed_out' });
     repo.requests.push(`${method} ${url.pathname}`);
+    if (repo.delayMs) await new Promise((r) => setTimeout(r, repo.delayMs));
     const path = url.pathname.slice('/api/github'.length);
     if (path === '') return json(200, { full_name: 'dave/pizza-bake-log' });
     // The git blobs API, which the photos are fetched through (APP-8).

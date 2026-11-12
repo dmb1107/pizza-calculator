@@ -155,11 +155,20 @@ export function useToppings(signedIn: boolean, onSignedOut: () => void): Topping
     } else {
       setSync(signedInRef.current ? (error ? { state: 'error', message: error.message } : { state: 'idle' }) : { state: 'signedOut' });
     }
+    // A change made while this sync ran gets a sync of its own, once the
+    // page has rendered this one's result: started any sooner, it would read
+    // `storeRef` from before the merge, fetch every record again and mark each
+    // one it pulled as changed here.
     if (syncAgain.current) {
       syncAgain.current = false;
-      void syncNow();
+      setRerun((n) => n + 1);
     }
   }, []);
+
+  const [rerun, setRerun] = useState(0);
+  useEffect(() => {
+    if (rerun > 0) void syncNow();
+  }, [rerun, syncNow]);
 
   // Signing in or out: pull now, or stop. Then pull whenever the page comes
   // back into view.
