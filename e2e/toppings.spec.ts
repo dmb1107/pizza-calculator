@@ -188,6 +188,48 @@ test.describe('APP-14 on a phone (375 px)', () => {
     expect(after['dessert']).toBe(false);
     await forceClose(phone);
   });
+  test('APP-11: Hide from portfolio follows the rating until it is set, then holds', async ({ baseURL }, info) => {
+    const phone = await openPhone(info.outputPath('p'), { time: T0 }, baseURL!);
+    const { page } = phone;
+    await page.setViewportSize({ width: 375, height: 812 });
+    // Saved before APP-11: no portfolio field, so it follows its rating of 2.
+    await seed(page, [idea('2026-10-01-180000-ol01', 'Potato pizza', { rating: 2 })]);
+
+    const card = page.locator('li').filter({ has: page.getByRole('button', { name: /^Potato pizza/ }) });
+    await card.getByRole('button').first().tap();
+    await card.getByRole('button', { name: 'Edit', exact: true }).tap();
+    await editorReady(page);
+    const hide = card.getByRole('switch', { name: /Hide from portfolio/ });
+    await expect(hide).toContainText('On for a rating below 3 until you set it.');
+    await expect(hide).toHaveAttribute('aria-checked', 'true');
+    await card.getByRole('button', { name: 'Rate 3', exact: true }).tap();
+    await expect(hide).toHaveAttribute('aria-checked', 'false');
+    await card.getByRole('button', { name: 'Rate 2.5', exact: true }).tap();
+    await expect(hide).toHaveAttribute('aria-checked', 'true');
+
+    // Set by hand: shown, and a low rating no longer moves it.
+    await hide.tap();
+    await expect(hide).toHaveAttribute('aria-checked', 'false');
+    await card.getByRole('button', { name: 'Rate 1', exact: true }).tap();
+    await expect(hide).toHaveAttribute('aria-checked', 'false');
+    await card.getByRole('button', { name: 'Save', exact: true }).tap();
+    expect((await stored(page))[0]!['portfolio']).toBe('shown');
+
+    // Reopened after a force close, it still holds.
+    await forceClose(phone);
+    const again = await openPhone(info.outputPath('p'), { time: T0 }, baseURL!);
+    await tab(again.page, 'Toppings').tap();
+    const card2 = again.page.locator('li').filter({ has: again.page.getByRole('button', { name: /^Potato pizza/ }) });
+    await card2.getByRole('button').first().tap();
+    await card2.getByRole('button', { name: 'Edit', exact: true }).tap();
+    await editorReady(again.page);
+    await expect(card2.getByRole('switch', { name: /Hide from portfolio/ })).toHaveAttribute('aria-checked', 'false');
+    if (SHOTS) {
+      await card2.getByRole('switch', { name: /Hide from portfolio/ }).scrollIntoViewIfNeeded();
+      await again.page.screenshot({ path: `${SHOTS}/app11-phone-switch.png` });
+    }
+    await forceClose(again);
+  });
 });
 
 test.describe('APP-14 from desktop width', () => {

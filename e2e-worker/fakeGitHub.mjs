@@ -1,4 +1,5 @@
-// A fake GitHub contents API for the Worker's end-to-end run (§14.2).
+// A fake GitHub contents API for the Worker's end-to-end run (§14.2), and
+// the one GraphQL query the portfolio sends (§15.3).
 // Answers only for the one repository and only with the test token, and
 // logs every request it receives, so the test can show what reached it.
 // GET /__log returns the log and the files; POST /__reset clears both.
@@ -29,6 +30,22 @@ createServer(async (req, res) => {
   }
   log.push({ method: req.method, path: url.pathname + url.search, auth: req.headers.authorization ?? null, cookie: req.headers.cookie ?? null });
   if (req.headers.authorization !== `Bearer ${TOKEN}`) return json(401, { message: 'Bad credentials' });
+  // The portfolio's one query (§15.3): the files under toppings/ with their
+  // text, and the photo folder's names and blobs. The query itself isn't
+  // parsed; the answer has its shape.
+  if (url.pathname === '/graphql' && req.method === 'POST') {
+    const tree = (dir, withText) => {
+      const entries = [];
+      for (const [p, f] of files) {
+        if (!p.startsWith(`${dir}/`) || p.slice(dir.length + 1).includes('/')) continue;
+        const name = p.slice(dir.length + 1);
+        const text = Buffer.from(f.content, 'base64').toString('utf8');
+        entries.push({ name, type: 'blob', oid: f.sha, ...(withText ? { object: { text, isTruncated: false } } : {}) });
+      }
+      return entries.length ? { entries } : null;
+    };
+    return json(200, { data: { repository: { ideas: tree('toppings', true), images: tree('toppings/images', false) } } });
+  }
   if (!url.pathname.startsWith(BASE)) return json(404, { message: 'Not Found' });
   const path = url.pathname.slice(BASE.length);
   if (path === '') return json(200, { full_name: 'dmb1107/pizza-bake-log', private: true });

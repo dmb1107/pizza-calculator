@@ -11,10 +11,12 @@ import { syncStatusText } from './BakeLog';
 import { formatRating } from '../lib/format';
 import {
   EMPTY_DRAFT,
+  PORTFOLIO_HIDE_BELOW,
   RATINGS,
   RATING_MAX,
   canRate,
   draftOf,
+  hiddenFromPortfolio,
   ideaProblem,
   starParts,
   toppingSections,
@@ -364,6 +366,10 @@ function IdeaEditor({
         setBusy={setBusy}
       />
       <RatingControl value={draft.rating} refused={shownRefusal} onPick={pick} />
+      <PortfolioToggle
+        hidden={hiddenFromPortfolio(draft)}
+        onChange={(hide) => set('portfolio', hide ? 'hidden' : 'shown')}
+      />
 
       {confirmingDelete && idea ? (
         // Takes the buttons' place and grows down; its Delete sits below the one tapped.
@@ -425,12 +431,43 @@ function DessertToggle({ on, onChange }: { on: boolean; onChange: (on: boolean) 
         <span className="block font-medium">Dessert pizza</span>
         <span className="block text-sm text-stone-600 dark:text-stone-400">Lists it under Dessert pizzas.</span>
       </span>
-      <span
-        aria-hidden="true"
-        className={`relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors ${on ? 'bg-amber-700 dark:bg-amber-600' : 'bg-stone-300 dark:bg-stone-600'}`}
-      >
-        <span className={`absolute top-[2px] size-[27px] rounded-full bg-white shadow transition-[left] ${on ? 'left-[22px]' : 'left-[2px]'}`} />
+      <SwitchTrack on={on} />
+    </button>
+  );
+}
+
+function SwitchTrack({ on }: { on: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors ${on ? 'bg-amber-700 dark:bg-amber-600' : 'bg-stone-300 dark:bg-stone-600'}`}
+    >
+      <span className={`absolute top-[2px] size-[27px] rounded-full bg-white shadow transition-[left] ${on ? 'left-[22px]' : 'left-[2px]'}`} />
+    </span>
+  );
+}
+
+/**
+ * §15 (APP-11, 11d): on hides the idea from the public portfolio. It follows
+ * the rating, on below PORTFOLIO_HIDE_BELOW, until Dave sets it; from then on
+ * his setting holds.
+ */
+function PortfolioToggle({ hidden, onChange }: { hidden: boolean; onChange: (hide: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={hidden}
+      onClick={() => onChange(!hidden)}
+      className="flex min-h-touch items-center justify-between gap-4 rounded-lg text-left"
+    >
+      <span>
+        <span className="block font-medium">Hide from portfolio</span>
+        <span className="block text-sm text-stone-600 dark:text-stone-400">
+          {`On for a rating below ${PORTFOLIO_HIDE_BELOW} until you set it.`}
+        </span>
       </span>
+      <SwitchTrack on={hidden} />
     </button>
   );
 }

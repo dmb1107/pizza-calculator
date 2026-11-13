@@ -20,7 +20,7 @@
  */
 
 import { PHOTO_DIR, base64ToBytes, bytesToBase64, photoPath } from '../lib/photos';
-import { isPhotoName, isRating, remoteIsNewer, type ToppingIdea } from '../lib/toppings';
+import { isPhotoName, parseIdea, remoteIsNewer, type ToppingIdea } from '../lib/toppings';
 import { memoryPhotoStore, type PhotoStore } from './photoStore';
 import {
   mergeRecordsAfterSync,
@@ -34,6 +34,10 @@ import {
   type RepoFiles,
 } from './repoSync';
 import type { StorageLike } from './storage';
+
+// The parser lives with the idea's fields, where the Worker's portfolio
+// (§15) reads it too.
+export { parseIdea };
 
 export const TOPPINGS_KEY = 'biga-calculator:toppings:v1';
 
@@ -57,71 +61,6 @@ export const EMPTY_TOPPINGS: ToppingStore = {
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
-const isInstant = (v: unknown): v is string => typeof v === 'string' && !Number.isNaN(Date.parse(v));
-
-/**
- * An idea as stored, or null if any part of it is malformed. A text field
- * left out reads as empty; one that isn't text, a rating §13.2 doesn't allow
- * or a missing date is malformed. A rated idea without pre-bake toppings is
- * read as it is: the editor asks for them, and a reader shouldn't hide an
- * idea for it.
- *
- * Keys this build doesn't know are kept, so a device on this build that saves
- * an idea doesn't strip a field a later build added (the way an APP-6 bundle
- * drops `comments`).
- */
-export function parseIdea(raw: unknown): ToppingIdea | null {
-  if (!isRecord(raw)) return null;
-  const { id, name, rating, created, updated, photo, dessert } = raw;
-  // The id is a file name in the repository.
-  if (typeof id !== 'string' || !/^[\w-]+$/.test(id)) return null;
-  if (typeof name !== 'string' || name.trim() === '') return null;
-  const text = (key: 'pre_bake' | 'post_bake' | 'notes' | 'comments') => {
-    const v = raw[key];
-    return v === undefined || v === null ? '' : typeof v === 'string' ? v : undefined;
-  };
-  const pre = text('pre_bake');
-  const post = text('post_bake');
-  const notes = text('notes');
-  const comments = text('comments');
-  if (pre === undefined || post === undefined || notes === undefined || comments === undefined) return null;
-  if (!(rating === null || rating === undefined || isRating(rating))) return null;
-  if (!isInstant(created) || !isInstant(updated)) return null;
-  // §13.2: missing or null is no photo; anything else must be a safe file name.
-  if (!(photo === undefined || photo === null || isPhotoName(photo))) return null;
-  // APP-14: missing or null is a pizza; anything but a boolean is malformed.
-  if (!(dessert === undefined || dessert === null || typeof dessert === 'boolean')) return null;
-  const unknown = Object.fromEntries(Object.entries(raw).filter(([key]) => !IDEA_KEYS.has(key)));
-  return {
-    ...unknown,
-    id,
-    name,
-    pre_bake: pre,
-    post_bake: post,
-    notes,
-    comments,
-    rating: rating ?? null,
-    photo: photo ?? null,
-    dessert: dessert ?? false,
-    created,
-    updated,
-  };
-}
-
-/** §13.2's fields: every key `parseIdea` reads. */
-const IDEA_KEYS: ReadonlySet<string> = new Set([
-  'id',
-  'name',
-  'pre_bake',
-  'post_bake',
-  'notes',
-  'comments',
-  'rating',
-  'photo',
-  'dessert',
-  'created',
-  'updated',
-]);
 
 /** What the shared sync needs to know about an idea. */
 export const TOPPING_KIND: RecordKind<ToppingIdea> = {

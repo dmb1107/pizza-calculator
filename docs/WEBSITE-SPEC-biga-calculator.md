@@ -23,7 +23,7 @@ The user enters batch size, their measured temperatures, and how long they want 
 
 ## 2. Tech constraints
 
-- **Static, with one small Worker.** The page is static assets served by a Cloudflare Worker, with no build-time data fetching. The Worker signs a device in and passes the sync's requests to GitHub (§14); the sync is the one network call the page makes.
+- **Static, with one small Worker.** The page is static assets served by a Cloudflare Worker, with no build-time data fetching. The Worker signs a device in and passes the sync's requests to GitHub (§14), and builds the public portfolio from the same repository (§15); the sync is the one network call the page makes.
 - **Recommended stack:** Vite + React + TypeScript + Tailwind. Use something else if you have a strong reason, but it must build to static assets.
 - **The page is served from the domain's root**, so `base` in `vite.config.ts` is `'/'`. ⚠️ Until MESSAGE-75 it was on GitHub Pages under `/pizza-calculator/`.
 - A push to `main` builds the page and deploys it with the Worker (§14).
@@ -1738,6 +1738,7 @@ Link these from an About page. The recipe draws on these published sources.
 10. Bake log.
 11. The tabs (§13.1), then the topping ideas: their lists and editor first, the sync second (§13.2, §13.3).
 12. The move to Cloudflare and the passkey sign-in (§14).
+13. The portfolio (§15).
 
 **Ask before deviating on any number.** The formulas were derived and cross-checked; a plausible-looking simplification will produce a wrong answer that won't be obvious until 50 hours later.
 
@@ -1775,7 +1776,7 @@ APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in A
 
 ### 13.2 Topping ideas
 
-**Each idea has a name, pre-bake toppings, post-bake toppings, notes, comments, a rating, a photo, and whether it's a dessert pizza.**
+**Each idea has a name, pre-bake toppings, post-bake toppings, notes, comments, a rating, a photo, whether it's a dessert pizza, and whether it's hidden from the portfolio.**
 
 | Field | Kind | Rule |
 |---|---|---|
@@ -1788,6 +1789,7 @@ APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in A
 | `rating` | number or `null` | 1 to 5 in steps of 0.5; `null` is untested |
 | `photo` | text or `null` | names the idea's photo file (§13.3) and changes with each new photo (APP-8, Dave, 11 Nov 2026); `null` or missing is no photo |
 | `dessert` | true or false | true lists the idea under Dessert pizzas (APP-14, Dave, 12 Nov 2026); false or missing is a pizza, so every idea saved before APP-14 is a pizza |
+| `portfolio` | `follow`, `hidden` or `shown` | the **Hide from portfolio** switch (§15.2, APP-11, Dave, 12 Nov 2026); `null` or missing is `follow`, so every idea saved before APP-11 follows its rating |
 | `created`, `updated` | ISO time | set by the app |
 
 **An idea with no rating is untested** (Dave, 9 Nov 2026), and needs only a name, so a half-formed idea can be written down (Dave, 10 Nov 2026). Rating it moves it up into its section, and needs its pre-bake toppings: the app asks for them rather than saving a rated idea without them. Clearing the rating moves it back down.
@@ -1882,3 +1884,45 @@ Once the move works, Dave deletes the old home-screen icon and clears Safari's w
 - The field that asks for the setup code: **Setup code**.
 
 **No engine, formula, step content or FF changes.** Nothing in §1–§13's calculations reads the sign-in.
+
+---
+
+## 15. The portfolio
+
+APP-11 (Dave's calls, 12 Nov 2026). A page anyone can open, with no sign-in, showing Dave's pizzas: a grid of photos with each pizza's name, and a page for each pizza with its toppings and Dave's rating. It is separate from the event menus (APP-9).
+
+### 15.1 What it shows
+
+**At `https://pizza.dave-becker.com/portfolio`** (11e), from the same Worker as the app (§14), with no sign-in.
+
+**Every idea that is rated, has a photo, and isn't hidden** (11a, 11b, 11d). An untested idea, an idea without a photo and a hidden one are left out. So is an idea whose photo hasn't synced yet, until it has.
+
+**Pizzas first, then dessert pizzas** (Dave, 12 Nov 2026), with no heading between them. Each kind lists best first: the highest rating first, and ideas with the same rating most recently updated first, as in §13.2's rated sections. The grid shows no rating, so the order is the only sign of it.
+
+**The grid**: each pizza is its photo, square, with its name under it on the same card. Two to a row on a phone, three from 640 px, four from 1024 px. The look is the third of three drawn directions, Dave's pick (12 Nov 2026): white print frames around the photos, names in heavy capitals, a thick rule under the title, and an orange accent. Light and dark follow the device.
+
+**A pizza** (11c): tapping one opens its own page, at `/portfolio/{id}`, with the photo, the name, the rating as five stars labelled **Dave's rating**, then **Pre-bake** and **Post-bake**, the second left out when empty. Screen readers hear the rating as "Rated 4.5 of 5". The toppings are Markdown, rendered as on the Toppings tab: bullets, bold, links (which open in a new tab), and a single line break kept as one. **All pizzas** goes back to the grid, at that pizza. From 768 px the photo and the toppings sit side by side.
+
+**Nothing private leaves the Worker** (11c): not the notes, the comments, the dates, the dessert flag or the switch, and not a hidden idea or its photo. A photo is served only when a listed pizza names it.
+
+**Link previews** (11e): the grid's link shows **Dave's pizzas**, **Neo-Neapolitan style** and the first pizza's photo, which is never a dessert pizza's unless there are only dessert pizzas; a pizza's link shows its name, its pre-bake toppings on one line, and its photo.
+
+### 15.2 The switch
+
+**Hide from portfolio** is a switch on each idea, in the editor under the rating (11d, Dave, 12 Nov 2026). Until Dave sets it, it follows the rating: on below 3, off from 3, and off for an untested idea. Once he sets it, his choice holds whatever the rating does. It is stored as `portfolio` (§13.2): `follow`, then `hidden` or `shown` once set. The editor shows only the switch's position, and like every other field a change takes effect on Save.
+
+### 15.3 How the Worker serves it
+
+**The Worker builds each page as plain HTML with no script**, so a link preview reads the same page a person sees. The pages load nothing from elsewhere, and nothing on them reaches the sign-in or the sync.
+
+**It reads GitHub with its own token** (§14.2), one request for every idea's file and the photo folder's listing, and never writes. It reuses what it read for a minute, so an idea saved on a phone shows on the portfolio within a minute of its sync. While GitHub can't be read it shows the last ideas it read, up to a week old; with none, it says so. Each photo is read once and kept, since a photo's file never changes under its name (§13.3).
+
+**Rendered copy** (the calculator agent words the rest under the writing rules):
+- The title: **Dave's pizzas**, with **Neo-Neapolitan style** beside it (Dave, 12 Nov 2026).
+- A pizza: **Dave's rating**, **Pre-bake**, **Post-bake**, and **All pizzas** to go back.
+- Nothing to list: **No pizzas here yet.**
+- An address that names no listed pizza: **That pizza isn't in the portfolio.**
+- GitHub unreadable, with nothing read before: **The pizzas couldn't be loaded. Try again in a minute.**
+- The switch: **Hide from portfolio**, with **On for a rating below 3 until you set it.** under it.
+
+**No engine, formula, step content or FF changes.** Nothing in §1–§14's calculations reads the portfolio.

@@ -37,6 +37,12 @@ export interface ToppingIdea {
    * with each new photo (APP-8): `photoName`. Null is no photo.
    */
   photo: string | null;
+  /**
+   * The "Hide from portfolio" switch (§15, APP-11, 11d). `follow` until Dave
+   * sets the switch himself: hidden below `PORTFOLIO_HIDE_BELOW`, shown from
+   * it. An idea saved before APP-11 has none, and reads as `follow`.
+   */
+  portfolio: PortfolioChoice;
   /** ISO instants, set by the app. */
   created: string;
   updated: string;
@@ -45,7 +51,7 @@ export interface ToppingIdea {
 /** What the editor holds before Save. */
 export type IdeaDraft = Pick<
   ToppingIdea,
-  'name' | 'pre_bake' | 'post_bake' | 'notes' | 'comments' | 'rating' | 'photo' | 'dessert'
+  'name' | 'pre_bake' | 'post_bake' | 'notes' | 'comments' | 'rating' | 'photo' | 'dessert' | 'portfolio'
 >;
 
 export const EMPTY_DRAFT: IdeaDraft = {
@@ -57,6 +63,7 @@ export const EMPTY_DRAFT: IdeaDraft = {
   rating: null,
   photo: null,
   dessert: false,
+  portfolio: 'follow',
 };
 
 /** §13.2: 1 to 5 in steps of 0.5. */
@@ -73,6 +80,29 @@ export const RATINGS: readonly number[] = Array.from(
 /** A rating §13.2 allows. Anything else is not a rating, so not an untested idea either. */
 export function isRating(v: unknown): v is number {
   return typeof v === 'number' && RATINGS.includes(v);
+}
+
+/**
+ * §15 (APP-11, 11d): whether the idea is left out of the portfolio. `follow`
+ * hides it below this rating and shows it from it; `hidden` and `shown` are
+ * Dave's own setting, which holds whatever the rating does.
+ */
+export type PortfolioChoice = 'follow' | 'hidden' | 'shown';
+export const PORTFOLIO_HIDE_BELOW = 3;
+
+export function isPortfolioChoice(v: unknown): v is PortfolioChoice {
+  return v === 'follow' || v === 'hidden' || v === 'shown';
+}
+
+/** The switch's position: on is hidden. An untested idea's rating is no rating, so `follow` leaves it off. */
+export function hiddenFromPortfolio(idea: Pick<ToppingIdea, 'rating' | 'portfolio'>): boolean {
+  if (idea.portfolio !== 'follow') return idea.portfolio === 'hidden';
+  return idea.rating !== null && idea.rating < PORTFOLIO_HIDE_BELOW;
+}
+
+/** §15: rated, with a photo, and not hidden (11a, 11b, 11d). */
+export function inPortfolio(idea: Pick<ToppingIdea, 'rating' | 'photo' | 'portfolio'>): boolean {
+  return idea.rating !== null && idea.photo !== null && !hiddenFromPortfolio(idea);
 }
 
 const blank = (text: string) => text.trim() === '';
@@ -114,6 +144,7 @@ export function savedIdea(draft: IdeaDraft, previous: ToppingIdea | null, id: st
     rating: draft.rating,
     photo: draft.photo,
     dessert: draft.dessert,
+    portfolio: draft.portfolio,
     created: previous?.created ?? iso,
     updated: iso,
   };
@@ -121,8 +152,8 @@ export function savedIdea(draft: IdeaDraft, previous: ToppingIdea | null, id: st
 
 /** The editor's draft for a saved idea. */
 export function draftOf(idea: ToppingIdea): IdeaDraft {
-  const { name, pre_bake, post_bake, notes, comments, rating, photo, dessert } = idea;
-  return { name, pre_bake, post_bake, notes, comments, rating, photo, dessert };
+  const { name, pre_bake, post_bake, notes, comments, rating, photo, dessert, portfolio } = idea;
+  return { name, pre_bake, post_bake, notes, comments, rating, photo, dessert, portfolio };
 }
 
 /** A photo name: file-name safe, as an id is. */
@@ -205,3 +236,79 @@ export function remoteIsNewer(remote: ToppingIdea, local: ToppingIdea): boolean 
 export function starParts(rating: number): { full: number; half: boolean } {
   return { full: Math.floor(rating), half: rating % 1 !== 0 };
 }
+
+// ---------------------------------------------------------------------------
+// Reading an idea (§13.3)
+// ---------------------------------------------------------------------------
+
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+const isInstant = (v: unknown): v is string => typeof v === 'string' && !Number.isNaN(Date.parse(v));
+
+/**
+ * An idea as stored, or null if any part of it is malformed. A text field
+ * left out reads as empty; one that isn't text, a rating §13.2 doesn't allow
+ * or a missing date is malformed. A rated idea without pre-bake toppings is
+ * read as it is: the editor asks for them, and a reader shouldn't hide an
+ * idea for it.
+ *
+ * Keys this build doesn't know are kept, so a device on this build that saves
+ * an idea doesn't strip a field a later build added (the way an APP-6 bundle
+ * drops `comments`).
+ */
+export function parseIdea(raw: unknown): ToppingIdea | null {
+  if (!isRecord(raw)) return null;
+  const { id, name, rating, created, updated, photo, dessert, portfolio } = raw;
+  // The id is a file name in the repository.
+  if (typeof id !== 'string' || !/^[\w-]+$/.test(id)) return null;
+  if (typeof name !== 'string' || name.trim() === '') return null;
+  const text = (key: 'pre_bake' | 'post_bake' | 'notes' | 'comments') => {
+    const v = raw[key];
+    return v === undefined || v === null ? '' : typeof v === 'string' ? v : undefined;
+  };
+  const pre = text('pre_bake');
+  const post = text('post_bake');
+  const notes = text('notes');
+  const comments = text('comments');
+  if (pre === undefined || post === undefined || notes === undefined || comments === undefined) return null;
+  if (!(rating === null || rating === undefined || isRating(rating))) return null;
+  if (!isInstant(created) || !isInstant(updated)) return null;
+  // §13.2: missing or null is no photo; anything else must be a safe file name.
+  if (!(photo === undefined || photo === null || isPhotoName(photo))) return null;
+  // APP-14: missing or null is a pizza; anything but a boolean is malformed.
+  if (!(dessert === undefined || dessert === null || typeof dessert === 'boolean')) return null;
+  // APP-11: missing or null follows the rating; anything else must be a choice.
+  if (!(portfolio === undefined || portfolio === null || isPortfolioChoice(portfolio))) return null;
+  const unknown = Object.fromEntries(Object.entries(raw).filter(([key]) => !IDEA_KEYS.has(key)));
+  return {
+    ...unknown,
+    id,
+    name,
+    pre_bake: pre,
+    post_bake: post,
+    notes,
+    comments,
+    rating: rating ?? null,
+    photo: photo ?? null,
+    dessert: dessert ?? false,
+    portfolio: portfolio ?? 'follow',
+    created,
+    updated,
+  };
+}
+
+/** §13.2's fields: every key `parseIdea` reads. */
+const IDEA_KEYS: ReadonlySet<string> = new Set([
+  'id',
+  'name',
+  'pre_bake',
+  'post_bake',
+  'notes',
+  'comments',
+  'rating',
+  'photo',
+  'dessert',
+  'portfolio',
+  'created',
+  'updated',
+]);
