@@ -175,7 +175,7 @@ From FINDINGS-76 on, the work is split by kind, so that two agents don't
 pass every app feature back and forth through Dave.
 
 - **App features come from Dave directly**, as GitHub issues labelled
-  `backlog` and `app` (APP-14, then APP-11, APP-9 and APP-12). The queue's
+  `backlog` and `app` (APP-14, then APP-11 and APP-12; APP-9 was dropped on 13 Nov 2026). The queue's
   order and the working rules are in issue **#60**; each item's decisions,
   with Dave's dates, are in its own issue's body. When an item is done,
   comment on it with the date and the result (the PRs, what passed), then

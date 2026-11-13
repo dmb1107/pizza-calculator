@@ -1890,7 +1890,7 @@ Once the move works, Dave deletes the old home-screen icon and clears Safari's w
 
 ## 15. The portfolio
 
-APP-11 (Dave's calls, 12 Nov 2026). A page anyone can open, with no sign-in, showing Dave's pizzas: a grid of photos with each pizza's name, and a page for each pizza with its toppings and Dave's rating. It is separate from the event menus (APP-9).
+APP-11 (Dave's calls, 12 Nov 2026). A page anyone can open, with no sign-in, showing Dave's pizzas: a grid of photos with each pizza's name, and a page for each pizza with its toppings and Dave's rating.
 
 ### 15.1 What it shows
 
