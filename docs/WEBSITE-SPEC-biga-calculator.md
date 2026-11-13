@@ -1908,7 +1908,7 @@ APP-11 (Dave's calls, 12 Nov 2026). A page anyone can open, with no sign-in, sho
 
 **The grid**: each pizza is its photo, square, with its name under it on the same card. Two to a row on a phone, three from 640 px, four from 1024 px. The look is the third of three drawn directions, Dave's pick (12 Nov 2026): white print frames around the photos, names in heavy capitals, a thick rule under the title, and an orange accent. Light and dark follow the device.
 
-**A pizza** (11c): tapping one opens its own page, at `/portfolio/{id}`, with the photo, the name, the rating as five stars labelled **Dave's rating**, then **Pre-bake** and **Post-bake**, the second left out when empty. Screen readers hear the rating as "Rated 4.5 of 5". The toppings are Markdown, rendered as on the Toppings tab: bullets, bold, links (which open in a new tab), and a single line break kept as one. **All pizzas** goes back to the grid, at its top. From 768 px the photo and the toppings sit side by side.
+**A pizza** (11c): tapping one opens its own page, at `/portfolio/{id}`, with the photo, the name, the rating as five stars labelled **Dave's rating**, then **Pre-bake** and **Post-bake**, the second left out when empty. Screen readers hear the rating as "Rated 4.5 of 5". The toppings are Markdown, rendered as on the Toppings tab: bullets, bold, links (which open in a new tab), and a single line break kept as one. **All pizzas** goes back to the grid. When the visitor came from the grid, it takes them back to where they left it, as the browser's Back does, and the address is `/portfolio` again. When they opened the pizza any other way, it opens the grid at its top. From 768 px the photo and the toppings sit side by side.
 
 **Nothing private leaves the Worker** (11c): not the notes, the comments, the dates or the switch, and not a hidden idea or its photo. A photo, or its square copy, is served only when a listed pizza names it.
 
@@ -1920,7 +1920,7 @@ APP-11 (Dave's calls, 12 Nov 2026). A page anyone can open, with no sign-in, sho
 
 ### 15.3 How the Worker serves it
 
-**The Worker builds each page as plain HTML with no script**, so a link preview reads the same page a person sees. The pages load nothing from elsewhere, and nothing on them reaches the sign-in or the sync.
+**The Worker builds each page as HTML**, so a link preview reads the same page a person sees. The pages load nothing from elsewhere, and nothing on them reaches the sign-in or the sync.
 
 **It reads GitHub with its own token** (§14.2), one request for every idea's file and the photo folder's listing, and never writes. It reuses what it read for a minute. After that the next visitor gets the last ideas it read at once while it reads GitHub again, and the visitor after them sees the new read, so a visitor waits for GitHub only when nothing has been read before. While a photo loads, a spinner turns in its square, and the photo covers it once it arrives. While GitHub can't be read it shows the last ideas it read, up to a week old; with none, it says so. Each photo is read once and kept, since a photo's file never changes under its name (§13.3).
 

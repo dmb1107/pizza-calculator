@@ -1,6 +1,5 @@
 /**
- * Markdown to HTML for the portfolio (§15), on the server, where the page
- * runs no script.
+ * Markdown to HTML for the portfolio (§15), built on the server.
  *
  * The same parse as the app's renderer (`src/components/Markdown.tsx` with
  * `breaks`): GFM, and a single line break kept as one (§13.2). The HTML is

@@ -76,8 +76,9 @@ dessert pizzas after the rest under their own heading: a grid of
 photos with their names, and a page for each with its toppings and Dave's
 rating. Anyone can open it without signing in. Notes, comments and dates
 stay private, and each idea has a **Hide from portfolio** switch, on for a
-rating below 3 until Dave sets it. The Worker builds it as plain HTML, so a
-shared link previews the pizza's photo. A visitor gets the last copy it read
+rating below 3 until Dave sets it. The Worker builds it as HTML, so a
+shared link previews the pizza's photo. All pizzas returns to the grid where
+the visitor left it. A visitor gets the last copy it read
 at once while it reads GitHub again, and each photo square shows a spinner
 until its photo arrives.
 

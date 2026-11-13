@@ -2,7 +2,8 @@
  * APP-11's *Done when*, against the real Worker in workerd (`npm run
  * test:worker`): the portfolio (§15) built from the fake GitHub's ideas,
  * signed out, with only the listed pizzas, their pages and their photos,
- * no script and no console error (a blocked style or image would log one).
+ * All pizzas back to where the grid was left, and no console error (a
+ * blocked style, image or script would log one).
  *
  * Screenshots go to `APP11_SHOTS` when it is set.
  */
@@ -103,8 +104,29 @@ test('the portfolio lists the rated pizzas with photos, best first, and keeps th
   await page.getByRole('link', { name: 'All pizzas' }).click();
   await expect(page).toHaveURL(/\/portfolio$/);
 
+  // From the grid, All pizzas goes back in history: the grid where the
+  // visitor left it, at a clean address, with no entry added.
+  await page.setViewportSize({ width: 375, height: 320 });
+  const dessert = page.getByRole('link', { name: 'Tiramisu Pizza' });
+  await dessert.scrollIntoViewIfNeeded();
+  const left = await page.evaluate(() => scrollY);
+  expect(left).toBeGreaterThan(0);
+  await dessert.click();
+  await expect(page).toHaveURL(/\/portfolio\/tiramisu$/);
+  const entries = await page.evaluate(() => history.length);
+  await page.getByRole('link', { name: 'All pizzas' }).click();
+  await expect(page).toHaveURL(/\/portfolio$/);
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(left);
+  expect(await page.evaluate(() => history.length)).toBe(entries);
+  await page.setViewportSize({ width: 375, height: 812 });
+
+  // Opened any other way, All pizzas is a plain link to the grid's top.
   await page.goto('/portfolio/tiramisu');
   await expect(page.getByRole('heading', { name: 'Post-bake' })).toHaveCount(0);
+  const before = await page.evaluate(() => history.length);
+  await page.getByRole('link', { name: 'All pizzas' }).click();
+  await expect(page).toHaveURL(/\/portfolio$/);
+  expect(await page.evaluate(() => [scrollY, history.length])).toEqual([0, before + 1]);
 
   // Hidden and below-3 ideas: no page and no photo, though both are in the repository.
   for (const id of ['secret', 'potato', 'untested']) {

@@ -7,6 +7,7 @@
  * with a clock the tests move.
  */
 
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { PORTFOLIO_FIELDS, portfolioPizzas, toppingsLine } from '../src/lib/portfolio';
@@ -24,13 +25,14 @@ import { escapeHtml, markdownToHtml } from '../worker/markdownHtml';
 import {
   BLOB_MAX_AGE_S,
   COPY,
+  BACK_SCRIPT,
   GRID_PREVIEW,
-  PAGE_CSP,
   PHOTO_MAX_AGE_S,
   SNAPSHOT_KEY,
   SNAPSHOT_MAX_AGE_S,
   handlePortfolio,
   isPortfolioPath,
+  pageCsp,
   type PortfolioCache,
   type PortfolioDeps,
 } from '../worker/portfolio';
@@ -412,17 +414,25 @@ describe('§15 what leaves the Worker', () => {
     }
   });
 
-  it('runs no script and loads nothing from elsewhere', async () => {
+  it('runs only the All pizzas script, by its hash, and loads nothing from elsewhere', async () => {
     const h = harness(PIZZAS, SYNCED);
-    for (const path of ['/portfolio', '/portfolio/margherita', '/portfolio/nothing']) {
+    const hash = createHash('sha256').update(BACK_SCRIPT).digest('base64');
+    const csp = await pageCsp();
+    expect(csp).toContain("default-src 'none'");
+    expect(csp).toContain(`script-src 'sha256-${hash}';`);
+    for (const [path, scripts] of [
+      ['/portfolio', 0],
+      ['/portfolio/margherita', 1],
+      ['/portfolio/nothing', 1],
+    ] as const) {
       const res = await h.get(path);
-      expect(res.headers.get('Content-Security-Policy'), path).toBe(PAGE_CSP);
+      expect(res.headers.get('Content-Security-Policy'), path).toBe(csp);
       const page = await res.text();
-      expect(page, path).not.toContain('<script');
+      const found = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+      expect(found, path).toEqual(Array(scripts).fill(BACK_SCRIPT));
+      expect(page.match(/<script/g) ?? [], path).toHaveLength(scripts);
       for (const [, src] of page.matchAll(/(?:src|href)="([^"]*)"/g)) expect(src, path).toMatch(/^\//);
     }
-    expect(PAGE_CSP).toContain("default-src 'none'");
-    expect(PAGE_CSP).not.toContain('script-src');
   });
 
   it('asks GitHub with the token, for this repository, and never writes', async () => {

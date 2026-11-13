@@ -3,8 +3,9 @@
  *
  * A public page at `/portfolio`, with no sign-in: Dave's rated pizzas that
  * have a photo, as a grid, and a page for each at `/portfolio/{id}`. The
- * Worker builds them as plain HTML with no script, so a link preview reads
- * the same page a person does, and each pizza's link previews its own photo.
+ * Worker builds them as HTML, so a link preview reads the same page a person
+ * does, and each pizza's link previews its own photo. The one script is
+ * `BACK_SCRIPT`, on pages with All pizzas, allowed by its hash.
  *
  * What leaves: the fields `portfolioPizzas` keeps (name, pre-bake,
  * post-bake, rating, photo, id) of the ideas it lists, and their photos.
@@ -280,9 +281,33 @@ export const COPY = {
   unavailable: "The pizzas couldn't be loaded. Try again in a minute.",
 } as const;
 
-/** No script, nothing from elsewhere: images from this address, and the page's own styles. */
-export const PAGE_CSP =
-  "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+/**
+ * All pizzas goes back in history when the visitor came from the grid, so
+ * the browser returns them to the grid where they left it and the address
+ * stays `/portfolio`. Opened from anywhere else (a shared link, a new tab),
+ * or with a modifier key, it stays the plain link to the grid's top.
+ */
+export const BACK_SCRIPT =
+  "document.querySelector('a.back').addEventListener('click',function(e){" +
+  'if(e.button||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey||history.length<2)return;' +
+  'var r;try{r=new URL(document.referrer)}catch(_){return}' +
+  "if(r.origin!==location.origin||r.pathname!=='/portfolio')return;" +
+  'e.preventDefault();history.back()})';
+
+let csp: Promise<string> | undefined;
+
+/**
+ * Nothing from elsewhere: images from this address, the page's own styles,
+ * and `BACK_SCRIPT` alone, by its SHA-256. Derived from the script on first
+ * use, since a Worker can't hash at module load.
+ */
+export function pageCsp(): Promise<string> {
+  csp ??= crypto.subtle.digest('SHA-256', new TextEncoder().encode(BACK_SCRIPT)).then((digest) => {
+    const hash = btoa(String.fromCharCode(...new Uint8Array(digest)));
+    return `default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; script-src 'sha256-${hash}'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`;
+  });
+  return csp;
+}
 
 const STYLE = `
 :root{color-scheme:light dark;--bg:#e9e6e1;--ink:#151311;--muted:#5d5751;--frame:#fff;--accent:#c2410c;--star:#c2410c;
@@ -416,7 +441,8 @@ ${body}
 }
 
 const masthead = `<header><h1 class="title">${escapeHtml("Dave's")}<br><em>pizzas</em></h1><p class="sub">${escapeHtml(COPY.subtitle)}</p></header>`;
-const backBar = (to: string) => `<nav class="bar"><a class="back" href="${escapeHtml(to)}">${BACK_ICON}${escapeHtml(COPY.back)}</a></nav>`;
+const backBar = (to: string) =>
+  `<nav class="bar"><a class="back" href="${escapeHtml(to)}">${BACK_ICON}${escapeHtml(COPY.back)}</a></nav><script>${BACK_SCRIPT}</script>`;
 
 const tile = (s: Snapshot, p: PortfolioPizza, eager: boolean) =>
   `<li id="${p.id}"><a class="tile" href="/portfolio/${p.id}">` +
@@ -478,13 +504,13 @@ function messagePage(text: string, withBack: boolean): string {
 // The routes
 // ---------------------------------------------------------------------------
 
-function html(request: Request, status: number, body: string, maxAgeS: number | null): Response {
+async function html(request: Request, status: number, body: string, maxAgeS: number | null): Promise<Response> {
   return new Response(request.method === 'HEAD' ? null : body, {
     status,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': maxAgeS === null ? 'no-store' : `public, max-age=${maxAgeS}`,
-      'Content-Security-Policy': PAGE_CSP,
+      'Content-Security-Policy': await pageCsp(),
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'same-origin',
     },
