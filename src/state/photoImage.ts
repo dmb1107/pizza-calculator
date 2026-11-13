@@ -9,7 +9,15 @@
  * show, HEIC included where the system can.
  */
 
-import { PHOTO_JPEG_QUALITY, PHOTO_MAX_EDGE, THUMB_EDGE, fitWithin, sha256Hex } from '../lib/photos';
+import {
+  EXIF_READ_BYTES,
+  PHOTO_JPEG_QUALITY,
+  PHOTO_MAX_EDGE,
+  THUMB_EDGE,
+  fitWithin,
+  photoTakenFromExif,
+  sha256Hex,
+} from '../lib/photos';
 
 export interface ShrunkPhoto {
   blob: Blob;
@@ -17,6 +25,8 @@ export interface ShrunkPhoto {
   height: number;
   /** Lowercase hex SHA-256 of the JPEG, for its name. */
   sha256: string;
+  /** The camera's date from the original file, or null when it has none (§13.2 `photo_taken`). */
+  taken: string | null;
 }
 
 /** Thrown when a file can't be opened as a photo (§13.2's message). */
@@ -66,11 +76,12 @@ function toJpeg(img: HTMLImageElement, maxEdge: number): Promise<{ blob: Blob; w
 
 /** The JPEG for a picked file. Throws `NotAPhotoError` for anything that isn't one. */
 export async function shrinkPhoto(file: Blob): Promise<ShrunkPhoto> {
+  const taken = photoTakenFromExif(new Uint8Array(await file.slice(0, EXIF_READ_BYTES).arrayBuffer()));
   const img = await decode(file);
   const out = await toJpeg(img, PHOTO_MAX_EDGE);
   img.src = '';
   const sha256 = await sha256Hex(new Uint8Array(await out.blob.arrayBuffer()));
-  return { ...out, sha256 };
+  return { ...out, sha256, taken };
 }
 
 /** The closed card's thumbnail for a stored photo. */

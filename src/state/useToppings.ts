@@ -9,7 +9,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { newIdeaId, photoName, savedIdea, type IdeaDraft, type ToppingIdea } from '../lib/toppings';
+import { newIdeaId, photoName, photoTakenOnSave, savedIdea, type IdeaDraft, type ToppingIdea } from '../lib/toppings';
 import { browserPhotoStore, photoOfKey, thumbKey, type PhotoStore } from './photoStore';
 import type { FetchLike, SyncState } from './repoSync';
 import { browserStorage } from './storage';
@@ -46,6 +46,8 @@ export interface NewPhoto {
   blob: Blob;
   /** Hex SHA-256 of the JPEG. */
   sha256: string;
+  /** The camera's date, or null when the file had none: Save then uses its own time. */
+  taken: string | null;
 }
 
 /** Four characters that keep two devices' ideas apart when saved in the same second. */
@@ -97,7 +99,8 @@ export function useToppings(signedIn: boolean, onSignedOut: () => void): Topping
         // The file before the idea that names it, here as in the repository.
         void photos.put(photo, newPhoto.blob);
       }
-      const idea = savedIdea({ ...draft, photo }, previous, ideaId, at);
+      const photo_taken = photoTakenOnSave(draft, photo, newPhoto ?? null, at);
+      const idea = savedIdea({ ...draft, photo, photo_taken }, previous, ideaId, at);
       if (previous && previous.photo !== idea.photo) dropLocalPhoto(previous.photo);
       setStore((prev) => upsertIdea(prev, idea));
       return idea;

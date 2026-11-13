@@ -710,7 +710,15 @@ write it, so a copy that loses to `keepRemote` uploads nothing);
 every named photo this device lacks through the **git blobs API**, which
 answers JSON at any size where the contents API stops filling `content` at
 1 MB. The bake log passes neither hook. A change in the editor waits for
-Save; Remove doesn't ask. **Photos show square** (Dave, 11 Nov, mid-round:
+Save; Remove doesn't ask. **`photo_taken` orders ideas within a rating** (Dave, 12 Nov 2026):
+newest photo first, undated after, then `updated` (`testedIdeas`, so the
+Toppings tab and the portfolio agree). Local time to the minute, never
+shown, no editor field (Dave's call). A new photo takes the camera's date
+from the original file's EXIF (`photoTakenFromExif`, read in `shrinkPhoto`
+before the redraw drops every tag), or Save's time (`photoTakenOnSave`).
+The 34 photos uploaded before it were dated by matching them against
+Dave's album export and writing the dates into the repository.
+**Photos show square** (Dave, 11 Nov, mid-round:
 a pizza is round), `object-cover` in a square box, on the card and in the
 editor; the stored JPEG keeps its frame.
 
@@ -760,7 +768,9 @@ with no sign-in. The rules are `src/lib/portfolio.ts` and the switch in
 `toppings.ts`: rated, with a photo the repository holds, and not
 `hiddenFromPortfolio` (`portfolio` is `follow`, `hidden` or `shown`;
 `follow` hides below `PORTFOLIO_HIDE_BELOW`, 3). `portfolioPizzas` keeps
-`PORTFOLIO_FIELDS` and nothing else, and only those reach the cache; a photo
+`PORTFOLIO_FIELDS` and nothing else (`dessert` among them, since the grid
+puts dessert pizzas under their own heading), and only those reach the
+cache, under a key versioned with the fields (`SNAPSHOT_KEY`); a photo
 is served only when a listed pizza names it. **The pages are HTML from the
 Worker with no script** (`PAGE_CSP` has no `script-src`), so link previews
 read them. Markdown goes through `worker/markdownHtml.ts`: the app's parse

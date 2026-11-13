@@ -62,3 +62,72 @@ export async function sha256Hex(bytes: Uint8Array): Promise<string> {
   const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes as BufferSource);
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
 }
+
+/**
+ * The camera's date in a photo file's EXIF, as `photo_taken` holds it
+ * (`2026-11-08T19:02`), or null when the file has none. Reads the original
+ * file, before the app shrinks it, since the redraw drops every tag.
+ *
+ * Finds the EXIF block by its `Exif\0\0` marker and TIFF header, so it reads
+ * a JPEG's APP1 segment and a HEIC's Exif item alike. Takes the time the
+ * photo was taken (DateTimeOriginal), then when it was digitized, then the
+ * file's own date. The time is the camera's local time.
+ */
+export function photoTakenFromExif(bytes: Uint8Array): string | null {
+  const at = exifStart(bytes);
+  if (at < 0) return null;
+  const view = new DataView(bytes.buffer, bytes.byteOffset + at, bytes.byteLength - at);
+  const little = view.getUint8(0) === 0x49;
+  const u16 = (o: number) => view.getUint16(o, little);
+  const u32 = (o: number) => view.getUint32(o, little);
+  const fits = (o: number, n: number) => o >= 0 && o + n <= view.byteLength;
+
+  const entries = (ifd: number): Map<number, number> => {
+    const found = new Map<number, number>();
+    if (!fits(ifd, 2)) return found;
+    const count = u16(ifd);
+    for (let k = 0; k < count; k++) {
+      const e = ifd + 2 + 12 * k;
+      if (!fits(e, 12)) break;
+      found.set(u16(e), e);
+    }
+    return found;
+  };
+  const text = (entry: number | undefined): string | null => {
+    if (entry === undefined || u16(entry + 2) !== 2) return null;
+    const n = u32(entry + 4);
+    const o = n <= 4 ? entry + 8 : u32(entry + 8);
+    if (!fits(o, n)) return null;
+    let s = '';
+    for (let i = 0; i < n; i++) {
+      const c = view.getUint8(o + i);
+      if (c === 0) break;
+      s += String.fromCharCode(c);
+    }
+    return s;
+  };
+
+  if (!fits(4, 4)) return null;
+  const ifd0 = entries(u32(4));
+  const exifIfd = ifd0.has(0x8769) ? entries(u32(ifd0.get(0x8769)! + 8)) : new Map<number, number>();
+  for (const value of [text(exifIfd.get(0x9003)), text(exifIfd.get(0x9004)), text(ifd0.get(0x132))]) {
+    const m = value && /^(\d{4}):(\d{2}):(\d{2})[ T](\d{2}):(\d{2})/.exec(value);
+    if (m && m[1] !== '0000') return `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}`;
+  }
+  return null;
+}
+
+/** Where the TIFF header after an `Exif\0\0` marker starts, or -1. */
+function exifStart(b: Uint8Array): number {
+  for (let i = 0; i + 10 <= b.length; i++) {
+    if (b[i] !== 0x45 || b[i + 1] !== 0x78 || b[i + 2] !== 0x69 || b[i + 3] !== 0x66 || b[i + 4] !== 0 || b[i + 5] !== 0) continue;
+    const t = i + 6;
+    const ii = b[t] === 0x49 && b[t + 1] === 0x49 && b[t + 2] === 0x2a && b[t + 3] === 0;
+    const mm = b[t] === 0x4d && b[t + 1] === 0x4d && b[t + 2] === 0 && b[t + 3] === 0x2a;
+    if (ii || mm) return t;
+  }
+  return -1;
+}
+
+/** How much of a picked file is read for its EXIF: a JPEG's sits at the start, a HEIC's within the first few hundred KB. */
+export const EXIF_READ_BYTES = 512 * 1024;

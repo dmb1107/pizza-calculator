@@ -3,8 +3,9 @@
  * order, and the only fields it may show. Pure, so the Worker (which builds
  * the page) and the tests read the same rules.
  *
- * Nothing private leaves through this: notes, comments, dates, the dessert
- * flag and the switch itself stay behind (11c).
+ * Nothing private leaves through this: notes, comments, dates and the
+ * switch itself stay behind (11c). Whether a pizza is a dessert one goes,
+ * since the grid lists those under their own heading.
  */
 
 import { inPortfolio, testedIdeas, type ToppingIdea } from './toppings';
@@ -17,10 +18,19 @@ export interface PortfolioPizza {
   post_bake: string;
   rating: number;
   photo: string;
+  dessert: boolean;
 }
 
 /** Every key a `PortfolioPizza` has, for the tests that hold the page to it. */
-export const PORTFOLIO_FIELDS: readonly (keyof PortfolioPizza)[] = ['id', 'name', 'pre_bake', 'post_bake', 'rating', 'photo'];
+export const PORTFOLIO_FIELDS: readonly (keyof PortfolioPizza)[] = [
+  'id',
+  'name',
+  'pre_bake',
+  'post_bake',
+  'rating',
+  'photo',
+  'dessert',
+];
 
 /**
  * The pizzas the portfolio lists: the pizzas, then the dessert pizzas
@@ -39,6 +49,7 @@ export function portfolioPizzas(ideas: readonly ToppingIdea[], hasPhoto: (photo:
     post_bake: i.post_bake,
     rating: i.rating!,
     photo: i.photo!,
+    dessert: i.dessert,
   }));
 }
 

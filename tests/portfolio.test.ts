@@ -25,6 +25,7 @@ import {
   BLOB_MAX_AGE_S,
   COPY,
   PAGE_CSP,
+  SNAPSHOT_KEY,
   SNAPSHOT_MAX_AGE_S,
   handlePortfolio,
   isPortfolioPath,
@@ -49,6 +50,7 @@ function idea(id: string, overrides: Partial<ToppingIdea> = {}): ToppingIdea {
     photo: `${id}-0123456789ab`,
     dessert: false,
     portfolio: 'follow',
+    photo_taken: null,
     created: '2026-11-01T18:00:00.000Z',
     updated: '2026-11-01T18:00:00.000Z',
     ...overrides,
@@ -125,7 +127,7 @@ describe('§15 which pizzas, in what order (11a, 11b)', () => {
   it('keeps only the public fields (11c)', () => {
     const [pizza] = portfolioPizzas([idea('a')], () => true);
     expect(Object.keys(pizza!).sort()).toEqual([...PORTFOLIO_FIELDS].sort());
-    expect(JSON.stringify(pizza)).not.toMatch(/PRIVATE|created|updated|dessert|portfolio/);
+    expect(JSON.stringify(pizza)).not.toMatch(/PRIVATE|created|updated|portfolio/);
   });
 
   it('makes a preview line from the pre-bake bullets', () => {
@@ -265,6 +267,24 @@ describe('§15 the grid', () => {
     expect(page).toContain(`<meta property="og:url" content="${ORIGIN}/portfolio">`);
   });
 
+  it('puts the dessert pizzas under their own heading, after the pizzas', async () => {
+    const page = await (await harness(PIZZAS, SYNCED).get('/portfolio')).text();
+    const heading = `<h2 class="kind">${COPY.desserts}</h2>`;
+    expect(page.split(heading)).toHaveLength(2);
+    const [before, after] = page.split(heading);
+    expect(before).toContain('href="/portfolio/chili-dog"');
+    expect(before).not.toContain('href="/portfolio/tiramisu"');
+    expect(after).toContain('href="/portfolio/tiramisu"');
+    expect(after).not.toContain('href="/portfolio/margherita"');
+  });
+
+  it('shows no dessert heading unless both kinds are listed', async () => {
+    const onlyPizzas = await (await harness([idea('a'), idea('b')]).get('/portfolio')).text();
+    const onlyDesserts = await (await harness([idea('a', { dessert: true })]).get('/portfolio')).text();
+    for (const page of [onlyPizzas, onlyDesserts]) expect(page).not.toContain('class="kind"');
+    expect(onlyDesserts).toContain('href="/portfolio/a"');
+  });
+
   it('says so when nothing qualifies', async () => {
     const page = await (await harness([idea('low', { rating: 1 })]).get('/portfolio')).text();
     expect(page).toContain(COPY.empty);
@@ -312,11 +332,11 @@ describe('§15 what leaves the Worker', () => {
     const h = harness(PIZZAS, SYNCED);
     for (const path of ['/portfolio', '/portfolio/margherita', '/portfolio/chili-dog', '/portfolio/tiramisu', '/portfolio/hidden']) {
       const page = await (await h.get(path)).text();
-      const leak = page.match(/PRIVATE|2026-11-01|Secret Pizza|"dessert"|portfolio":/);
+      const leak = page.match(/PRIVATE|2026-11-01|Secret Pizza|portfolio":/);
       expect(leak?.[0], path).toBeUndefined();
     }
     // The cache holds only the listed fields too.
-    const cached = new TextDecoder().decode(h.entries.get('snapshot')!.bytes);
+    const cached = new TextDecoder().decode(h.entries.get(SNAPSHOT_KEY)!.bytes);
     expect(cached).not.toMatch(/PRIVATE|2026-11-01|Secret|Potato/);
   });
 

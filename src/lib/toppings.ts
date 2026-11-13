@@ -43,6 +43,14 @@ export interface ToppingIdea {
    * it. An idea saved before APP-11 has none, and reads as `follow`.
    */
   portfolio: PortfolioChoice;
+  /**
+   * When the photo was taken, local time to the minute (`2026-11-08T19:02`),
+   * for the order within a rating (Dave, 12 Nov 2026). Set with each new
+   * photo: the camera's date when the file carries one, otherwise when the
+   * photo was added. Null with no photo, or for a photo whose date isn't known.
+   * Never shown.
+   */
+  photo_taken: string | null;
   /** ISO instants, set by the app. */
   created: string;
   updated: string;
@@ -51,7 +59,16 @@ export interface ToppingIdea {
 /** What the editor holds before Save. */
 export type IdeaDraft = Pick<
   ToppingIdea,
-  'name' | 'pre_bake' | 'post_bake' | 'notes' | 'comments' | 'rating' | 'photo' | 'dessert' | 'portfolio'
+  | 'name'
+  | 'pre_bake'
+  | 'post_bake'
+  | 'notes'
+  | 'comments'
+  | 'rating'
+  | 'photo'
+  | 'dessert'
+  | 'portfolio'
+  | 'photo_taken'
 >;
 
 export const EMPTY_DRAFT: IdeaDraft = {
@@ -64,6 +81,7 @@ export const EMPTY_DRAFT: IdeaDraft = {
   photo: null,
   dessert: false,
   portfolio: 'follow',
+  photo_taken: null,
 };
 
 /** §13.2: 1 to 5 in steps of 0.5. */
@@ -145,6 +163,7 @@ export function savedIdea(draft: IdeaDraft, previous: ToppingIdea | null, id: st
     photo: draft.photo,
     dessert: draft.dessert,
     portfolio: draft.portfolio,
+    photo_taken: draft.photo_taken,
     created: previous?.created ?? iso,
     updated: iso,
   };
@@ -152,8 +171,8 @@ export function savedIdea(draft: IdeaDraft, previous: ToppingIdea | null, id: st
 
 /** The editor's draft for a saved idea. */
 export function draftOf(idea: ToppingIdea): IdeaDraft {
-  const { name, pre_bake, post_bake, notes, comments, rating, photo, dessert, portfolio } = idea;
-  return { name, pre_bake, post_bake, notes, comments, rating, photo, dessert, portfolio };
+  const { name, pre_bake, post_bake, notes, comments, rating, photo, dessert, portfolio, photo_taken } = idea;
+  return { name, pre_bake, post_bake, notes, comments, rating, photo, dessert, portfolio, photo_taken };
 }
 
 /** A photo name: file-name safe, as an id is. */
@@ -182,11 +201,52 @@ export function newIdeaId(at: Date, suffix: string): string {
 
 const time = (iso: string) => Date.parse(iso);
 
-/** §13.2 *Tested*: the rated ideas, highest rating first; ties, most recently updated first. */
+/** A `photo_taken` value: local date and time to the minute. */
+export function isPhotoTaken(v: unknown): v is string {
+  return typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v);
+}
+
+/** Local date and time to the minute, as `photo_taken` holds it. */
+export function localMinute(at: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}T${pad(at.getHours())}:${pad(at.getMinutes())}`;
+}
+
+/**
+ * The `photo_taken` an idea saves with. A new photo brings its camera date,
+ * or the time it was saved when the file had none; no photo, no date; an
+ * unchanged photo keeps the date it had.
+ */
+export function photoTakenOnSave(
+  draft: Pick<IdeaDraft, 'photo_taken'>,
+  photo: string | null,
+  newPhoto: { taken: string | null } | null,
+  at: Date,
+): string | null {
+  if (newPhoto) return newPhoto.taken ?? localMinute(at);
+  return photo === null ? null : draft.photo_taken;
+}
+
+/** Newer photo first; an idea with no photo date after every dated one. */
+function byPhotoTaken(a: ToppingIdea, b: ToppingIdea): number {
+  if (a.photo_taken === b.photo_taken) return 0;
+  if (a.photo_taken === null) return 1;
+  if (b.photo_taken === null) return -1;
+  return a.photo_taken < b.photo_taken ? 1 : -1;
+}
+
+/**
+ * §13.2 *Tested*: the rated ideas, highest rating first; then the newest
+ * photo first (Dave, 12 Nov 2026), ideas without a photo date after the
+ * dated ones; then the most recently updated first.
+ */
 export function testedIdeas(ideas: readonly ToppingIdea[]): ToppingIdea[] {
   return ideas
     .filter((i) => i.rating !== null)
-    .sort((a, b) => b.rating! - a.rating! || time(b.updated) - time(a.updated) || (a.id < b.id ? 1 : -1));
+    .sort(
+      (a, b) =>
+        b.rating! - a.rating! || byPhotoTaken(a, b) || time(b.updated) - time(a.updated) || (a.id < b.id ? 1 : -1),
+    );
 }
 
 /** §13.2 *Untested*: the unrated ideas, newest first. */
@@ -258,7 +318,7 @@ const isInstant = (v: unknown): v is string => typeof v === 'string' && !Number.
  */
 export function parseIdea(raw: unknown): ToppingIdea | null {
   if (!isRecord(raw)) return null;
-  const { id, name, rating, created, updated, photo, dessert, portfolio } = raw;
+  const { id, name, rating, created, updated, photo, dessert, portfolio, photo_taken } = raw;
   // The id is a file name in the repository.
   if (typeof id !== 'string' || !/^[\w-]+$/.test(id)) return null;
   if (typeof name !== 'string' || name.trim() === '') return null;
@@ -279,6 +339,8 @@ export function parseIdea(raw: unknown): ToppingIdea | null {
   if (!(dessert === undefined || dessert === null || typeof dessert === 'boolean')) return null;
   // APP-11: missing or null follows the rating; anything else must be a choice.
   if (!(portfolio === undefined || portfolio === null || isPortfolioChoice(portfolio))) return null;
+  // Missing or null is a date not known; anything else must be one.
+  if (!(photo_taken === undefined || photo_taken === null || isPhotoTaken(photo_taken))) return null;
   const unknown = Object.fromEntries(Object.entries(raw).filter(([key]) => !IDEA_KEYS.has(key)));
   return {
     ...unknown,
@@ -292,6 +354,7 @@ export function parseIdea(raw: unknown): ToppingIdea | null {
     photo: photo ?? null,
     dessert: dessert ?? false,
     portfolio: portfolio ?? 'follow',
+    photo_taken: photo_taken ?? null,
     created,
     updated,
   };
@@ -309,6 +372,7 @@ const IDEA_KEYS: ReadonlySet<string> = new Set([
   'photo',
   'dessert',
   'portfolio',
+  'photo_taken',
   'created',
   'updated',
 ]);

@@ -76,6 +76,7 @@ test('the portfolio lists the rated pizzas with photos, best first, and keeps th
   await expect(page).toHaveTitle("Dave's pizzas");
   const tiles = page.locator('a.tile');
   await expect(tiles).toHaveText(['Margherita Pizza', 'Rescued Pizza', 'Tiramisu Pizza']);
+  await expect(page.getByRole('heading', { level: 2, name: 'Dessert pizzas' })).toBeVisible();
   await expect(page.getByText('Neo-Neapolitan style')).toBeVisible();
   for (const img of await page.locator('a.tile img').all()) {
     await img.scrollIntoViewIfNeeded();
