@@ -1840,6 +1840,10 @@ The rated sections list the highest rating first. Ideas with the same rating go 
 
 **Each photo is a JPEG under `toppings/images/`**, named by its idea's `photo` field. The app shrinks it on the device before saving it, to about 1600 px on its long side, a few hundred KB where an iPhone original is several MB; the original never leaves the device. Each device keeps the photos it has fetched, and a small copy of each for the closed card, which isn't synced; it fetches a photo again only when an idea's `photo` changes. Signed out, the photos stay in this browser, in IndexedDB, since localStorage holds about 5 MB. Deleting an idea deletes its photo, and removing or replacing a photo deletes the old file.
 
+**Each photo has a square copy** (Dave, 13 Nov 2026): the centre of its frame, 600 px a side, beside it in `toppings/images/` under the photo's name followed by `.square.jpg`. The desktop gallery and the portfolio's grid show it, since both show photos square at a few hundred pixels wide, and the full photo is about three times the bytes. At each sync, a device that has a photo uploads its square copy if the repository lacks one, so a photo saved before square copies existed gets one too. Making or uploading a square copy never stops a sync; the grid shows the photo until the copy arrives. Deleting a photo deletes its square copy, and the next sync deletes a square copy whose photo is gone.
+
+**A sync reads up to six files at a time**, ideas and photos alike, and writes one at a time. Each read passes through the Worker to GitHub and takes about half a second, so a new device reading 42 ideas and 34 photos one at a time needed most of a minute (Dave, 13 Nov 2026).
+
 **The same local-first sync as the bake log.** Each device writes its own copy first and syncs after; changed and deleted ideas are tracked; the copy saved last wins, by `updated`, and on a tie the device syncing keeps its own. A deletion carries no time to compare, so between a deletion and an edit the device that syncs last wins: a deletion removes edits it hasn't seen, and an edit synced after a deletion it hasn't seen brings the idea back. The bake log's own rule (the device pushing last wins) is unchanged. Signed out, the ideas stay in this browser.
 
 **A photo follows its idea** (Dave, 11 Nov 2026): whichever copy of an idea wins, every device shows the photo that copy names.
@@ -1906,7 +1910,7 @@ APP-11 (Dave's calls, 12 Nov 2026). A page anyone can open, with no sign-in, sho
 
 **A pizza** (11c): tapping one opens its own page, at `/portfolio/{id}`, with the photo, the name, the rating as five stars labelled **Dave's rating**, then **Pre-bake** and **Post-bake**, the second left out when empty. Screen readers hear the rating as "Rated 4.5 of 5". The toppings are Markdown, rendered as on the Toppings tab: bullets, bold, links (which open in a new tab), and a single line break kept as one. **All pizzas** goes back to the grid, at its top. From 768 px the photo and the toppings sit side by side.
 
-**Nothing private leaves the Worker** (11c): not the notes, the comments, the dates or the switch, and not a hidden idea or its photo. A photo is served only when a listed pizza names it.
+**Nothing private leaves the Worker** (11c): not the notes, the comments, the dates or the switch, and not a hidden idea or its photo. A photo, or its square copy, is served only when a listed pizza names it.
 
 **Link previews** (11e): the grid's link shows **Dave's pizzas** and **Neo-Neapolitan style**, with an image of the title over the grid's first six pizzas in their print frames, 1200 × 630 (Dave, 12 Nov 2026); a pizza's link shows its name, its pre-bake toppings on one line, and its photo.
 
@@ -1919,6 +1923,8 @@ APP-11 (Dave's calls, 12 Nov 2026). A page anyone can open, with no sign-in, sho
 **The Worker builds each page as plain HTML with no script**, so a link preview reads the same page a person sees. The pages load nothing from elsewhere, and nothing on them reaches the sign-in or the sync.
 
 **It reads GitHub with its own token** (§14.2), one request for every idea's file and the photo folder's listing, and never writes. It reuses what it read for a minute. After that the next visitor gets the last ideas it read at once while it reads GitHub again, and the visitor after them sees the new read, so a visitor waits for GitHub only when nothing has been read before. While a photo loads, a spinner turns in its square, and the photo covers it once it arrives. While GitHub can't be read it shows the last ideas it read, up to a week old; with none, it says so. Each photo is read once and kept, since a photo's file never changes under its name (§13.3).
+
+**The grid shows each pizza's square copy** (§13.3), or its photo until the copy has synced; a pizza's own page and its link preview show the photo. A browser keeps a photo or a square copy for a year, since a new photo always has a new name, and a page for a minute.
 
 **The grid's preview image is made by hand**, from the live portfolio, by `scripts/portfolio-preview.py`, and ships with the page. It shows the pizzas that led the grid when it was made, so after a change to the first six it is made again and deployed. Messages keeps a preview it has already shown for a link, so a phone that has opened the link may need a while to show the new one.
 

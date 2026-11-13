@@ -4,7 +4,7 @@ import { useMediaQuery } from './useMediaQuery';
 // §13.2 (14c): the formatting editor loads only when an editor opens.
 const RichField = lazy(() => import('./RichField'));
 import { Markdown } from './Markdown';
-import { usePhotoThumb, usePhotoUrl } from './usePhoto';
+import { usePhotoSquareUrl, usePhotoThumb, usePhotoUrl } from './usePhoto';
 import { NotAPhotoError, shrinkPhoto } from '../state/photoImage';
 import type { PhotoStore } from '../state/photoStore';
 import { syncStatusText } from './BakeLog';
@@ -700,7 +700,7 @@ function GalleryTile({
 }
 
 function TilePhoto({ photos, name }: { photos: PhotoStore; name: string }) {
-  const url = usePhotoUrl(photos, name);
+  const url = usePhotoSquareUrl(photos, name);
   return url ? <img src={url} alt="" loading="lazy" decoding="async" className="block size-full object-cover" /> : null;
 }
 

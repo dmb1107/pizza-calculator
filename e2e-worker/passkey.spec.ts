@@ -171,9 +171,11 @@ test('a passkey made with the setup code; bakes, ideas and a photo through the W
   await chooser.setFiles({ name: 'pizza.jpg', mimeType: 'image/jpeg', buffer: await drawnJpeg(a.page) });
   await expect(form.getByRole('img', { name: 'Soppressata, hot honey' })).toBeVisible();
   await form.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect.poll(async () => (await github()).files.filter((f) => f.startsWith('toppings/')).length, { timeout: 15_000 }).toBe(2);
+  await expect.poll(async () => (await github()).files.filter((f) => f.startsWith('toppings/')).length, { timeout: 15_000 }).toBe(3);
   const gh = await github();
   expect(gh.files.some((f) => /^toppings\/images\/[\w-]+\.jpg$/.test(f))).toBe(true);
+  // The square copy (§13.3) passes the Worker's allow-list too.
+  expect(gh.files.some((f) => /^toppings\/images\/[\w-]+\.square\.jpg$/.test(f))).toBe(true);
   // Every request reached GitHub with the Worker's token and none of the page's cookies.
   for (const r of gh.log) {
     expect(r.auth).toBe('Bearer local-test-token');

@@ -125,6 +125,42 @@ export interface RepoFiles {
   blob(sha: string): Promise<string>;
 }
 
+/**
+ * How many reads a sync keeps in flight. Each passes through the Worker to
+ * GitHub, about half a second apiece, so a new device reading every idea and
+ * photo one at a time needed most of a minute. Writes stay one at a time:
+ * GitHub refuses a second commit to a branch while one is landing.
+ */
+export const READS_AT_ONCE = 6;
+
+/**
+ * `fn` over `items`, at most `limit` running at once, each result at its
+ * item's index. After a failure no new item starts, so every index past the
+ * first rejected one may be unset; a caller reads in order and stops there.
+ */
+export async function settleInPool<A, R>(
+  items: readonly A[],
+  fn: (item: A) => Promise<R>,
+  limit: number = READS_AT_ONCE,
+): Promise<PromiseSettledResult<R>[]> {
+  const out: PromiseSettledResult<R>[] = new Array<PromiseSettledResult<R>>(items.length);
+  let next = 0;
+  let failed = false;
+  const run = async () => {
+    while (!failed && next < items.length) {
+      const i = next++;
+      try {
+        out[i] = { status: 'fulfilled', value: await fn(items[i]!) };
+      } catch (reason) {
+        out[i] = { status: 'rejected', reason };
+        failed = true;
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, run));
+  return out;
+}
+
 /** UTF-8 safe base64, as the contents API wants it. */
 export function toBase64(text: string): string {
   const bytes = new TextEncoder().encode(text);
@@ -379,8 +415,11 @@ export async function syncRecords<T>(
     store = { ...store, shas: { ...store.shas, [id]: sha }, dirty: store.dirty.filter((x) => x !== id) };
   };
   try {
-    await client.checkRepo();
-    const remote = await client.list();
+    // Both at once; a missing repository is the error to report, whichever answers first.
+    const [repo, listed] = await Promise.allSettled([client.checkRepo(), client.list()]);
+    if (repo.status === 'rejected') throw repo.reason;
+    if (listed.status === 'rejected') throw listed.reason;
+    const remote = listed.value;
 
     for (const id of start.deleted) {
       const sha = remote.get(id);
@@ -413,9 +452,14 @@ export async function syncRecords<T>(
       settle(id, sha);
     }
 
-    for (const [id, sha] of remote) {
-      if (store.shas[id] === sha) continue;
-      const file = await client.get(id);
+    // Read several at a time, then applied in the listing's order: a failure
+    // keeps every record read before it, as reading one at a time did.
+    const toRead = [...remote].filter(([id, sha]) => store.shas[id] !== sha).map(([id]) => id);
+    const read = await settleInPool(toRead, (id) => client.get(id));
+    for (const [k, id] of toRead.entries()) {
+      const r = read[k]!;
+      if (r.status === 'rejected') throw r.reason;
+      const file = r.value;
       if (!file) continue;
       store = { ...store, shas: { ...store.shas, [id]: file.sha } };
       // A file that doesn't parse is left in the repository and not read.

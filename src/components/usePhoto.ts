@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { imageSize, makeThumb } from '../state/photoImage';
-import { photoOfKey, thumbKey, type PhotoStore } from '../state/photoStore';
+import { imageSize, makeSquare, makeThumb } from '../state/photoImage';
+import { keptSquare, photoOfKey, thumbKey, type PhotoStore } from '../state/photoStore';
 
 export interface ShownPhoto {
   url: string;
@@ -84,6 +84,42 @@ export function usePhotoUrl(photos: PhotoStore, name: string | null): string | n
       made = blob ? URL.createObjectURL(blob) : null;
       setUrl(made);
     });
+    return () => {
+      cancelled = true;
+      if (made) URL.revokeObjectURL(made);
+    };
+  }, [photos, name, version]);
+  return url;
+}
+
+/**
+ * §13.3: the photo's square copy, as a URL, for the desktop gallery's tile,
+ * made from the stored photo the first time it is wanted and kept. A tile is
+ * square and about 300 px wide, so decoding every full photo for the gallery
+ * cost memory and time for pixels nobody sees. Null while there is no photo
+ * here; the full photo if the copy can't be made.
+ */
+export function usePhotoSquareUrl(photos: PhotoStore, name: string | null): string | null {
+  const version = usePhotoVersion(photos, name);
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (name === null) {
+      setUrl(null);
+      return;
+    }
+    let cancelled = false;
+    let made: string | null = null;
+    void (async () => {
+      let blob: Blob | null;
+      try {
+        blob = await keptSquare(photos, name, makeSquare);
+      } catch {
+        blob = await photos.get(name);
+      }
+      if (cancelled) return;
+      made = blob ? URL.createObjectURL(blob) : null;
+      setUrl(made);
+    })();
     return () => {
       cancelled = true;
       if (made) URL.revokeObjectURL(made);

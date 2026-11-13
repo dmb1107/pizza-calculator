@@ -20,8 +20,40 @@ export const PHOTO_JPEG_QUALITY = 0.82;
  */
 export const THUMB_EDGE = 112;
 
+/**
+ * The square copy of each photo: the centre of its frame, 600 px a side.
+ * The desktop gallery and the portfolio's grid show photos square, in tiles
+ * about 300 px wide at most, so a 2x screen needs 600; the full photo is
+ * about three times the bytes (2.7 over eight of Dave's photos). Synced
+ * beside the photo, since the Worker has no canvas to make it.
+ */
+export const SQUARE_EDGE = 600;
+
 /** A photo's path in the repository. */
 export const photoPath = (name: string) => `${PHOTO_DIR}/${name}.jpg`;
+
+/** A photo's square copy's file name, and its path in the repository. */
+export const squareFile = (name: string) => `${name}.square.jpg`;
+export const squarePath = (name: string) => `${PHOTO_DIR}/${squareFile(name)}`;
+
+/** The photo a square copy's file belongs to, or null for anything else. */
+export function photoNameFromSquareFile(file: string): string | null {
+  const m = /^([\w-]+)\.square\.jpg$/.exec(file);
+  return m ? m[1]! : null;
+}
+
+/**
+ * The centre square of a `width` × `height` image, and the edge to draw it
+ * at: `maxEdge`, or the square's own side when that is smaller. Never enlarges.
+ */
+export function centreSquare(
+  width: number,
+  height: number,
+  maxEdge: number,
+): { sx: number; sy: number; side: number; edge: number } {
+  const side = Math.min(width, height);
+  return { sx: (width - side) / 2, sy: (height - side) / 2, side, edge: Math.max(1, Math.min(side, maxEdge)) };
+}
 
 /** The photo name a file in `toppings/images/` holds, or null for anything else. */
 export function photoNameFromFile(file: string): string | null {
@@ -59,7 +91,7 @@ export function base64ToBytes(b64: string): Uint8Array {
 
 /** Lowercase hex SHA-256 of some bytes. */
 export async function sha256Hex(bytes: Uint8Array): Promise<string> {
-  const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes as BufferSource);
+  const digest = await crypto.subtle.digest('SHA-256', bytes as BufferSource);
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 

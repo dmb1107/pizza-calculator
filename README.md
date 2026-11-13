@@ -101,7 +101,10 @@ served from Cloudflare at its own address, and devices sign in with a
 passkey instead of holding a GitHub token. APP-14 redesigned the Toppings
 tab: dessert pizzas, untested ideas at the bottom, a floating Add idea, a
 photo gallery from desktop width, and fields that format as you type.
-APP-11 adds the public portfolio (spec §15), opened from the Toppings tab. See
+APP-11 adds the public portfolio (spec §15), opened from the Toppings tab.
+Each photo now has a 600 px square copy, which the desktop gallery and the
+portfolio's grid show in place of the full photo, and a sync reads up to six
+files at a time. See
 [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
 ## Home screen icon

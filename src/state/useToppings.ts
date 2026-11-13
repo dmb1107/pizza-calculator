@@ -10,7 +10,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { newIdeaId, photoName, photoTakenOnSave, savedIdea, type IdeaDraft, type ToppingIdea } from '../lib/toppings';
-import { browserPhotoStore, photoOfKey, thumbKey, type PhotoStore } from './photoStore';
+import { makeSquare } from './photoImage';
+import { browserPhotoStore, photoOfKey, squareKey, thumbKey, type PhotoStore } from './photoStore';
 import type { FetchLike, SyncState } from './repoSync';
 import { browserStorage } from './storage';
 import {
@@ -83,6 +84,7 @@ export function useToppings(signedIn: boolean, onSignedOut: () => void): Topping
       if (name === null) return;
       void photos.delete(name);
       void photos.delete(thumbKey(name));
+      void photos.delete(squareKey(name));
     },
     [photos],
   );
@@ -135,7 +137,7 @@ export function useToppings(signedIn: boolean, onSignedOut: () => void): Topping
     setSync({ state: 'syncing' });
     const started = storeRef.current;
     const fetchFn: FetchLike = (url, init) => globalThis.fetch(url, init);
-    const { store: synced, error } = await syncToppings(started, fetchFn, photos);
+    const { store: synced, error } = await syncToppings(started, fetchFn, photos, new Date(), makeSquare);
     setStore((current) => mergeToppingsAfterSync(current, started, synced));
     // A photo another device replaced or removed: this device's copy goes too.
     void (async () => {

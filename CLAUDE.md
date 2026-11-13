@@ -709,7 +709,22 @@ write it, so a copy that loses to `keepRemote` uploads nothing);
 `upsertIdea` and `removeIdea`) unless an idea still names one, then fetches
 every named photo this device lacks through the **git blobs API**, which
 answers JSON at any size where the contents API stops filling `content` at
-1 MB. The bake log passes neither hook. A change in the editor waits for
+1 MB. The bake log passes neither hook. **A sync reads up to
+`READS_AT_ONCE` (6) at a time** (`settleInPool` in `repoSync.ts`): ideas
+are applied in listing order, stopping at the first failed read so what
+came before it is kept, and photos are fetched the same way. Writes stay
+one at a time, since GitHub refuses a second commit to a branch while one
+lands. **Each photo has a square copy** (§13.3, Dave, 13 Nov 2026),
+`{photo}.square.jpg` beside it, the centre of its frame at `SQUARE_EDGE`
+600: the desktop gallery shows it (`usePhotoSquareUrl`, kept on the device
+under `~square`), and so does the portfolio's grid, since the Worker has no
+canvas to make it. `afterSync` uploads the copy for any named photo the
+repository has without one, made from this device's photo (`keptSquare`),
+which is also how the photos from before it got theirs; it deletes a square
+whose photo is gone; and a square that fails to make or upload never fails
+the sync. `makeSquare` is `syncToppings`' last argument, and a test that
+leaves it out makes none. Older bundles ignore the square files, since
+`photoNameFromFile` doesn't match the extra dot. A change in the editor waits for
 Save; Remove doesn't ask. **`photo_taken` orders ideas within a rating** (Dave, 12 Nov 2026):
 newest photo first, undated after, then `updated` (`testedIdeas`, so the
 Toppings tab and the portfolio agree). Local time to the minute, never
@@ -762,8 +777,9 @@ for the local run only. The page keeps one flag of its own
 one, and §10's *Kept* list keeps it through Reset.
 
 **The portfolio is public, so it is built to leak nothing** (§15, APP-11,
-#37). `/portfolio`, `/portfolio/{id}` and `/portfolio/photos/{photo}.jpg`
-run in the Worker entry (`worker/portfolio.ts`), never the Durable Object,
+#37). `/portfolio`, `/portfolio/{id}`, `/portfolio/photos/{photo}.jpg`
+and `/portfolio/squares/{photo}.jpg` (the grid's image, §13.3's square
+copy, falling back to the photo until it has synced) run in the Worker entry (`worker/portfolio.ts`), never the Durable Object,
 with no sign-in. The rules are `src/lib/portfolio.ts` and the switch in
 `toppings.ts`: rated, with a photo the repository holds, and not
 `hiddenFromPortfolio` (`portfolio` is `follow`, `hidden` or `shown`;
@@ -771,7 +787,9 @@ with no sign-in. The rules are `src/lib/portfolio.ts` and the switch in
 `PORTFOLIO_FIELDS` and nothing else (`dessert` among them, since the grid
 puts dessert pizzas under their own heading), and only those reach the
 cache, under a key versioned with the fields (`SNAPSHOT_KEY`); a photo
-is served only when a listed pizza names it. **The pages are HTML from the
+or its square copy is served only when a listed pizza names it. A browser
+keeps either for a year, `immutable` (`PHOTO_MAX_AGE_S`), since a photo's
+name changes with its content. **The pages are HTML from the
 Worker with no script** (`PAGE_CSP` has no `script-src`), so link previews
 read them. Markdown goes through `worker/markdownHtml.ts`: the app's parse
 (GFM, `remarkLineBreaks`), then an allow-list serializer that is the

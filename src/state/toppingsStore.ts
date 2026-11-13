@@ -19,12 +19,22 @@
  * doesn't parse is dropped here and left in the repository.
  */
 
-import { PHOTO_DIR, base64ToBytes, bytesToBase64, photoPath } from '../lib/photos';
+import {
+  PHOTO_DIR,
+  base64ToBytes,
+  bytesToBase64,
+  photoNameFromFile,
+  photoNameFromSquareFile,
+  photoPath,
+  squareFile,
+  squarePath,
+} from '../lib/photos';
 import { isPhotoName, parseIdea, remoteIsNewer, type ToppingIdea } from '../lib/toppings';
-import { memoryPhotoStore, type PhotoStore } from './photoStore';
+import { keptSquare, memoryPhotoStore, type PhotoStore, type SquareMaker } from './photoStore';
 import {
   mergeRecordsAfterSync,
   removeRecord,
+  settleInPool,
   syncRecords,
   upsertRecord,
   type FetchLike,
@@ -139,13 +149,23 @@ export function removeIdea(store: ToppingStore, id: string): ToppingStore {
  *
  * - **before an idea is written**, its photo is uploaded if the repository
  *   hasn't got it, so no device reads an idea naming a missing file;
- * - **after the ideas have synced**, the photos queued for deletion go, unless
- *   an idea still names one (the copy that won may name the old photo:
- *   "a photo follows its idea"), and every named photo this device hasn't
- *   got is fetched. A device fetches a photo once: its name changes with
- *   each new photo, so a stored one is never stale.
+ * - **after the ideas have synced**, the photos queued for deletion go, with
+ *   their square copies, unless an idea still names one (the copy that won
+ *   may name the old photo: "a photo follows its idea"); a square copy whose
+ *   photo is gone goes too; every named photo this device hasn't got is
+ *   fetched, several at a time; and each named photo the repository has
+ *   without its square copy gets one, made here from this device's photo.
+ *   A device fetches a photo once: its name changes with each new photo, so
+ *   a stored one is never stale.
+ *
+ * The square copies are for the portfolio's grid, which falls back to the
+ * full photo, so making or uploading one never fails the sync. Without
+ * `makeSquare` (the tests that don't need it) none is made.
  */
-function photoHooks(photos: PhotoStore): Pick<RecordKind<ToppingIdea>, 'beforePut' | 'afterSync'> {
+function photoHooks(
+  photos: PhotoStore,
+  makeSquare: SquareMaker | undefined,
+): Pick<RecordKind<ToppingIdea>, 'beforePut' | 'afterSync'> {
   let listing: Map<string, string> | null = null;
   const remote = async (files: RepoFiles) => (listing ??= await files.listFiles(PHOTO_DIR));
   const fileOf = (name: string) => `${name}.jpg`;
@@ -182,12 +202,41 @@ function photoHooks(photos: PhotoStore): Pick<RecordKind<ToppingIdea>, 'beforePu
         }
         deletedPhotos = deletedPhotos.filter((n) => n !== name);
       }
+
+      // A square copy left by a photo deleted here or on another device.
+      const photosThere = new Set([...r.keys()].flatMap((f) => photoNameFromFile(f) ?? []));
+      for (const [file, sha] of [...r]) {
+        const name = photoNameFromSquareFile(file);
+        if (name === null || photosThere.has(name) || named.has(name)) continue;
+        await files.removeFile(squarePath(name), sha, `Delete topping photo ${name} (square)`);
+        r.delete(file);
+      }
+
+      const missing: { name: string; sha: string }[] = [];
       for (const name of named) {
-        if (await photos.get(name)) continue;
         const sha = r.get(fileOf(name));
-        if (!sha) continue;
+        if (sha && !(await photos.get(name))) missing.push({ name, sha });
+      }
+      const fetched = await settleInPool(missing, async ({ name, sha }) => {
         const bytes = base64ToBytes(await files.blob(sha));
         await photos.put(name, new Blob([bytes as BlobPart], { type: 'image/jpeg' }));
+      });
+      const failed = fetched.find((f) => f?.status === 'rejected');
+      if (failed?.status === 'rejected') throw failed.reason;
+
+      if (makeSquare) {
+        for (const name of named) {
+          if (!r.has(fileOf(name)) || r.has(squareFile(name))) continue;
+          try {
+            const square = await keptSquare(photos, name, makeSquare);
+            if (!square) continue;
+            const base64 = bytesToBase64(new Uint8Array(await square.arrayBuffer()));
+            const sha = await files.createFile(squarePath(name), base64, `Save topping photo ${name} (square)`);
+            if (sha) r.set(squareFile(name), sha);
+          } catch {
+            // The grid shows the full photo until a later sync uploads one.
+          }
+        }
       }
       return { ...store, deletedPhotos } satisfies ToppingStore;
     },
@@ -199,8 +248,9 @@ export async function syncToppings(
   fetchFn: FetchLike,
   photos: PhotoStore = memoryPhotoStore(),
   now: Date = new Date(),
+  makeSquare?: SquareMaker,
 ): Promise<{ store: ToppingStore; error?: RecordSyncResult<ToppingIdea>['error'] }> {
-  const kind: RecordKind<ToppingIdea> = { ...TOPPING_KIND, ...photoHooks(photos) };
+  const kind: RecordKind<ToppingIdea> = { ...TOPPING_KIND, ...photoHooks(photos, makeSquare) };
   const { store, error } = await syncRecords(kind, start, fetchFn, now);
   // The record sync carries every field of the store it was given, deletedPhotos included.
   return { store: store as ToppingStore, ...(error ? { error } : {}) };

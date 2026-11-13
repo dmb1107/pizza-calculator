@@ -3,8 +3,11 @@
  * by an idea's `photo` name. IndexedDB, on every device, signed in or not: a
  * photo is a few hundred KB and localStorage holds about 5 MB in all.
  *
- * Two kinds of entry: the photo itself under its name, and the closed card's
- * thumbnail under `thumbKey(name)`, made here from the photo and never synced.
+ * Three kinds of entry: the photo itself under its name, the closed card's
+ * thumbnail under `thumbKey(name)`, and the gallery's square copy under
+ * `squareKey(name)`. The last two are made here from the photo; the thumbnail
+ * is never synced, and the square copy is uploaded beside the photo for the
+ * portfolio (§13.3).
  */
 
 export interface PhotoStore {
@@ -19,8 +22,28 @@ export interface PhotoStore {
 /** The thumbnail's key for a photo name. `~` can't occur in a photo name. */
 export const thumbKey = (name: string) => `${name}~thumb`;
 
-/** The photo name an entry belongs to, thumbnail or not. */
-export const photoOfKey = (key: string) => (key.endsWith('~thumb') ? key.slice(0, -'~thumb'.length) : key);
+/** The square copy's key for a photo name. */
+export const squareKey = (name: string) => `${name}~square`;
+
+/** The photo name an entry belongs to: the photo, its thumbnail or its square copy. */
+export const photoOfKey = (key: string) => key.replace(/~(?:thumb|square)$/, '');
+
+/** Makes a photo's square copy (`makeSquare` in the browser). */
+export type SquareMaker = (photo: Blob) => Promise<Blob>;
+
+/**
+ * A photo's square copy on this device: the kept one, or made from the photo
+ * and kept the first time it's wanted. Null while the photo isn't here.
+ */
+export async function keptSquare(photos: PhotoStore, name: string, make: SquareMaker): Promise<Blob | null> {
+  const kept = await photos.get(squareKey(name));
+  if (kept) return kept;
+  const full = await photos.get(name);
+  if (!full) return null;
+  const square = await make(full);
+  await photos.put(squareKey(name), square);
+  return square;
+}
 
 function listeners() {
   const set = new Set<(key: string) => void>();
