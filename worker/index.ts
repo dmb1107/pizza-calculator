@@ -69,7 +69,7 @@ function edgeCache(origin: string): PortfolioCache {
 }
 
 export default {
-  async fetch(request, env): Promise<Response> {
+  async fetch(request, env, ctx): Promise<Response> {
     const { pathname, origin } = new URL(request.url);
     if (isPortfolioPath(pathname)) {
       return handlePortfolio(request, {
@@ -79,6 +79,7 @@ export default {
         repo: env.GITHUB_REPO,
         githubApi: env.GITHUB_API || undefined,
         cache: edgeCache(origin),
+        waitUntil: (work) => ctx.waitUntil(work),
       });
     }
     if (pathname === '/api' || pathname.startsWith('/api/')) {

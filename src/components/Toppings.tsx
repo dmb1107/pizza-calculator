@@ -597,6 +597,53 @@ function IdeaCard({
 /** §13.2 (APP-14, 14b): from this width the ideas are a photo gallery with a panel at the right. */
 export const GALLERY_QUERY = '(min-width: 1024px)';
 
+const spinner = (
+  <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5 animate-spin motion-reduce:animate-none" fill="none">
+    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+    <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+  </svg>
+);
+
+const openIcon = (
+  <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+  </svg>
+);
+
+/**
+ * The Pizzas heading's line: the heading with the sync indicator beside it,
+ * and the public portfolio (§15) at the right, opening in a new tab so a
+ * home-screen app keeps its place. The link's 48 px target reaches above
+ * and below the line without making it taller.
+ */
+function PizzasHeading({ syncing }: { syncing: boolean }) {
+  return (
+    <div className={`flex items-center justify-between gap-3 ${sectionHeadClass}`}>
+      <div className="flex items-center gap-2">
+        <h2 id="toppings-pizzas">Pizzas</h2>
+        <span role="status" className="text-stone-500 dark:text-stone-400">
+          {syncing && (
+            <>
+              {spinner}
+              <span className="sr-only">Syncing the ideas…</span>
+            </>
+          )}
+        </span>
+      </div>
+      <a
+        href="/portfolio"
+        target="_blank"
+        rel="noopener"
+        className="-my-3 inline-flex min-h-touch items-center gap-1.5 rounded-lg px-2 text-base font-semibold text-amber-800 hover:underline dark:text-amber-400"
+      >
+        Portfolio
+        {openIcon}
+        <span className="sr-only">(opens in a new tab)</span>
+      </a>
+    </div>
+  );
+}
+
 const plusIcon = (
   <svg aria-hidden="true" viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
     <path d="M12 5v14M5 12h14" />
@@ -830,6 +877,9 @@ export function ToppingsPage({ toppings, signedIn }: { toppings: ToppingsState; 
   const untestedCount = untested.pizzas.length + untested.desserts.length;
   const bothUntested = untested.pizzas.length > 0 && untested.desserts.length > 0;
   const editorOpen = adding || editingId !== null;
+  const syncing = signedIn && toppings.sync.state === 'syncing';
+  // A device's first sync: nothing here yet, so the lists wait for it rather than say they're empty.
+  const firstLoad = syncing && toppings.ideas.length === 0 && !toppings.store.lastSyncedAt;
 
   return (
     // The padding at the foot keeps the last idea clear of the floating button.
@@ -841,44 +891,55 @@ export function ToppingsPage({ toppings, signedIn }: { toppings: ToppingsState; 
       )}
 
       <section className="min-w-0" aria-labelledby="toppings-pizzas">
-        <h2 id="toppings-pizzas" className={sectionHeadClass}>
-          Pizzas
-        </h2>
-        {sections.pizzas.length ? list(sections.pizzas) : <p className={emptyClass}>Nothing rated yet.</p>}
-      </section>
-
-      <section className="min-w-0" aria-labelledby="toppings-desserts">
-        <h2 id="toppings-desserts" className={sectionHeadClass}>
-          Dessert pizzas
-        </h2>
-        {sections.desserts.length ? (
-          list(sections.desserts)
+        <PizzasHeading syncing={syncing} />
+        {firstLoad ? (
+          <p className="flex items-center justify-center gap-3 py-16 text-stone-600 dark:text-stone-400">
+            {spinner}
+            Loading the ideas…
+          </p>
+        ) : sections.pizzas.length ? (
+          list(sections.pizzas)
         ) : (
-          <p className={emptyClass}>{anyDessert ? 'Nothing rated yet.' : 'No dessert pizzas yet.'}</p>
+          <p className={emptyClass}>Nothing rated yet.</p>
         )}
       </section>
 
-      <section className="min-w-0" aria-labelledby="toppings-untested">
-        <h2 id="toppings-untested" className={sectionHeadClass}>
-          Untested
-        </h2>
-        {untestedCount === 0 ? (
-          <p className={emptyClass}>Nothing waiting to be tried.</p>
-        ) : bothUntested ? (
-          <div className="grid gap-6">
-            <div className="min-w-0">
-              <h3 className={subHeadClass}>Pizzas</h3>
-              {list(untested.pizzas)}
-            </div>
-            <div className="min-w-0">
-              <h3 className={subHeadClass}>Dessert pizzas</h3>
-              {list(untested.desserts)}
-            </div>
-          </div>
-        ) : (
-          list(untested.pizzas.length ? untested.pizzas : untested.desserts)
-        )}
-      </section>
+      {!firstLoad && (
+        <>
+          <section className="min-w-0" aria-labelledby="toppings-desserts">
+            <h2 id="toppings-desserts" className={sectionHeadClass}>
+              Dessert pizzas
+            </h2>
+            {sections.desserts.length ? (
+              list(sections.desserts)
+            ) : (
+              <p className={emptyClass}>{anyDessert ? 'Nothing rated yet.' : 'No dessert pizzas yet.'}</p>
+            )}
+          </section>
+
+          <section className="min-w-0" aria-labelledby="toppings-untested">
+            <h2 id="toppings-untested" className={sectionHeadClass}>
+              Untested
+            </h2>
+            {untestedCount === 0 ? (
+              <p className={emptyClass}>Nothing waiting to be tried.</p>
+            ) : bothUntested ? (
+              <div className="grid gap-6">
+                <div className="min-w-0">
+                  <h3 className={subHeadClass}>Pizzas</h3>
+                  {list(untested.pizzas)}
+                </div>
+                <div className="min-w-0">
+                  <h3 className={subHeadClass}>Dessert pizzas</h3>
+                  {list(untested.desserts)}
+                </div>
+              </div>
+            ) : (
+              list(untested.pizzas.length ? untested.pizzas : untested.desserts)
+            )}
+          </section>
+        </>
+      )}
 
       <p className="text-sm text-stone-600 dark:text-stone-400">
         {signedIn

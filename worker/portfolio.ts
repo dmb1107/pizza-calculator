@@ -46,6 +46,12 @@ export interface PortfolioDeps {
   /** Tests point this at a fake; production leaves it unset. */
   githubApi?: string | undefined;
   cache: PortfolioCache;
+  /**
+   * Keeps work running after the answer has gone (`ctx.waitUntil`). Given,
+   * a visitor past the minute gets the last good view at once and GitHub is
+   * read behind them; left out, the visitor waits for GitHub.
+   */
+  waitUntil?: ((work: Promise<unknown>) => void) | undefined;
 }
 
 /**
@@ -172,16 +178,32 @@ async function cachedSnapshot(deps: PortfolioDeps, key: string): Promise<Snapsho
   }
 }
 
-/** The view of the ideas: a minute old at most, or the last good one while GitHub can't be read. */
+async function refreshSnapshot(deps: PortfolioDeps): Promise<Snapshot> {
+  const read = await readSnapshot(deps);
+  const bytes = storedSnapshot(read);
+  await deps.cache.put(SNAPSHOT_KEY, bytes, SNAPSHOT_MAX_AGE_S);
+  await deps.cache.put(SNAPSHOT_LAST_GOOD_KEY, bytes, LAST_GOOD_MAX_AGE_S);
+  return read;
+}
+
+/**
+ * The view of the ideas: a minute old at most, or the last good one. Past
+ * the minute, with `waitUntil`, the last good view answers at once and the
+ * read from GitHub replaces it for the next visitor; only a cache holding
+ * neither waits for GitHub. A failed read behind the answer changes nothing.
+ */
 export async function snapshot(deps: PortfolioDeps): Promise<Snapshot> {
   const fresh = await cachedSnapshot(deps, SNAPSHOT_KEY);
   if (fresh) return fresh;
+  if (deps.waitUntil) {
+    const lastGood = await cachedSnapshot(deps, SNAPSHOT_LAST_GOOD_KEY);
+    if (lastGood) {
+      deps.waitUntil(refreshSnapshot(deps).catch(() => undefined));
+      return lastGood;
+    }
+  }
   try {
-    const read = await readSnapshot(deps);
-    const bytes = storedSnapshot(read);
-    await deps.cache.put(SNAPSHOT_KEY, bytes, SNAPSHOT_MAX_AGE_S);
-    await deps.cache.put(SNAPSHOT_LAST_GOOD_KEY, bytes, LAST_GOOD_MAX_AGE_S);
-    return read;
+    return await refreshSnapshot(deps);
   } catch (e) {
     const lastGood = e instanceof GitHubUnavailable ? await cachedSnapshot(deps, SNAPSHOT_LAST_GOOD_KEY) : null;
     if (lastGood) return lastGood;
@@ -262,7 +284,12 @@ h1.title em{font-style:normal;color:var(--accent)}
 @media (min-width:640px){.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}}
 @media (min-width:1024px){.grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:22px}}
 .tile{display:block;height:100%;background:var(--frame);padding:7px 7px 0;box-shadow:var(--shadow);border-radius:3px;text-decoration:none}
-.tile img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:1px;background:var(--bg)}
+.photo{position:relative;aspect-ratio:1;background:var(--bg);border-radius:1px}
+.photo::before{content:"";position:absolute;inset:0;margin:auto;width:28px;height:28px;border-radius:50%;
+  border:3px solid color-mix(in srgb,var(--muted) 30%,transparent);border-top-color:var(--accent);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.photo::before{animation-duration:2.4s}}
+.photo img{position:relative;width:100%;height:100%;object-fit:cover}
 .tile span{display:flex;align-items:center;min-height:3.4rem;padding:6px 3px 8px;font-weight:800;text-transform:uppercase;
   letter-spacing:.02em;font-size:.86rem;line-height:1.2;overflow-wrap:anywhere}
 .tile:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
@@ -275,7 +302,6 @@ h1.title em{font-style:normal;color:var(--accent)}
 .pizza{display:grid;gap:22px;max-width:30rem;margin:0 auto}
 @media (min-width:768px){.pizza{max-width:none;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:start;padding-top:8px}}
 .print{background:var(--frame);padding:10px 10px 18px;box-shadow:var(--shadow);border-radius:3px}
-.print img{width:100%;aspect-ratio:1;object-fit:cover;background:var(--bg)}
 .print h1{margin:14px 4px 6px;font-size:1.7rem;text-transform:uppercase;font-weight:900;line-height:1.05;letter-spacing:-.01em;overflow-wrap:anywhere}
 .rating{display:flex;align-items:center;gap:10px;margin:0 4px;font-weight:700;font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .stars{display:inline-flex;gap:2px}
@@ -370,7 +396,7 @@ const backBar = (to: string) => `<nav class="bar"><a class="back" href="${escape
 
 const tile = (p: PortfolioPizza, eager: boolean) =>
   `<li id="${p.id}"><a class="tile" href="/portfolio/${p.id}">` +
-  `<img src="${photoPath(p.photo)}" alt="" ${eager ? '' : 'loading="lazy" '}decoding="async">` +
+  `<div class="photo"><img src="${photoPath(p.photo)}" alt="" ${eager ? '' : 'loading="lazy" '}decoding="async"></div>` +
   `<span>${escapeHtml(p.name)}</span></a></li>`;
 
 const tileList = (pizzas: readonly PortfolioPizza[], eagerCount: number) =>
@@ -408,8 +434,8 @@ export function pizzaPage(p: PortfolioPizza, origin: string): string {
     .map(([heading, text]) => `<section class="sect"><h2>${escapeHtml(heading)}</h2>${markdownToHtml(text)}</section>`)
     .join('\n');
   const body =
-    backBar(`/portfolio#${p.id}`) +
-    `<article class="pizza"><div class="print"><img src="${photoPath(p.photo)}" alt="${escapeHtml(p.name)}">` +
+    backBar("/portfolio") +
+    `<article class="pizza"><div class="print"><div class="photo"><img src="${photoPath(p.photo)}" alt="${escapeHtml(p.name)}"></div>` +
     `<h1>${escapeHtml(p.name)}</h1><div class="rating">${starsHtml(p.rating)}<span>${escapeHtml(COPY.rating)}</span></div></div>` +
     `<div class="sects">${sections}</div></article>`;
   return pageDocument(`${p.name} · ${COPY.title}`, body, {
