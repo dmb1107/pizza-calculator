@@ -111,6 +111,13 @@ test('the portfolio lists the rated pizzas with photos, best first, and keeps th
     expect((await request.get(`/portfolio/${id}`)).status(), id).toBe(404);
     expect((await request.get(`/portfolio/photos/${id}-0123456789ab.jpg`)).status(), id).toBe(404);
   }
+  // The grid's link preview: a static image served with the page.
+  await page.goto('/portfolio');
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /\/portfolio-preview\.jpg$/);
+  const preview = await request.get('/portfolio-preview.jpg');
+  expect(preview.status()).toBe(200);
+  expect(preview.headers()['content-type']).toBe('image/jpeg');
+
   const photo = await request.get('/portfolio/photos/margherita-0123456789ab.jpg');
   expect(photo.status()).toBe(200);
   expect(photo.headers()['content-type']).toBe('image/jpeg');

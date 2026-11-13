@@ -1906,7 +1906,7 @@ APP-11 (Dave's calls, 12 Nov 2026). A page anyone can open, with no sign-in, sho
 
 **Nothing private leaves the Worker** (11c): not the notes, the comments, the dates or the switch, and not a hidden idea or its photo. A photo is served only when a listed pizza names it.
 
-**Link previews** (11e): the grid's link shows **Dave's pizzas**, **Neo-Neapolitan style** and the first pizza's photo, which is never a dessert pizza's unless there are only dessert pizzas; a pizza's link shows its name, its pre-bake toppings on one line, and its photo.
+**Link previews** (11e): the grid's link shows **Dave's pizzas** and **Neo-Neapolitan style**, with an image of the title over the grid's first six pizzas in their print frames, 1200 × 630 (Dave, 12 Nov 2026); a pizza's link shows its name, its pre-bake toppings on one line, and its photo.
 
 ### 15.2 The switch
 
@@ -1917,6 +1917,8 @@ APP-11 (Dave's calls, 12 Nov 2026). A page anyone can open, with no sign-in, sho
 **The Worker builds each page as plain HTML with no script**, so a link preview reads the same page a person sees. The pages load nothing from elsewhere, and nothing on them reaches the sign-in or the sync.
 
 **It reads GitHub with its own token** (§14.2), one request for every idea's file and the photo folder's listing, and never writes. It reuses what it read for a minute, so an idea saved on a phone shows on the portfolio within a minute of its sync. While GitHub can't be read it shows the last ideas it read, up to a week old; with none, it says so. Each photo is read once and kept, since a photo's file never changes under its name (§13.3).
+
+**The grid's preview image is made by hand**, from the live portfolio, by `scripts/portfolio-preview.py`, and ships with the page. It shows the pizzas that led the grid when it was made, so after a change to the first six it is made again and deployed. Messages keeps a preview it has already shown for a link, so a phone that has opened the link may need a while to show the new one.
 
 **Rendered copy** (the calculator agent words the rest under the writing rules):
 - The title: **Dave's pizzas**, with **Neo-Neapolitan style** beside it (Dave, 12 Nov 2026).

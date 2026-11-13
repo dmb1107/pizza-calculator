@@ -24,6 +24,7 @@ import { escapeHtml, markdownToHtml } from '../worker/markdownHtml';
 import {
   BLOB_MAX_AGE_S,
   COPY,
+  GRID_PREVIEW,
   PAGE_CSP,
   SNAPSHOT_KEY,
   SNAPSHOT_MAX_AGE_S,
@@ -258,13 +259,20 @@ describe('§15 the grid', () => {
     expect(page).toContain(`<img src="/portfolio/photos/margherita-0123456789ab.jpg"`);
   });
 
-  it('carries the copy, and a link preview with the best pizza as its image', async () => {
+  it('carries the copy, and a link preview with the title-and-grid image', async () => {
     const page = await (await harness(PIZZAS, SYNCED).get('/portfolio')).text();
     expect(page).toContain(`<title>${escapeHtml(COPY.title)}</title>`);
     expect(page).toContain(escapeHtml(COPY.subtitle));
     expect(page).toContain(`<meta property="og:title" content="${escapeHtml(COPY.title)}">`);
-    expect(page).toContain(`<meta property="og:image" content="${ORIGIN}/portfolio/photos/margherita-0123456789ab.jpg">`);
+    expect(page).toContain(`<meta property="og:image" content="${ORIGIN}${GRID_PREVIEW.path}">`);
+    expect(page).toContain(`<meta property="og:image:width" content="1200">`);
+    expect(page).toContain(`<meta property="og:image:height" content="630">`);
     expect(page).toContain(`<meta property="og:url" content="${ORIGIN}/portfolio">`);
+    // The image ships with the page, at the size the tags give.
+    const jpeg = readFileSync(`public${GRID_PREVIEW.path}`);
+    expect(jpeg.subarray(0, 3)).toEqual(Buffer.from([0xff, 0xd8, 0xff]));
+    const sof = jpeg.findIndex((b, i) => b === 0xff && (jpeg[i + 1] === 0xc0 || jpeg[i + 1] === 0xc2));
+    expect([jpeg.readUInt16BE(sof + 7), jpeg.readUInt16BE(sof + 5)]).toEqual([GRID_PREVIEW.width, GRID_PREVIEW.height]);
   });
 
   it('puts the dessert pizzas under their own heading, after the pizzas', async () => {
