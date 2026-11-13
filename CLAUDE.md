@@ -790,8 +790,13 @@ cache, under a key versioned with the fields (`SNAPSHOT_KEY`); a photo
 or its square copy is served only when a listed pizza names it. A browser
 keeps either for a year, `immutable` (`PHOTO_MAX_AGE_S`), since a photo's
 name changes with its content. **The pages are HTML from the
-Worker with no script** (`PAGE_CSP` has no `script-src`), so link previews
-read them. Markdown goes through `worker/markdownHtml.ts`: the app's parse
+Worker**, so link previews read them. **All pizzas goes back in history
+when the visitor came from the grid** (Dave, 13 Nov 2026), so the browser
+puts the grid back where they left it and the address stays `/portfolio`;
+a plain link to `/portfolio` opened a new page at the top. That is
+`BACK_SCRIPT`, the pages' one script, on every page with All pizzas, and
+`pageCsp()` allows it by a SHA-256 computed from it on first use (a Worker
+can't hash at module load). Markdown goes through `worker/markdownHtml.ts`: the app's parse
 (GFM, `remarkLineBreaks`), then an allow-list serializer that is the
 sanitizer, keeping http, https and mailto links only. GitHub is read in
 **one GraphQL query** (`SNAPSHOT_QUERY`: every file under `toppings/` with
