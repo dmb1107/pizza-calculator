@@ -29,8 +29,8 @@ Don't trust any status here that you can check instead (§7).
   built**: Dave picked a photo gallery from three desktop directions and a
   floating Add idea from four, moved untested ideas to the bottom, and
   removed Expand all (CLAUDE.md's "APP-14 laid the tab out again" has the
-  rules; the mocks are a private artifact linked from #36). Next: APP-11,
-  APP-9, APP-12.
+  rules; the mocks are a private artifact linked from #36). Next: APP-11, then
+  APP-12. APP-9 (event menus) was dropped on 13 Nov 2026.
 - **FINDINGS-76 is accepted.** APP-10 is done and #35 closed. Its four
   §14 sentences are in the spec, the setup code's limit stays at five
   wrong tries in ten minutes, and two pieces of copy changed ("The token on
