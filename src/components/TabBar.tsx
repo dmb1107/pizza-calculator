@@ -1,4 +1,4 @@
-import { useEffect, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import type { GroupTimerMark } from '../lib/stepGroups';
 import { TABS, type Tab } from '../lib/tabs';
 import { formatElapsed, timerPhaseLabel, type TimerPhase } from '../lib/timers';
@@ -31,17 +31,48 @@ function takesTyping(el: EventTarget | null): boolean {
 /** Whether a field that takes typing has focus. */
 export function useTypingFocus(): boolean {
   const [typing, setTyping] = useState(() => typeof document !== 'undefined' && takesTyping(document.activeElement));
+  // Chromium moves focus to a clicked button at the press. Showing the bar
+  // then would put it under the pointer before the release, and a button at
+  // the bottom of the screen would lose the click (#64). So while a press is
+  // down the bar stays hidden, and it comes back once the click has landed:
+  // after the release, on the next task.
+  const press = useRef({ down: false, pending: false });
+  const apply = useCallback((next: boolean) => {
+    if (!next && press.current.down) {
+      press.current.pending = true;
+      return;
+    }
+    press.current.pending = false;
+    setTyping(next);
+  }, []);
   useEffect(() => {
-    const onIn = (e: FocusEvent) => setTyping(takesTyping(e.target));
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onIn = (e: FocusEvent) => apply(takesTyping(e.target));
     // Focus moving between two fields keeps it hidden: the field gaining focus decides.
-    const onOut = (e: FocusEvent) => setTyping(takesTyping(e.relatedTarget));
+    const onOut = (e: FocusEvent) => apply(takesTyping(e.relatedTarget));
+    const onDown = () => {
+      press.current.down = true;
+    };
+    const onUp = () => {
+      press.current.down = false;
+      if (!press.current.pending) return;
+      clearTimeout(timer);
+      timer = setTimeout(() => apply(takesTyping(document.activeElement)));
+    };
     document.addEventListener('focusin', onIn);
     document.addEventListener('focusout', onOut);
+    document.addEventListener('pointerdown', onDown, true);
+    document.addEventListener('pointerup', onUp, true);
+    document.addEventListener('pointercancel', onUp, true);
     return () => {
+      clearTimeout(timer);
       document.removeEventListener('focusin', onIn);
       document.removeEventListener('focusout', onOut);
+      document.removeEventListener('pointerdown', onDown, true);
+      document.removeEventListener('pointerup', onUp, true);
+      document.removeEventListener('pointercancel', onUp, true);
     };
-  }, []);
+  }, [apply]);
   // A focused field removed from the page fires no blur in WebKit: Save on a
   // topping idea unmounts its editor with the field still focused (iOS keeps
   // it through the tap), and the bar stayed hidden. While a field has focus,
@@ -49,12 +80,12 @@ export function useTypingFocus(): boolean {
   useEffect(() => {
     if (!typing) return;
     const check = () => {
-      if (!takesTyping(document.activeElement)) setTyping(false);
+      if (!takesTyping(document.activeElement)) apply(false);
     };
     const observer = new MutationObserver(check);
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
-  }, [typing]);
+  }, [typing, apply]);
   return typing;
 }
 

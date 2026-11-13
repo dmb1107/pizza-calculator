@@ -48,17 +48,6 @@ const logPanel = (page: Page) => page.getByRole('tabpanel', { name: 'Bake log' }
 const openTab = (page: Page, name: string) => page.getByRole('tab', { name: name === 'Recipe' ? /^Recipe/ : name, exact: name !== 'Recipe' }).click();
 const button = (page: Page, name: string) => logPanel(page).getByRole('button', { name, exact: true });
 
-/**
- * Tap a button with a field focused. In Chromium a click moves focus off the
- * field, and the tab bar, hidden while typing, comes back at the bottom of
- * the screen between press and release; a button under it there loses the
- * click. iOS keeps focus in the field (FINDINGS-67), so a phone doesn't. The
- * button is brought to the middle of the screen first, as a thumb would.
- */
-async function press(target: Locator) {
-  await target.evaluate((e) => e.scrollIntoView({ block: 'center' }));
-  await target.click();
-}
 
 async function drawnJpeg(page: Page): Promise<Buffer> {
   const b64 = await page.evaluate(async () => {
@@ -143,11 +132,11 @@ test('a passkey made with the setup code; bakes, ideas and a photo through the W
   // A wrong setup code, then the right one.
   const code = logPanel(a.page).getByLabel('Setup code');
   await code.fill('wrong code');
-  await press(button(a.page, 'Create a passkey'));
+  await button(a.page, 'Create a passkey').click();
   await expect(logPanel(a.page).getByRole('status')).toHaveText("That setup code isn't right.");
   await code.fill(SETUP_CODE);
   await shot(a.page, 'worker-creating-a-passkey', button(a.page, 'Create a passkey'));
-  await press(button(a.page, 'Create a passkey'));
+  await button(a.page, 'Create a passkey').click();
   await expect(button(a.page, 'Sign out')).toBeVisible();
   const made = await a.cdp.send('WebAuthn.getCredentials', { authenticatorId: a.authenticatorId });
   expect(made.credentials).toHaveLength(1);
@@ -264,7 +253,7 @@ test('the running Worker refuses what the sync never sends, and none of it reach
 
   await openTab(d.page, 'Bake log');
   await logPanel(d.page).getByLabel('Setup code').fill(SETUP_CODE);
-  await press(button(d.page, 'Create a passkey'));
+  await button(d.page, 'Create a passkey').click();
   await expect(logPanel(d.page)).toContainText('Synced the log');
   await fetch(`${GITHUB}/__reset`, { method: 'POST' });
 
@@ -337,7 +326,7 @@ test('wrong setup codes are limited, the right one included, across fresh browse
   await d.page.goto('/');
   await openTab(d.page, 'Bake log');
   await logPanel(d.page).getByLabel('Setup code').fill(SETUP_CODE);
-  await press(button(d.page, 'Create a passkey'));
+  await button(d.page, 'Create a passkey').click();
   await expect(logPanel(d.page).getByRole('status')).toHaveText(/^Too many wrong setup codes\. Try again in \d+ minutes?\.$/);
   await expect(button(d.page, 'Sign in')).toBeVisible();
   await context.close();

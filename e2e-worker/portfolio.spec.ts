@@ -101,7 +101,7 @@ test('the portfolio lists the rated pizzas with photos, best first, and keeps th
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/app11-worker-pizza.png`, fullPage: true });
 
   await page.getByRole('link', { name: 'All pizzas' }).click();
-  await expect(page).toHaveURL(/\/portfolio#margherita$/);
+  await expect(page).toHaveURL(/\/portfolio$/);
 
   await page.goto('/portfolio/tiramisu');
   await expect(page.getByRole('heading', { name: 'Post-bake' })).toHaveCount(0);

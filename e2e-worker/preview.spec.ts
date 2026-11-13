@@ -10,7 +10,7 @@
  * It writes one idea with a photo, named PREVIEW_IDEA, to the repository the
  * preview reaches, reads it back from a second browser, and deletes both.
  */
-import { expect, test, type BrowserContext, type Locator, type Page } from '@playwright/test';
+import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
 const URL_ = process.env['PREVIEW_URL'] ?? '';
 const CODE = process.env['PREVIEW_SETUP_CODE'] ?? '';
@@ -39,10 +39,6 @@ async function device(context: BrowserContext) {
 const logPanel = (page: Page) => page.getByRole('tabpanel', { name: 'Bake log' });
 const openTab = (page: Page, name: string) => page.getByRole('tab', { name: name === 'Recipe' ? /^Recipe/ : name, exact: name !== 'Recipe' }).click();
 const button = (page: Page, name: string) => logPanel(page).getByRole('button', { name, exact: true });
-async function press(target: Locator) {
-  await target.evaluate((e) => e.scrollIntoView({ block: 'center' }));
-  await target.click();
-}
 
 test('the preview: a passkey, a sign-in, bakes, an idea and a photo through the Worker, Sign out, and the refusals', async ({ browser }) => {
   // A new browser fetches every idea and photo one request at a time: with
@@ -55,7 +51,7 @@ test('the preview: a passkey, a sign-in, bakes, an idea and a photo through the 
   await a.page.goto('/');
   await openTab(a.page, 'Bake log');
   await logPanel(a.page).getByLabel('Setup code').fill(CODE);
-  await press(button(a.page, 'Create a passkey'));
+  await button(a.page, 'Create a passkey').click();
   await expect(button(a.page, 'Sign out')).toBeVisible({ timeout: 20_000 });
   await expect(logPanel(a.page)).toContainText('Synced the log', FIRST_SYNC);
   await expect(logPanel(a.page)).toContainText('Synced the topping ideas', FIRST_SYNC);

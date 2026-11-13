@@ -1762,7 +1762,7 @@ APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in A
 
 **Three tabs, in this order: Recipe, Toppings, Bake log.** Recipe is everything the page shows today: the panels, the timeline, the warnings and the steps. Toppings is §13.2. Bake log is §10's log, which until MESSAGE-70 opened as a drawer.
 
-**On a phone the tabs are a bar fixed to the bottom of the screen** (Dave's choice from two drawn options, 10 Nov 2026). It sits clear of the home indicator, and the page is padded so the bar covers nothing. It stays under the thumb mid-bake, one tap from anywhere. While a field that takes typing has focus (text, number, a date and time, a text area or a select), the bar hides, so it never sits over a reading being typed. Focus is the signal, since nothing reports the iOS keyboard itself, so a narrow desktop window hides it too until the field is left.
+**On a phone the tabs are a bar fixed to the bottom of the screen** (Dave's choice from two drawn options, 10 Nov 2026). It sits clear of the home indicator, and the page is padded so the bar covers nothing. It stays under the thumb mid-bake, one tap from anywhere. While a field that takes typing has focus (text, number, a date and time, a text area or a select), the bar hides, so it never sits over a reading being typed. Focus is the signal, since nothing reports the iOS keyboard itself, so a narrow desktop window hides it too until the field is left. A press that takes focus off the field keeps the bar hidden until the click has landed, so the bar never comes back under the finger or the pointer between press and release (#64).
 
 **From 768 px wide the same tabs are a strip at the top of the page's column**, under the title, and stay in view as the page scrolls. The width decides, not the device. Labels, order and behaviour are the same in both forms.
 
@@ -1803,6 +1803,8 @@ APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in A
 The rated sections list the highest rating first. Ideas with the same rating go newest photo first, by `photo_taken`, then the ones without a photo date, most recently updated first (Dave, 12 Nov 2026). Untested lists the newest first by when each was first written down (`created`), so editing one doesn't move it. A section with nothing rated says **Nothing rated yet.**; Dessert pizzas says **No dessert pizzas yet.** until an idea is one; an empty Untested says **Nothing waiting to be tried.**
 
 **Dessert pizza is a toggle on each idea**, under the name in the editor, off for a new idea (Dave, 12 Nov 2026). Any style of pizza can be a dessert one; the style is a choice that comes later (APP-12).
+
+**The Pizzas heading carries two things on its line**: a spinner beside the heading while the ideas sync, and **Portfolio** at the right, which opens the public portfolio (§15) in a new tab. Neither changes the line's height. On a device's first sync, with no ideas here yet, the tab shows **Loading the ideas…** under the heading rather than saying the lists are empty.
 
 **Add idea is a button that floats at the bottom right of the screen** and stays in view as the page scrolls; on a phone it sits above the tab bar (Dave, 12 Nov 2026). It hides while an editor is open. On a phone the new idea's editor opens at the top of the tab, and the page goes to it. Every card opens and closes on its own; there is no control that opens or closes them all (Dave, 12 Nov 2026).
 
@@ -1902,7 +1904,7 @@ APP-11 (Dave's calls, 12 Nov 2026). A page anyone can open, with no sign-in, sho
 
 **The grid**: each pizza is its photo, square, with its name under it on the same card. Two to a row on a phone, three from 640 px, four from 1024 px. The look is the third of three drawn directions, Dave's pick (12 Nov 2026): white print frames around the photos, names in heavy capitals, a thick rule under the title, and an orange accent. Light and dark follow the device.
 
-**A pizza** (11c): tapping one opens its own page, at `/portfolio/{id}`, with the photo, the name, the rating as five stars labelled **Dave's rating**, then **Pre-bake** and **Post-bake**, the second left out when empty. Screen readers hear the rating as "Rated 4.5 of 5". The toppings are Markdown, rendered as on the Toppings tab: bullets, bold, links (which open in a new tab), and a single line break kept as one. **All pizzas** goes back to the grid, at that pizza. From 768 px the photo and the toppings sit side by side.
+**A pizza** (11c): tapping one opens its own page, at `/portfolio/{id}`, with the photo, the name, the rating as five stars labelled **Dave's rating**, then **Pre-bake** and **Post-bake**, the second left out when empty. Screen readers hear the rating as "Rated 4.5 of 5". The toppings are Markdown, rendered as on the Toppings tab: bullets, bold, links (which open in a new tab), and a single line break kept as one. **All pizzas** goes back to the grid, at its top. From 768 px the photo and the toppings sit side by side.
 
 **Nothing private leaves the Worker** (11c): not the notes, the comments, the dates or the switch, and not a hidden idea or its photo. A photo is served only when a listed pizza names it.
 
@@ -1916,7 +1918,7 @@ APP-11 (Dave's calls, 12 Nov 2026). A page anyone can open, with no sign-in, sho
 
 **The Worker builds each page as plain HTML with no script**, so a link preview reads the same page a person sees. The pages load nothing from elsewhere, and nothing on them reaches the sign-in or the sync.
 
-**It reads GitHub with its own token** (§14.2), one request for every idea's file and the photo folder's listing, and never writes. It reuses what it read for a minute, so an idea saved on a phone shows on the portfolio within a minute of its sync. While GitHub can't be read it shows the last ideas it read, up to a week old; with none, it says so. Each photo is read once and kept, since a photo's file never changes under its name (§13.3).
+**It reads GitHub with its own token** (§14.2), one request for every idea's file and the photo folder's listing, and never writes. It reuses what it read for a minute. After that the next visitor gets the last ideas it read at once while it reads GitHub again, and the visitor after them sees the new read, so a visitor waits for GitHub only when nothing has been read before. While a photo loads, a spinner turns in its square, and the photo covers it once it arrives. While GitHub can't be read it shows the last ideas it read, up to a week old; with none, it says so. Each photo is read once and kept, since a photo's file never changes under its name (§13.3).
 
 **The grid's preview image is made by hand**, from the live portfolio, by `scripts/portfolio-preview.py`, and ships with the page. It shows the pizzas that led the grid when it was made, so after a change to the first six it is made again and deployed. Messages keeps a preview it has already shown for a link, so a phone that has opened the link may need a while to show the new one.
 
