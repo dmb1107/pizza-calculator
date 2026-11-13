@@ -753,6 +753,26 @@ for the local run only. The page keeps one flag of its own
 (`SIGNED_IN_KEY`), replaced by `/api/session`'s answer whenever there is
 one, and §10's *Kept* list keeps it through Reset.
 
+**The portfolio is public, so it is built to leak nothing** (§15, APP-11,
+#37). `/portfolio`, `/portfolio/{id}` and `/portfolio/photos/{photo}.jpg`
+run in the Worker entry (`worker/portfolio.ts`), never the Durable Object,
+with no sign-in. The rules are `src/lib/portfolio.ts` and the switch in
+`toppings.ts`: rated, with a photo the repository holds, and not
+`hiddenFromPortfolio` (`portfolio` is `follow`, `hidden` or `shown`;
+`follow` hides below `PORTFOLIO_HIDE_BELOW`, 3). `portfolioPizzas` keeps
+`PORTFOLIO_FIELDS` and nothing else, and only those reach the cache; a photo
+is served only when a listed pizza names it. **The pages are HTML from the
+Worker with no script** (`PAGE_CSP` has no `script-src`), so link previews
+read them. Markdown goes through `worker/markdownHtml.ts`: the app's parse
+(GFM, `remarkLineBreaks`), then an allow-list serializer that is the
+sanitizer, keeping http, https and mailto links only. GitHub is read in
+**one GraphQL query** (`SNAPSHOT_QUERY`: every file under `toppings/` with
+its text, and the photo folder's blobs), since a request per idea would hit
+the Workers subrequest limit as the ideas grow; the view is cached a minute,
+the last good one a week, each photo blob a month. `parseIdea` moved to
+`src/lib/toppings.ts` so the Worker can read ideas; the store re-exports it.
+The fake GitHub answers the query from its files.
+
 **`wrangler dev` rewrites the host to the production route** (`http://
 pizza.dave-becker.com`), which the Worker refuses as plain http; pass
 `--local-upstream localhost:<port>`, as `npm run worker:dev` and the

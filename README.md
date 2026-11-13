@@ -68,6 +68,15 @@ address can't add one. The log and the ideas sync separately, so one failing
 never holds up the other. A shared link carries the setup, never the log,
 the ideas or the sign-in.
 
+**The portfolio**, at `https://pizza.dave-becker.com/portfolio`, is a
+public page of Dave's rated pizzas that have a photo, best first, with the
+dessert pizzas after the rest: a grid of
+photos with their names, and a page for each with its toppings and Dave's
+rating. Anyone can open it without signing in. Notes, comments and dates
+stay private, and each idea has a **Hide from portfolio** switch, on for a
+rating below 3 until Dave sets it. The Worker builds it as plain HTML, so a
+shared link previews the pizza's photo.
+
 Built to be read on a phone propped against a mixer, by someone with flour on
 their hands.
 
@@ -87,7 +96,8 @@ tabs, one of them for topping ideas. Since MESSAGE-75 (APP-10) the app is
 served from Cloudflare at its own address, and devices sign in with a
 passkey instead of holding a GitHub token. APP-14 redesigned the Toppings
 tab: dessert pizzas, untested ideas at the bottom, a floating Add idea, a
-photo gallery from desktop width, and fields that format as you type. See
+photo gallery from desktop width, and fields that format as you type.
+APP-11 adds the public portfolio (spec §15). See
 [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
 ## Home screen icon
@@ -140,7 +150,9 @@ npm test
 One Cloudflare Worker serves the app at `https://pizza.dave-becker.com`
 (`wrangler.jsonc`): the built page from `dist/` as static assets, and
 `worker/` for everything under `/api/`, the passkey sign-in and the pass
-through to GitHub. A Durable Object holds the passkeys and sign-ins.
+through to GitHub, and for `/portfolio`, which it builds from the same
+repository with its own token and keeps for a minute in Cloudflare's cache.
+A Durable Object holds the passkeys and sign-ins.
 
 Cloudflare's Git integration (Workers Builds) deploys every push to `main`:
 it runs `npm test` and `npm run build`, then `npx wrangler deploy`. GitHub

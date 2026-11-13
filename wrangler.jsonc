@@ -1,6 +1,6 @@
 // The Cloudflare Worker that serves the app at pizza.dave-becker.com (spec §14).
-// The built page (dist/) is served as static assets; only /api/* runs the
-// Worker (worker/index.ts). Secrets GITHUB_TOKEN and SETUP_CODE are set with
+// The built page (dist/) is served as static assets; only /api/* and the
+// portfolio run the Worker (worker/index.ts). Secrets GITHUB_TOKEN and SETUP_CODE are set with
 // `wrangler secret put`, never written here.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
@@ -10,7 +10,8 @@
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*"]
+    // The portfolio (§15) is built by the Worker; everything else is the page.
+    "run_worker_first": ["/api/*", "/portfolio", "/portfolio/*"]
   },
   "durable_objects": {
     "bindings": [{ "name": "AUTH", "class_name": "AuthStore" }]
