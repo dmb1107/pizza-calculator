@@ -92,7 +92,7 @@ export default function App() {
    */
   const dueCount = state.dueTimerStepIds.length;
   useEffect(() => {
-    const base = 'Biga Calculator';
+    const base = "Dave's Pizza Dough";
     document.title =
       dueCount > 0 ? `(${dueCount}) Check ${dueCount === 1 ? 'timer' : 'timers'} — ${base}` : base;
     return () => {
@@ -116,7 +116,7 @@ export default function App() {
       className={`mx-auto max-w-2xl px-4 pt-8 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:px-6 md:pb-8 ${tab === 'toppings' ? 'lg:max-w-6xl' : ''}`}
     >
       <header className="mb-6 md:mb-4">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Biga Neapolitan Dough</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Dave's Pizza Dough</h1>
         <p className="mt-1 text-stone-600 dark:text-stone-400">
           {formatPercent(C.BIGA_FRACTION)} biga · {formatPercent(C.HYDRATION)} hydration · Grain Craft 00 · Halo Core ·
           Tread

@@ -326,7 +326,7 @@ describe('§15 a pizza', () => {
     expect(page).toContain(escapeHtml(COPY.rating));
     expect(page).toContain(`<h2>${COPY.preBake}</h2><ul>`);
     expect(page).toContain(`<h2>${COPY.postBake}</h2><ul>`);
-    expect(page).toContain(`<a class="back" href="/portfolio#margherita">`);
+    expect(page).toContain(`<a class="back" href="/portfolio">`);
     expect(page).toContain(`<meta property="og:description" content="Tomato sauce, Mozzarella">`);
     expect(page).toContain(`<meta property="og:image" content="${ORIGIN}/portfolio/photos/margherita-0123456789ab.jpg">`);
   });
@@ -446,6 +446,31 @@ describe('§15 reading GitHub', () => {
     h.advance(SNAPSHOT_MAX_AGE_S * 1000);
     await h.get('/portfolio');
     expect(h.calls).toHaveLength(2);
+  });
+
+  it('past the minute, answers with the last good view and reads GitHub behind it', async () => {
+    const ideas = [idea('margherita', { name: 'Margherita Pizza' })];
+    const h = harness(ideas, ['margherita-0123456789ab', 'new-0123456789ab']);
+    const work: Promise<unknown>[] = [];
+    h.deps.waitUntil = (p) => void work.push(p);
+    await h.get('/portfolio');
+    expect(work).toHaveLength(0);
+
+    ideas.push(idea('new', { name: 'New Pizza', photo: 'new-0123456789ab' }));
+    h.advance(SNAPSHOT_MAX_AGE_S * 1000);
+    const stale = await (await h.get('/portfolio')).text();
+    expect(stale).not.toContain('New Pizza');
+    expect(work).toHaveLength(1);
+    await Promise.all(work);
+    expect(h.calls).toHaveLength(2);
+    expect(await (await h.get('/portfolio')).text()).toContain('New Pizza');
+
+    // A read that fails behind the answer leaves the last good view in place.
+    h.advance(SNAPSHOT_MAX_AGE_S * 1000);
+    h.setDown(true);
+    expect((await h.get('/portfolio')).status).toBe(200);
+    await Promise.all(work);
+    expect((await h.get('/portfolio')).status).toBe(200);
   });
 
   it('reads a photo once while the cache holds it', async () => {

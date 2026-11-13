@@ -1,6 +1,6 @@
 <img src="public/icon.svg" width="96" alt="The app icon: a margherita pizza">
 
-# Biga Neapolitan Dough Calculator
+# Dave's Pizza Dough
 
 A client-side dough calculator tuned to one specific setup: **Grain
 Craft Neapolitan 00 flour, an Ooni Halo Core spiral mixer, a Gozney Tread oven,
@@ -40,7 +40,9 @@ returns:
   and links) and are stored as Markdown. Rated pizzas list best first, then
   rated dessert pizzas, with the untested ideas at the bottom. Add idea
   floats at the bottom right; from desktop width the ideas are a photo
-  gallery, and one opens in a panel at the right.
+  gallery, and one opens in a panel at the right. A spinner beside the
+  Pizzas heading shows while the ideas sync, and **Portfolio**, at the
+  heading's right, opens the public portfolio in a new tab.
 
 The page has three tabs, **Recipe**, **Toppings** and **Bake log**: on a
 phone a bar fixed to the bottom of the screen, and from 768 px wide a strip
@@ -75,7 +77,9 @@ photos with their names, and a page for each with its toppings and Dave's
 rating. Anyone can open it without signing in. Notes, comments and dates
 stay private, and each idea has a **Hide from portfolio** switch, on for a
 rating below 3 until Dave sets it. The Worker builds it as plain HTML, so a
-shared link previews the pizza's photo.
+shared link previews the pizza's photo. A visitor gets the last copy it read
+at once while it reads GitHub again, and each photo square shows a spinner
+until its photo arrives.
 
 Built to be read on a phone propped against a mixer, by someone with flour on
 their hands.
@@ -97,9 +101,10 @@ served from Cloudflare at its own address, and devices sign in with a
 passkey instead of holding a GitHub token. APP-14 redesigned the Toppings
 tab: dessert pizzas, untested ideas at the bottom, a floating Add idea, a
 photo gallery from desktop width, and fields that format as you type.
-APP-11 adds the public portfolio (spec §15). Each photo now has a 600 px
-square copy, which the desktop gallery and the portfolio's grid show in
-place of the full photo, and a sync reads up to six files at a time. See
+APP-11 adds the public portfolio (spec §15), opened from the Toppings tab.
+Each photo now has a 600 px square copy, which the desktop gallery and the
+portfolio's grid show in place of the full photo, and a sync reads up to six
+files at a time. See
 [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
 ## Home screen icon
@@ -108,7 +113,8 @@ On an iPhone, open the site in Safari, **sign in on the Bake log tab first**,
 then tap Share, then **Add to Home Screen**. iOS copies Safari's sign-in to
 the home-screen app once, when it is added; if the app's sign-in ever lapses
 and its passkey prompt doesn't work, sign in in Safari again and add the icon
-again.
+again. The home-screen label is **Dave's Pizza**; an icon added before the
+rename keeps its old label until it is added again.
 The icon files live in `public/`:
 
 | File | Used by | Shape |
