@@ -781,7 +781,7 @@ its text, and the photo folder's blobs), since a request per idea would hit
 the Workers subrequest limit as the ideas grow; the view is cached a minute,
 the last good one a week, each photo blob a month. `parseIdea` moved to
 `src/lib/toppings.ts` so the Worker can read ideas; the store re-exports it.
-The fake GitHub answers the query from its files.
+The fake GitHub answers the query from its files. **The grid's link preview is a static image**, `public/portfolio-preview.jpg` (1200 × 630, `GRID_PREVIEW`), made by `python3 scripts/portfolio-preview.py` from the live page with Helvetica Neue Condensed Black (macOS; SF's license covers mockups only) and committed: a Worker has no canvas, and decoding photos in it would cost CPU on every preview fetch. Remake it when the grid's first six pizzas change.
 
 **`wrangler dev` rewrites the host to the production route** (`http://
 pizza.dave-becker.com`), which the Worker refuses as plain http; pass

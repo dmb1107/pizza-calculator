@@ -312,9 +312,15 @@ const photoPath = (photo: string) => `/portfolio/photos/${photo}.jpg`;
 interface Preview {
   title: string;
   description: string;
-  image: string | null;
+  image: { url: string; width?: number; height?: number } | null;
   url: string;
 }
+
+/**
+ * The grid's link preview (§15.1): the title over a grid of pizzas, made by
+ * `scripts/portfolio-preview.py` and served from `public/` as a static file.
+ */
+export const GRID_PREVIEW = { path: '/portfolio-preview.jpg', width: 1200, height: 630 } as const;
 
 function pageDocument(title: string, body: string, preview: Preview | null): string {
   const meta = preview
@@ -326,7 +332,13 @@ function pageDocument(title: string, body: string, preview: Preview | null): str
         `<meta property="og:url" content="${escapeHtml(preview.url)}">`,
         ...(preview.image
           ? [
-              `<meta property="og:image" content="${escapeHtml(preview.image)}">`,
+              `<meta property="og:image" content="${escapeHtml(preview.image.url)}">`,
+              ...(preview.image.width && preview.image.height
+                ? [
+                    `<meta property="og:image:width" content="${preview.image.width}">`,
+                    `<meta property="og:image:height" content="${preview.image.height}">`,
+                  ]
+                : []),
               `<meta name="twitter:card" content="summary_large_image">`,
             ]
           : []),
@@ -377,11 +389,10 @@ export function gridPage(s: Snapshot, origin: string): string {
       ? tileList(pizzas, 4) + `\n<h2 class="kind">${escapeHtml(COPY.desserts)}</h2>\n` + tileList(desserts, 0)
       : tileList(s.pizzas, 4);
   const body = masthead + (s.pizzas.length ? lists : `<p class="note">${escapeHtml(COPY.empty)}</p>`);
-  const first = s.pizzas[0];
   return pageDocument(COPY.title, body, {
     title: COPY.title,
     description: COPY.subtitle,
-    image: first ? origin + photoPath(first.photo) : null,
+    image: s.pizzas.length ? { url: origin + GRID_PREVIEW.path, width: GRID_PREVIEW.width, height: GRID_PREVIEW.height } : null,
     url: `${origin}/portfolio`,
   });
 }
@@ -404,7 +415,7 @@ export function pizzaPage(p: PortfolioPizza, origin: string): string {
   return pageDocument(`${p.name} · ${COPY.title}`, body, {
     title: p.name,
     description: toppingsLine(p.pre_bake),
-    image: origin + photoPath(p.photo),
+    image: { url: origin + photoPath(p.photo) },
     url: `${origin}/portfolio/${p.id}`,
   });
 }
