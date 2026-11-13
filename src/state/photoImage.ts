@@ -13,7 +13,9 @@ import {
   EXIF_READ_BYTES,
   PHOTO_JPEG_QUALITY,
   PHOTO_MAX_EDGE,
+  SQUARE_EDGE,
   THUMB_EDGE,
+  centreSquare,
   fitWithin,
   photoTakenFromExif,
   sha256Hex,
@@ -90,6 +92,33 @@ export async function makeThumb(photo: Blob): Promise<Blob> {
   const { blob } = await toJpeg(img, THUMB_EDGE);
   img.src = '';
   return blob;
+}
+
+/** The square copy of a stored photo: its centre, `SQUARE_EDGE` a side (§13.3). */
+export async function makeSquare(photo: Blob): Promise<Blob> {
+  const img = await decode(photo);
+  const { sx, sy, side, edge } = centreSquare(img.naturalWidth, img.naturalHeight, SQUARE_EDGE);
+  const canvas = document.createElement('canvas');
+  canvas.width = edge;
+  canvas.height = edge;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new NotAPhotoError();
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, edge, edge);
+  ctx.drawImage(img, sx, sy, side, side, 0, 0, edge, edge);
+  img.src = '';
+  return new Promise((resolve, reject) =>
+    canvas.toBlob(
+      (blob) => {
+        canvas.width = 0;
+        canvas.height = 0;
+        if (blob) resolve(blob);
+        else reject(new NotAPhotoError());
+      },
+      'image/jpeg',
+      PHOTO_JPEG_QUALITY,
+    ),
+  );
 }
 
 /** An image's displayed size, EXIF orientation applied. */

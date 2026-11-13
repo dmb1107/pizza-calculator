@@ -26,6 +26,7 @@ import {
   COPY,
   GRID_PREVIEW,
   PAGE_CSP,
+  PHOTO_MAX_AGE_S,
   SNAPSHOT_KEY,
   SNAPSHOT_MAX_AGE_S,
   handlePortfolio,
@@ -172,10 +173,16 @@ interface Call {
 }
 
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 0xff, 0xd9]);
+const SQUARE_JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 9, 9, 9, 0xff, 0xd9]);
 const b64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes));
 const blobOf = (photo: string) => photo.replace(/[^0-9a-f]/g, '').padEnd(40, '0').slice(0, 40);
+const squareBlobOf = (photo: string) => `5${blobOf(photo)}`.slice(0, 40);
 
-function harness(ideas: ToppingIdea[], photos: string[] = ideas.flatMap((i) => (i.photo ? [i.photo] : []))) {
+function harness(
+  ideas: ToppingIdea[],
+  photos: string[] = ideas.flatMap((i) => (i.photo ? [i.photo] : [])),
+  squares: string[] = [],
+) {
   let now = Date.UTC(2026, 10, 12, 18, 0, 0);
   const calls: Call[] = [];
   let down = false;
@@ -213,13 +220,21 @@ function harness(ideas: ToppingIdea[], photos: string[] = ideas.flatMap((i) => (
                 ...ideas.map((i) => ({ name: `${i.id}.json`, type: 'blob', object: { text: JSON.stringify(i), isTruncated: false } })),
               ],
             },
-            images: { entries: photos.map((p) => ({ name: `${p}.jpg`, type: 'blob', oid: blobOf(p) })) },
+            images: {
+              entries: [
+                ...photos.map((p) => ({ name: `${p}.jpg`, type: 'blob', oid: blobOf(p) })),
+                ...squares.map((p) => ({ name: `${p}.square.jpg`, type: 'blob', oid: squareBlobOf(p) })),
+              ],
+            },
           },
         };
         return Response.json({ data });
       }
       const blob = /\/repos\/dmb1107\/pizza-bake-log\/git\/blobs\/([0-9a-f]{40})$/.exec(url)?.[1];
       if (blob && photos.some((p) => blobOf(p) === blob)) return Response.json({ sha: blob, content: b64(JPEG), encoding: 'base64' });
+      if (blob && squares.some((p) => squareBlobOf(p) === blob)) {
+        return Response.json({ sha: blob, content: b64(SQUARE_JPEG), encoding: 'base64' });
+      }
       return Response.json({ message: 'Not Found' }, { status: 404 });
     },
   };
@@ -357,6 +372,33 @@ describe('§15 what leaves the Worker', () => {
     for (const name of ['hidden-0123456789ab', 'low-0123456789ab', 'untested-0123456789ab', 'nope']) {
       expect((await h.get(`/portfolio/photos/${name}.jpg`)).status, name).toBe(404);
     }
+  });
+
+  it("shows each pizza's square copy in the grid, and its photo until it has one (§13.3)", async () => {
+    const h = harness(PIZZAS, SYNCED, ['margherita-0123456789ab', 'hidden-0123456789ab']);
+    const grid = await (await h.get('/portfolio')).text();
+    expect(grid).toContain('<img src="/portfolio/squares/margherita-0123456789ab.jpg"');
+    expect(grid).toContain('<img src="/portfolio/photos/chili-dog-0123456789ab.jpg"');
+    // A pizza's own page shows the whole photo.
+    expect(await (await h.get('/portfolio/margherita')).text()).toContain('<img src="/portfolio/photos/margherita-0123456789ab.jpg"');
+
+    const ok = await h.get('/portfolio/squares/margherita-0123456789ab.jpg');
+    expect(ok.status).toBe(200);
+    expect(new Uint8Array(await ok.arrayBuffer())).toEqual(SQUARE_JPEG);
+    // A square copy is served only when a listed pizza names its photo and the repository has it.
+    for (const name of ['hidden-0123456789ab', 'chili-dog-0123456789ab', 'nope']) {
+      expect((await h.get(`/portfolio/squares/${name}.jpg`)).status, name).toBe(404);
+    }
+    expect((await h.get('/portfolio/squares/margherita-0123456789ab.square.jpg')).status).toBe(404);
+  });
+
+  it('lets a browser keep a photo for a year, since its name changes with its content', async () => {
+    const h = harness(PIZZAS, SYNCED, ['margherita-0123456789ab']);
+    expect(PHOTO_MAX_AGE_S).toBe(365 * 24 * 60 * 60);
+    for (const path of ['/portfolio/photos/margherita-0123456789ab.jpg', '/portfolio/squares/margherita-0123456789ab.jpg']) {
+      expect((await h.get(path)).headers.get('Cache-Control'), path).toBe(`public, max-age=${PHOTO_MAX_AGE_S}, immutable`);
+    }
+    expect((await h.get('/portfolio')).headers.get('Cache-Control')).toBe('public, max-age=60');
   });
 
   it('escapes every name and topping it writes', async () => {

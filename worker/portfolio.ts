@@ -26,6 +26,7 @@
 import { formatRating } from '../src/lib/format';
 import { PORTFOLIO_FIELDS, portfolioPizzas, toppingsLine, type PortfolioPizza } from '../src/lib/portfolio';
 import { RATING_MAX, isPhotoName, parseIdea, type ToppingIdea } from '../src/lib/toppings';
+import { photoNameFromSquareFile } from '../src/lib/photos';
 import { escapeHtml, markdownToHtml } from './markdownHtml';
 
 // ---------------------------------------------------------------------------
@@ -53,8 +54,8 @@ export interface PortfolioDeps {
  * what a pizza carries, so a copy cached by the build before is never read
  * without its fields.
  */
-export const SNAPSHOT_KEY = 'snapshot-v2';
-export const SNAPSHOT_LAST_GOOD_KEY = 'snapshot-last-good-v2';
+export const SNAPSHOT_KEY = 'snapshot-v3';
+export const SNAPSHOT_LAST_GOOD_KEY = 'snapshot-last-good-v3';
 
 /** How long the page's view of the ideas is reused before GitHub is asked again. */
 export const SNAPSHOT_MAX_AGE_S = 60;
@@ -62,9 +63,14 @@ export const SNAPSHOT_MAX_AGE_S = 60;
 export const LAST_GOOD_MAX_AGE_S = 7 * 24 * 60 * 60;
 /** A photo's blob never changes, so it is kept until the cache lets it go. */
 export const BLOB_MAX_AGE_S = 30 * 24 * 60 * 60;
-/** How long a browser or a link preview reuses a page and a photo. */
+/** How long a browser or a link preview reuses a page. */
 export const PAGE_MAX_AGE_S = 60;
-export const PHOTO_MAX_AGE_S = 60 * 60;
+/**
+ * How long a browser keeps a photo: a year, and `immutable`, since a photo's
+ * name changes with its content (§13.3), so a name never comes back as
+ * another picture.
+ */
+export const PHOTO_MAX_AGE_S = 365 * 24 * 60 * 60;
 
 const GITHUB_API = 'https://api.github.com';
 
@@ -72,10 +78,15 @@ const GITHUB_API = 'https://api.github.com';
 // Reading GitHub
 // ---------------------------------------------------------------------------
 
-/** The listed pizzas, and the git blob of each one's photo. */
+/**
+ * The listed pizzas, the git blob of each one's photo, and of its square
+ * copy where the repository has one (§13.3). The grid shows the square copy,
+ * a fraction of the photo's bytes, and falls back to the photo without one.
+ */
 export interface Snapshot {
   pizzas: PortfolioPizza[];
   photos: Record<string, string>;
+  squares: Record<string, string>;
 }
 
 /** One request: every file under `toppings/` with its text, and the photo folder's names. */
@@ -130,8 +141,14 @@ async function readSnapshot(deps: PortfolioDeps): Promise<Snapshot> {
   if (!repository || body?.errors) throw new GitHubUnavailable('no repository');
 
   const blobs = new Map<string, string>();
+  const squareBlobs = new Map<string, string>();
   for (const e of entriesOf(repository.images)) {
     if (e.type !== 'blob' || typeof e.name !== 'string' || typeof e.oid !== 'string') continue;
+    const square = photoNameFromSquareFile(e.name);
+    if (square !== null) {
+      squareBlobs.set(square, e.oid);
+      continue;
+    }
     const name = e.name.replace(/\.jpg$/, '');
     if (name !== e.name && isPhotoName(name)) blobs.set(name, e.oid);
   }
@@ -150,7 +167,11 @@ async function readSnapshot(deps: PortfolioDeps): Promise<Snapshot> {
     if (idea) ideas.push(idea);
   }
   const pizzas = portfolioPizzas(ideas, (photo) => blobs.has(photo));
-  return { pizzas, photos: Object.fromEntries(pizzas.map((p) => [p.photo, blobs.get(p.photo)!])) };
+  return {
+    pizzas,
+    photos: Object.fromEntries(pizzas.map((p) => [p.photo, blobs.get(p.photo)!])),
+    squares: Object.fromEntries(pizzas.flatMap((p) => (squareBlobs.has(p.photo) ? [[p.photo, squareBlobs.get(p.photo)!]] : []))),
+  };
 }
 
 const encoder = new TextEncoder();
@@ -159,7 +180,7 @@ const decoder = new TextDecoder();
 /** Only the listed fields go into the cache, so nothing else can come back out of it. */
 function storedSnapshot(s: Snapshot): Uint8Array {
   const pizzas = s.pizzas.map((p) => Object.fromEntries(PORTFOLIO_FIELDS.map((k) => [k, p[k]])));
-  return encoder.encode(JSON.stringify({ pizzas, photos: s.photos }));
+  return encoder.encode(JSON.stringify({ pizzas, photos: s.photos, squares: s.squares }));
 }
 
 async function cachedSnapshot(deps: PortfolioDeps, key: string): Promise<Snapshot | null> {
@@ -308,6 +329,9 @@ export function starsHtml(rating: number): string {
 }
 
 const photoPath = (photo: string) => `/portfolio/photos/${photo}.jpg`;
+const squarePath = (photo: string) => `/portfolio/squares/${photo}.jpg`;
+/** The grid's image for a pizza: its square copy, or the photo until one is synced. */
+const tilePath = (s: Snapshot, photo: string) => (Object.hasOwn(s.squares ?? {}, photo) ? squarePath(photo) : photoPath(photo));
 
 interface Preview {
   title: string;
@@ -368,13 +392,13 @@ ${body}
 const masthead = `<header><h1 class="title">${escapeHtml("Dave's")}<br><em>pizzas</em></h1><p class="sub">${escapeHtml(COPY.subtitle)}</p></header>`;
 const backBar = (to: string) => `<nav class="bar"><a class="back" href="${escapeHtml(to)}">${BACK_ICON}${escapeHtml(COPY.back)}</a></nav>`;
 
-const tile = (p: PortfolioPizza, eager: boolean) =>
+const tile = (s: Snapshot, p: PortfolioPizza, eager: boolean) =>
   `<li id="${p.id}"><a class="tile" href="/portfolio/${p.id}">` +
-  `<img src="${photoPath(p.photo)}" alt="" ${eager ? '' : 'loading="lazy" '}decoding="async">` +
+  `<img src="${tilePath(s, p.photo)}" alt="" ${eager ? '' : 'loading="lazy" '}decoding="async">` +
   `<span>${escapeHtml(p.name)}</span></a></li>`;
 
-const tileList = (pizzas: readonly PortfolioPizza[], eagerCount: number) =>
-  `<ul class="grid">\n${pizzas.map((p, i) => tile(p, i < eagerCount)).join('\n')}\n</ul>`;
+const tileList = (s: Snapshot, pizzas: readonly PortfolioPizza[], eagerCount: number) =>
+  `<ul class="grid">\n${pizzas.map((p, i) => tile(s, p, i < eagerCount)).join('\n')}\n</ul>`;
 
 /**
  * The pizzas, then the dessert pizzas under their own heading (Dave, 12 Nov
@@ -386,8 +410,8 @@ export function gridPage(s: Snapshot, origin: string): string {
   const desserts = s.pizzas.filter((p) => p.dessert);
   const lists =
     pizzas.length && desserts.length
-      ? tileList(pizzas, 4) + `\n<h2 class="kind">${escapeHtml(COPY.desserts)}</h2>\n` + tileList(desserts, 0)
-      : tileList(s.pizzas, 4);
+      ? tileList(s, pizzas, 4) + `\n<h2 class="kind">${escapeHtml(COPY.desserts)}</h2>\n` + tileList(s, desserts, 0)
+      : tileList(s, s.pizzas, 4);
   const body = masthead + (s.pizzas.length ? lists : `<p class="note">${escapeHtml(COPY.empty)}</p>`);
   return pageDocument(COPY.title, body, {
     title: COPY.title,
@@ -453,7 +477,8 @@ export async function handlePortfolio(request: Request, deps: PortfolioDeps): Pr
   }
   if (url.pathname === '/portfolio/') return Response.redirect(`${url.origin}/portfolio`, 308);
 
-  const photo = /^\/portfolio\/photos\/([\w-]+)\.jpg$/.exec(url.pathname)?.[1];
+  const image = /^\/portfolio\/(photos|squares)\/([\w-]+)\.jpg$/.exec(url.pathname);
+  const photo = image?.[2];
   const id = /^\/portfolio\/([\w-]+)$/.exec(url.pathname)?.[1];
   if (url.pathname !== '/portfolio' && photo === undefined && id === undefined) {
     return html(request, 404, messagePage(COPY.notFound, true), null);
@@ -467,7 +492,9 @@ export async function handlePortfolio(request: Request, deps: PortfolioDeps): Pr
   }
 
   if (photo !== undefined) {
-    const blob = Object.hasOwn(s.photos, photo) ? s.photos[photo] : undefined;
+    // A photo or its square copy is served only when a listed pizza names it.
+    const blobs = image?.[1] === 'squares' ? (s.squares ?? {}) : s.photos;
+    const blob = Object.hasOwn(blobs, photo) ? blobs[photo] : undefined;
     if (!blob) return new Response(null, { status: 404, headers: { 'Cache-Control': 'no-store' } });
     let bytes: Uint8Array;
     try {
@@ -479,7 +506,7 @@ export async function handlePortfolio(request: Request, deps: PortfolioDeps): Pr
       headers: {
         'Content-Type': 'image/jpeg',
         'Content-Length': String(bytes.byteLength),
-        'Cache-Control': `public, max-age=${PHOTO_MAX_AGE_S}`,
+        'Cache-Control': `public, max-age=${PHOTO_MAX_AGE_S}, immutable`,
         'X-Content-Type-Options': 'nosniff',
       },
     });

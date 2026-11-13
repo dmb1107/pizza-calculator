@@ -893,10 +893,13 @@ test.describe('APP-8: a photo on each idea', () => {
     // Signed in: the photo goes up before the idea that names it.
     await connect(a2);
     await expect(panel(a2, 'Bake log')).toContainText('Synced the topping ideas');
-    expect(photoFiles(repo)).toHaveLength(1);
+    // The photo, then the idea, then the photo's square copy for the gallery and the portfolio (§13.3).
+    const [photoFile] = photoFiles(repo);
+    expect(photoFiles(repo)).toEqual([photoFile, photoFile!.replace(/\.jpg$/, '.square.jpg')]);
     const puts = repo.requests.filter((r) => r.startsWith('PUT') && r.includes('/toppings/'));
     expect(puts[0]).toContain('/toppings/images/');
     expect(puts[1]).toMatch(/\/toppings\/[^/]+\.json$/);
+    expect(puts[2]).toMatch(/\/toppings\/images\/[\w-]+\.square\.jpg$/);
 
     const phoneB = await openPhone(info.outputPath('b'), { time: T0 + 2 * MIN }, baseURL!);
     await stubGitHub(phoneB.context, repo, 'b');
