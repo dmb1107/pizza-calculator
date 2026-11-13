@@ -48,6 +48,14 @@ export interface PortfolioDeps {
   cache: PortfolioCache;
 }
 
+/**
+ * The cache keys for the view of the ideas. A new key with each change to
+ * what a pizza carries, so a copy cached by the build before is never read
+ * without its fields.
+ */
+export const SNAPSHOT_KEY = 'snapshot-v2';
+export const SNAPSHOT_LAST_GOOD_KEY = 'snapshot-last-good-v2';
+
 /** How long the page's view of the ideas is reused before GitHub is asked again. */
 export const SNAPSHOT_MAX_AGE_S = 60;
 /** The last good view, shown while GitHub can't be read. */
@@ -166,16 +174,16 @@ async function cachedSnapshot(deps: PortfolioDeps, key: string): Promise<Snapsho
 
 /** The view of the ideas: a minute old at most, or the last good one while GitHub can't be read. */
 export async function snapshot(deps: PortfolioDeps): Promise<Snapshot> {
-  const fresh = await cachedSnapshot(deps, 'snapshot');
+  const fresh = await cachedSnapshot(deps, SNAPSHOT_KEY);
   if (fresh) return fresh;
   try {
     const read = await readSnapshot(deps);
     const bytes = storedSnapshot(read);
-    await deps.cache.put('snapshot', bytes, SNAPSHOT_MAX_AGE_S);
-    await deps.cache.put('snapshot-last-good', bytes, LAST_GOOD_MAX_AGE_S);
+    await deps.cache.put(SNAPSHOT_KEY, bytes, SNAPSHOT_MAX_AGE_S);
+    await deps.cache.put(SNAPSHOT_LAST_GOOD_KEY, bytes, LAST_GOOD_MAX_AGE_S);
     return read;
   } catch (e) {
-    const lastGood = e instanceof GitHubUnavailable ? await cachedSnapshot(deps, 'snapshot-last-good') : null;
+    const lastGood = e instanceof GitHubUnavailable ? await cachedSnapshot(deps, SNAPSHOT_LAST_GOOD_KEY) : null;
     if (lastGood) return lastGood;
     throw e;
   }
@@ -223,6 +231,7 @@ export const COPY = {
   rating: "Dave's rating",
   preBake: 'Pre-bake',
   postBake: 'Post-bake',
+  desserts: 'Dessert pizzas',
   empty: 'No pizzas here yet.',
   notFound: "That pizza isn't in the portfolio.",
   unavailable: "The pizzas couldn't be loaded. Try again in a minute.",
@@ -258,6 +267,8 @@ h1.title em{font-style:normal;color:var(--accent)}
   letter-spacing:.02em;font-size:.86rem;line-height:1.2;overflow-wrap:anywhere}
 .tile:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 .note{color:var(--muted);font-size:1.05rem}
+.kind{margin:36px 0 18px;padding-bottom:10px;border-bottom:3px solid var(--ink);font-size:1.5rem;line-height:1;
+  text-transform:uppercase;font-weight:900;letter-spacing:-.01em;color:var(--accent)}
 .bar{position:sticky;top:0;z-index:1;background:var(--bg);margin:0 -16px;padding:4px 12px}
 .back{min-height:48px;min-width:48px;display:inline-flex;align-items:center;gap:6px;font-weight:600;text-decoration:none}
 .back svg{width:22px;height:22px}
@@ -345,16 +356,27 @@ ${body}
 const masthead = `<header><h1 class="title">${escapeHtml("Dave's")}<br><em>pizzas</em></h1><p class="sub">${escapeHtml(COPY.subtitle)}</p></header>`;
 const backBar = (to: string) => `<nav class="bar"><a class="back" href="${escapeHtml(to)}">${BACK_ICON}${escapeHtml(COPY.back)}</a></nav>`;
 
+const tile = (p: PortfolioPizza, eager: boolean) =>
+  `<li id="${p.id}"><a class="tile" href="/portfolio/${p.id}">` +
+  `<img src="${photoPath(p.photo)}" alt="" ${eager ? '' : 'loading="lazy" '}decoding="async">` +
+  `<span>${escapeHtml(p.name)}</span></a></li>`;
+
+const tileList = (pizzas: readonly PortfolioPizza[], eagerCount: number) =>
+  `<ul class="grid">\n${pizzas.map((p, i) => tile(p, i < eagerCount)).join('\n')}\n</ul>`;
+
+/**
+ * The pizzas, then the dessert pizzas under their own heading (Dave, 12 Nov
+ * 2026). The heading shows only when both kinds are listed: with dessert
+ * pizzas alone, the title already says what they are.
+ */
 export function gridPage(s: Snapshot, origin: string): string {
-  const tiles = s.pizzas
-    .map(
-      (p, i) =>
-        `<li id="${p.id}"><a class="tile" href="/portfolio/${p.id}">` +
-        `<img src="${photoPath(p.photo)}" alt="" ${i < 4 ? '' : 'loading="lazy" '}decoding="async">` +
-        `<span>${escapeHtml(p.name)}</span></a></li>`,
-    )
-    .join('\n');
-  const body = masthead + (s.pizzas.length ? `<ul class="grid">\n${tiles}\n</ul>` : `<p class="note">${escapeHtml(COPY.empty)}</p>`);
+  const pizzas = s.pizzas.filter((p) => !p.dessert);
+  const desserts = s.pizzas.filter((p) => p.dessert);
+  const lists =
+    pizzas.length && desserts.length
+      ? tileList(pizzas, 4) + `\n<h2 class="kind">${escapeHtml(COPY.desserts)}</h2>\n` + tileList(desserts, 0)
+      : tileList(s.pizzas, 4);
+  const body = masthead + (s.pizzas.length ? lists : `<p class="note">${escapeHtml(COPY.empty)}</p>`);
   const first = s.pizzas[0];
   return pageDocument(COPY.title, body, {
     title: COPY.title,

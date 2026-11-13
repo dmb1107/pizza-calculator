@@ -1790,6 +1790,7 @@ APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in A
 | `photo` | text or `null` | names the idea's photo file (§13.3) and changes with each new photo (APP-8, Dave, 11 Nov 2026); `null` or missing is no photo |
 | `dessert` | true or false | true lists the idea under Dessert pizzas (APP-14, Dave, 12 Nov 2026); false or missing is a pizza, so every idea saved before APP-14 is a pizza |
 | `portfolio` | `follow`, `hidden` or `shown` | the **Hide from portfolio** switch (§15.2, APP-11, Dave, 12 Nov 2026); `null` or missing is `follow`, so every idea saved before APP-11 follows its rating |
+| `photo_taken` | local time to the minute, or `null` | when the photo was taken, for the order within a rating (Dave, 12 Nov 2026): set with each new photo from the camera's date in the file, or Save's time when the file has none; `null` with no photo, or when not known. Never shown |
 | `created`, `updated` | ISO time | set by the app |
 
 **An idea with no rating is untested** (Dave, 9 Nov 2026), and needs only a name, so a half-formed idea can be written down (Dave, 10 Nov 2026). Rating it moves it up into its section, and needs its pre-bake toppings: the app asks for them rather than saving a rated idea without them. Clearing the rating moves it back down.
@@ -1799,7 +1800,7 @@ APP-6 (Dave's calls, 9 and 10 Nov 2026). Dave keeps his pizza topping ideas in A
 - **Dessert pizzas**, the rated dessert pizzas;
 - **Untested**, every unrated idea. When both kinds have untested ideas, they split under two small headings, **Pizzas** and **Dessert pizzas**.
 
-The rated sections list the highest rating first, and ideas with the same rating most recently updated first. Untested lists the newest first by when each was first written down (`created`), so editing one doesn't move it. A section with nothing rated says **Nothing rated yet.**; Dessert pizzas says **No dessert pizzas yet.** until an idea is one; an empty Untested says **Nothing waiting to be tried.**
+The rated sections list the highest rating first. Ideas with the same rating go newest photo first, by `photo_taken`, then the ones without a photo date, most recently updated first (Dave, 12 Nov 2026). Untested lists the newest first by when each was first written down (`created`), so editing one doesn't move it. A section with nothing rated says **Nothing rated yet.**; Dessert pizzas says **No dessert pizzas yet.** until an idea is one; an empty Untested says **Nothing waiting to be tried.**
 
 **Dessert pizza is a toggle on each idea**, under the name in the editor, off for a new idea (Dave, 12 Nov 2026). Any style of pizza can be a dessert one; the style is a choice that comes later (APP-12).
 
@@ -1897,13 +1898,13 @@ APP-11 (Dave's calls, 12 Nov 2026). A page anyone can open, with no sign-in, sho
 
 **Every idea that is rated, has a photo, and isn't hidden** (11a, 11b, 11d). An untested idea, an idea without a photo and a hidden one are left out. So is an idea whose photo hasn't synced yet, until it has.
 
-**Pizzas first, then dessert pizzas** (Dave, 12 Nov 2026), with no heading between them. Each kind lists best first: the highest rating first, and ideas with the same rating most recently updated first, as in §13.2's rated sections. The grid shows no rating, so the order is the only sign of it.
+**Pizzas first, then dessert pizzas**, under the heading **Dessert pizzas** (Dave, 12 Nov 2026). The heading shows only when both kinds are listed. Each kind lists best first in §13.2's order for rated ideas: the highest rating first, then the newest photo first. The grid shows no rating, so within each kind the order is the only sign of it.
 
 **The grid**: each pizza is its photo, square, with its name under it on the same card. Two to a row on a phone, three from 640 px, four from 1024 px. The look is the third of three drawn directions, Dave's pick (12 Nov 2026): white print frames around the photos, names in heavy capitals, a thick rule under the title, and an orange accent. Light and dark follow the device.
 
 **A pizza** (11c): tapping one opens its own page, at `/portfolio/{id}`, with the photo, the name, the rating as five stars labelled **Dave's rating**, then **Pre-bake** and **Post-bake**, the second left out when empty. Screen readers hear the rating as "Rated 4.5 of 5". The toppings are Markdown, rendered as on the Toppings tab: bullets, bold, links (which open in a new tab), and a single line break kept as one. **All pizzas** goes back to the grid, at that pizza. From 768 px the photo and the toppings sit side by side.
 
-**Nothing private leaves the Worker** (11c): not the notes, the comments, the dates, the dessert flag or the switch, and not a hidden idea or its photo. A photo is served only when a listed pizza names it.
+**Nothing private leaves the Worker** (11c): not the notes, the comments, the dates or the switch, and not a hidden idea or its photo. A photo is served only when a listed pizza names it.
 
 **Link previews** (11e): the grid's link shows **Dave's pizzas**, **Neo-Neapolitan style** and the first pizza's photo, which is never a dessert pizza's unless there are only dessert pizzas; a pizza's link shows its name, its pre-bake toppings on one line, and its photo.
 
@@ -1920,6 +1921,7 @@ APP-11 (Dave's calls, 12 Nov 2026). A page anyone can open, with no sign-in, sho
 **Rendered copy** (the calculator agent words the rest under the writing rules):
 - The title: **Dave's pizzas**, with **Neo-Neapolitan style** beside it (Dave, 12 Nov 2026).
 - A pizza: **Dave's rating**, **Pre-bake**, **Post-bake**, and **All pizzas** to go back.
+- The heading over the dessert pizzas: **Dessert pizzas**.
 - Nothing to list: **No pizzas here yet.**
 - An address that names no listed pizza: **That pizza isn't in the portfolio.**
 - GitHub unreadable, with nothing read before: **The pizzas couldn't be loaded. Try again in a minute.**

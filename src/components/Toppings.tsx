@@ -194,7 +194,14 @@ function PhotoControl({
     setBusy(true);
     try {
       const shrunk = await shrinkPhoto(file);
-      onPick({ blob: shrunk.blob, sha256: shrunk.sha256, url: URL.createObjectURL(shrunk.blob), width: shrunk.width, height: shrunk.height });
+      onPick({
+        blob: shrunk.blob,
+        sha256: shrunk.sha256,
+        taken: shrunk.taken,
+        url: URL.createObjectURL(shrunk.blob),
+        width: shrunk.width,
+        height: shrunk.height,
+      });
     } catch (err) {
       if (err instanceof NotAPhotoError) setFailed(true);
       else throw err;
@@ -320,7 +327,7 @@ function IdeaEditor({
     // Saving while a photo is still being prepared would leave it behind.
     if (busy) return;
     const photo = removed ? null : draft.photo;
-    const newPhoto = pending ? { blob: pending.blob, sha256: pending.sha256 } : null;
+    const newPhoto = pending ? { blob: pending.blob, sha256: pending.sha256, taken: pending.taken } : null;
     onDone(toppings.saveIdea({ ...draft, photo }, idea?.id ?? null, newPhoto).id);
   };
 

@@ -65,6 +65,7 @@ function idea(id: string, overrides: Partial<ToppingIdea> = {}): ToppingIdea {
     photo: null,
     dessert: false,
     portfolio: 'follow',
+    photo_taken: null,
     created: '2026-11-01T18:00:00.000Z',
     updated: '2026-11-01T18:00:00.000Z',
     ...overrides,

@@ -70,7 +70,7 @@ the ideas or the sign-in.
 
 **The portfolio**, at `https://pizza.dave-becker.com/portfolio`, is a
 public page of Dave's rated pizzas that have a photo, best first, with the
-dessert pizzas after the rest: a grid of
+dessert pizzas after the rest under their own heading: a grid of
 photos with their names, and a page for each with its toppings and Dave's
 rating. Anyone can open it without signing in. Notes, comments and dates
 stay private, and each idea has a **Hide from portfolio** switch, on for a
